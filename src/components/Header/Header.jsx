@@ -1,109 +1,232 @@
 import React from 'react';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import constants, {getUser} from '../../utils/constants';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
+const menuItems = [
+  {label: 'Dashboard', icon: 'bi bi-display', link: '/dashboard'},
+  {
+    label: 'Sale',
+    icon: 'bi bi-upload',
+    submenu: [
+      {label: 'New Sale', link: '/sale/new'},
+      {label: 'Sale List', link: '/sale/list'},
+    ],
+  },
+  {
+    label: 'Process',
+    icon: 'bi bi-journal-text',
+    submenu: [
+      {label: 'Start Process', link: '/process/start'},
+      {label: 'Process History', link: '/process/history'},
+    ],
+  },
+  {
+    label: 'Purchase',
+    icon: 'bi bi-file-earmark-arrow-down',
+    submenu: [
+      {label: 'New Purchase', link: '/purchase/new'},
+      {label: 'Purchase List', link: '/purchase/list'},
+    ],
+  },
+  {
+    label: 'Inventory',
+    icon: 'bi bi-file-earmark-arrow-down',
+    submenu: [
+      {label: 'Product Wise Inventory', link: '/inventory/product-wise'},
+      {label: 'Store Wise Inventory', link: '/inventory/store-wise'},
+      {label: 'Group Wise Inventory', link: '/inventory/group-wise'},
+      {label: 'Universal Search', link: '/inventory/universal-search'},
+      {label: 'Bulk Upload Inventory', link: '/inventory/bulk-upload'},
+      {label: 'Stock Out', link: '/inventory/stock-out'},
+      {label: 'Stock In', link: '/inventory/stock-in'},
+      {label: 'Stock Sale', link: '/inventory/stock-sale'},
+      {label: 'Stock Sale In', link: '/inventory/stock-sale-in'},
+      {label: 'Stock Sale Out', link: '/inventory/stock-sale-out'},
+      {label: 'Transfer Stock', link: '/inventory/transfer-stock'},
+      {label: 'Adjustment Stock', link: '/inventory/adjustment-stock'},
+      {
+        label: 'View Adjustment Stock',
+        link: '/inventory/view-adjustment-stock',
+      },
+    ],
+  },
+  {
+    label: 'Users',
+    icon: 'bi bi-people', // You can change the icon class if needed
+    submenu: [
+      {label: 'Add Organization', link: '/users/add-organization'},
+      {label: 'Add Customer', link: '/users/add-customer'},
+      {label: 'Add Employee', link: '/users/add-employee'},
+      {label: 'View Customer', link: '/users/view-customer'},
+      {label: 'View Employee', link: '/users/view-employee'},
+      {label: 'View OTP', link: '/users/view-otp'},
+      {label: 'Add Vendor', link: '/users/add-vendor'},
+      {label: 'Marketing Reference', link: '/users/marketing-reference'},
+      {label: 'Bulk Upload Customer', link: '/users/bulk-upload-customer'},
+    ],
+  },
+  {
+    label: 'Stores',
+    icon: 'bi bi-house-door', // Icon for store, you can adjust if needed
+    submenu: [
+      {label: 'Add Store', link: '/stores/add-store'},
+      {label: 'Assign Store', link: '/stores/assign-store'},
+      {label: 'View Stores', link: '/stores/view-stores'},
+    ],
+  },
+  {
+    label: 'Products',
+    icon: 'bi bi-box', // You can choose a different icon if you prefer
+    submenu: [
+      {label: 'Add Product', link: '/products/add'},
+      {label: 'Bulk Upload', link: '/products/bulk-upload'},
+      {label: 'Bulk Edit Product', link: '/products/bulk-edit'},
+      {label: 'View Products', link: '/products/view'},
+      {label: 'View Product Attributes', link: '/products/view-attributes'},
+      {label: 'Add Product Attributes', link: '/products/add-attributes'},
+    ],
+  },
+  {
+    label: 'Cashbook',
+    icon: 'bi bi-cash-stack', // You can adjust the icon as needed
+    submenu: [
+      {label: 'Add Expense', link: '/cashbook/add-expense'},
+      {label: 'Add Expense Category', link: '/cashbook/add-expense-category'},
+      {label: 'View Cashbook', link: '/cashbook/view'},
+    ],
+  },
+
+  {
+    label: 'Media Library',
+    icon: 'bi bi-collection-play',
+    link: '/media-library',
+  },
+
+  {
+    label: 'Reports',
+    icon: 'bi bi-clipboard2-data', // You can adjust the icon as needed
+    submenu: [
+      {label: 'Product Sales Report', link: '/reports/product-sales-report'},
+      {label: 'Purchase Report', link: '/reports/purchase-report'},
+      {
+        label: 'Product Purchase Report',
+        link: '/reports/product-purchase-report',
+      },
+      {label: 'Sales Report', link: '/reports/sales-report'},
+      {label: 'Vendor Report', link: '/reports/vendor-report'},
+      {label: 'Incentive Report', link: '/reports/incentive-report'},
+      {label: 'Cash Report', link: '/reports/cash-report'},
+      {label: 'Transfer Report', link: '/reports/transfer-report'},
+      {label: 'Adjustment Report', link: '/reports/adjustment-report'},
+      {label: 'ProfitLoss Report', link: '/reports/profitLoss-report'},
+      {label: 'GST Report', link: '/reports/gst-report'},
+      {
+        label: 'Empty Inventory Report',
+        link: '/reports/empty-inventory-report',
+      },
+    ],
+  },
+];
 
 const Header = () => {
-  const navigate = useLocation();
   const user = JSON.parse(getUser());
 
-  console.log('user ----->', user);
-  const logout = async () => {
-  //   localStorage.removeItem(constants.USER);
-  //   window.location.reload();
-  //   navigate('/login');
+  const navigate = useNavigate()
+
+  const logout = () => {
+    localStorage.removeItem(constants.USER);
+    navigate('/login')
+    window.location.reload();
   };
+
   return (
-    <header id="header" className="header fixed-top d-flex align-items-center">
-      <div className="d-flex align-items-center justify-content-between">
-        {user?.type === '0' ? (
-          <Link
-            to={'/superadmindashboard'}
-            className="logo d-flex align-items-center"
-            style={{textDecoration: 'none'}}>
-            {/* <img src="assets/img/logo.png" alt="" /> */}
-            <span className="d-none d-lg-block">Education Admin</span>
-          </Link>
-        ) : (
-          <Link
-            to={'/'}
-            className="logo d-flex align-items-center"
-            style={{textDecoration: 'none'}}>
-            {/* <img src="assets/img/logo.png" alt="" /> */}
-            <span className="d-none d-lg-block">Education Admin</span>
-          </Link>
-        )}
+    <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+      <div className="container-fluid">
+        {/* Brand Name */}
 
-        <i
-          className="bi bi-list toggle-sidebar-btn"
-          onClick={() => document.body.classList.toggle('toggle-sidebar')}></i>
+        {/* Mobile Toggle */}
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav">
+          <span className="navbar-toggler-icon"></span>
+        </button>
+
+        {/* Navbar Links */}
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            {menuItems.map((item, index) =>
+              item.submenu ? (
+                <li className="nav-item dropdown" key={index}>
+                  <a
+                    className="nav-link dropdown-toggle d-flex align-items-center"
+                    href="#"
+                    id={`dropdown${index}`}
+                    role="button"
+                    data-bs-toggle="dropdown">
+                    <i className={`${item.icon} me-1`}></i> {item.label}
+                  </a>
+                  <ul className="dropdown-menu">
+                    {item.submenu.map((sub, subIndex) => (
+                      <li key={subIndex}>
+                        <Link className="dropdown-item" to={sub.link}>
+                          {sub.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                <li className="nav-item" key={index}>
+                  <Link
+                    className="nav-link d-flex align-items-center"
+                    to={item.link}>
+                    <i className={`${item.icon} me-1`}></i> {item.label}
+                  </Link>
+                </li>
+              ),
+            )}
+          </ul>
+
+          {/* User Profile */}
+          <ul className="navbar-nav ms-auto">
+            <li className="nav-item dropdown">
+              <a
+                className="nav-link dropdown-toggle d-flex align-items-center"
+                href="#"
+                id="profileDropdown"
+                role="button"
+                data-bs-toggle="dropdown">
+                <i className="bi bi-person-circle fs-4"></i>{' '}
+                <span className="ms-2">{user?.name || 'User'}</span>
+              </a>
+              <ul className="dropdown-menu dropdown-menu-end">
+                <li className="dropdown-header text-center">
+                  <strong>{user?.name || 'User Name'}</strong>
+                  <br />
+                  <small>{user?.email || 'Email'}</small>
+                </li>
+                <li>
+                  <hr className="dropdown-divider" />
+                </li>
+
+                <li>
+                  <div
+                    role="button"
+                    className="dropdown-item text-center"
+                    onClick={logout}>
+                    Logout
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
       </div>
-      {/* End Logo */}
-
-      {/* End Search Bar */}
-      <nav className="header-nav ms-auto">
-        <ul className="d-flex align-items-center">
-          {/* End Messages Nav */}
-          <li className="nav-item dropdown pe-3">
-            <a
-              className="nav-link nav-profile d-flex align-items-center pe-0"
-              href="#"
-              data-bs-toggle="dropdown">
-              {/* <img
-                src="assets/img/profile-img.jpg"
-                alt="Profile"
-                className="rounded-circle"
-              /> */}
-              <span className="d-none d-md-block dropdown-toggle ps-2">
-                {user?.adminName}
-              </span>
-            </a>
-            {/* End Profile Iamge Icon */}
-            <ul className="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
-              <li className="dropdown-header">
-                <h6>{user?.adminName}</h6>
-                <span>{user?.email}</span>
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li>
-                {user?.type === '0' ? (
-                  <Link
-                    className="dropdown-item d-flex align-items-center"
-                    to="/superadmin-profile">
-                    <i className="bi bi-person" />
-                    <span>My Profile</span>
-                  </Link>
-                ) : (
-                  <Link
-                    className="dropdown-item d-flex align-items-center"
-                    to="/adminprofile">
-                    <i className="bi bi-person" />
-                    <span>My Profile</span>
-                  </Link>
-                )}
-              </li>
-
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li>
-                <Link
-                  onClick={logout}
-                  to={'/login'}
-                  className="dropdown-item d-flex align-items-center">
-                  <i className="bi bi-box-arrow-right"></i>
-                  <span>Sign Out</span>
-                </Link>
-              </li>
-            </ul>
-            {/* End Profile Dropdown Items */}
-          </li>
-          {/* End Profile Nav */}
-        </ul>
-      </nav>
-      {/* End Icons Navigation */}
-    </header>
+    </nav>
   );
 };
 

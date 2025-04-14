@@ -73,7 +73,7 @@ const Login = () => {
                     <label htmlFor="phone" className="form-label">
                       Phone<span className="text-danger">*</span>
                     </label>
-                    <div className="input-group">
+                    <div >
                       {/* <span className="input-group-text">+91</span> */}
                       <input
                         type="text"
@@ -97,6 +97,40 @@ const Login = () => {
                       {formik.touched.phone && formik.errors.phone && (
                         <div className="invalid-feedback">
                           {formik.errors.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+
+                  <div className="mb-3">
+                    <label htmlFor="phone" className="form-label">
+                      Password<span className="text-danger">*</span>
+                    </label>
+                    <div >
+                      {/* <span className="input-group-text">+91</span> */}
+                      <input
+                        type="text"
+                        className={`form-control ${
+                          formik.touched.password && formik.errors.password
+                            ? 'is-invalid'
+                            : ''
+                        }`}
+                        id="password"
+                        name="password"
+                        value={formik.values.password}
+                        onChange={(e) => {
+                          formik.setFieldValue(
+                            'password',
+                            e.target.value?.trimStart(),
+                          );
+                        }}
+                        onBlur={formik.handleBlur}
+                        placeholder="Enter password"
+                      />
+                      {formik.touched.password && formik.errors.password && (
+                        <div className="invalid-feedback">
+                          {formik.errors.password}
                         </div>
                       )}
                     </div>

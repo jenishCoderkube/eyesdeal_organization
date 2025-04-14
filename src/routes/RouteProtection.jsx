@@ -4,11 +4,11 @@ import constants from '../utils/constants';
 const PrivateRoute = ({children}) => {
   const isAuthenticated = localStorage.getItem(constants.USER);
 
-  if (isAuthenticated) {
+  // if (isAuthenticated) {
     return children;
-  }
+  // }
 
-  return <Navigate to="/login" />;
+  // return <Navigate to="/login" />;
 };
 
 export default PrivateRoute;
