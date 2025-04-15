@@ -15,8 +15,11 @@
     "formik": "^2.4.6",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
+    "react-datepicker": "^8.3.0",
     "react-dom": "^19.0.0",
+    "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^6.30.0",
+    "react-select": "^5.10.1",
     "react-toastify": "^11.0.5",
     "yup": "^1.6.1"
   },

@@ -1,130 +1,130 @@
-import React from 'react';
-import {Link, useNavigate} from 'react-router-dom';
-import constants, {getUser} from '../../utils/constants';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import constants, { getUser } from "../../utils/constants";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const menuItems = [
-  {label: 'Dashboard', icon: 'bi bi-display', link: '/dashboard'},
+  { label: "Dashboard", icon: "bi bi-display", link: "/dashboard" },
   {
-    label: 'Sale',
-    icon: 'bi bi-upload',
+    label: "Sale",
+    icon: "bi bi-upload",
     submenu: [
-      {label: 'New Sale', link: '/sale/new'},
-      {label: 'Sale List', link: '/sale/list'},
+      { label: "New Sale", link: "/sale/new" },
+      { label: "Sale List", link: "/sale/list" },
     ],
   },
   {
-    label: 'Process',
-    icon: 'bi bi-journal-text',
+    label: "Process",
+    icon: "bi bi-journal-text",
     submenu: [
-      {label: 'Start Process', link: '/process/start'},
-      {label: 'Process History', link: '/process/history'},
+      { label: "Start Process", link: "/process/start" },
+      { label: "Process History", link: "/process/history" },
     ],
   },
   {
-    label: 'Purchase',
-    icon: 'bi bi-file-earmark-arrow-down',
+    label: "Purchase",
+    icon: "bi bi-file-earmark-arrow-down",
     submenu: [
-      {label: 'New Purchase', link: '/purchase/new'},
-      {label: 'Purchase List', link: '/purchase/list'},
+      { label: "New Purchase", link: "/purchase/new" },
+      { label: "Purchase List", link: "/purchase/list" },
     ],
   },
   {
-    label: 'Inventory',
-    icon: 'bi bi-file-earmark-arrow-down',
+    label: "Inventory",
+    icon: "bi bi-file-earmark-arrow-down",
     submenu: [
-      {label: 'Product Wise Inventory', link: '/inventory/product-wise'},
-      {label: 'Store Wise Inventory', link: '/inventory/store-wise'},
-      {label: 'Group Wise Inventory', link: '/inventory/group-wise'},
-      {label: 'Universal Search', link: '/inventory/universal-search'},
-      {label: 'Bulk Upload Inventory', link: '/inventory/bulk-upload'},
-      {label: 'Stock Out', link: '/inventory/stock-out'},
-      {label: 'Stock In', link: '/inventory/stock-in'},
-      {label: 'Stock Sale', link: '/inventory/stock-sale'},
-      {label: 'Stock Sale In', link: '/inventory/stock-sale-in'},
-      {label: 'Stock Sale Out', link: '/inventory/stock-sale-out'},
-      {label: 'Transfer Stock', link: '/inventory/transfer-stock'},
-      {label: 'Adjustment Stock', link: '/inventory/adjustment-stock'},
+      { label: "Product Wise Inventory", link: "/inventory/product-wise" },
+      { label: "Store Wise Inventory", link: "/inventory/store-wise" },
+      { label: "Group Wise Inventory", link: "/inventory/group-wise" },
+      { label: "Universal Search", link: "/inventory/universal-search" },
+      { label: "Bulk Upload Inventory", link: "/inventory/bulk-upload" },
+      { label: "Stock Out", link: "/inventory/stock-out" },
+      { label: "Stock In", link: "/inventory/stock-in" },
+      { label: "Stock Sale", link: "/inventory/stock-sale" },
+      { label: "Stock Sale In", link: "/inventory/stock-sale-in" },
+      { label: "Stock Sale Out", link: "/inventory/stock-sale-out" },
+      { label: "Transfer Stock", link: "/inventory/transfer-stock" },
+      { label: "Adjustment Stock", link: "/inventory/adjustment-stock" },
       {
-        label: 'View Adjustment Stock',
-        link: '/inventory/view-adjustment-stock',
+        label: "View Adjustment Stock",
+        link: "/inventory/view-adjustment-stock",
       },
     ],
   },
   {
-    label: 'Users',
-    icon: 'bi bi-people', // You can change the icon class if needed
+    label: "Users",
+    icon: "bi bi-people", // You can change the icon class if needed
     submenu: [
-      {label: 'Add Organization', link: '/users/add-organization'},
-      {label: 'Add Customer', link: '/users/add-customer'},
-      {label: 'Add Employee', link: '/users/add-employee'},
-      {label: 'View Customer', link: '/users/view-customer'},
-      {label: 'View Employee', link: '/users/view-employee'},
-      {label: 'View OTP', link: '/users/view-otp'},
-      {label: 'Add Vendor', link: '/users/add-vendor'},
-      {label: 'Marketing Reference', link: '/users/marketing-reference'},
-      {label: 'Bulk Upload Customer', link: '/users/bulk-upload-customer'},
+      { label: "Add Organization", link: "/users/add-organization" },
+      { label: "Add Customer", link: "/users/add-customer" },
+      { label: "Add Employee", link: "/users/add-employee" },
+      { label: "View Customer", link: "/users/view-customer" },
+      { label: "View Employee", link: "/users/view-employee" },
+      { label: "View OTP", link: "/users/view-otp" },
+      { label: "Add Vendor", link: "/users/add-vendor" },
+      { label: "Marketing Reference", link: "/users/marketing-reference" },
+      { label: "Bulk Upload Customer", link: "/users/bulk-upload-customer" },
     ],
   },
   {
-    label: 'Stores',
-    icon: 'bi bi-house-door', // Icon for store, you can adjust if needed
+    label: "Stores",
+    icon: "bi bi-house-door", // Icon for store, you can adjust if needed
     submenu: [
-      {label: 'Add Store', link: '/stores/add-store'},
-      {label: 'Assign Store', link: '/stores/assign-store'},
-      {label: 'View Stores', link: '/stores/view-stores'},
+      { label: "Add Store", link: "/stores/add-store" },
+      { label: "Assign Store", link: "/stores/assign-store" },
+      { label: "View Stores", link: "/stores/view-stores" },
     ],
   },
   {
-    label: 'Products',
-    icon: 'bi bi-box', // You can choose a different icon if you prefer
+    label: "Products",
+    icon: "bi bi-box", // You can choose a different icon if you prefer
     submenu: [
-      {label: 'Add Product', link: '/products/add'},
-      {label: 'Bulk Upload', link: '/products/bulk-upload'},
-      {label: 'Bulk Edit Product', link: '/products/bulk-edit'},
-      {label: 'View Products', link: '/products/view'},
-      {label: 'View Product Attributes', link: '/products/view-attributes'},
-      {label: 'Add Product Attributes', link: '/products/add-attributes'},
+      { label: "Add Product", link: "/products/add" },
+      { label: "Bulk Upload", link: "/products/bulk-upload" },
+      { label: "Bulk Edit Product", link: "/products/bulk-edit" },
+      { label: "View Products", link: "/products/view" },
+      { label: "View Product Attributes", link: "/products/view-attributes" },
+      { label: "Add Product Attributes", link: "/products/add-attributes" },
     ],
   },
   {
-    label: 'Cashbook',
-    icon: 'bi bi-cash-stack', // You can adjust the icon as needed
+    label: "Cashbook",
+    icon: "bi bi-cash-stack", // You can adjust the icon as needed
     submenu: [
-      {label: 'Add Expense', link: '/cashbook/add-expense'},
-      {label: 'Add Expense Category', link: '/cashbook/add-expense-category'},
-      {label: 'View Cashbook', link: '/cashbook/view'},
+      { label: "Add Expense", link: "/cashbook/add-expense" },
+      { label: "Add Expense Category", link: "/cashbook/add-expense-category" },
+      { label: "View Cashbook", link: "/cashbook/view" },
     ],
   },
 
   {
-    label: 'Media Library',
-    icon: 'bi bi-collection-play',
-    link: '/media-library',
+    label: "Media Library",
+    icon: "bi bi-collection-play",
+    link: "/media-library",
   },
 
   {
-    label: 'Reports',
-    icon: 'bi bi-clipboard2-data', // You can adjust the icon as needed
+    label: "Reports",
+    icon: "bi bi-clipboard2-data", // You can adjust the icon as needed
     submenu: [
-      {label: 'Product Sales Report', link: '/reports/product-sales-report'},
-      {label: 'Purchase Report', link: '/reports/purchase-report'},
+      { label: "Product Sales Report", link: "/reports/product-sales-report" },
+      { label: "Purchase Report", link: "/reports/purchase-report" },
       {
-        label: 'Product Purchase Report',
-        link: '/reports/product-purchase-report',
+        label: "Product Purchase Report",
+        link: "/reports/product-purchase-report",
       },
-      {label: 'Sales Report', link: '/reports/sales-report'},
-      {label: 'Vendor Report', link: '/reports/vendor-report'},
-      {label: 'Incentive Report', link: '/reports/incentive-report'},
-      {label: 'Cash Report', link: '/reports/cash-report'},
-      {label: 'Transfer Report', link: '/reports/transfer-report'},
-      {label: 'Adjustment Report', link: '/reports/adjustment-report'},
-      {label: 'ProfitLoss Report', link: '/reports/profitLoss-report'},
-      {label: 'GST Report', link: '/reports/gst-report'},
+      { label: "Sales Report", link: "/reports/sales-report" },
+      { label: "Vendor Report", link: "/reports/vendor-report" },
+      { label: "Incentive Report", link: "/reports/incentive-report" },
+      { label: "Cash Report", link: "/reports/cash-report" },
+      { label: "Transfer Report", link: "/reports/transfer-report" },
+      { label: "Adjustment Report", link: "/reports/adjustment-report" },
+      { label: "ProfitLoss Report", link: "/reports/profitLoss-report" },
+      { label: "GST Report", link: "/reports/gst-report" },
       {
-        label: 'Empty Inventory Report',
-        link: '/reports/empty-inventory-report',
+        label: "Empty Inventory Report",
+        link: "/reports/empty-inventory-report",
       },
     ],
   },
@@ -133,11 +133,11 @@ const menuItems = [
 const Header = () => {
   const user = JSON.parse(getUser());
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const logout = () => {
     localStorage.removeItem(constants.USER);
-    navigate('/login')
+    navigate("/login");
     window.location.reload();
   };
 
@@ -151,7 +151,8 @@ const Header = () => {
           className="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-bs-target="#navbarNav">
+          data-bs-target="#navbarNav"
+        >
           <span className="navbar-toggler-icon"></span>
         </button>
 
@@ -166,7 +167,8 @@ const Header = () => {
                     href="#"
                     id={`dropdown${index}`}
                     role="button"
-                    data-bs-toggle="dropdown">
+                    data-bs-toggle="dropdown"
+                  >
                     <i className={`${item.icon} me-1`}></i> {item.label}
                   </a>
                   <ul className="dropdown-menu">
@@ -183,11 +185,12 @@ const Header = () => {
                 <li className="nav-item" key={index}>
                   <Link
                     className="nav-link d-flex align-items-center"
-                    to={item.link}>
+                    to={item.link}
+                  >
                     <i className={`${item.icon} me-1`}></i> {item.label}
                   </Link>
                 </li>
-              ),
+              )
             )}
           </ul>
 
@@ -199,15 +202,16 @@ const Header = () => {
                 href="#"
                 id="profileDropdown"
                 role="button"
-                data-bs-toggle="dropdown">
-                <i className="bi bi-person-circle fs-4"></i>{' '}
-                <span className="ms-2">{user?.name || 'User'}</span>
+                data-bs-toggle="dropdown"
+              >
+                <i className="bi bi-person-circle fs-4"></i>{" "}
+                <span className="ms-2">{user?.name || "User"}</span>
               </a>
               <ul className="dropdown-menu dropdown-menu-end">
                 <li className="dropdown-header text-center">
-                  <strong>{user?.name || 'User Name'}</strong>
+                  <strong>{user?.name || "User Name"}</strong>
                   <br />
-                  <small>{user?.email || 'Email'}</small>
+                  <small>{user?.email || "Email"}</small>
                 </li>
                 <li>
                   <hr className="dropdown-divider" />
@@ -217,7 +221,8 @@ const Header = () => {
                   <div
                     role="button"
                     className="dropdown-item text-center"
-                    onClick={logout}>
+                    onClick={logout}
+                  >
                     Logout
                   </div>
                 </li>

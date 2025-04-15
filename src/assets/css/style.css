@@ -1298,4 +1298,9 @@
 }
 
 
-  
+.header_title {
+  font-size: 1.88rem;        
+  letter-spacing: -0.01em;    
+  line-height: 1.33;          
+  margin-bottom: 2rem;       
+}
