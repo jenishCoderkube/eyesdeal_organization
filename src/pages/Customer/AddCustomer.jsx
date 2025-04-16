@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import UserDetailForm from "../../components/Customer/UserDetailForm";
 import SpecsPowerModal from "../../components/Customer/SpecsPowerModal";
 import ContactsPowerModal from "../../components/Customer/ContactsPowerModal";
-import "../../assets/css/Customer/AddCustomer.css";
+import "../../assets/css/Customer/AddCustomer_style.css";
 
 const AddCustomer = () => {
   const [showSpecsModal, setShowSpecsModal] = useState(false);

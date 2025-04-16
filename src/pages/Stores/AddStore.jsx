@@ -3,7 +3,7 @@ import Select from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { Country, State, City } from "country-state-city";
-import "../../assets/css/Stores/AddStores_style.css";
+import styles from "../../assets/css/Stores/AddStores.module.css";
 const AddStore = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -150,7 +150,9 @@ const AddStore = () => {
 
   return (
     <div className="container-fluid px-md-5 px-2">
-      <h1 className="h2 mt-4 text-dark fw-bold store_add_title">Add Stores</h1>
+      <h1 className={`h2 mt-4 text-dark fw-bold ${styles.store_add_title}`}>
+        Add Stores
+      </h1>
       <div className="card border-0 shadow-sm px-md-5">
         <div className="card-body p-md-5 p-2">
           <form onSubmit={handleSubmit}>

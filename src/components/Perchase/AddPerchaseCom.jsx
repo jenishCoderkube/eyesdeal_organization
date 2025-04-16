@@ -4,7 +4,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
-import "../../assets/css/Purchase/Add_perchase_style.css";
 
 const AddPerchaseCom = () => {
   const [formData, setFormData] = useState({

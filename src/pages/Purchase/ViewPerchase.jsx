@@ -3,7 +3,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import "../../assets/css/Purchase/Add_perchase_style.css";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 const vendorOptions = [
