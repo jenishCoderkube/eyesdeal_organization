@@ -2,10 +2,16 @@ import React, { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { FiEdit2 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
+import EditStoreModal from "../../components/Stores/EditStoreModal.jsx";
+import DeactivateStoreModal from "../../components/Stores/DeactivateStoreModal.jsx";
+
 const ViewStore = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [selectedStore, setSelectedStore] = useState(null);
 
-  // Dummy store data (5 records)
+  // Dummy store data
   const stores = [
     {
       id: 1,
@@ -44,23 +50,21 @@ const ViewStore = () => {
     },
   ];
 
-  // Placeholder action handlers
-  const handleEdit = (id) => {
-    console.log(`Edit store with id: ${id}`);
-    // Add modal logic later
+  const handleEdit = (store) => {
+    setSelectedStore(store);
+    setShowEditModal(true);
   };
 
   const handleDelete = (id) => {
+    alert("Are you sure you want to delete");
     console.log(`Delete store with id: ${id}`);
-    // Add modal logic later
   };
 
-  const handleDeactivate = (id) => {
-    console.log(`Deactivate store with id: ${id}`);
-    // Add modal logic later
+  const handleDeactivate = (store) => {
+    setSelectedStore(store);
+    setShowDeactivateModal(true);
   };
 
-  // Filter stores based on search query
   const filteredStores = stores.filter((store) =>
     store.storeName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -76,7 +80,7 @@ const ViewStore = () => {
             className="card shadow-sm"
             style={{ border: "1px solid #e2e8f0" }}
           >
-            <h6 className=" fw-bold px-3 pt-3">Stores</h6>
+            <h6 className="fw-bold px-3 pt-3">Stores</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
                 <div className="input-group">
@@ -96,7 +100,7 @@ const ViewStore = () => {
                 </div>
               </div>
               <div className="table-responsive">
-                <table className="table table-striped  table-sm">
+                <table className="table table-striped table-sm">
                   <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
                     <tr>
                       <th
@@ -152,7 +156,7 @@ const ViewStore = () => {
                             <FiEdit2
                               size={24}
                               className="text-dark cursor-pointer"
-                              onClick={() => handleEdit(store.id)}
+                              onClick={() => handleEdit(store)}
                             />
                             <MdDeleteOutline
                               size={24}
@@ -161,7 +165,7 @@ const ViewStore = () => {
                             />
                             <button
                               className="btn btn-sm p-2"
-                              onClick={() => handleDeactivate(store.id)}
+                              onClick={() => handleDeactivate(store)}
                               style={{
                                 backgroundColor: "#f43f5e",
                                 color: "#fff",
@@ -180,6 +184,17 @@ const ViewStore = () => {
           </div>
         </div>
       </div>
+      <EditStoreModal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        storeData={selectedStore}
+      />
+      <DeactivateStoreModal
+        show={showDeactivateModal}
+        onHide={() => setShowDeactivateModal(false)}
+        storeData={selectedStore}
+        stores={stores}
+      />
     </div>
   );
 };

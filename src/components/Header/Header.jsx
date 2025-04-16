@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import constants, { getUser } from "../../utils/constants";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-
+import { FaChevronDown } from "react-icons/fa";
 const menuItems = [
   { label: "Dashboard", icon: "bi bi-display", link: "/dashboard" },
   {
     label: "Sale",
     icon: "bi bi-upload",
+
     submenu: [
       { label: "New Sale", link: "/sale/new" },
       { label: "Sale List", link: "/sale/list" },
@@ -159,23 +160,40 @@ const Header = () => {
 
         {/* Navbar Links */}
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul className="navbar-nav d-flex flex-wrap me-auto mb-2 mb-lg-0">
             {menuItems.map((item, index) =>
               item.submenu ? (
                 <li className="nav-item dropdown" key={index}>
                   <a
-                    className="nav-link dropdown-toggle d-flex align-items-center"
+                    className="nav-link d-flex align-items-center navbar_main_title  text-dark fs-6 text-nowrap text-truncate ms-2"
                     href="#"
                     id={`dropdown${index}`}
                     role="button"
                     data-bs-toggle="dropdown"
+                    aria-expanded="false"
                   >
-                    <i className={`${item.icon} me-1`}></i> {item.label}
+                    <i
+                      className={`${item.icon} me-1 text-dark `}
+                      style={{
+                        fontSize: "24px",
+                        paddingRight: "8px",
+                        textShadow: "0 0 1px rgba(0, 0, 0, 0.82)",
+                      }}
+                    ></i>
+                    {item.label}
+                    <FaChevronDown
+                      className="ms-1 opacity-50"
+                      size={14}
+                      style={{ marginTop: "5px" }}
+                    />
                   </a>
                   <ul className="dropdown-menu">
                     {item.submenu.map((sub, subIndex) => (
                       <li key={subIndex}>
-                        <Link className="dropdown-item" to={sub.link}>
+                        <Link
+                          className="dropdown-item text-dark navbar_main_title fs-6 text-nowrap text-truncate ms-2 px-2 py-1"
+                          to={sub.link}
+                        >
                           {sub.label}
                         </Link>
                       </li>
@@ -185,10 +203,18 @@ const Header = () => {
               ) : (
                 <li className="nav-item" key={index}>
                   <Link
-                    className="nav-link d-flex align-items-center"
+                    className="nav-link d-flex align-items-center fw-normal  text-dark fs-6 text-nowrap text-truncate ms-2"
                     to={item.link}
                   >
-                    <i className={`${item.icon} me-1`}></i> {item.label}
+                    <i
+                      className={`${item.icon} me-1  text-dark`}
+                      style={{
+                        fontSize: "24px",
+                        paddingRight: "8px",
+                        textShadow: "0 0 1px rgba(0, 0, 0, 0.82)",
+                      }}
+                    ></i>
+                    {item.label}
                   </Link>
                 </li>
               )
@@ -199,32 +225,50 @@ const Header = () => {
           <ul className="navbar-nav ms-auto">
             <li className="nav-item dropdown">
               <a
-                className="nav-link dropdown-toggle d-flex align-items-center"
+                className="nav-link d-flex align-items-center navbar_main_title  text-dark fs-6 text-nowrap text-truncate ms-2"
                 href="#"
-                id="profileDropdown"
+                id={`dropdown`}
                 role="button"
                 data-bs-toggle="dropdown"
+                aria-expanded="false"
               >
                 <i className="bi bi-person-circle fs-4"></i>{" "}
-                <span className="ms-2">{user?.name || "User"}</span>
+                <span className="ms-2 ">{user?.name || "Admin"}</span>
+                <FaChevronDown
+                  className="ms-1 opacity-50"
+                  size={14}
+                  style={{ marginTop: "5px" }}
+                />
               </a>
-              <ul className="dropdown-menu dropdown-menu-end">
-                <li className="dropdown-header text-center">
-                  <strong>{user?.name || "User Name"}</strong>
+              <ul
+                className="dropdown-menu dropdown-menu-end"
+                style={{ borderColor: "#e2e8f0", minWidth: "200px" }}
+              >
+                <li className="dropdown-header text-start py-2 px-3 ">
+                  <strong className="fw-bold text-black">
+                    {user?.name || "User Name"}
+                  </strong>
                   <br />
-                  <small>{user?.email || "Email"}</small>
+                  <small style={{ fontStyle: "italic", fontFamily: "cursive" }}>
+                    {user?.role || "admin"}
+                  </small>
+
+                  {/* <small>{user?.email || "Email"}</small> */}
                 </li>
                 <li>
-                  <hr className="dropdown-divider" />
+                  <hr
+                    className="dropdown-divider"
+                    style={{ borderColor: "#e2e8f0" }}
+                  />
                 </li>
 
                 <li>
                   <div
                     role="button"
-                    className="dropdown-item text-center"
+                    className="dropdown-item text-start fw-bold text-primary"
                     onClick={logout}
                   >
-                    Logout
+                    Sign Out
                   </div>
                 </li>
               </ul>

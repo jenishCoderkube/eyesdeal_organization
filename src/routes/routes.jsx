@@ -1,3 +1,6 @@
+import AddCashbook from "../pages/Cashbook/AddCashbook";
+import AddExpenseCategory from "../pages/Cashbook/AddExpenseCategory";
+import ViewCashbook from "../pages/Cashbook/ViewCashbook";
 import AddCustomer from "../pages/Customer/AddCustomer";
 import Dashboard from "../pages/Home/Dashboard/Dashboard";
 import AddPerchase from "../pages/Purchase/AddPerchase";
@@ -98,6 +101,33 @@ const routes = [
     element: (
       <PrivateRoute>
         <ViewStore />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddCashbook",
+    path: "/cashbook/add-expense",
+    element: (
+      <PrivateRoute>
+        <AddCashbook />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddCashbook",
+    path: "/cashbook/add-expense-category",
+    element: (
+      <PrivateRoute>
+        <AddExpenseCategory />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ViewCashbook",
+    path: "/cashbook/view",
+    element: (
+      <PrivateRoute>
+        <ViewCashbook />
       </PrivateRoute>
     ),
   },

@@ -124,8 +124,29 @@
   color: #64748B !important;
 }
 
+.custom-search-icon {
+  color: #94a3b8 !important;
+}
+.form-control::placeholder {
+  color: #94a3b8;
+  opacity: 1; /* Ensures full visibility, as some browsers reduce opacity */
+}
 /* Remove blue border shadow on focus */
 .form-control:focus {
 box-shadow: none;
 border-color: #ced4da; /* Default Bootstrap border color */
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.navbar_main_title{
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: black !important;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
 }
