@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import { useDispatch } from "react-redux";
+import { addPrescription } from "../../store/Power/specsPowerSlice";
 
-const SpecsPowerModal = ({ show, onHide }) => {
+const SpecsPowerModal = ({ show, onHide, editData }) => {
   const [formData, setFormData] = useState({
     doctorName: "",
     prescribedBy: null,
+    type: "specs",
     right: {
       distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
       near: { sph: null, cyl: null, axis: null, vs: null },
@@ -29,6 +32,42 @@ const SpecsPowerModal = ({ show, onHide }) => {
     de: "",
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (editData) {
+      setFormData(editData); // Set all fields with editData
+    } else {
+      setFormData({
+        doctorName: "",
+        prescribedBy: null,
+        type: "specs",
+        right: {
+          distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
+          near: { sph: null, cyl: null, axis: null, vs: null },
+          psm: "",
+          pd: "",
+          fh: "",
+        },
+        left: {
+          distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
+          near: { sph: null, cyl: null, axis: null, vs: null },
+          psm: "",
+          pd: "",
+          fh: "",
+        },
+        ipd: "",
+        asize: "",
+        bsize: "",
+        dbl: "",
+        fth: "",
+        pdesign: "",
+        ftype: "",
+        de: "",
+      }); // Reset to default when adding new
+    }
+  }, [editData]);
+
+  const dispatch = useDispatch();
 
   const prescribedByOptions = [
     { value: "Doctor1", label: "Doctor 1" },
@@ -61,9 +100,9 @@ const SpecsPowerModal = ({ show, onHide }) => {
       setErrors(validationErrors);
       return;
     }
-    console.log(formData);
+    dispatch(addPrescription(formData));
     setErrors({});
-    // Proceed with form submission
+    onHide(); // Close modal after submission
   };
 
   const handleInputChange = (field, value, nestedPath = null) => {
@@ -503,9 +542,15 @@ const SpecsPowerModal = ({ show, onHide }) => {
                         </div>
                       ))}
                     </div>
-                    <button type="submit" className="btn btn-primary mt-4">
-                      Add
-                    </button>
+                    {editData ? (
+                      <button type="submit" className="btn btn-primary mt-4">
+                        OK
+                      </button>
+                    ) : (
+                      <button type="submit" className="btn btn-primary mt-4">
+                        Add
+                      </button>
+                    )}
                   </form>
                 </div>
               </div>

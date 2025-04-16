@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import { addPrescription } from "../../store/Power/specsPowerSlice";
+import { useDispatch } from "react-redux";
 
-const ContactsPowerModal = ({ show, onHide }) => {
+const ContactsPowerModal = ({ show, onHide, editData }) => {
   const [formData, setFormData] = useState({
     doctorName: "",
     prescribedBy: null,
+    type: "contacts",
     right: {
       distance: { sph: null, cyl: null, axis: null, add: null },
       near: { sph: null, cyl: null, axis: null },
@@ -21,7 +24,33 @@ const ContactsPowerModal = ({ show, onHide }) => {
     },
   });
   const [errors, setErrors] = useState({});
+  const dispatch = useDispatch();
 
+  useEffect(() => {
+    if (editData) {
+      setFormData(editData); // Set all fields with editData
+    } else {
+      setFormData({
+        doctorName: "",
+        prescribedBy: null,
+        type: "contacts",
+        right: {
+          distance: { sph: null, cyl: null, axis: null, add: null },
+          near: { sph: null, cyl: null, axis: null },
+          k: "",
+          dia: "",
+          bc: "",
+        },
+        left: {
+          distance: { sph: null, cyl: null, axis: null, add: null },
+          near: { sph: null, cyl: null, axis: null },
+          k: "",
+          dia: "",
+          bc: "",
+        },
+      }); // Reset to default when adding new
+    }
+  }, [editData]);
   const prescribedByOptions = [
     { value: "Doctor1", label: "Doctor 1" },
     { value: "Doctor2", label: "Doctor 2" },
@@ -48,8 +77,9 @@ const ContactsPowerModal = ({ show, onHide }) => {
       setErrors(validationErrors);
       return;
     }
+    dispatch(addPrescription(formData)); // Dispatch to Redux
     setErrors({});
-    console.log("data is <<<<", formData);
+    onHide(); // Close modal
 
     // Proceed with form submission
   };
@@ -400,8 +430,9 @@ const ContactsPowerModal = ({ show, onHide }) => {
                         </div>
                       ))}
                     </div>
+
                     <button type="submit" className="btn btn-primary mt-4">
-                      Add
+                      {editData ? "Edit" : "Add"}
                     </button>
                   </form>
                 </div>

@@ -6,7 +6,7 @@
     border-color: rgb(203, 213, 225); /* Tailwind's slate-300 */
   }
   .custom-label {
-    font-weight: 700;
+    font-weight: 500;
     font-size: 0.875rem;
     line-height: 1.5715;
     display: block;

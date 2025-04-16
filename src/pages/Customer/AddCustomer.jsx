@@ -10,8 +10,8 @@ const AddCustomer = () => {
   const [showContactsModal, setShowContactsModal] = useState(false);
 
   return (
-    <div className="bg-white shadow-lg rounded-sm mb-8">
-      <div className="px-4 py-8 w-full max-w-9xl mx-auto">
+    <div className="bg-white rounded-sm  mb-8">
+      <div className="px-4 py-8 w-full max-w-9xl  mx-auto">
         <UserDetailForm
           onAddSpecs={() => setShowSpecsModal(true)}
           onAddContacts={() => setShowContactsModal(true)}

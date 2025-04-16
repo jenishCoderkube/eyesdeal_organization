@@ -26,8 +26,9 @@ const menuItems = [
     label: "Purchase",
     icon: "bi bi-file-earmark-arrow-down",
     submenu: [
-      { label: "New Purchase", link: "/purchase/new" },
-      { label: "Purchase List", link: "/purchase/list" },
+      { label: "Add Purchase", link: "/purchase/new" },
+      { label: "View Purchase", link: "/purchase/list" },
+      { label: "Generate Barcode", link: "/purchase/generateBarcode" },
     ],
   },
   {

@@ -7,9 +7,12 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "react-toastify/dist/ReactToastify.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
-
+import { Provider } from "react-redux";
+import { store } from "./store/store.js";
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </BrowserRouter>
 );

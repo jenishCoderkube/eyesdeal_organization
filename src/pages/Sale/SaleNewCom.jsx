@@ -85,7 +85,7 @@ const SaleForm = () => {
     navigate("/addCustomer");
   };
   return (
-    <form className="container-fluid p-5" onSubmit={handleSubmit}>
+    <form className="container-fluid px-5" onSubmit={handleSubmit}>
       <div className="row d-flex align-items-stretch">
         {/* Left Column */}
         <div className="col-lg-9 col-md-6 col-12 p-0">
@@ -351,7 +351,7 @@ const SaleForm = () => {
                 className="d-flex gap-2 align-items-center mb-2"
                 key={field.name}
               >
-                <label className="custom-label " htmlFor={field.name}>
+                <label className="custom-label" htmlFor={field.name}>
                   {field.label}
                 </label>
                 <div className="flex-grow-1">

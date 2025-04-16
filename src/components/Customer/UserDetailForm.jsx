@@ -4,9 +4,17 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-// import "./UserDetailForm.css";
+import { useDispatch, useSelector } from "react-redux";
+import { deletePrescription } from "../../store/Power/specsPowerSlice";
+import SpecsPowerModal from "./SpecsPowerModal";
+import ContactsPowerModal from "./ContactsPowerModal";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import { Country, State, City } from "country-state-city";
 
+// Assuming other parts of your code remain unchanged
 const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
+  const { prescriptions } = useSelector((state) => state.specsPower);
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [anniversaryDate, setAnniversaryDate] = useState(null);
   const [formData, setFormData] = useState({
@@ -14,22 +22,59 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     phone: "+91",
     customerReference: null,
     gender: null,
+    country: null,
+    state: null,
+    city: null,
   });
+
   const [errors, setErrors] = useState({});
-  const countryOptions = [
-    { value: "India", label: "India", image: "https://flagcdn.com/in.svg" },
-    { value: "USA", label: "USA", image: "https://flagcdn.com/us.svg" },
-  ];
+  const [editModal, setEditModal] = useState({
+    show: false,
+    type: null,
+    data: null,
+  });
+  const dispatch = useDispatch();
 
-  const stateOptions = [
-    { value: "Gujarat", label: "Gujarat" },
-    { value: "Maharashtra", label: "Maharashtra" },
-  ];
+  const handleEdit = (prescription) => {
+    setEditModal({
+      show: true,
+      type: prescription.type,
+      data: prescription,
+    });
+  };
 
-  const cityOptions = [
-    { value: "Surat", label: "Surat" },
-    { value: "Mumbai", label: "Mumbai" },
-  ];
+  const handleDelete = (id) => {
+    dispatch(deletePrescription(id));
+  };
+
+  const handleModalClose = () => {
+    setEditModal({ show: false, type: null, data: null });
+  };
+
+  // Fetch countries from country-state-city
+  const countryOptions = Country.getAllCountries().map((country) => ({
+    value: country.isoCode,
+    label: country.name,
+  }));
+
+  // Fetch states based on selected country
+  const stateOptions = formData.country
+    ? State.getStatesOfCountry(formData.country.value).map((state) => ({
+        value: state.isoCode,
+        label: state.name,
+      }))
+    : [];
+
+  // Fetch cities based on selected country and state
+  const cityOptions =
+    formData.country && formData.state
+      ? City.getCitiesOfState(formData.country.value, formData.state.value).map(
+          (city) => ({
+            value: city.name,
+            label: city.name,
+          })
+        )
+      : [];
 
   const genderOptions = [
     { value: "Male", label: "Male" },
@@ -41,12 +86,6 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     { value: "Store", label: "Store" },
   ];
 
-  const CustomOption = ({ innerProps, label, data }) => (
-    <div {...innerProps} className="custom-option">
-      {data.image && <img src={data.image} alt={label} className="flag-icon" />}
-      {label}
-    </div>
-  );
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -55,6 +94,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     if (!formData.customerReference)
       newErrors.customerReference = "Customer Reference is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
+    if (!formData.country) newErrors.country = "Country is required";
+    if (!formData.state) newErrors.state = "State is required";
+    if (!formData.city) newErrors.city = "City is required";
     return newErrors;
   };
 
@@ -68,8 +110,24 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     setErrors({});
     // Proceed with form submission
   };
+
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => {
+      const newFormData = { ...prev, [field]: value };
+
+      // Reset state and city when country changes
+      if (field === "country") {
+        newFormData.state = null;
+        newFormData.city = null;
+      }
+      // Reset city when state changes
+      if (field === "state") {
+        newFormData.city = null;
+      }
+
+      return newFormData;
+    });
+
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
     }
@@ -169,21 +227,43 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </label>
               <Select
                 options={countryOptions}
-                components={{ Option: CustomOption }}
-                defaultValue={countryOptions[0]}
+                value={formData.country}
+                onChange={(option) => handleInputChange("country", option)}
+                placeholder="Select Country..."
               />
+              {errors.country && (
+                <div className="text-danger mt-1">{errors.country}</div>
+              )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
               <label className="form-label custom-label_user">
                 State <span className="text-danger">*</span>
               </label>
-              <Select options={stateOptions} defaultValue={stateOptions[0]} />
+              <Select
+                options={stateOptions}
+                value={formData.state}
+                onChange={(option) => handleInputChange("state", option)}
+                placeholder="Select State..."
+                isDisabled={!formData.country}
+              />
+              {errors.state && (
+                <div className="text-danger mt-1">{errors.state}</div>
+              )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
               <label className="form-label custom-label_user">
                 City <span className="text-danger">*</span>
               </label>
-              <Select options={cityOptions} defaultValue={cityOptions[0]} />
+              <Select
+                options={cityOptions}
+                value={formData.city}
+                onChange={(option) => handleInputChange("city", option)}
+                placeholder="Select City..."
+                isDisabled={!formData.state}
+              />
+              {errors.city && (
+                <div className="text-danger mt-1">{errors.city}</div>
+              )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
               <label className="form-label custom-label_user">Pincode</label>
@@ -194,6 +274,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               />
             </div>
           </div>
+          {/* The rest of your form remains unchanged */}
           <div className="row g-3 mt-3">
             <div className="col-12 col-md-3">
               <label className="form-label custom-label_user">Birth Date</label>
@@ -226,9 +307,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               <textarea className="form-control" rows="5"></textarea>
             </div>
           </div>
-          <div className="row g-3 ">
-            <div className="col-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center p-4 ">
-              <p className="mb-3 mb-md-0 add_power ">Add Power</p>
+          <div className="row g-3">
+            <div className="col-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center p-4">
+              <p className="mb-3 mb-md-0 add_power">Add Power</p>
               <div className="d-flex flex-column flex-sm-row">
                 <button
                   type="button"
@@ -281,35 +362,72 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
           <div className="row mt-3">
             <div className="col-12">
               <div className="table-responsive">
-                <table className="table border-top border-bottom table-hover table-sm">
-                  <tr className="text-center">
-                    <th scope="col" className="px-3 py-2 add_power_title">
-                      Prescriber Name
-                    </th>
-                    <th scope="col" className="px-3 py-2 add_power_title">
-                      Prescribed by
-                    </th>
-                    <th scope="col" className="px-3 py-2 add_power_title">
-                      Type
-                    </th>
-                    <th scope="col" className="px-3 py-2 add_power_title">
-                      Action
-                    </th>
-                  </tr>
-                  <tbody></tbody>
+                <table className="table table-bordered table-hover table-sm custom-table-grid">
+                  <thead>
+                    <tr className="text-center">
+                      <th scope="col" className="px-3 py-2 add_power_title">
+                        Prescriber Name
+                      </th>
+                      <th scope="col" className="px-3 py-2 add_power_title">
+                        Prescribed by
+                      </th>
+                      <th scope="col" className="px-3 py-2 add_power_title">
+                        Type
+                      </th>
+                      <th scope="col" className="px-3 py-2 add_power_title">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prescriptions?.map((prescription) => (
+                      <tr key={prescription.id} className="text-center">
+                        <td className="px-3 py-2">{prescription.doctorName}</td>
+                        <td className="px-3 py-2">
+                          {prescription.prescribedBy?.label}
+                        </td>
+                        <td className="px-3 py-2">{prescription.type}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            className="btn p-0 me-2"
+                            onClick={() => handleEdit(prescription)}
+                          >
+                            <FaEdit color="blue" />
+                          </button>
+                          <button
+                            className="btn p-0"
+                            onClick={() => handleDelete(prescription.id)}
+                          >
+                            <FaTrash color="red" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </div>
           </div>
           <div className="row mt-3 pb-5">
             <div>
-              <button type="submit" className="btn btn-primary ">
+              <button type="submit" className="btn btn-primary">
                 Submit
               </button>
             </div>
           </div>
+          <hr />
         </form>
       </div>
+      <SpecsPowerModal
+        show={editModal.show && editModal.type === "specs"}
+        onHide={handleModalClose}
+        editData={editModal.data}
+      />
+      <ContactsPowerModal
+        show={editModal.show && editModal.type === "contacts"}
+        onHide={handleModalClose}
+        editData={editModal.data}
+      />
     </>
   );
 };
