@@ -187,11 +187,11 @@ const Header = () => {
                       style={{ marginTop: "5px" }}
                     />
                   </a>
-                  <ul className="dropdown-menu">
+                  <ul className="dropdown-menu " style={{ marginTop: "-8px" }}>
                     {item.submenu.map((sub, subIndex) => (
                       <li key={subIndex}>
                         <Link
-                          className="dropdown-item text-dark navbar_main_title fs-6 text-nowrap text-truncate ms-2 px-2 py-1"
+                          className="dropdown-item text-dark navbar_main_title fs-6 text-nowrap text-truncate w-auto ms-2 px-2 py-1"
                           to={sub.link}
                         >
                           {sub.label}
