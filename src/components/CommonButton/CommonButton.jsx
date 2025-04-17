@@ -7,12 +7,14 @@ const CommonButton = ({
   isValid,
   className,
   buttonText = "Submit",
+  ...rest
 }) => {
   return (
     <div className="col-12">
       <button
         className={`btn btn-primary w-100 ${className}`}
         type="submit"
+        {...rest}
         // disabled={isSubmitting || !isValid}
       >
         {!loading && <span className="indicator-label">{buttonText}</span>}

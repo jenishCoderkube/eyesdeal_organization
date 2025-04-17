@@ -82,7 +82,7 @@ const SaleForm = () => {
     setReceivedAmounts(updatedAmounts);
   };
   const handleAddCustomerClick = () => {
-    navigate("/addCustomer");
+    navigate("/users/addCustomer");
   };
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>

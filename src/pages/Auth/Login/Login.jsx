@@ -17,7 +17,7 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false); // State to toggle password field
 
-  const DUMMY_PHONE = "7777900910";
+  const DUMMY_PHONE = "917777900910";
   const DUMMY_PASSWORD = "Rizwan@#1202";
 
   const formik = useFormik({
@@ -52,8 +52,10 @@ const Login = () => {
 
   const handleNext = () => {
     // Validate phone number
+
     formik.setFieldTouched("phone", true);
     formik.validateField("phone").then(() => {
+      console.log("come in<<<<", formik.values.phone);
       if (!formik.errors.phone && formik.values.phone === DUMMY_PHONE) {
         setShowPasswordField(true);
       } else {
