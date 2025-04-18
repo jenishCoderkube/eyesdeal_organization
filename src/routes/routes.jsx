@@ -22,6 +22,21 @@ import ViewOtp from "../pages/Users/Otp/ViewOtp";
 import AddVendors from "../pages/Users/Vendor/AddVendor";
 import MarketingReference from "../pages/Users/Marketing/MarketingReference";
 import BulkUploadCustomers from "../pages/Users/BulkUpload/BulkUploadCustomers";
+import ProductWise from "../pages/Inventory/ProductWise";
+import StoreWiseInventory from "../pages/Inventory/Storewise";
+import GroupWiseInventory from "../pages/Inventory/Groupwise";
+import BrandGroupWiseCom from "../components/Inventory/Group/BrandGroupCom";
+import ViewProductStore from "../pages/Inventory/ViewProductStore";
+import BulkUploadInventory from "../pages/Inventory/BulkUpload";
+import StockIn from "../pages/Inventory/StockIn";
+import StockOut from "../pages/Inventory/StockOut";
+import StockSale from "../pages/Inventory/StockSale";
+import StockSaleOut from "../pages/Inventory/StockSaleOut";
+import StockSaleIn from "../pages/Inventory/StockSaleIn";
+import AddStockTransfer from "../pages/Inventory/AddStockTransfer";
+import AddStockTransferCom from "../components/Inventory/Stock/AddStockTransferCom";
+import StockAdjustment from "../pages/Inventory/StockAdjustment";
+import ViewStockAdjustment from "../pages/Inventory/ViewStockAdjustment";
 
 const routes = [
   {
@@ -237,6 +252,132 @@ const routes = [
     element: (
       <PrivateRoute>
         <BulkUploadCustomers />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProductWiseInventory",
+    path: "/inventory/product-wise",
+    element: (
+      <PrivateRoute>
+        <ProductWise />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StoreWiseInventory",
+    path: "/inventory/store-wise",
+    element: (
+      <PrivateRoute>
+        <StoreWiseInventory />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "GroupWiseInventory",
+    path: "/inventory/group-wise",
+    element: (
+      <PrivateRoute>
+        <GroupWiseInventory />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BrandDetail",
+    path: "/inventory/group-wise/:brandName/:brandId",
+    element: (
+      <PrivateRoute>
+        <BrandGroupWiseCom />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ViewProductStore",
+    path: "/inventory/universal-search",
+    element: (
+      <PrivateRoute>
+        <ViewProductStore />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BulkUploadInventory",
+    path: "/inventory/bulk-upload",
+    element: (
+      <PrivateRoute>
+        <BulkUploadInventory />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockOut",
+    path: "/inventory/stock-out",
+    element: (
+      <PrivateRoute>
+        <StockOut />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockIn",
+    path: "/inventory/stock-in",
+    element: (
+      <PrivateRoute>
+        <StockIn />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockSale",
+    path: "/inventory/stock-sale",
+    element: (
+      <PrivateRoute>
+        <StockSale />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockSaleIn",
+    path: "/inventory/stock-sale-in",
+    element: (
+      <PrivateRoute>
+        <StockSaleIn />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockSaleOut",
+    path: "/inventory/stock-sale-out",
+    element: (
+      <PrivateRoute>
+        <StockSaleOut />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddStockTransfer",
+    path: "/inventory/transfer-stock",
+    element: (
+      <PrivateRoute>
+        <AddStockTransfer />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockAdjustment",
+    path: "/inventory/adjustment-stock",
+    element: (
+      <PrivateRoute>
+        <StockAdjustment />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ViewStockAdjustment",
+    path: "/inventory/view-adjustment-stock",
+    element: (
+      <PrivateRoute>
+        <ViewStockAdjustment />
       </PrivateRoute>
     ),
   },
