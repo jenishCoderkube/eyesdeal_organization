@@ -37,6 +37,12 @@ import AddStockTransfer from "../pages/Inventory/AddStockTransfer";
 import AddStockTransferCom from "../components/Inventory/Stock/AddStockTransferCom";
 import StockAdjustment from "../pages/Inventory/StockAdjustment";
 import ViewStockAdjustment from "../pages/Inventory/ViewStockAdjustment";
+import AddProduct from "../pages/Products/addProduct";
+import ProductList from "../pages/Products/ViewProducts";
+import BulkUploadProduct from "../pages/Products/BulkUploadProduct";
+import BulkEditProduct from "../pages/Products/BulkEditProduct";
+import ViewProductAttributes from "../pages/Products/ViewProductAttributes";
+import AddProductAttributes from "../pages/Products/AddProductAttributes";
 
 const routes = [
   {
@@ -378,6 +384,69 @@ const routes = [
     element: (
       <PrivateRoute>
         <ViewStockAdjustment />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddProduct",
+    path: "/products/add",
+    element: (
+      <PrivateRoute>
+        <AddProduct mode="add" />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "EditProduct",
+    path: "/products/edit/:productId",
+    element: (
+      <PrivateRoute>
+        <AddProduct mode="edit" />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProductList",
+    path: "/products/view",
+    element: (
+      <PrivateRoute>
+        <ProductList />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BulkUploadProduct",
+    path: "/products/bulk-upload",
+    element: (
+      <PrivateRoute>
+        <BulkUploadProduct />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BulkEditProduct",
+    path: "/products/bulk-edit",
+    element: (
+      <PrivateRoute>
+        <BulkEditProduct />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ViewProductAttributes",
+    path: "/products/view-attributes",
+    element: (
+      <PrivateRoute>
+        <ViewProductAttributes />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddProductAttributes",
+    path: "/products/add-attributes",
+    element: (
+      <PrivateRoute>
+        <AddProductAttributes />
       </PrivateRoute>
     ),
   },
