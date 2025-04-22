@@ -8,34 +8,31 @@ import {
   loginInitialValues,
   loginValidationSchema,
 } from "../../../Validation/formValidation";
-import constants from "../../../utils/constants";
+import { authService } from "../../../services/authService";
 import CommonButton from "../../../components/CommonButton/CommonButton";
 
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [showPasswordField, setShowPasswordField] = useState(false); // State to toggle password field
-
-  const DUMMY_PHONE = "917777900910";
-  const DUMMY_PASSWORD = "Rizwan@#1202";
+  const [showPasswordField, setShowPasswordField] = useState(false);
 
   const formik = useFormik({
     initialValues: loginInitialValues,
     validationSchema: loginValidationSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       const { phone, password } = values;
       setLoading(true);
       try {
-        if (phone !== DUMMY_PHONE || password !== DUMMY_PASSWORD) {
-          throw new Error("Invalid credentials");
+        const response = await authService.login(phone, password);
+        if (response.success) {
+          toast.success(response.message);
+          navigate("/");
+        } else {
+          toast.error(response.message);
         }
-        // Simulate successful authentication
-        localStorage.setItem(constants.USER, phone);
-        toast.success("Login successful");
-        navigate("/");
       } catch (error) {
-        console.log("catch error message: ", error);
+        console.error("Login error:", error);
         toast.error("Authentication failed");
       } finally {
         setLoading(false);
@@ -44,24 +41,33 @@ const Login = () => {
   });
 
   useEffect(() => {
-    const USER = localStorage.getItem(constants.USER);
-    if (USER) {
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
       navigate("/");
     }
   }, [navigate]);
 
-  const handleNext = () => {
-    // Validate phone number
+  const handleNext = async () => {
+    // First validate the phone number format
+    const phone = formik.values.phone;
+    if (!phone || phone.length < 10 || phone.length > 15) {
+      return;
+    }
 
-    formik.setFieldTouched("phone", true);
-    formik.validateField("phone").then(() => {
-      console.log("come in<<<<", formik.values.phone);
-      if (!formik.errors.phone && formik.values.phone === DUMMY_PHONE) {
+    setLoading(true);
+    try {
+      const response = await authService.checkUser(phone);
+      if (response.success) {
         setShowPasswordField(true);
       } else {
-        toast.error("Invalid phone number");
+        toast.error(response.message || "User not found");
       }
-    });
+    } catch (error) {
+      console.error("Check user error:", error);
+      toast.error("Error checking user");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

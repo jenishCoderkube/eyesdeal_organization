@@ -4,6 +4,8 @@ import constants, { getUser } from "../../utils/constants";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FaChevronDown } from "react-icons/fa";
+import { authService } from "../../services/authService";
+
 const menuItems = [
   { label: "Dashboard", icon: "bi bi-display", link: "/dashboard" },
   {
@@ -133,14 +135,12 @@ const menuItems = [
 ];
 
 const Header = () => {
-  const user = JSON.parse(getUser());
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const navigate = useNavigate();
 
-  const logout = () => {
-    localStorage.removeItem(constants.USER);
-    navigate("/login");
-    window.location.reload();
+  const handleLogout = () => {
+    authService.logout();
   };
 
   return (
@@ -225,15 +225,15 @@ const Header = () => {
           <ul className="navbar-nav ms-auto">
             <li className="nav-item dropdown">
               <a
-                className="nav-link d-flex align-items-center navbar_main_title  text-dark fs-6 text-nowrap text-truncate ms-2"
+                className="nav-link d-flex align-items-center navbar_main_title text-dark fs-6 text-nowrap text-truncate ms-2"
                 href="#"
-                id={`dropdown`}
+                id="dropdown"
                 role="button"
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                <i className="bi bi-person-circle fs-4"></i>{" "}
-                <span className="ms-2 ">{user?.name || "Admin"}</span>
+                <i className="bi bi-person-circle fs-4"></i>
+                <span className="ms-2">{user?.name || "User"}</span>
                 <FaChevronDown
                   className="ms-1 opacity-50"
                   size={14}
@@ -244,16 +244,14 @@ const Header = () => {
                 className="dropdown-menu dropdown-menu-end"
                 style={{ borderColor: "#e2e8f0", minWidth: "200px" }}
               >
-                <li className="dropdown-header text-start py-2 px-3 ">
+                <li className="dropdown-header text-start py-2 px-3">
                   <strong className="fw-bold text-black">
                     {user?.name || "User Name"}
                   </strong>
                   <br />
                   <small style={{ fontStyle: "italic", fontFamily: "cursive" }}>
-                    {user?.role || "admin"}
+                    {user?.role || "Role"}
                   </small>
-
-                  {/* <small>{user?.email || "Email"}</small> */}
                 </li>
                 <li>
                   <hr
@@ -261,12 +259,11 @@ const Header = () => {
                     style={{ borderColor: "#e2e8f0" }}
                   />
                 </li>
-
                 <li>
                   <div
                     role="button"
                     className="dropdown-item text-start fw-bold text-primary"
-                    onClick={logout}
+                    onClick={handleLogout}
                   >
                     Sign Out
                   </div>
