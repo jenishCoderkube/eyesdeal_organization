@@ -1,0 +1,270 @@
+import React, { useState, useMemo, useEffect } from "react";
+import { FaSearch } from "react-icons/fa";
+import * as XLSX from "xlsx";
+import {
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+
+// Debounce utility function
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
+const ProductPurchaseReportsTable = ({ data }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredData, setFilteredData] = useState(data);
+
+  // Custom global filter function
+  const filterGlobally = useMemo(
+    () => (data, query) => {
+      if (!query) return data;
+      const lowerQuery = query.toLowerCase();
+      return data.filter((item) =>
+        [
+          item.date,
+          item.store,
+          item.vendor,
+          item.barcode,
+          item.billNo,
+          item.sku,
+          String(item.quantity),
+          String(item.purchaseRate),
+          String(item.tax),
+          String(item.totalAmount),
+        ].some((field) => field.toLowerCase().includes(lowerQuery))
+      );
+    },
+    []
+  );
+
+  // Debounced filter logic in useEffect
+  useEffect(() => {
+    const debouncedFilter = debounce((query) => {
+      setFilteredData(filterGlobally(data, query));
+    }, 200);
+
+    debouncedFilter(searchQuery);
+
+    return () => clearTimeout(debouncedFilter.timeout);
+  }, [searchQuery, data, filterGlobally]);
+
+  // Handle search input change
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+  };
+
+  // Table columns
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "SRNO",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "store",
+        header: "Store",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "vendor",
+        header: "Vendor",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "barcode",
+        header: "Barcode",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "billNo",
+        header: "Bill Number",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "sku",
+        header: "SKU",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "quantity",
+        header: "Quantity",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "purchaseRate",
+        header: "Purchase Rate",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "tax",
+        header: "Tax",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "totalAmount",
+        header: "Total Amount",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+    ],
+    []
+  );
+
+  // @tanstack/react-table setup
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 10,
+      },
+    },
+  });
+
+  // Export to Excel functions
+  const exportToExcel = (data, filename) => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      data.map((item) => ({
+        SRNO: item.id,
+        Date: item.date,
+        Store: item.store,
+        Vendor: item.vendor,
+        Barcode: item.barcode,
+        Bill_Number: item.billNo,
+        SKU: item.sku,
+        Quantity: item.quantity,
+        Purchase_Rate: item.purchaseRate,
+        Tax: item.tax,
+        Total_Amount: item.totalAmount,
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ProductPurchaseReport");
+    XLSX.writeFile(workbook, `${filename}.xlsx`);
+  };
+
+  const exportProduct = () => {
+    exportToExcel(filteredData, "ProductPurchaseReport");
+  };
+
+  const exportCustomerData = () => {
+    exportToExcel(filteredData, "CustomerData");
+  };
+
+  // Calculate total amount
+  const totalAmount = filteredData.reduce(
+    (sum, item) => sum + item.totalAmount,
+    0
+  );
+
+  // Pagination info
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const startRow = pageIndex * pageSize + 1;
+  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
+  const totalRows = filteredData.length;
+
+  return (
+    <div className="card-body p-0">
+      <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
+        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
+        <div className="ms-md-auto d-flex gap-2">
+          <button className="btn btn-primary" onClick={exportProduct}>
+            Download
+          </button>
+        </div>
+      </div>
+      <div className="mb-4 col-md-6 ">
+        <div className="input-group">
+          <span className="input-group-text bg-white border-end-0">
+            <FaSearch
+              className="text-muted custom-search-icon"
+              style={{ color: "#94a3b8" }}
+            />
+          </span>
+          <input
+            type="search"
+            className="form-control border-start-0 py-2q"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="table-responsive ">
+        <table className="table table-sm">
+          <thead className="text-xs text-uppercase text-muted bg-light border">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="p-3 text-left custom-perchase-th"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="text-sm">
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="p-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+        <div className="text-sm text-muted mb-3 mb-sm-0">
+          Showing <span className="fw-medium">{startRow}</span> to{" "}
+          <span className="fw-medium">{endRow}</span> of{" "}
+          <span className="fw-medium">{totalRows}</span> results
+        </div>
+        <div className="btn-group">
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </button>
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductPurchaseReportsTable;

@@ -43,6 +43,18 @@ import BulkUploadProduct from "../pages/Products/BulkUploadProduct";
 import BulkEditProduct from "../pages/Products/BulkEditProduct";
 import ViewProductAttributes from "../pages/Products/ViewProductAttributes";
 import AddProductAttributes from "../pages/Products/AddProductAttributes";
+import ProductSalesReport from "../pages/Reports/ProductSalesReport";
+import PurchaseReport from "../pages/Reports/PurchaseReport";
+import ProductPurchaseReports from "../pages/Reports/ProductPurchaseReports";
+import SalesReport from "../pages/Reports/SalesReport";
+import VendorReport from "../pages/Reports/VendorReport";
+import IncentiveReport from "../pages/Reports/IncentiveReport";
+import CashReport from "../pages/Reports/CashReport";
+import TransferReport from "../pages/Reports/TransferReport";
+import StockAdjustmentReport from "../pages/Reports/StockAdjustmentReport";
+import ProfitLossReport from "../pages/Reports/ProfitLossReport";
+import GstReport from "../pages/Reports/GstReport";
+import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
 
 const routes = [
   {
@@ -447,6 +459,114 @@ const routes = [
     element: (
       <PrivateRoute>
         <AddProductAttributes />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProductSalesReport",
+    path: "/reports/product-sales-report",
+    element: (
+      <PrivateRoute>
+        <ProductSalesReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "PurchaseReport",
+    path: "/reports/purchase-report",
+    element: (
+      <PrivateRoute>
+        <PurchaseReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProductPurchaseReports",
+    path: "/reports/product-purchase-report",
+    element: (
+      <PrivateRoute>
+        <ProductPurchaseReports />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "SalesReport",
+    path: "/reports/sales-report",
+    element: (
+      <PrivateRoute>
+        <SalesReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "VendorReport",
+    path: "/reports/vendor-report",
+    element: (
+      <PrivateRoute>
+        <VendorReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "IncentiveReport",
+    path: "/reports/incentive-report",
+    element: (
+      <PrivateRoute>
+        <IncentiveReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "CashReport",
+    path: "/reports/cash-report",
+    element: (
+      <PrivateRoute>
+        <CashReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "TransferReport",
+    path: "/reports/transfer-report",
+    element: (
+      <PrivateRoute>
+        <TransferReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockAdjustmentReport",
+    path: "/reports/adjustment-report",
+    element: (
+      <PrivateRoute>
+        <StockAdjustmentReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProfitLossReport",
+    path: "/reports/profitLoss-report",
+    element: (
+      <PrivateRoute>
+        <ProfitLossReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "GstReport",
+    path: "/reports/gst-report",
+    element: (
+      <PrivateRoute>
+        <GstReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ProductInventoryReport",
+    path: "/reports/empty-inventory-report",
+    element: (
+      <PrivateRoute>
+        <ProductInventoryReport />
       </PrivateRoute>
     ),
   },

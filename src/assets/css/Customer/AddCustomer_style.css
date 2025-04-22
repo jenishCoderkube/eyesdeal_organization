@@ -157,6 +157,9 @@ input[type="number"]::-webkit-outer-spin-button {
 .max-width-90 {
   max-width: 85% !important;
 }
+.max-width-95 {
+  max-width: 90% !important;
+}
 .text-color-purple{
   color: #6366f1 !important;
 }
@@ -174,6 +177,9 @@ input[type="number"]::-webkit-outer-spin-button {
 /* Media query for small screens (below 576px) */
 @media (max-width: 576px) {
   .max-width-90 {
+    max-width: 100% !important;
+  }
+  .max-width-95 {
     max-width: 100% !important;
   }
 }
