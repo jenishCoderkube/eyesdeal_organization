@@ -21,8 +21,11 @@ const menuItems = [
     label: "Process",
     icon: "bi bi-journal-text",
     submenu: [
-      { label: "Start Process", link: "/process/start" },
-      { label: "Process History", link: "/process/history" },
+      // { label: "Start Process", link: "/process/start" },
+      // { label: "Process History", link: "/process/history" },
+      { label: "Shop Process", link: "/process/shop" },
+      { label: "Workshop Process", link: "/process/Workshop" },
+      { label: "Vendor List", link: "/process/history" },
     ],
   },
   {

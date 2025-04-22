@@ -1,8 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import AsyncSelect from "react-select/async";
+import { saleService } from "../../services/saleService";
+import AssignPowerModel from "../../components/Process/AssignPowerModel";
+import PrescriptionModel from "../../components/Process/PrescriptionModel";
+import OrdersModel from "../../components/Process/OrdersModel";
 
 const SaleForm = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +29,7 @@ const SaleForm = () => {
     netAmount: 0,
     note: "",
     dueAmount: 0,
+    prescriptions: []
   });
 
   const [receivedAmounts, setReceivedAmounts] = useState([]);
@@ -84,6 +91,53 @@ const SaleForm = () => {
   const handleAddCustomerClick = () => {
     navigate("/users/addCustomer");
   };
+
+  const loadCustomerOptions = async (inputValue) => {
+    try {
+      const response = await saleService.listUsers(inputValue);
+
+      if (response.success) {
+        console.log(response.data);
+      } else {
+        console.log(response.data.message);
+      }
+
+      return response.data.data.docs.map((cust) => ({
+        value: cust._id,
+        label: `${cust.name} / ${cust.phone}`,
+        data: cust,
+      }));
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      return [];
+    }
+  };
+
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [selectedCust, setSelectedCust] = useState(null);
+  const [OrderModelVisible, setOrderModelVisible] = useState(false);
+
+  const openPrescriptionModel = (PM) => {
+    setSelectedCust(PM);
+    setPrescriptionModelVisible(true);
+  };
+
+  const closePrescriptionModel = () => {
+    setPrescriptionModelVisible(false);
+    setSelectedCust(null);
+  };
+
+  const openOrderModel = (OM) => {
+    setSelectedCust(OM);
+    setOrderModelVisible(true);
+  };
+
+  const closeOrderModel = () => {
+    setOrderModelVisible(false);
+    setSelectedCust(null);
+  };
+  console.log(formData);
+
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
       <div className="row d-flex align-items-stretch">
@@ -109,18 +163,22 @@ const SaleForm = () => {
                   Add Customer
                 </button>
               </label>
-              <select
-                className="form-select custom-select"
-                id="customerId"
-                name="customerId"
-                value={formData.customerId}
-                onChange={handleInputChange}
-                style={{ height: "38px", color: "#808080 " }}
-              >
-                <option value="">Select...</option>
-                <option value="1">Customer 1</option>
-                <option value="2">Customer 2</option>
-              </select>
+
+              <AsyncSelect
+                cacheOptions
+                loadOptions={loadCustomerOptions}
+                onChange={(selectedOption) => {
+                  const customer = selectedOption?.data || {};
+                  setFormData({
+                    ...formData,
+                    customerId: customer._id || "",
+                    customerName: customer.name || "",
+                    customerPhone: customer.phone || "",
+                    prescriptions: customer.prescriptions || [],
+                  });
+                }}
+                placeholder="Search or select customer..."
+              />
             </div>
 
             <div className="row g-4">
@@ -131,13 +189,13 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerName ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
+                    }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
                   onChange={handleInputChange}
+                  disabled
                 />
                 {errors.customerName && (
                   <div className="invalid-feedback">{errors.customerName}</div>
@@ -150,13 +208,13 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerPhone ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
+                    }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
                   onChange={handleInputChange}
+                  disabled
                 />
                 {errors.customerPhone && (
                   <div className="invalid-feedback">{errors.customerPhone}</div>
@@ -167,9 +225,8 @@ const SaleForm = () => {
                   Sales Rep
                 </label>
                 <select
-                  className={`form-select w-100 ${
-                    errors.salesRep ? "is-invalid" : ""
-                  }`}
+                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
+                    }`}
                   id="salesRep"
                   name="salesRep"
                   value={formData.salesRep}
@@ -185,6 +242,32 @@ const SaleForm = () => {
                 )}
               </div>
             </div>
+
+            <div className="row g-4">
+              <div className="col-md-3 col-12">
+                <button
+                  type="button"
+                  className="btn border-secondary-subtle text-primary"
+                  onClick={() => openPrescriptionModel(formData.prescriptions)}>View Prescriptions</button>
+              </div>
+              <div className="col-md-3 col-12">
+                <button
+                  type="button"
+                  className="btn border-secondary-subtle text-primary"
+                  onClick={() => openOrderModel(formData.prescriptions)}>View Orders</button>
+              </div>
+              <div className="col-md-3 col-12">
+                <button className="btn border-secondary-subtle text-primary">Add Power</button>
+              </div>
+            </div>
+
+            {PrescriptionModelVisible && selectedCust && (
+              <PrescriptionModel closePrescriptionModel={closePrescriptionModel} selectedCust={selectedCust} />
+            )}
+
+            {OrderModelVisible && selectedCust && (
+              <OrdersModel closeOrderModel={closeOrderModel} selectedCust={selectedCust} />
+            )}
 
             <div className="d-flex gap-4 w-100">
               <div className="w-100">
@@ -357,9 +440,8 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${
-                      field.readOnly ? "custom-disabled" : ""
-                    }`}
+                    className={`form-control w-auto ${field.readOnly ? "custom-disabled" : ""
+                      }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}

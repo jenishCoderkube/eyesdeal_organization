@@ -3,6 +3,9 @@ import AddExpenseCategory from "../pages/Cashbook/AddExpenseCategory";
 import ViewCashbook from "../pages/Cashbook/ViewCashbook";
 import AddCustomer from "../pages/Users/Customer/AddCustomer";
 import Dashboard from "../pages/Home/Dashboard/Dashboard";
+import ShopProcess from "../pages/Process/ShopProcess";
+import ShopProcessEdit from "../pages/Process/ShopProcessEdit";
+import WorkshopProcess from "../pages/Process/WorkshopProcess";
 import AddPerchase from "../pages/Purchase/AddPerchase";
 import BarcodeGenerate from "../pages/Purchase/BarcodeGenerate";
 import ViewPerchase from "../pages/Purchase/ViewPerchase";
@@ -91,6 +94,33 @@ const routes = [
     element: (
       <PrivateRoute>
         <SaleReturn />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ShopProcess",
+    path: "/process/shop",
+    element: (
+      <PrivateRoute>
+        <ShopProcess />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ShopProcess",
+    path: "/process/shop/id",
+    element: (
+      <PrivateRoute>
+        <ShopProcessEdit />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "WorkshopProcess",
+    path: "/process/workshop",
+    element: (
+      <PrivateRoute>
+        <WorkshopProcess />
       </PrivateRoute>
     ),
   },

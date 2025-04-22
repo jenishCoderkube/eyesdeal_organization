@@ -1,0 +1,11 @@
+.modal-slide {
+    transform: translateY(100%);
+  }
+  
+  .modal-slide.slide-up {
+    transform: translateY(0);
+  }
+  
+  .modal-slide.slide-down {
+    transform: translateY(100%);
+  }

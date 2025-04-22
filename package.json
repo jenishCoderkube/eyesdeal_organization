@@ -16,6 +16,7 @@
     "bootstrap": "^5.3.5",
     "bootstrap-icons": "^1.11.3",
     "country-state-city": "^3.2.1",
+    "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.7.4",
     "react": "^19.0.0",
