@@ -50,7 +50,7 @@ const Login = () => {
   const handleNext = async () => {
     // First validate the phone number format
     const phone = formik.values.phone;
-    if (!phone || phone.length < 10 || phone.length > 15) {
+    if (!phone || phone?.length < 10 || phone?.length > 15) {
       return;
     }
 
@@ -59,6 +59,7 @@ const Login = () => {
       const response = await authService.checkUser(phone);
       if (response.success) {
         setShowPasswordField(true);
+        formik.setFieldTouched("password", false);
       } else {
         toast.error(response.message || "User not found");
       }

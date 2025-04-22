@@ -1,37 +1,111 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
-
-const vendorOptions = [
-  { value: "vendor1", label: "Vendor 1" },
-  { value: "vendor2", label: "Vendor 2" },
-];
-
-const storeOptions = [
-  { value: "store1", label: "Store 1" },
-  { value: "store2", label: "Store 2" },
-];
-
+import { purchaseService } from "../../services/purchaseService";
+import { printLogs } from "../../utils/constants";
+import { toast } from "react-toastify";
+import moment from "moment";
 function ViewPurchase() {
   const [vendor, setVendor] = useState(null);
   const [store, setStore] = useState(null);
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
   const [search, setSearch] = useState("");
+  const [vendorData, setVendorData] = useState([]);
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [purchaseData, setPurchaseData] = useState([]);
+  console.log("purchaseData", purchaseData);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    // e.preventDefault();
+    // getPurchaseLogs();
     // Handle form submission
+  };
+
+  useEffect(() => {
+    getVendor();
+    getStores();
+  }, []);
+
+  const getPurchaseLogs = async () => {
+    const vendorId = vendor.map((option) => option.value);
+    const storeId = store.map((option) => option.value);
+
+    try {
+      const response = await purchaseService.getPurchaseLog(
+        fromDate.getTime(),
+        toDate.getTime(),
+        storeId,
+        vendorId
+      );
+      if (response.success) {
+        console.log("response", response?.data?.data);
+        setPurchaseData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const getVendor = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getVendors();
+      if (response.success) {
+        setVendorData(response?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const vendorOptions = vendorData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: vendor.companyName,
+  }));
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name} / ${vendor.companyName}`,
+  }));
+
+  const btnSubmit = (e) => {
+    e.preventDefault();
+    getPurchaseLogs();
   };
 
   return (
     <div className="container-fluid p-md-5">
       <div className=" border-0 mb-4 px-md-3">
         <div className="">
-          <form onSubmit={handleSubmit}>
+          <form>
             <div className="row g-3">
               <div className="col-md-3">
                 <label htmlFor="vendorName" className="form-label fw-medium">
@@ -84,7 +158,11 @@ function ViewPurchase() {
                 />
               </div>
               <div className="col-12 mt-3 ">
-                <button type="submit" className="btn btn-primary">
+                <button
+                  onClick={(e) => btnSubmit(e)}
+                  type="submit"
+                  className="btn btn-primary"
+                >
                   Submit
                 </button>
               </div>
@@ -150,7 +228,24 @@ function ViewPurchase() {
                     </th>
                   </tr>
                 </thead>
-                <tbody>{/* Add rows here dynamically */}</tbody>
+                <tbody>
+                  {purchaseData?.docs?.map((item, index) => (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{item?.vendor?.companyName}</td>
+                      <td>{item?.store?.companyName}</td>
+                      <td>{moment(item?.invoiceDate).format("DD-MM-YYYY")}</td>
+                      <td>{item?.totalQuantity}</td>
+                      <td>{item?.netAmount}</td>
+                      <td role="button">
+                        <i class="bi bi-eye text-primary "></i>
+                      </td>
+                      <td>
+                        <div className="btn btn-sm btn-primary">DOWNLOAD</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
             <div className="d-flex justify-content-between align-items-center ">

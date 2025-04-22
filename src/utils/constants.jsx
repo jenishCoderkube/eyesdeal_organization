@@ -1,5 +1,5 @@
 const constants = {
-  USER: 'USER',
+  USER: "USER",
 };
 
 export default constants;
@@ -10,4 +10,8 @@ export const saveUserLocally = (user) => {
 
 export const getUser = () => {
   return localStorage.getItem(constants.USER);
+};
+
+export const printLogs = (msg) => {
+  console.log(msg);
 };

@@ -1,14 +1,13 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import constants from "../utils/constants";
 const PrivateRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem(constants.USER);
+  const isAuthenticated = localStorage.getItem("accessToken");
 
-  // if (isAuthenticated) {
-  return children;
-  // }
+  if (isAuthenticated) {
+    return children;
+  }
 
-  // return <Navigate to="/login" />;
+  return <Navigate to="/login" />;
 };
 
 export default PrivateRoute;

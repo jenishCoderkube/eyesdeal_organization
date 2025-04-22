@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
+import { purchaseService } from "../../services/purchaseService";
+import { toast } from "react-toastify";
 
 const AddPerchaseCom = () => {
   const [formData, setFormData] = useState({
@@ -30,23 +32,38 @@ const AddPerchaseCom = () => {
     invoiceDate: "", // Added invoiceDate to errors state
     product: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [vendorData, setVendorData] = useState([]);
+  const [storeData, setStoreData] = useState([]);
+  const [productData, setProductData] = useState([]);
+
+  const users = JSON.parse(localStorage.getItem("user"));
 
   const navigate = useNavigate();
 
-  const vendorOptions = [
-    { value: "676447c0afa086e21cefe21d", label: "METRO OPTICAL DELHI" },
-    { value: "vendor2", label: "Vendor 2" },
-  ];
+  const vendorOptions = vendorData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: vendor.companyName,
+  }));
 
-  const productOptions = [
-    { value: "prod1", label: "Product 1" },
-    { value: "prod2", label: "Product 2" },
-  ];
+  const productOptions = productData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: vendor.displayName,
+  }));
 
-  const storeOptions = [
-    { value: "elite-hospital-27", label: "ELITE HOSPITAL / 27" },
-    { value: "store2", label: "Store 2" },
-  ];
+  // const storeOptions = [
+  //   { value: "elite-hospital-27", label: "ELITE HOSPITAL / 27" },
+  //   { value: "store2", label: "Store 2" },
+  // ];
+
+  const storeOptions = storeData
+    .filter((store) => users.stores.includes(store._id))
+    .map((store) => ({
+      value: store._id,
+      label: `${store.name} / ${store.companyName}`,
+    }));
+
+  console.log("storeOptions", storeOptions);
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -118,6 +135,60 @@ const AddPerchaseCom = () => {
     e.preventDefault();
     if (validateForm()) {
       console.log("Form submitted:", { ...formData, products });
+    }
+  };
+
+  useEffect(() => {
+    getStores();
+    getVendor();
+    getProduct();
+  }, []);
+
+  const getVendor = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getVendors();
+      if (response.success) {
+        setVendorData(response?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProduct = async (search) => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.searchProduct(search);
+      if (response.success) {
+        setProductData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -222,6 +293,9 @@ const AddPerchaseCom = () => {
                     className={`custom-select flex-grow-1 ${
                       errors.product ? "is-invalid" : ""
                     }`}
+                    onInputChange={(value) => {
+                      getProduct(value);
+                    }}
                   />
                 </div>
                 {errors.product && (
@@ -302,7 +376,7 @@ const AddPerchaseCom = () => {
                 </div>
                 <Select
                   options={storeOptions}
-                  value={formData.store}
+                  value={storeOptions}
                   onChange={(option) => handleSelectChange("store", option)}
                   classNamePrefix="react-select"
                   className="custom-select"
