@@ -1308,3 +1308,104 @@
 .product_head_title{
   font-size: 12px;
 }
+/* 
+.media_library_header{
+  justify-content: space-between;
+  flex-direction: column;
+} */
+
+.media_library_header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header_name{
+  font-size: 1.88rem;        
+  letter-spacing: -0.01em;    
+  line-height: 1.33;          
+  margin-top: 2rem; 
+  color: #012970;
+}
+.search-input1{
+  width: 40%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: rgb(234, 232, 232);
+}
+.search-input{
+  width: 40%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+/* .header_area{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+} */
+
+/* .Add_Asset_btn{
+  margin-top: 20px;
+  margin-bottom: 20px;  
+  margin-left: 70%;
+  background-color: bg;
+} */
+
+.Addessate_main{
+  display: flex;
+  justify-content: center;
+  background: white;
+  /* height: 300px;
+  width: 100%; */
+
+}
+.Addessate_header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1050;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-modal-content {
+  background: #fff;
+  /* border-radius: 12px; */
+  padding: 1rem;
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+}
+
+/* Simple scale+fade animation */
+.animate-modal {
+  animation: fadeInScale 0.3s ease-out forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

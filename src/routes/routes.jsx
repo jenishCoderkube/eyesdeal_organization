@@ -55,6 +55,7 @@ import StockAdjustmentReport from "../pages/Reports/StockAdjustmentReport";
 import ProfitLossReport from "../pages/Reports/ProfitLossReport";
 import GstReport from "../pages/Reports/GstReport";
 import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
+import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
 
 const routes = [
   {
@@ -570,6 +571,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
+  {
+    title: "media-library",
+    path: "/media-library",
+    element: (
+      <PrivateRoute>
+      <MediaLibrary />
+      </PrivateRoute>
+    ),
+  }
 ];
 
 export default routes;
