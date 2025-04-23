@@ -6,6 +6,8 @@ const USER_ENDPOINTS = {
     ADD_CUSTOMER: "/user/register",
     ADD_EMPLOYEE: "/user/register",
     GET_STORES: "/stores",
+    GET_EMPLOYEES: "/user/list",
+    GET_EMPLOYEE_BY_ID: "/user/list",
 };
 
 // sale service functions
@@ -69,6 +71,46 @@ export const userService = {
             return {
                 success: false,
                 message: error?.response?.data?.message || "Error fetching stores!"
+            }
+        }
+    },
+    getEmployees: async (page) => {
+        try {
+            const response = await api.get(USER_ENDPOINTS.GET_EMPLOYEES, {
+                params: {
+                    "role[$ne]": "customer",
+                    populate: true,
+                    page: page,
+                    limit: 300
+                }
+            });
+            return {
+                success: true,
+                data: response.data,
+            }
+        } catch (error) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || "Error fetching employees!"
+            }
+        }
+    },
+    getEmployeeById: async (id) => {
+        try {
+            const response = await api.get(USER_ENDPOINTS.GET_EMPLOYEES, {
+                params: {
+                    _id: id
+                }
+            });
+            return {
+                success: true,
+                data: response.data,
+            }
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || "Error fetching employee detail!"
             }
         }
     }

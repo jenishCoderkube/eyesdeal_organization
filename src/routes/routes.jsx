@@ -262,7 +262,7 @@ const routes = [
   },
   {
     title: "EditEmployee",
-    path: "/users/editEmployee",
+    path: "/employee/:id",
     element: (
       <PrivateRoute>
         <EditEmployee />
