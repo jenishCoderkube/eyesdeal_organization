@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "./AssetSelector";
+import { productService } from "../../../../services/productService";
+import { productAttributeService } from "../../../../services/productAttributeService";
+import { toast } from "react-toastify";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -33,7 +36,7 @@ const validationSchema = Yup.object({
   oldBarcode: Yup.string(),
   seoTitle: Yup.string(),
   seoDescription: Yup.string(),
-  seoImage: Yup.mixed(),
+  seoImage: Yup.string(),
   gender: Yup.string(),
   description: Yup.string(),
   modelNumber: Yup.string(),
@@ -59,69 +62,14 @@ const validationSchema = Yup.object({
   photos: Yup.string(),
 });
 
-// Options for react-select
-const unitOptions = [
-  { value: "piece", label: "Piece" },
-  { value: "pair", label: "Pair" },
-];
-
-const brandOptions = [
-  { value: "brand1", label: "Brand 1" },
-  { value: "brand2", label: "Brand 2" },
-  { value: "brand3", label: "Brand 3" },
-];
-
+// Gender options don't come from API, so keep this one
 const genderOptions = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
   { value: "unisex", label: "Unisex" },
 ];
 
-const frameCollectionOptions = [
-  { value: "premium", label: "Premium" },
-  { value: "classic", label: "Classic" },
-];
-
-const featuresOptions = [
-  { value: "lightweight", label: "Lightweight" },
-  { value: "anti-glare", label: "Anti-Glare" },
-];
-
-const frameTypeOptions = [
-  { value: "fullRim", label: "Full Rim" },
-  { value: "halfRim", label: "Half Rim" },
-  { value: "rimless", label: "Rimless" },
-];
-
-const frameShapeOptions = [
-  { value: "rectangle", label: "Rectangle" },
-  { value: "round", label: "Round" },
-  { value: "catEye", label: "Cat Eye" },
-];
-
-const frameStyleOptions = [
-  { value: "modern", label: "Modern" },
-  { value: "vintage", label: "Vintage" },
-];
-
-const materialOptions = [
-  { value: "metal", label: "Metal" },
-  { value: "plastic", label: "Plastic" },
-  { value: "acetate", label: "Acetate" },
-];
-
-const colorOptions = [
-  { value: "black", label: "Black" },
-  { value: "blue", label: "Blue" },
-  { value: "red", label: "Red" },
-];
-
-const prescriptionTypeOptions = [
-  { value: "singleVision", label: "Single Vision" },
-  { value: "bifocal", label: "Bifocal" },
-  { value: "progressive", label: "Progressive" },
-];
-
+// Frame size options don't come from API, so keep this one
 const frameSizeOptions = [
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
@@ -138,6 +86,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     frameDetails: false,
     additionalDetails: false,
   });
+  
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(
@@ -147,6 +96,74 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         : initialData.photos
       : null
   );
+  
+  // State for loading
+  const [loading, setLoading] = useState(false);
+  
+  // State for dropdown options from API
+  const [attributeOptions, setAttributeOptions] = useState({
+    brands: [],
+    units: [],
+    frameTypes: [],
+    frameShapes: [],
+    frameStyles: [],
+    materials: [],
+    colors: [],
+    prescriptionTypes: [],
+    collections: [],
+    features: []
+  });
+
+  // Fetch attribute data from API
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        // Show loading indicator
+        setLoading(true);
+        
+        // Fetch all necessary attributes for the form
+        const attributeTypes = [
+          "brand", "unit", "frameType", "frameShape", "frameStyle", 
+          "material", "color", "prescriptionType", "collection", "feature"
+        ];
+        
+        const attributeData = {};
+        
+        for (const type of attributeTypes) {
+          const response = await productAttributeService.getAttributes(type);
+          if (response.success && response.data) {
+            attributeData[type] = response.data.map(item => ({
+              value: item._id,
+              label: item.name
+            }));
+          } else {
+            console.error(`Failed to fetch ${type} data:`, response.message);
+          }
+        }
+        
+        setAttributeOptions({
+          brands: attributeData.brand || [],
+          units: attributeData.unit || [],
+          frameTypes: attributeData.frameType || [],
+          frameShapes: attributeData.frameShape || [],
+          frameStyles: attributeData.frameStyle || [],
+          materials: attributeData.material || [],
+          colors: attributeData.color || [],
+          prescriptionTypes: attributeData.prescriptionType || [],
+          collections: attributeData.collection || [],
+          features: attributeData.feature || []
+        });
+        
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAttributes();
+  }, []);
 
   // Toggle section visibility
   const toggleSection = (section) => {
@@ -205,17 +222,68 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       : "",
   };
 
-  // Handle form submission
-  const handleSubmit = (values, { setSubmitting }) => {
+  // Handle form submission with API call
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    if (mode === "edit") {
-      console.log("Editing product ID:", initialData?.id);
-      // Simulate API call: axios.put(`/api/products/${initialData.id}`, values)
-    } else {
-      // Simulate API call: axios.post('/api/products', values)
+    // if (values.prescriptionType === "") {
+    //   values.prescriptionType = null; // or omit it from the payload
+    // }
+    setLoading(true);
+    
+    try {
+      if (mode === "edit") {
+        console.log("Editing product ID:", initialData?.id);
+        // Call update API
+        const response = await productService.updateEyeGlasses(initialData?.id, values);
+        
+        if (response.success) {
+          toast.success("Product updated successfully");
+          console.log("Update response:", response.data);
+        } else {
+          toast.error(response.message || "Failed to update product");
+        }
+      } else {
+        // Format values for API if needed
+        const formattedValues = {
+          ...values,
+          // Ensure these fields are properly formatted
+          features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
+          photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        };
+        
+        console.log("Formatted API payload:", formattedValues);
+        
+        // Call add API
+        const response = await productService.addEyeGlasses(formattedValues);
+        
+        if (response.success) {
+          toast.success("Product added successfully");
+          resetForm();
+          console.log("Add response:", response.data);
+        } else {
+          toast.error(response.message || "Failed to add product");
+        }
+      }
+    } catch (error) {
+      console.error("Error in product operation:", error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
+
+  // Display loading state while fetching options
+  if (loading && attributeOptions.brands.length === 0) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="ms-3">Loading form data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-0 mt-5">
@@ -273,11 +341,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="brand"
-                options={brandOptions}
+                options={attributeOptions.brands}
                 onChange={(option) =>
                   setFieldValue("brand", option ? option.value : "")
                 }
-                value={brandOptions.find(
+                value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
@@ -344,11 +412,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="unit"
-                options={unitOptions}
+                options={attributeOptions.units}
                 onChange={(option) =>
                   setFieldValue("unit", option ? option.value : "")
                 }
-                value={unitOptions.find(
+                value={attributeOptions.units.find(
                   (option) => option.value === values.unit
                 )}
                 placeholder="Select..."
@@ -542,16 +610,22 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     className="form-label font-weight-600 text-sm font-medium"
                     htmlFor="seoImage"
                   >
-                    Image
+                    SEO Image
                   </label>
                   <input
                     type="file"
                     name="seoImage"
                     className="form-control"
-                    onChange={(event) =>
-                      setFieldValue("seoImage", event.currentTarget.files[0])
-                    }
+                    onChange={(event) => {
+                      const fileName = event.currentTarget.files[0]?.name || '';
+                      // Format the path as required by the API
+                      const formattedPath = `eyesdeal/website/image/seo/${fileName}`;
+                      setFieldValue("seoImage", formattedPath);
+                    }}
                   />
+                  <small className="form-text text-muted">
+                    Selected file will be sent as: eyesdeal/website/image/seo/[filename]
+                  </small>
                   <ErrorMessage
                     name="seoImage"
                     component="div"
@@ -658,14 +732,14 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameCollection"
-                    options={frameCollectionOptions}
+                    options={attributeOptions.collections}
                     onChange={(option) =>
                       setFieldValue(
                         "frameCollection",
                         option ? option.value : ""
                       )
                     }
-                    value={frameCollectionOptions.find(
+                    value={attributeOptions.collections.find(
                       (option) => option.value === values.frameCollection
                     )}
                     placeholder="Select..."
@@ -686,11 +760,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="features"
-                    options={featuresOptions}
+                    options={attributeOptions.features}
                     onChange={(option) =>
                       setFieldValue("features", option ? option.value : "")
                     }
-                    value={featuresOptions.find(
+                    value={attributeOptions.features.find(
                       (option) => option.value === values.features
                     )}
                     placeholder="Select..."
@@ -722,11 +796,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameType"
-                    options={frameTypeOptions}
+                    options={attributeOptions.frameTypes}
                     onChange={(option) =>
                       setFieldValue("frameType", option ? option.value : "")
                     }
-                    value={frameTypeOptions.find(
+                    value={attributeOptions.frameTypes.find(
                       (option) => option.value === values.frameType
                     )}
                     placeholder="Select..."
@@ -747,11 +821,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameShape"
-                    options={frameShapeOptions}
+                    options={attributeOptions.frameShapes}
                     onChange={(option) =>
                       setFieldValue("frameShape", option ? option.value : "")
                     }
-                    value={frameShapeOptions.find(
+                    value={attributeOptions.frameShapes.find(
                       (option) => option.value === values.frameShape
                     )}
                     placeholder="Select..."
@@ -772,11 +846,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameStyle"
-                    options={frameStyleOptions}
+                    options={attributeOptions.frameStyles}
                     onChange={(option) =>
                       setFieldValue("frameStyle", option ? option.value : "")
                     }
-                    value={frameStyleOptions.find(
+                    value={attributeOptions.frameStyles.find(
                       (option) => option.value === values.frameStyle
                     )}
                     placeholder="Select..."
@@ -797,14 +871,14 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeMaterial"
-                    options={materialOptions}
+                    options={attributeOptions.materials}
                     onChange={(option) =>
                       setFieldValue(
                         "templeMaterial",
                         option ? option.value : ""
                       )
                     }
-                    value={materialOptions.find(
+                    value={attributeOptions.materials.find(
                       (option) => option.value === values.templeMaterial
                     )}
                     placeholder="Select..."
@@ -825,11 +899,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameMaterial"
-                    options={materialOptions}
+                    options={attributeOptions.materials}
                     onChange={(option) =>
                       setFieldValue("frameMaterial", option ? option.value : "")
                     }
-                    value={materialOptions.find(
+                    value={attributeOptions.materials.find(
                       (option) => option.value === values.frameMaterial
                     )}
                     placeholder="Select..."
@@ -850,11 +924,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameColor"
-                    options={colorOptions}
+                    options={attributeOptions.colors}
                     onChange={(option) =>
                       setFieldValue("frameColor", option ? option.value : "")
                     }
-                    value={colorOptions.find(
+                    value={attributeOptions.colors.find(
                       (option) => option.value === values.frameColor
                     )}
                     placeholder="Select..."
@@ -875,11 +949,11 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeColor"
-                    options={colorOptions}
+                    options={attributeOptions.colors}
                     onChange={(option) =>
                       setFieldValue("templeColor", option ? option.value : "")
                     }
-                    value={colorOptions.find(
+                    value={attributeOptions.colors.find(
                       (option) => option.value === values.templeColor
                     )}
                     placeholder="Select..."
@@ -911,14 +985,14 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="prescriptionType"
-                    options={prescriptionTypeOptions}
+                    options={attributeOptions.prescriptionTypes}
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
                         option ? option.value : ""
                       )
                     }
-                    value={prescriptionTypeOptions.find(
+                    value={attributeOptions.prescriptionTypes.find(
                       (option) => option.value === values.prescriptionType
                     )}
                     placeholder="Select..."
@@ -1017,6 +1091,23 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
+              <div className="col-10">
+                <div className="form-group">
+                  <label htmlFor="photoInput" className="form-label font-weight-600 text-sm font-medium">
+                    Photo Filename
+                  </label>
+                  <Field
+                    type="text"
+                    id="photoInput" 
+                    name="photos"
+                    className="form-control"
+                    placeholder="e.g. EyesO_1.png"
+                  />
+                  <small className="form-text text-muted">
+                    Enter photo filename exactly as shown in the working example: "EyesO_1.png"
+                  </small>
+                </div>
+              </div>
               {selectedImage && (
                 <div className="col-12 mt-3">
                   <img
@@ -1080,10 +1171,21 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+            {/* Submit Button */}
+            <div className="mt-4 d-flex justify-content-end">
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {mode === "edit" ? "Updating..." : "Adding..."}
+                  </>
+                ) : (
+                  mode === "edit" ? "Update Product" : "Add Product"
+                )}
               </button>
             </div>
           </Form>
