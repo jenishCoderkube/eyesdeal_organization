@@ -59,6 +59,7 @@ import ProfitLossReport from "../pages/Reports/ProfitLossReport";
 import GstReport from "../pages/Reports/GstReport";
 import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
 import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
+import SubFolder from "../pages/MediaLibrary/SubFolder";
 
 const routes = [
   {
@@ -606,10 +607,19 @@ const routes = [
     path: "/media-library",
     element: (
       <PrivateRoute>
-      <MediaLibrary />
+        <MediaLibrary />
       </PrivateRoute>
     ),
-  }
+  },
+  {
+    title: "media-library",
+    path: "/media-library/:folderPath",
+    element: (
+      <PrivateRoute>
+        <SubFolder />
+      </PrivateRoute>
+    ),
+  },
 ];
 
 export default routes;
