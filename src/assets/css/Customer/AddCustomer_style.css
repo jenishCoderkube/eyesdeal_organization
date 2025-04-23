@@ -173,7 +173,11 @@ input[type="number"]::-webkit-outer-spin-button {
 .font-weight-600{
   font-weight: 600 !important;
 }
-
+.font-size-normal{
+  font-size: 15px;
+  font-weight: 200;
+  color: #1e293b;
+}
 /* Media query for small screens (below 576px) */
 @media (max-width: 576px) {
   .max-width-90 {
