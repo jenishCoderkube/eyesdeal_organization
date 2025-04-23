@@ -1,26 +1,39 @@
-import React, {useEffect, useState} from 'react';
-import {FaSearch} from 'react-icons/fa';
-import {FiEdit2} from 'react-icons/fi';
-import {MdDeleteOutline} from 'react-icons/md';
-import EditStoreModal from '../../components/Stores/EditStoreModal.jsx';
-import DeactivateStoreModal from '../../components/Stores/DeactivateStoreModal.jsx';
-import { storeService} from '../../services/storeService.js';
-import {toast} from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import { FaSearch } from "react-icons/fa";
+import { FiEdit2 } from "react-icons/fi";
+import { MdDeleteOutline } from "react-icons/md";
+import EditStoreModal from "../../components/Stores/EditStoreModal.jsx";
+import DeactivateStoreModal from "../../components/Stores/DeactivateStoreModal.jsx";
+import { storeService } from "../../services/storeService.js";
+import { toast } from "react-toastify";
+import DeleteModal from "../../components/DeleteModal/DeleteModal.jsx";
 
 const ViewStore = () => {
-
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
   const [stores, setStores] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const hideDeleteModal = () => {
+    setDeleteId(null);
+  };
+
+  useEffect(() => {
+    if (deleteId) {
+      setDeleteModal(true);
+    } else {
+      setDeleteModal(false);
+    }
+  }, [deleteId]);
 
   const fetchStores = async () => {
     try {
       const storeData = await storeService.getStores();
       setStores(storeData);
     } catch (err) {
-      console.log('Failed to load stores', err);
+      console.log("Failed to load stores", err);
     }
   };
 
@@ -28,23 +41,22 @@ const ViewStore = () => {
     fetchStores();
   }, []);
 
-
   const handleEdit = (store) => {
     setSelectedStore(store);
     setShowEditModal(true);
   };
 
-  const handleDelete = async (id) => {
-    alert('Are you sure you want to delete');
-    console.log(`Delete store with id: ${id}`);
+  const handleDelete = async () => {
     try {
-      const response = await storeService.deleteStore(id);
-      if (response?.success) {
-        toast.success(response?.message);
+      const response = await storeService.deleteStore(deleteId);
+      if (response?.data?.success) {
+        setDeleteId(null);
+        setDeleteModal(false);
+        toast.success(response?.data?.message);
         fetchStores();
       }
     } catch (error) {
-      console.log('Error deleting store:', error);
+      console.log("Error deleting store:", error);
     }
   };
 
@@ -54,7 +66,7 @@ const ViewStore = () => {
   };
 
   const filteredStores = stores?.filter((store) =>
-    store?.name?.toLowerCase()?.includes(searchQuery?.toLowerCase()),
+    store?.name?.toLowerCase()?.includes(searchQuery?.toLowerCase())
   );
 
   return (
@@ -64,7 +76,10 @@ const ViewStore = () => {
           <div className="mb-4">
             <h1 className="h2 text-dark fw-bold">View Stores</h1>
           </div>
-          <div className="card shadow-sm" style={{border: '1px solid #e2e8f0'}}>
+          <div
+            className="card shadow-sm"
+            style={{ border: "1px solid #e2e8f0" }}
+          >
             <h6 className="fw-bold px-3 pt-3">Stores</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
@@ -72,7 +87,7 @@ const ViewStore = () => {
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch
                       className="text-muted"
-                      style={{color: '#94a3b8'}}
+                      style={{ color: "#94a3b8" }}
                     />
                   </span>
                   <input
@@ -90,32 +105,38 @@ const ViewStore = () => {
                     <tr>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         SRNO
                       </th>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         Active In Website
                       </th>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         System Id
                       </th>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         Store Name
                       </th>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         Billing Sequence
                       </th>
                       <th
                         scope="col"
-                        className="p-3 text-left custom-perchase-th">
+                        className="p-3 text-left custom-perchase-th"
+                      >
                         Action
                       </th>
                     </tr>
@@ -142,16 +163,18 @@ const ViewStore = () => {
                               />
                               <MdDeleteOutline
                                 size={24}
+                                role="button"
                                 className="text-danger cursor-pointer"
-                                onClick={() => handleDelete(store._id)}
+                                onClick={() => setDeleteId(store?._id)}
                               />
                               <button
                                 className="btn btn-sm p-2"
                                 onClick={() => handleDeactivate(store)}
                                 style={{
-                                  backgroundColor: '#f43f5e',
-                                  color: '#fff',
-                                }}>
+                                  backgroundColor: "#f43f5e",
+                                  color: "#fff",
+                                }}
+                              >
                                 Deactivate
                               </button>
                             </div>
@@ -166,6 +189,15 @@ const ViewStore = () => {
           </div>
         </div>
       </div>
+
+      <DeleteModal
+        show={deleteModal}
+        onHide={hideDeleteModal}
+        onDelete={handleDelete}
+        title="Delete Store"
+        body="Are you sure you want to delete this record?"
+      />
+
       <EditStoreModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
