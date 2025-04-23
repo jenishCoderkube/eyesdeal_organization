@@ -8,6 +8,7 @@ import { purchaseService } from "../../services/purchaseService";
 import { printLogs } from "../../utils/constants";
 import { toast } from "react-toastify";
 import moment from "moment";
+import PurchaseModal from "../../components/Perchase/PurchaseModal";
 function ViewPurchase() {
   const [vendor, setVendor] = useState(null);
   const [store, setStore] = useState(null);
@@ -18,6 +19,8 @@ function ViewPurchase() {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [purchaseData, setPurchaseData] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
   console.log("purchaseData", purchaseData);
 
   const handleSubmit = (e) => {
@@ -99,6 +102,14 @@ function ViewPurchase() {
   const btnSubmit = (e) => {
     e.preventDefault();
     getPurchaseLogs();
+  };
+  const handleViewClick = (purchase) => {
+    setSelectedPurchase(purchase);
+    setShowModal(true);
+  };
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedPurchase(null);
   };
 
   return (
@@ -237,8 +248,8 @@ function ViewPurchase() {
                       <td>{moment(item?.invoiceDate).format("DD-MM-YYYY")}</td>
                       <td>{item?.totalQuantity}</td>
                       <td>{item?.netAmount}</td>
-                      <td role="button">
-                        <i class="bi bi-eye text-primary "></i>
+                      <td role="button" onClick={() => handleViewClick(item)}>
+                        <i className="bi bi-eye text-primary"></i>
                       </td>
                       <td>
                         <div className="btn btn-sm btn-primary">DOWNLOAD</div>
@@ -282,6 +293,11 @@ function ViewPurchase() {
           </div>
         </div>
       </div>
+      <PurchaseModal
+        show={showModal}
+        onHide={handleCloseModal}
+        purchase={selectedPurchase}
+      />
     </div>
   );
 }
