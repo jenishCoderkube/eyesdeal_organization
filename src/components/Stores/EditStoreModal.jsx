@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from "react";
-import Select from "react-select";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
-import { Country, State, City } from "country-state-city";
+import React, {useEffect, useState} from 'react';
+import Select from 'react-select';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import {Country, State, City} from 'country-state-city';
+import {updateStore} from '../../services/storeService';
+import {toast} from 'react-toastify';
+import {uploadImage} from '../../utils/constants';
 
-const EditStoreModal = ({ show, onHide, storeData }) => {
+const EditStoreModal = ({show, onHide, storeData}) => {
+  const accessToken = localStorage.getItem('accessToken');
+
   const [formData, setFormData] = useState({
-    SystemId: "",
-    storeNumber: "",
-    name: "",
-    locationUrl: "",
-    address: "",
-    companyName: "",
+    SystemId: '',
+    storeNumber: '',
+    name: '',
+    locationUrl: '',
+    address: '',
+    companyName: '',
     country: null,
     state: null,
     city: null,
-    pincode: "",
-    GSTNumber: "",
+    pincode: '',
+    GSTNumber: '',
     emails: [],
     phones: [],
     photos: [],
@@ -24,8 +29,8 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
   });
 
   const [errors, setErrors] = useState({});
-  const [newEmail, setNewEmail] = useState("");
-  const [newPhone, setNewPhone] = useState("+91");
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('+91');
   const [newPhoto, setNewPhoto] = useState(null);
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
@@ -34,21 +39,28 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
   // Populate form with store data when modal opens
   useEffect(() => {
     if (storeData) {
+      const selectedCountry = countryOptions.find(
+        (c) => c.label === storeData.country,
+      );
+      const selectedState = stateOptions.find(
+        (s) => s.label === storeData.state,
+      );
+      const selectedCity = cityOptions.find((c) => c.label === storeData.city);
       setFormData({
-        SystemId: storeData.systemId || "",
-        storeNumber: storeData.id || "",
-        name: storeData.storeName || "",
-        locationUrl: "",
-        address: "",
-        companyName: "",
-        country: null,
-        state: null,
-        city: null,
-        pincode: "",
-        GSTNumber: "",
-        emails: [],
-        phones: [],
-        photos: [],
+        SystemId: storeData._id || '',
+        storeNumber: storeData.storeNumber || '',
+        name: storeData.name || '',
+        locationUrl: storeData?.locationUrl,
+        address: storeData?.address,
+        companyName: storeData?.companyName,
+        country: selectedCountry || '',
+        state: selectedState || '',
+        city: selectedCity || '',
+        pincode: storeData?.pincode,
+        GSTNumber: storeData?.GSTNumber,
+        emails: storeData?.emails || [],
+        phones: storeData?.phones || [],
+        photos: storeData?.photos || [],
         activeInWebsite: storeData.activeInWebsite || false,
       });
     }
@@ -75,36 +87,36 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
           (city) => ({
             value: city.name,
             label: city.name,
-          })
+          }),
         )
       : [];
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = "Store Name is required";
+    if (!formData.name.trim()) newErrors.name = 'Store Name is required';
     if (!formData.address.trim())
-      newErrors.address = "Store Address is required";
-    if (!formData.country) newErrors.country = "Country is required";
-    if (!formData.state) newErrors.state = "State is required";
-    if (!formData.city) newErrors.city = "City is required";
+      newErrors.address = 'Store Address is required';
+    if (!formData.country) newErrors.country = 'Country is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.city) newErrors.city = 'City is required';
     return newErrors;
   };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
-      const newFormData = { ...prev, [field]: value };
-      if (field === "country") {
+      const newFormData = {...prev, [field]: value};
+      if (field === 'country') {
         newFormData.state = null;
         newFormData.city = null;
       }
-      if (field === "state") {
+      if (field === 'state') {
         newFormData.city = null;
       }
       return newFormData;
     });
 
     if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
+      setErrors({...errors, [field]: ''});
     }
   };
 
@@ -118,12 +130,12 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
         ...prev,
         emails: [...prev.emails, newEmail],
       }));
-      setNewEmail("");
+      setNewEmail('');
       setShowEmailInput(false);
     } else if (!showEmailInput) {
       setShowEmailInput(true);
     } else {
-      alert("Please enter a valid email");
+      alert('Please enter a valid email');
     }
   };
 
@@ -133,12 +145,12 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
         ...prev,
         phones: [...prev.phones, newPhone],
       }));
-      setNewPhone("+91");
+      setNewPhone('+91');
       setShowPhoneInput(false);
     } else if (!showPhoneInput) {
       setShowPhoneInput(true);
     } else {
-      alert("Please enter a valid phone number");
+      alert('Please enter a valid phone number');
     }
   };
 
@@ -146,18 +158,18 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
     if (showPhotoInput && newPhoto) {
       setFormData((prev) => ({
         ...prev,
-        photos: [...prev.photos, newPhoto.name],
+        photos: [...prev.photos, newPhoto],
       }));
       setNewPhoto(null);
       setShowPhotoInput(false);
     } else if (!showPhotoInput) {
       setShowPhotoInput(true);
     } else {
-      alert("Please select a photo");
+      alert('Please select a photo');
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -165,8 +177,43 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
       return;
     }
     setErrors({});
-    console.log("Updated store data:", formData);
+    console.log('Updated store data:', formData);
     // Add API call to update store here
+
+    const payload = {
+      ...formData,
+      _id: formData?.SystemId,
+      city: formData?.city?.label ? formData?.city?.label : formData?.city,
+      state: formData?.state?.label ? formData?.state?.label : formData?.state,
+      country: formData?.country?.label
+        ? formData?.country?.label
+        : formData?.country,
+    };
+    console.log('Form submitted:', payload);
+
+    try {
+      const response = await updateStore(payload, accessToken);
+      if (response?.success) {
+        toast.success(response.message);
+        setFormData({
+          name: '',
+          locationUrl: '',
+          address: '',
+          companyName: '',
+          country: null,
+          state: null,
+          city: null,
+          pincode: '',
+          GSTNumber: '',
+          emails: [],
+          phones: [],
+          photos: [],
+          activeInWebsite: false,
+        });
+      }
+    } catch (error) {
+      console.log('Error creating store:', error);
+    }
     onHide(); // Close modal after submission
   };
   // Handle click on backdrop to close modal
@@ -181,15 +228,14 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
         <>
           <div
             className="modal-backdrop fade show"
-            style={{ zIndex: 1040 }}
+            style={{zIndex: 1040}}
             onClick={handleBackdropClick}
           />
           <div
             className="modal fade show d-block"
             tabIndex="-1"
             role="dialog"
-            style={{ zIndex: 1050 }}
-          >
+            style={{zIndex: 1050}}>
             <div className="modal-dialog modal-dialog-centered modal-lg">
               <div className="modal-content">
                 <div className="modal-header">
@@ -214,7 +260,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.SystemId}
                           onChange={(e) =>
-                            handleInputChange("SystemId", e.target.value)
+                            handleInputChange('SystemId', e.target.value)
                           }
                         />
                         {errors.SystemId && (
@@ -234,7 +280,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.storeNumber}
                           onChange={(e) =>
-                            handleInputChange("storeNumber", e.target.value)
+                            handleInputChange('storeNumber', e.target.value)
                           }
                         />
                         {errors.storeNumber && (
@@ -253,7 +299,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.name}
                           onChange={(e) =>
-                            handleInputChange("name", e.target.value)
+                            handleInputChange('name', e.target.value)
                           }
                         />
                         {errors.name && (
@@ -263,8 +309,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                       <div className="col-12 mt-3">
                         <label
                           htmlFor="locationUrl"
-                          className="form-label fw-medium"
-                        >
+                          className="form-label fw-medium">
                           Location URL
                         </label>
                         <input
@@ -273,15 +318,14 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.locationUrl}
                           onChange={(e) =>
-                            handleInputChange("locationUrl", e.target.value)
+                            handleInputChange('locationUrl', e.target.value)
                           }
                         />
                       </div>
                       <div className="col-12 mt-3">
                         <label
                           htmlFor="address"
-                          className="form-label fw-medium"
-                        >
+                          className="form-label fw-medium">
                           Address <span className="text-danger">*</span>
                         </label>
                         <textarea
@@ -290,7 +334,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           rows="5"
                           value={formData.address}
                           onChange={(e) =>
-                            handleInputChange("address", e.target.value)
+                            handleInputChange('address', e.target.value)
                           }
                         />
                         {errors.address && (
@@ -303,8 +347,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                       <div className="col-12 mt-3">
                         <label
                           htmlFor="companyName"
-                          className="form-label fw-medium"
-                        >
+                          className="form-label fw-medium">
                           Company Name
                         </label>
                         <input
@@ -313,15 +356,14 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.companyName}
                           onChange={(e) =>
-                            handleInputChange("companyName", e.target.value)
+                            handleInputChange('companyName', e.target.value)
                           }
                         />
                       </div>
                       <div className="col-12 mt-3">
                         <label
                           htmlFor="GSTNumber"
-                          className="form-label fw-medium"
-                        >
+                          className="form-label fw-medium">
                           GST Number
                         </label>
                         <input
@@ -330,7 +372,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           className="form-control"
                           value={formData.GSTNumber}
                           onChange={(e) =>
-                            handleInputChange("GSTNumber", e.target.value)
+                            handleInputChange('GSTNumber', e.target.value)
                           }
                         />
                         <div className="col-12 mt-3">
@@ -341,7 +383,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             options={countryOptions}
                             value={formData.country}
                             onChange={(option) =>
-                              handleInputChange("country", option)
+                              handleInputChange('country', option)
                             }
                             placeholder="Select Country..."
                           />
@@ -359,7 +401,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             options={stateOptions}
                             value={formData.state}
                             onChange={(option) =>
-                              handleInputChange("state", option)
+                              handleInputChange('state', option)
                             }
                             placeholder="Select State..."
                             isDisabled={!formData.country}
@@ -378,7 +420,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             options={cityOptions}
                             value={formData.city}
                             onChange={(option) =>
-                              handleInputChange("city", option)
+                              handleInputChange('city', option)
                             }
                             placeholder="Select City..."
                             isDisabled={!formData.state}
@@ -392,8 +434,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                         <div className="col-12 mt-3">
                           <label
                             htmlFor="pincode"
-                            className="form-label fw-medium"
-                          >
+                            className="form-label fw-medium">
                             Pincode
                           </label>
                           <input
@@ -402,7 +443,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             className="form-control"
                             value={formData.pincode}
                             onChange={(e) =>
-                              handleInputChange("pincode", e.target.value)
+                              handleInputChange('pincode', e.target.value)
                             }
                           />
                         </div>
@@ -413,8 +454,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <button
                             type="button"
                             className="btn btn-primary"
-                            onClick={handleAddEmail}
-                          >
+                            onClick={handleAddEmail}>
                             Add
                           </button>
                         </div>
@@ -445,14 +485,13 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <button
                             type="button"
                             className="btn btn-primary"
-                            onClick={handleAddPhone}
-                          >
+                            onClick={handleAddPhone}>
                             Add
                           </button>
                         </div>
                         {showPhoneInput && (
                           <PhoneInput
-                            country={"in"}
+                            country={'in'}
                             value={newPhone}
                             onChange={(phone) => setNewPhone(phone)}
                             inputClass="form-control w-100"
@@ -474,8 +513,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <button
                             type="button"
                             className="btn btn-primary"
-                            onClick={handleAddPhoto}
-                          >
+                            onClick={handleAddPhoto}>
                             Add
                           </button>
                         </div>
@@ -483,7 +521,13 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <input
                             type="file"
                             className="form-control mb-3"
-                            onChange={(e) => setNewPhoto(e.target.files[0])}
+                            onChange={async (e) => {
+                              let res = await uploadImage(
+                                e.target.files[0],
+                                e.target.files[0]?.name,
+                              );
+                              setNewPhoto(res);
+                            }}
                             accept="image/*"
                           />
                         )}
@@ -506,15 +550,14 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             checked={formData.activeInWebsite}
                             onChange={(e) =>
                               handleInputChange(
-                                "activeInWebsite",
-                                e.target.checked
+                                'activeInWebsite',
+                                e.target.checked,
                               )
                             }
                           />
                           <label
                             htmlFor="activeInWebsite"
-                            className="form-check-label ms-2"
-                          >
+                            className="form-check-label ms-2">
                             Active In Website
                           </label>
                         </div>
