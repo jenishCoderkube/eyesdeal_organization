@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
@@ -12,6 +12,7 @@ import SpecsPowerModal from "./SpecsPowerModal";
 import ContactsPowerModal from "./ContactsPowerModal";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Country, State, City } from "country-state-city";
+import { saleService } from "../../services/saleService";
 
 const UserEditDetailForm = ({
   onAddSpecs,
@@ -19,7 +20,9 @@ const UserEditDetailForm = ({
   initialData,
   isEdit,
 }) => {
-  const { prescriptions } = useSelector((state) => state.specsPower);
+  // const { prescriptions } = useSelector((state) => state.specsPower);
+  const [prescriptions, setPrescriptions] = useState([]);
+
   const dispatch = useDispatch();
 
   const [editModal, setEditModal] = useState({
@@ -35,14 +38,33 @@ const UserEditDetailForm = ({
   }));
 
   const genderOptions = [
-    { value: "Male", label: "Male" },
-    { value: "Female", label: "Female" },
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
   ];
 
-  const referenceOptions = [
-    { value: "Online", label: "Online" },
-    { value: "Store", label: "Store" },
-  ];
+  const [referenceOptions, setReferenceOptions] = useState([]);
+
+  const getMarketingReferences = async () => {
+    try {
+      const response = await saleService.getMarketingReferences();
+      if (response.success) {
+        const fetchedOptions = response.data.data.map((ref) => ({
+          value: ref._id,
+          label: ref.name,
+        }));
+        setReferenceOptions(fetchedOptions);
+      } else {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    }
+  };
+
+  useEffect(() => {
+    getMarketingReferences();
+  }, []);
+
 
   // Formik validation schema (only for required fields)
   const validationSchema = Yup.object({
@@ -61,17 +83,17 @@ const UserEditDetailForm = ({
 
   // Initial form values (include all fields)
   const initialValues = {
-    name: initialData?.Name || "",
-    phone: String(initialData?.Phone) || "+91",
-    customerReference: initialData?.customerReference || null,
-    gender: initialData?.gender || null,
-    country: initialData?.country || null,
-    state: initialData?.state || null,
-    city: initialData?.city || null,
-    email: initialData?.Email || "",
-    pincode: initialData?.pincode || "395007",
-    address: initialData?.address || "",
-    notes: initialData?.notes || "",
+    name: initialData?.Name,
+    phone: String(initialData?.Phone),
+    customerReference: initialData?.customerReference,
+    gender: initialData?.gender,
+    country: initialData?.country,
+    state: initialData?.state,
+    city: initialData?.city,
+    email: initialData?.Email,
+    pincode: initialData?.pincode,
+    address: initialData?.address,
+    notes: initialData?.notes,
     birthDate: initialData?.birthDate ? new Date(initialData.birthDate) : null,
     anniversaryDate: initialData?.anniversaryDate
       ? new Date(initialData.anniversaryDate)
@@ -81,7 +103,7 @@ const UserEditDetailForm = ({
   const handleEdit = (prescription) => {
     setEditModal({
       show: true,
-      type: prescription.type,
+      type: prescription.__t,
       data: prescription,
     });
   };
@@ -92,6 +114,10 @@ const UserEditDetailForm = ({
 
   const handleModalClose = () => {
     setEditModal({ show: false, type: null, data: null });
+  }
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-GB"); // DD/MM/YYYY format
   };
 
   return (
@@ -106,26 +132,67 @@ const UserEditDetailForm = ({
           // Dispatch update action or API call
         }}
       >
-        {({ values, setFieldValue, errors, touched }) => {
+        {({ values, setFieldValue, setValues, errors, touched }) => {
           // Fetch states based on selected country
           const stateOptions = values.country
             ? State.getStatesOfCountry(values.country.value).map((state) => ({
-                value: state.isoCode,
-                label: state.name,
-              }))
+              value: state.isoCode,
+              label: state.name,
+            }))
             : [];
 
           // Fetch cities based on selected country and state
           const cityOptions =
             values.country && values.state
               ? City.getCitiesOfState(
-                  values.country.value,
-                  values.state.value
-                ).map((city) => ({
-                  value: city.name,
-                  label: city.name,
-                }))
+                values.country.value,
+                values.state.value
+              ).map((city) => ({
+                value: city.name,
+                label: city.name,
+              }))
               : [];
+
+          // Set values when initialData changes
+          useEffect(() => {
+            if (initialData) {
+              const reference = referenceOptions.find(ref => ref.label === initialData?.marketingReference)
+              const gender = genderOptions.find(gen => gen.value === initialData?.gender)
+              const country = countryOptions.find(con => con.label.toLowerCase() === initialData?.country)
+              const stateOptions = State.getStatesOfCountry(country.value).map((state) => ({
+                value: state.isoCode,
+                label: state.name,
+              }))
+              const state = stateOptions.find(state => state.label.toLowerCase() === initialData?.state)
+              const cityOptions = City.getCitiesOfState(
+                country.value,
+                state.value
+              ).map((city) => ({
+                value: city.name,
+                label: city.name,
+              }))
+              const city = cityOptions.find(city => city.label.toLowerCase() === initialData?.city)
+              setValues({
+                name: initialData?.name,
+                phone: initialData?.phone,
+                customerReference: reference,
+                gender: gender,
+                email: initialData?.email,
+                country: country,
+                state: state,
+                city: city,
+                pincode: initialData?.pincode,
+                address: initialData?.address,
+                note: initialData?.note,
+              });
+
+              if (initialData?.prescriptions) {
+                setPrescriptions(initialData?.prescriptions);
+              }
+            }
+          }, [initialData]);
+
+          console.log(prescriptions);
 
           return (
             <Form>
@@ -414,13 +481,13 @@ const UserEditDetailForm = ({
                       <thead>
                         <tr className="text-center">
                           <th scope="col" className="px-3 py-2 add_power_title">
-                            Prescriber Name
+                            Date
+                          </th>
+                          <th scope="col" className="px-3 py-2 add_power_title">
+                            Power Type
                           </th>
                           <th scope="col" className="px-3 py-2 add_power_title">
                             Prescribed by
-                          </th>
-                          <th scope="col" className="px-3 py-2 add_power_title">
-                            Type
                           </th>
                           <th scope="col" className="px-3 py-2 add_power_title">
                             Action
@@ -429,14 +496,14 @@ const UserEditDetailForm = ({
                       </thead>
                       <tbody>
                         {prescriptions?.map((prescription) => (
-                          <tr key={prescription.id} className="text-center">
+                          <tr key={prescription._id} className="text-center">
                             <td className="px-3 py-2">
-                              {prescription.doctorName}
+                              {formatDate(prescription.createdAt)}
                             </td>
                             <td className="px-3 py-2">
-                              {prescription.prescribedBy?.label}
+                              {prescription.__t}
                             </td>
-                            <td className="px-3 py-2">{prescription.type}</td>
+                            <td className="px-3 py-2">({prescription.prescribedBy})</td>
                             <td className="px-3 py-2">
                               <button
                                 className="btn p-0 me-2"

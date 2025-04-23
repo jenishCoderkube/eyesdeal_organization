@@ -90,6 +90,15 @@ const routes = [
     ),
   },
   {
+    title: "EditUser",
+    path: "/users/:id",
+    element: (
+      <PrivateRoute>
+        <EditUser />
+      </PrivateRoute>
+    ),
+  },
+  {
     title: "SaleList",
     path: "/sale/list",
     element: (

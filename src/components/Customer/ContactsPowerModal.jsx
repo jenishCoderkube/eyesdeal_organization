@@ -3,7 +3,7 @@ import Select from "react-select";
 import { addPrescription } from "../../store/Power/specsPowerSlice";
 import { useDispatch } from "react-redux";
 
-const ContactsPowerModal = ({ show, onHide, editData }) => {
+const ContactsPowerModal = ({ show, onHide, editData }) => {  
   const [formData, setFormData] = useState({
     doctorName: "",
     prescribedBy: "",
@@ -54,7 +54,8 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
 
   const prescribedByOptions = [
     { value: "doctor", label: "Doctor" },
-    { value: "optometrist", label: "Optometrist" },
+    { value: "employee", label: "Employee" },
+    { value: "old specs", label: "Old Specs" },
   ];
 
   const powerOptions = Array.from({ length: 73 }, (_, i) => {
@@ -186,7 +187,7 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                         <input
                           type="text"
                           className="form-control custom-disabled"
-                          value="contacts"
+                          value={formData.__t}
                           readOnly
                         />
                       </div>
@@ -235,10 +236,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.value === formData.right.distance.sph
+                                  (opt) => opt.label === formData.right.distance.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.value, "right.distance")
+                                  handleInputChange("sph", option.label, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -247,10 +248,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.value === formData.right.distance.cyl
+                                  (opt) => opt.label === formData.right.distance.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.value, "right.distance")
+                                  handleInputChange("cyl", option.label, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -271,10 +272,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={addOptions}
                                 value={addOptions.find(
-                                  (opt) => opt.value === formData.right.distance.add
+                                  (opt) => opt.label === formData.right.distance.add
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("add", option.value, "right.distance")
+                                  handleInputChange("add", option.label, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -284,10 +285,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.value === formData.left.distance.sph
+                                  (opt) => opt.label === formData.left.distance.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.value, "left.distance")
+                                  handleInputChange("sph", option.label, "left.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -296,10 +297,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.value === formData.left.distance.cyl
+                                  (opt) => opt.label === formData.left.distance.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.value, "left.distance")
+                                  handleInputChange("cyl", option.label, "left.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -320,10 +321,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={addOptions}
                                 value={addOptions.find(
-                                  (opt) => opt.value === formData.left.distance.add
+                                  (opt) => opt.label === formData.left.distance.add
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("add", option.value, "left.distance")
+                                  handleInputChange("add", option.label, "left.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -335,10 +336,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.value === formData.right.near.sph
+                                  (opt) => opt.label === formData.right.near.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.value, "right.near")
+                                  handleInputChange("sph", option.label, "right.near")
                                 }
                                 placeholder="Select..."
                               />
@@ -347,10 +348,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.value === formData.right.near.cyl
+                                  (opt) => opt.label === formData.right.near.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.value, "right.near")
+                                  handleInputChange("cyl", option.label, "right.near")
                                 }
                                 placeholder="Select..."
                               />
@@ -373,10 +374,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.value === formData.left.near.sph
+                                  (opt) => opt.label === formData.left.near.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.value, "left.near")
+                                  handleInputChange("sph", option.label, "left.near")
                                 }
                                 placeholder="Select..."
                               />
@@ -385,10 +386,10 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.value === formData.left.near.cyl
+                                  (opt) => opt.label === formData.left.near.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.value, "left.near")
+                                  handleInputChange("cyl", option.label, "left.near")
                                 }
                                 placeholder="Select..."
                               />

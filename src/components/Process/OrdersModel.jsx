@@ -1,15 +1,45 @@
 import { se } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react'
+import { FaAngleDown, FaAngleRight } from 'react-icons/fa6';
 
-function OrdersModel({ closeOrderModel, activeStatus, selectedCust }) {
+function OrdersModel({ closeOrderModel, SalesOrderData }) {
 
-    const [activeCustomer, setActiveCustomer] = useState([]);
-    const [activeCustStatus, setActiveCustStatus] = useState("Orders");
+    const [orders, setOrders] = useState([]);
+
     const custstatus = ["Orders", "Order Notes"];
+    const [activeCustStatus, setActiveCustStatus] = useState("Orders");
+    const [expandedRows, setExpandedRows] = useState([]);
+    const toggleSplit = (index) => {
+        setExpandedRows((prev) =>
+            prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+        );
+    };
 
     useEffect(() => {
-        setActiveCustomer(selectedCust[0]);
-    }, [selectedCust])
+        if (SalesOrderData?.docs?.length) {
+            const combined = SalesOrderData.docs.flatMap(doc =>
+                doc.orders.map(order => ({
+                    id: order._id,
+                    billNo: order.billNumber,
+                    date: order.createdAt,
+                    amount: doc.netAmount,
+
+                    product: order.product?.sku || '',
+                    lens: order.lens?.sku || '',
+
+                    productMrp: order.product?.mrp || 0,
+                    lensMrp: order.lens?.mrp || 0,
+
+                    productDiscount: order.product?.perPieceDiscount || 0,
+                    lensDiscount: order.lens?.perPieceDiscount || 0,
+
+                    productTotal: order.product?.perPieceAmount || 0,
+                    lensTotal: order.lens?.perPieceAmount || 0,
+                }))
+            );
+            setOrders(combined);
+        }
+    }, [SalesOrderData]);
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString("en-GB"); // DD/MM/YYYY format
@@ -75,8 +105,7 @@ function OrdersModel({ closeOrderModel, activeStatus, selectedCust }) {
                             {activeCustStatus === "Orders" ? (
                                 <>
                                     <div className="px-3 pb-4">
-
-                                        <table className="table table-sm text-center table-bordered" style={{borderCollapse: "collapse", border: "1px solid lightgray", width: "100%" }}>
+                                        <table className="table table-sm text-center table-bordered" style={{ borderCollapse: "collapse", border: "1px solid lightgray", width: "100%" }}>
                                             <thead>
                                                 <tr>
                                                     <th className='w-25'>Date</th>
@@ -85,13 +114,83 @@ function OrdersModel({ closeOrderModel, activeStatus, selectedCust }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>16/08/2004</td>
-                                                    <td>999999</td>
-                                                    <td>9999</td>
-                                                </tr>
+                                                {orders.length > 0 ? (
+                                                    orders.map((order, index) => (
+                                                        <React.Fragment key={order._id || index}>
+
+                                                            <tr >
+                                                                <td>{formatDate(order.date)}</td>
+                                                                <td>{order.billNo}</td>
+                                                                <td
+                                                                    className="cursor-pointer"
+                                                                    onClick={() => toggleSplit(index)}
+                                                                    style={{ userSelect: 'none' }}
+                                                                >
+                                                                    {order.amount}{" "}
+                                                                    {expandedRows.includes(index) ? (
+                                                                        <FaAngleDown className="ms-2" />
+                                                                    ) : (
+                                                                        <FaAngleRight className="ms-2" />
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+
+                                                            {expandedRows.includes(index) && (
+                                                                <tr className='mx-3'>
+                                                                    <td colSpan="3" className="p-0">
+                                                                        <div className="table-responsive mx-3">
+                                                                            <table className="table mb-0" style={{ border: "none" }}>
+                                                                                <thead>
+                                                                                    <tr className="small fw-semibold text-primary-emphasis bg-light">
+                                                                                        <th className="py-2 px-2">Product</th>
+                                                                                        <th className="py-2 px-2">Lens</th>
+                                                                                        <th className="py-2 px-2">MRP</th>
+                                                                                        <th className="py-2 px-2">Discount</th>
+                                                                                        <th className="py-2 px-2">Total</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    <tr>
+                                                                                        <td style={{ minWidth: '110px' }}>{order.product}</td>
+                                                                                        <td style={{ minWidth: '110px' }}>{order.lens}</td>
+                                                                                        <td style={{ minWidth: '70px', textAlign: "left" }}>
+                                                                                            <div>
+                                                                                                <p className="mb-1">Product: {order.productMrp}</p>
+                                                                                                <p className="mb-0">Lens: {order.lensMrp}</p>
+                                                                                            </div>
+
+                                                                                        </td>
+                                                                                        <td style={{ minWidth: '70px', textAlign: "left" }}>
+                                                                                            <div>
+                                                                                                <p className="mb-1">Product: {order.productDiscount}</p>
+                                                                                                <p className="mb-0">Lens: {order.lensDiscount}</p>
+                                                                                            </div>
+
+                                                                                        </td>
+                                                                                        <td style={{ minWidth: '70px', textAlign: "left" }}>
+                                                                                            <div>
+                                                                                                <p className="mb-1">Product: {order.productTotal}</p>
+                                                                                                <p className="mb-0">Lens: {order.lensTotal}</p>
+                                                                                            </div>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="3" className="text-center text-muted">No orders found</td>
+                                                    </tr>
+                                                )}
+
+
                                             </tbody>
-                                        </table>               
+                                        </table>
 
                                         <div className="d-flex justify-content-between align-items-center">
                                             <div>
@@ -114,8 +213,6 @@ function OrdersModel({ closeOrderModel, activeStatus, selectedCust }) {
                                 </div>
                             )}
                         </>
-
-
 
                     </div>
                 </div>
