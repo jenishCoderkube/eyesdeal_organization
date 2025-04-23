@@ -1,21 +1,12 @@
-import axios from 'axios';
 import React, {useEffect, useState} from 'react';
 import Select from 'react-select';
-import {API_URL} from '../../services/api';
-import {assignStore, getStores} from '../../services/storeService';
+import {storeService} from '../../services/storeService';
 import {toast} from 'react-toastify';
 
 const AssignStore = () => {
-  const accessToken = localStorage.getItem('accessToken');
   const [selectedStore, setSelectedStore] = useState(null);
   const [storeOptions, setStoreOptions] = useState(null);
 
-  // Sample store options (replace with actual data from API or props)
-  // const storeOptions = [
-  //   { value: "65aa1d545b58e0343976de38", label: "ELITE HOSPITAL / 27" },
-  //   { value: "store2", label: "STORE 2 / 28" },
-  //   { value: "store3", label: "STORE 3 / 29" },
-  // ];
 
   useEffect(() => {
     getData();
@@ -23,7 +14,7 @@ const AssignStore = () => {
 
   const getData = async () => {
     try {
-      const storeData = await getStores(accessToken); // Already returns res.data.data
+      const storeData = await storeService.getStores(); // Already returns res.data.data
 
       if (storeData) {
         const options = storeData.map((store) => ({
@@ -51,7 +42,7 @@ const AssignStore = () => {
     };
 
     try {
-      const response = await assignStore(bodyData, accessToken);
+      const response = await storeService.assignStore(bodyData);
       if (response?.success) {
         toast.success(response.message);
         setSelectedStore("")

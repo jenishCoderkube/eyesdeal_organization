@@ -4,13 +4,10 @@ import {FiEdit2} from 'react-icons/fi';
 import {MdDeleteOutline} from 'react-icons/md';
 import EditStoreModal from '../../components/Stores/EditStoreModal.jsx';
 import DeactivateStoreModal from '../../components/Stores/DeactivateStoreModal.jsx';
-import axios from 'axios';
-import {API_URL} from '../../services/api.js';
-import {deleteStore, getStores} from '../../services/storeService.js';
+import { storeService} from '../../services/storeService.js';
 import {toast} from 'react-toastify';
 
 const ViewStore = () => {
-  const accessToken = localStorage.getItem('accessToken');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -20,7 +17,7 @@ const ViewStore = () => {
 
   const fetchStores = async () => {
     try {
-      const storeData = await getStores(accessToken);
+      const storeData = await storeService.getStores();
       setStores(storeData);
     } catch (err) {
       console.log('Failed to load stores', err);
@@ -31,44 +28,6 @@ const ViewStore = () => {
     fetchStores();
   }, []);
 
-  // Dummy store data
-  // const stores = [
-  //   {
-  //     id: 1,
-  //     activeInWebsite: true,
-  //     systemId: '67fe33393601ef3b058fd844',
-  //     storeName: 'ELITE HOSPITAL',
-  //     billingSequence: 30,
-  //   },
-  //   {
-  //     id: 2,
-  //     activeInWebsite: false,
-  //     systemId: '67fe31723601ef3b058fd6d6',
-  //     storeName: 'SAFENT',
-  //     billingSequence: 28,
-  //   },
-  //   {
-  //     id: 3,
-  //     activeInWebsite: false,
-  //     systemId: '66463ffddaaf6d64448d32c3',
-  //     storeName: 'CLOSED NIKOL',
-  //     billingSequence: 25,
-  //   },
-  //   {
-  //     id: 4,
-  //     activeInWebsite: true,
-  //     systemId: '64febbd33db22f02719c0d06',
-  //     storeName: 'EYESDEAL ADAJAN',
-  //     billingSequence: 24,
-  //   },
-  //   {
-  //     id: 5,
-  //     activeInWebsite: true,
-  //     systemId: '64febb863db22f02719c0cdf',
-  //     storeName: 'EYESDEAL UDHANA',
-  //     billingSequence: 23,
-  //   },
-  // ];
 
   const handleEdit = (store) => {
     setSelectedStore(store);
@@ -79,7 +38,7 @@ const ViewStore = () => {
     alert('Are you sure you want to delete');
     console.log(`Delete store with id: ${id}`);
     try {
-      const response = await deleteStore(id, accessToken);
+      const response = await storeService.deleteStore(id);
       if (response?.success) {
         toast.success(response?.message);
         fetchStores();
@@ -94,9 +53,6 @@ const ViewStore = () => {
     setShowDeactivateModal(true);
   };
 
-  // const filteredStores = stores?.filter((store) =>
-  //   store.storeName.toLowerCase().includes(searchQuery.toLowerCase()),
-  // );
   const filteredStores = stores?.filter((store) =>
     store?.name?.toLowerCase()?.includes(searchQuery?.toLowerCase()),
   );
@@ -220,7 +176,6 @@ const ViewStore = () => {
         onHide={() => setShowDeactivateModal(false)}
         storeData={selectedStore}
         stores={stores}
-        accessToken={accessToken}
       />
     </div>
   );

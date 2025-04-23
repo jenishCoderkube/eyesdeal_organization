@@ -3,12 +3,11 @@ import Select from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { Country, State, City } from "country-state-city";
-import { updateStore } from "../../services/storeService";
+import { storeService } from "../../services/storeService";
 import { toast } from "react-toastify";
 import { uploadImage } from "../../utils/constants";
 
 const EditStoreModal = ({ show, onHide, storeData }) => {
-  const accessToken = localStorage.getItem("accessToken");
 
   const [formData, setFormData] = useState({
     SystemId: "",
@@ -192,7 +191,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
     console.log("Form submitted:", payload);
 
     try {
-      const response = await updateStore(payload, accessToken);
+      const response = await storeService.updateStore(payload);
       if (response?.success) {
         toast.success(response.message);
         setFormData({

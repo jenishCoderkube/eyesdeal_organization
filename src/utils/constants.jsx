@@ -19,7 +19,6 @@ export const printLogs = (msg) => {
 };
 
 export const uploadImage = async (fileObje, name) => {
-  const accessToken = localStorage.getItem('accessToken');
   const file = fileObje; // This should be a File object from input
   const location = 'eyesdeal/website/stores/';
   const fileName = name;
@@ -29,7 +28,6 @@ export const uploadImage = async (fileObje, name) => {
       file,
       location,
       fileName,
-      accessToken,
     );
     return result?.data[0]?.key;
   } catch (error) {

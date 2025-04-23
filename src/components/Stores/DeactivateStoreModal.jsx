@@ -1,9 +1,9 @@
 import React, {useRef, useState} from 'react';
 import {IoMdClose} from 'react-icons/io';
 import Select from 'react-select';
-import {deactivateInventory} from '../../services/storeService';
+import { storeService} from '../../services/storeService';
 import {toast} from 'react-toastify';
-const DeactivateStoreModal = ({show, onHide, storeData, stores,accessToken}) => {
+const DeactivateStoreModal = ({show, onHide, storeData, stores}) => {
   const [formData, setFormData] = useState({
     sendStore: null,
     confirmation: '',
@@ -64,7 +64,7 @@ const DeactivateStoreModal = ({show, onHide, storeData, stores,accessToken}) => 
     };
 
     try {
-      const response = await deactivateInventory(payload, accessToken);
+      const response = await storeService.deactivateInventory(payload);
       if (response?.success) {
         toast.success(response?.message);
         setFormData("")

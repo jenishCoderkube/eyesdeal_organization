@@ -3,6 +3,12 @@ import api from "./api";
 // Print the base URL for debugging
 console.log("Product API Base URL:", api.defaults.baseURL);
 
+const PRODUCT_ENDPOINTS = {
+eyeGlasses : "/products/eyeGlasses",
+eyeGlassesById :(id) =>`/products/eyeGlasses/${id}`,
+};
+
+
 // Product service functions
 export const productService = {
   // Add a new eyeGlasses product
@@ -76,13 +82,9 @@ export const productService = {
         photos: processedPhotos,
       };
       
-      console.log("Formatted data for API:", formattedData);
+    
       
-      const apiUrl = "/products/eyeGlasses";
-      console.log("API endpoint:", apiUrl);
-      
-      const response = await api.post(apiUrl, formattedData);
-      console.log("Add eyeGlasses response:", response.data);
+      const response = await api.post(PRODUCT_ENDPOINTS.eyeGlasses, formattedData);
       
       // Handle response structure
       if (response.data && response.data.success) {
@@ -125,7 +127,7 @@ export const productService = {
   // Get all eyeGlasses products
   getEyeGlasses: async () => {
     try {
-      const response = await api.get("/products/eyeGlasses");
+      const response = await api.get(PRODUCT_ENDPOINTS.eyeGlasses);
       
       if (response.data && response.data.success) {
         return {
@@ -150,7 +152,7 @@ export const productService = {
   // Get a single eyeGlasses product by ID
   getEyeGlassesById: async (id) => {
     try {
-      const response = await api.get(`/products/eyeGlasses/${id}`);
+      const response = await api.get(PRODUCT_ENDPOINTS.eyeGlassesById(id));
       
       if (response.data && response.data.success) {
         return {
@@ -175,7 +177,7 @@ export const productService = {
   // Update an eyeGlasses product
   updateEyeGlasses: async (id, productData) => {
     try {
-      const response = await api.put(`/products/eyeGlasses/${id}`, productData);
+      const response = await api.put(PRODUCT_ENDPOINTS.eyeGlassesById(id), productData);
       
       if (response.data && response.data.success) {
         return {
@@ -201,7 +203,7 @@ export const productService = {
   // Delete an eyeGlasses product
   deleteEyeGlasses: async (id) => {
     try {
-      const response = await api.delete(`/products/eyeGlasses/${id}`);
+      const response = await api.delete(PRODUCT_ENDPOINTS.eyeGlassesById(id));
       
       if (response.data && response.data.success) {
         return {

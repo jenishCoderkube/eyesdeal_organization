@@ -4,11 +4,10 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import {Country, State, City} from 'country-state-city';
 import styles from '../../assets/css/Stores/AddStores.module.css';
-import {createStore} from '../../services/storeService';
+import { storeService} from '../../services/storeService';
 import {toast} from 'react-toastify';
 import {uploadImage} from '../../utils/constants';
 const AddStore = () => {
-  const accessToken = localStorage.getItem('accessToken');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -159,7 +158,7 @@ const AddStore = () => {
     console.log('Form submitted:', payload);
 
     try {
-      const response = await createStore(payload, accessToken);
+      const response = await storeService.createStore(payload);
       if (response?.success) {
         toast.success(response.message);
         setFormData({
