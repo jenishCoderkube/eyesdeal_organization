@@ -1,17 +1,24 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Form } from "react-bootstrap";
 import FolderList from "../../components/MediaLibrary/FolderList";
 import FileList from "../../components/MediaLibrary/FileList";
 import AddAssetModal from "../../components/MediaLibrary/AddAssetModal";
 import AddFolderModal from "../../components/MediaLibrary/AddFolderModal";
 import { useFolderTree } from "./FolderTreeContext";
+import { mediaService } from "../../services/mediaService";
+import { toast } from "react-toastify";
+import Processing from "../../components/Processing/Processing";
 
 const MediaLibrary = () => {
   const navigate = useNavigate();
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [folderName, setFolder] = useState([]);
+
+  console.log("folderName", folderName);
   const { folderTree, setFolderTree } = useFolderTree();
+  const [loading, setLoading] = useState(false);
 
   // Root level: all top-level folders and their files
   const subfolders = folderTree;
@@ -52,6 +59,55 @@ const MediaLibrary = () => {
       return newTree;
     });
   };
+  function extractMediaPath(input) {
+    const prefix = "/media-library";
+
+    if (input === prefix) {
+      return "/";
+    }
+
+    if (input.startsWith(prefix)) {
+      let result = input.slice(prefix.length);
+
+      // Remove leading slash if it exists
+      if (result.startsWith("/")) {
+        result = result.slice(1);
+      }
+
+      // Ensure trailing slash
+      if (!result.endsWith("/")) {
+        result += "/";
+      }
+
+      return result;
+    }
+
+    return input;
+  }
+
+  const path = useLocation();
+  let currentFolder = extractMediaPath(path?.pathname);
+  useEffect(() => {
+    console.log("object", currentFolder);
+    getMedia(currentFolder);
+  }, [currentFolder]);
+
+  const getMedia = async (path) => {
+    setLoading(true);
+
+    try {
+      const response = await mediaService.getMedia(path);
+      if (response.success) {
+        setFolder(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-width-90 mx-auto py-4">
@@ -72,11 +128,20 @@ const MediaLibrary = () => {
           >
             Add Folder
           </Button>
+          {currentFolder !== "/" && (
+            <Button variant="danger">Delete Folder</Button>
+          )}
         </div>
       </div>
 
-      <FolderList folders={subfolders} onFolderClick={handleFolderClick} />
-      <FileList files={files} onDeleteFile={handleDeleteFile} />
+      {loading ? (
+        <Processing />
+      ) : (
+        <>
+          <FolderList folders={folderName} onFolderClick={handleFolderClick} />
+          <FileList files={folderName} onDeleteFile={handleDeleteFile} />
+        </>
+      )}
 
       <AddAssetModal
         show={showAssetModal}
