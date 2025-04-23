@@ -5,6 +5,10 @@ import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import CommonButton from "../../../components/CommonButton/CommonButton";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -12,9 +16,6 @@ const validationSchema = Yup.object({
   phone: Yup.string()
     .min(4, "Phone number is required")
     .required("Phone number is required"),
-  customerReference: Yup.object()
-    .nullable()
-    .required("Customer Reference is required"),
   gender: Yup.object().nullable().required("Gender is required"),
   country: Yup.object().nullable().required("Country is required"),
   state: Yup.object().nullable().required("State is required"),
@@ -27,15 +28,13 @@ const validationSchema = Yup.object({
 });
 
 const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [anniversaryDate, setAnniversaryDate] = useState(null);
-
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   // Formik setup
   const formik = useFormik({
     initialValues: {
       name: "",
       phone: "+91",
-      customerReference: null,
       gender: null,
       country: null,
       state: null,
@@ -48,9 +47,30 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
       address: "",
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       // Log form values to console
-      console.log("Form Values:", values);
+      setLoading(true);
+      const data = {
+        ...values,
+        gender: values.gender?.value,
+        country: values.country?.label,
+        state: values.state?.label,
+        city: values.city?.label,
+        pincode: Number(values.pincode),
+      };
+      try {
+        const response = await userService.addOrganization(data);
+        if (response.success) {
+          toast.success(response.message);
+          navigate("/");
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        toast.error("Failed to add organization!");
+      } finally {
+        setLoading(false);
+      }
     },
   });
 
@@ -81,8 +101,8 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
       : [];
 
   const genderOptions = [
-    { value: "Male", label: "Male" },
-    { value: "Female", label: "Female" },
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
   ];
 
   // Handle country change to reset state and city
@@ -314,9 +334,18 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row mt-3 pb-5">
             <div>
-              <button type="submit" className="btn btn-primary">
+              {/* <button type="submit" className="btn btn-primary" onClick={(e) => {
+                e.preventDefault();
+                console.log("formik values: ", formik.isValid, formik.values);
+              }}>
                 Submit
-              </button>
+              </button> */}
+              <CommonButton
+                loading={loading}
+                buttonText="Submit"
+                type="submit"
+                className="btn btn-primary"
+              />
             </div>
           </div>
           <hr />

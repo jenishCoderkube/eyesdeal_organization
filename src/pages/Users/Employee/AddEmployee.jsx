@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
@@ -7,6 +7,9 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Country, State, City } from "country-state-city";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -24,16 +27,27 @@ const validationSchema = Yup.object({
   city: Yup.object().nullable().required("City is required"),
   pincode: Yup.string().trim().required("Pincode is required"),
   gender: Yup.object().nullable().required("Gender is required"),
-  stores: Yup.object().nullable().required("Stores is required"),
+  stores: Yup.array().of(Yup.object().shape({
+    value: Yup.string(),
+    label: Yup.string(),
+  })).min(1, "At least 1 store is required").required("Store is required"),
   joiningDate: Yup.date().nullable().required("Joining date is required"),
   isActive: Yup.boolean().required("Active status is required"),
 });
 
 // Options for dropdowns
 const roleOptions = [
-  { value: "Admin", label: "Admin" },
-  { value: "Employee", label: "Employee" },
-  { value: "Manager", label: "Manager" },
+  { value: "sales", label: "Sales" },
+  { value: "store manager", label: "Store Manager" },
+  { value: "order manager", label: "Order Manager" },
+  { value: "purchase manager", label: "Purchase Manager" },
+  { value: "sub admin", label: "Sub Admin" },
+  { value: "individual store", label: "Individual Store" },
+  { value: "owner", label: "Owner" },
+  { value: "local store", label: "Local Store" },
+  { value: "outside store", label: "Outside Store" },
+  { value: "ecommerce manager", label: "Ecommerce Manager" },
+  { value: "org admin", label: "Org Admin" },
 ];
 
 const genderOptions = [
@@ -41,13 +55,24 @@ const genderOptions = [
   { value: "Female", label: "Female" },
 ];
 
-const storeOptions = [
-  { value: "Store1", label: "Store 1" },
-  { value: "Store2", label: "Store 2" },
-  { value: "Store3", label: "Store 3" },
-];
-
 function AddEmployee() {
+  const [stores, setStores] = useState([]);
+
+  const storeOptions = stores.map((store) => ({
+    value: store?._id,
+    label: store?.name,
+  }));
+
+  useEffect(() => {
+    userService
+      .getStores()
+      .then((res) => {
+        setStores(res?.data?.data);
+      })
+      .catch((e) => console.log("failed to fetch stores: ", e));
+  }, []);
+
+  const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -60,13 +85,42 @@ function AddEmployee() {
       city: null,
       pincode: "",
       gender: null,
-      stores: null,
+      stores: [],
       joiningDate: null,
       isActive: false,
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log("Form Values:", values);
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const formattedData = {
+          name: values.name,
+          phone: values.phone.replace("+", ""),
+          email: values.email,
+          password: values.password,
+          role: values.role.value,
+          gender: values.gender.value.toLowerCase(),
+          country: values.country.label,
+          state: values.state.label,
+          city: values.city.label,
+          pincode: values.pincode,
+          stores: values.stores.map((store) => store.value),
+          joiningDate: values.joiningDate.getTime(),
+          isActive: values.isActive,
+        };
+
+        const response = await userService.addEmployee(formattedData);
+
+        if (response.success) {
+          toast.success(response.message);
+          navigate(`/employee/${response.data?.data?._id}`);
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        toast.error("Failed to add employee!");
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
@@ -327,7 +381,7 @@ function AddEmployee() {
               <Select
                 options={storeOptions}
                 value={formik.values.stores}
-                // isMulti
+                isMulti
                 onChange={(option) => formik.setFieldValue("stores", option)}
                 onBlur={() => formik.setFieldTouched("stores", true)}
                 placeholder="Select..."
@@ -387,8 +441,9 @@ function AddEmployee() {
               <button
                 className="btn btn-primary bg-indigo-500 hover:bg-indigo-600 text-white"
                 type="submit"
+                disabled={formik.isSubmitting}
               >
-                Submit
+                {formik.isSubmitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           </form>

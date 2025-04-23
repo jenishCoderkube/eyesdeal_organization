@@ -1,5 +1,5 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
@@ -60,8 +60,15 @@ const storeOptions = [
 ];
 
 function EditEmployee() {
+  const {id} = useParams();
   const location = useLocation();
   const employee = location.state?.user || {};
+
+  useEffect(() => {
+    if(id){
+      // fetch employee details here and set data accodingly
+    }
+  }, [id]);
 
   // Parse JoiningDate string (e.g., "20/08/2024") to Date
   const parseDate = (dateStr) => {

@@ -6,18 +6,18 @@ import { addPrescription } from "../../store/Power/specsPowerSlice";
 const SpecsPowerModal = ({ show, onHide, editData }) => {
   const [formData, setFormData] = useState({
     doctorName: "",
-    prescribedBy: null,
+    prescribedBy: "",
     type: "specs",
     right: {
-      distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
-      near: { sph: null, cyl: null, axis: null, vs: null },
+      distance: { sph: "", cyl: "", axis: "", vs: "", add: "" },
+      near: { sph: "", cyl: "", axis: "", vs: "" },
       psm: "",
       pd: "",
       fh: "",
     },
     left: {
-      distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
-      near: { sph: null, cyl: null, axis: null, vs: null },
+      distance: { sph: "", cyl: "", axis: "", vs: "", add: "" },
+      near: { sph: "", cyl: "", axis: "", vs: "" },
       psm: "",
       pd: "",
       fh: "",
@@ -35,22 +35,22 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
 
   useEffect(() => {
     if (editData) {
-      setFormData(editData); // Set all fields with editData
+      setFormData(editData);
     } else {
       setFormData({
         doctorName: "",
-        prescribedBy: null,
+        prescribedBy: "",
         type: "specs",
         right: {
-          distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
-          near: { sph: null, cyl: null, axis: null, vs: null },
+          distance: { sph: "", cyl: "", axis: "", vs: "", add: "" },
+          near: { sph: "", cyl: "", axis: "", vs: "" },
           psm: "",
           pd: "",
           fh: "",
         },
         left: {
-          distance: { sph: null, cyl: null, axis: null, vs: null, add: null },
-          near: { sph: null, cyl: null, axis: null, vs: null },
+          distance: { sph: "", cyl: "", axis: "", vs: "", add: "" },
+          near: { sph: "", cyl: "", axis: "", vs: "" },
           psm: "",
           pd: "",
           fh: "",
@@ -63,26 +63,69 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
         pdesign: "",
         ftype: "",
         de: "",
-      }); // Reset to default when adding new
+      });
     }
   }, [editData]);
 
   const dispatch = useDispatch();
 
   const prescribedByOptions = [
-    { value: "Doctor1", label: "Doctor 1" },
-    { value: "Doctor2", label: "Doctor 2" },
+    { value: "doctor", label: "Doctor" },
+    { value: "optometrist", label: "Optometrist" },
   ];
 
-  const powerOptions = [
-    { value: "0", label: "0" },
-    { value: "1", label: "1" },
+  const powerOptions = Array.from({ length: 193 }, (_, i) => {
+    const value = (i - 96) * 0.25; // -24.00 to +24.00 with 0.25 interval
+    const formattedValue = value.toFixed(2);
+    return {
+      value: formattedValue,
+      label: value >= 0 ? `+${formattedValue}` : formattedValue,
+    };
+  });
+
+  const cylOptions = Array.from({ length: 65 }, (_, i) => {
+    const value = (i - 32) * 0.25; // -8.00 to +8.00 with 0.25 interval
+    const formattedValue = value.toFixed(2);
+    return {
+      value: formattedValue,
+      label: value >= 0 ? `+${formattedValue}` : formattedValue,
+    };
+  });
+
+  const axisOptions = Array.from({ length: 37 }, (_, i) => ({
+    value: (i * 5).toString(), // 0 to 180 with 5 interval
+    label: (i * 5).toString(),
+  }));
+
+  const distanceVisionOptions = [
+    { value: "6/5", label: "6/5" },
+    { value: "6/6", label: "6/6" },
+    { value: "6/9", label: "6/9" },
+    { value: "6/12", label: "6/12" },
+    { value: "6/18", label: "6/18" },
+    { value: "6/24", label: "6/24" },
+    { value: "6/36", label: "6/36" },
   ];
 
-  const visionOptions = [
-    { value: "20/20", label: "20/20" },
-    { value: "20/40", label: "20/40" },
+  const nearVisionOptions = [
+    { value: "N/5", label: "N/5" },
+    { value: "N/6", label: "N/6" },
+    { value: "N/8", label: "N/8" },
+    { value: "N/10", label: "N/10" },
+    { value: "N/12", label: "N/12" },
+    { value: "N/18", label: "N/18" },
+    { value: "N/24", label: "N/24" },
+    { value: "N/36", label: "N/36" },
   ];
+
+  const addOptions = Array.from({ length: 13 }, (_, i) => {
+    const value = i * 0.25; // 0.00 to +3.00 with 0.25 interval
+    const formattedValue = value.toFixed(2);
+    return {
+      value: formattedValue,
+      label: value > 0 ? `+${formattedValue}` : formattedValue,
+    };
+  });
 
   const validateForm = () => {
     const newErrors = {};
@@ -100,9 +143,47 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
       setErrors(validationErrors);
       return;
     }
-    dispatch(addPrescription(formData));
+
+    // Keep empty values as empty strings
+    const formattedData = {
+      ...formData,
+      right: {
+        ...formData.right,
+        distance: {
+          sph: formData.right.distance.sph || "",
+          cyl: formData.right.distance.cyl || "",
+          axis: formData.right.distance.axis || "",
+          vs: formData.right.distance.vs || "",
+          add: formData.right.distance.add || "",
+        },
+        near: {
+          sph: formData.right.near.sph || "",
+          cyl: formData.right.near.cyl || "",
+          axis: formData.right.near.axis || "",
+          vs: formData.right.near.vs || "",
+        },
+      },
+      left: {
+        ...formData.left,
+        distance: {
+          sph: formData.left.distance.sph || "",
+          cyl: formData.left.distance.cyl || "",
+          axis: formData.left.distance.axis || "",
+          vs: formData.left.distance.vs || "",
+          add: formData.left.distance.add || "",
+        },
+        near: {
+          sph: formData.left.near.sph || "",
+          cyl: formData.left.near.cyl || "",
+          axis: formData.left.near.axis || "",
+          vs: formData.left.near.vs || "",
+        },
+      },
+    };
+
+    dispatch(addPrescription(formattedData));
     setErrors({});
-    onHide(); // Close modal after submission
+    onHide();
   };
 
   const handleInputChange = (field, value, nestedPath = null) => {
@@ -115,7 +196,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
             ...prev[side],
             [subField]: {
               ...prev[side][subField],
-              [field]: value,
+              [field]: value, // Keep empty value as is
             },
           },
         }));
@@ -124,7 +205,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
           ...prev,
           [side]: {
             ...prev[side],
-            [field]: value,
+            [field]: value, // Keep empty value as is
           },
         }));
       }
@@ -140,13 +221,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     <>
       {show && (
         <>
-          {/* Modal Backdrop */}
-          <div
-            className="modal-backdrop fade show"
-            style={{ zIndex: 1040 }}
-          ></div>
-
-          {/* Modal Content */}
+          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
           <div
             className="modal fade show d-block"
             tabIndex="-1"
@@ -212,9 +287,11 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                         </label>
                         <Select
                           options={prescribedByOptions}
-                          value={formData.prescribedBy}
+                          value={prescribedByOptions.find(
+                            (opt) => opt.value === formData.prescribedBy
+                          )}
                           onChange={(option) =>
-                            handleInputChange("prescribedBy", option)
+                            handleInputChange("prescribedBy", option.value)
                           }
                           placeholder="Select..."
                         />
@@ -250,69 +327,59 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             <td>
                               <Select
                                 options={powerOptions}
-                                value={formData.right.distance.sph}
+                                value={powerOptions.find(
+                                  (opt) => opt.value === formData.right.distance.sph
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "sph",
-                                    option,
-                                    "right.distance"
-                                  )
+                                  handleInputChange("sph", option.value, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.right.distance.cyl}
+                                options={cylOptions}
+                                value={cylOptions.find(
+                                  (opt) => opt.value === formData.right.distance.cyl
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "cyl",
-                                    option,
-                                    "right.distance"
-                                  )
+                                  handleInputChange("cyl", option.value, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.right.distance.axis}
+                                options={axisOptions}
+                                value={axisOptions.find(
+                                  (opt) => opt.value === formData.right.distance.axis
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "axis",
-                                    option,
-                                    "right.distance"
-                                  )
+                                  handleInputChange("axis", option.value, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={visionOptions}
-                                value={formData.right.distance.vs}
+                                options={distanceVisionOptions}
+                                value={distanceVisionOptions.find(
+                                  (opt) => opt.value === formData.right.distance.vs
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "vs",
-                                    option,
-                                    "right.distance"
-                                  )
+                                  handleInputChange("vs", option.value, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.right.distance.add}
+                                options={addOptions}
+                                value={addOptions.find(
+                                  (opt) => opt.value === formData.right.distance.add
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "add",
-                                    option,
-                                    "right.distance"
-                                  )
+                                  handleInputChange("add", option.value, "right.distance")
                                 }
                                 placeholder="Select..."
                               />
@@ -321,11 +388,13 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             <td>
                               <Select
                                 options={powerOptions}
-                                value={formData.left.distance.sph}
+                                value={powerOptions.find(
+                                  (opt) => opt.value === formData.left.distance.sph
+                                )}
                                 onChange={(option) =>
                                   handleInputChange(
                                     "sph",
-                                    option,
+                                    option.value,
                                     "left.distance"
                                   )
                                 }
@@ -334,12 +403,14 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.left.distance.cyl}
+                                options={cylOptions}
+                                value={cylOptions.find(
+                                  (opt) => opt.value === formData.left.distance.cyl
+                                )}
                                 onChange={(option) =>
                                   handleInputChange(
                                     "cyl",
-                                    option,
+                                    option.value,
                                     "left.distance"
                                   )
                                 }
@@ -348,12 +419,14 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.left.distance.axis}
+                                options={axisOptions}
+                                value={axisOptions.find(
+                                  (opt) => opt.value === formData.left.distance.axis
+                                )}
                                 onChange={(option) =>
                                   handleInputChange(
                                     "axis",
-                                    option,
+                                    option.value,
                                     "left.distance"
                                   )
                                 }
@@ -362,26 +435,26 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             </td>
                             <td>
                               <Select
-                                options={visionOptions}
-                                value={formData.left.distance.vs}
+                                options={distanceVisionOptions}
+                                value={distanceVisionOptions.find(
+                                  (opt) => opt.value === formData.left.distance.vs
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "vs",
-                                    option,
-                                    "left.distance"
-                                  )
+                                  handleInputChange("vs", option.value, "left.distance")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.left.distance.add}
+                                options={addOptions}
+                                value={addOptions.find(
+                                  (opt) => opt.value === formData.left.distance.add
+                                )}
                                 onChange={(option) =>
                                   handleInputChange(
                                     "add",
-                                    option,
+                                    option.value,
                                     "left.distance"
                                   )
                                 }
@@ -394,43 +467,47 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             <td>
                               <Select
                                 options={powerOptions}
-                                value={formData.right.near.sph}
+                                value={powerOptions.find(
+                                  (opt) => opt.value === formData.right.near.sph
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option, "right.near")
+                                  handleInputChange("sph", option.value, "right.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.right.near.cyl}
+                                options={cylOptions}
+                                value={cylOptions.find(
+                                  (opt) => opt.value === formData.right.near.cyl
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option, "right.near")
+                                  handleInputChange("cyl", option.value, "right.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.right.near.axis}
+                                options={axisOptions}
+                                value={axisOptions.find(
+                                  (opt) => opt.value === formData.right.near.axis
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange(
-                                    "axis",
-                                    option,
-                                    "right.near"
-                                  )
+                                  handleInputChange("axis", option.value, "right.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={visionOptions}
-                                value={formData.right.near.vs}
+                                options={nearVisionOptions}
+                                value={nearVisionOptions.find(
+                                  (opt) => opt.value === formData.right.near.vs
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option, "right.near")
+                                  handleInputChange("vs", option.value, "right.near")
                                 }
                                 placeholder="Select..."
                               />
@@ -440,39 +517,47 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             <td>
                               <Select
                                 options={powerOptions}
-                                value={formData.left.near.sph}
+                                value={powerOptions.find(
+                                  (opt) => opt.value === formData.left.near.sph
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option, "left.near")
+                                  handleInputChange("sph", option.value, "left.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.left.near.cyl}
+                                options={cylOptions}
+                                value={cylOptions.find(
+                                  (opt) => opt.value === formData.left.near.cyl
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option, "left.near")
+                                  handleInputChange("cyl", option.value, "left.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={powerOptions}
-                                value={formData.left.near.axis}
+                                options={axisOptions}
+                                value={axisOptions.find(
+                                  (opt) => opt.value === formData.left.near.axis
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("axis", option, "left.near")
+                                  handleInputChange("axis", option.value, "left.near")
                                 }
                                 placeholder="Select..."
                               />
                             </td>
                             <td>
                               <Select
-                                options={visionOptions}
-                                value={formData.left.near.vs}
+                                options={nearVisionOptions}
+                                value={nearVisionOptions.find(
+                                  (opt) => opt.value === formData.left.near.vs
+                                )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option, "left.near")
+                                  handleInputChange("vs", option.value, "left.near")
                                 }
                                 placeholder="Select..."
                               />
