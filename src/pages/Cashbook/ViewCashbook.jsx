@@ -1,17 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaSearch } from "react-icons/fa";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import CommonButton from "../../components/CommonButton/CommonButton";
+import { cashbookService } from "../../services/cashbookService";
+import { toast } from "react-toastify";
+import moment from "moment/moment";
 
 const ViewCashbook = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [storeData, setStoreData] = useState([]);
+  const [cashBooks, setCashBook] = useState([]);
+  console.log("cashBooks", cashBooks?.docs);
+  const today = new Date();
   const [formData, setFormData] = useState({
     mode: { label: "Cash", value: "cash" },
     store: null,
-    from: "2025-04-16",
-    to: "2025-04-16",
+    from: new Date(today.setHours(0, 0, 0, 0)),
+    to: new Date(today.setHours(23, 59, 59, 999)),
   });
 
   // Sample cashbook data (replace with API data)
@@ -75,13 +84,10 @@ const ViewCashbook = () => {
     { value: "bank", label: "Bank" },
   ];
 
-  const storeOptions = [
-    { value: "elite_hospital", label: "ELITE HOSPITAL" },
-    { value: "safent", label: "SAFENT" },
-    { value: "closed_nikol", label: "CLOSED NIKOL" },
-    { value: "eyesdeal_adajan", label: "EYESDEAL ADAJAN" },
-    { value: "eyesdeal_bhatar", label: "EYESDEAL BHATAR" },
-  ];
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -94,7 +100,8 @@ const ViewCashbook = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    console.log("Form submitted:", formData?.from);
+    cashBook();
     // Add API call here (e.g., axios.post)
   };
 
@@ -105,6 +112,56 @@ const ViewCashbook = () => {
   // Sample balance data
   const openingBalance = 5780;
   const closingBalance = 15165;
+
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await cashbookService.viewCashBook();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cashBook();
+  }, []);
+
+  const cashBook = async () => {
+    const storeId = formData?.store?.map((option) => option.value);
+    setLoading(true);
+
+    try {
+      const response = await cashbookService.cashBook(
+        formData?.from?.getTime(),
+        formData?.to?.getTime(),
+        storeId,
+        1, // page
+        20, // limit,,
+        1
+      );
+      if (response.success) {
+        console.log("response", response);
+        setCashBook(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container-fluid py-5 px-4 px-sm-5 px-lg-5">
@@ -160,9 +217,7 @@ const ViewCashbook = () => {
                 </label>
                 <DatePicker
                   selected={formData.from ? new Date(formData.from) : null}
-                  onChange={(date) =>
-                    handleInputChange("from", date.toISOString().split("T")[0])
-                  }
+                  onChange={(date) => handleInputChange("from", date)}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
                 />
@@ -173,17 +228,18 @@ const ViewCashbook = () => {
                 </label>
                 <DatePicker
                   selected={formData.to ? new Date(formData.to) : null}
-                  onChange={(date) =>
-                    handleInputChange("to", date.toISOString().split("T")[0])
-                  }
+                  onChange={(date) => handleInputChange("to", date)}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
                 />
               </div>
               <div className="col-12">
-                <button type="submit" className="btn btn-primary">
-                  Submit
-                </button>
+                <CommonButton
+                  loading={loading}
+                  buttonText="Submit"
+                  onClick={handleSubmit}
+                  className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+                />
               </div>
             </div>
           </form>
@@ -201,7 +257,7 @@ const ViewCashbook = () => {
             </div>
             <div className="card-body p-0">
               <div className="mb-4 col-md-5">
-                <div className="input-group">
+                <div className="input-group px-4 pt-3">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch className="text-muted custom-search-icon" />
                   </span>
@@ -244,19 +300,36 @@ const ViewCashbook = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="text-sm divide-y divide-slate-200 ">
-                    {filteredCashbooks.map((entry) => (
-                      <tr key={entry.id}>
-                        <td className="px-4 py-3">{entry.id}</td>
-                        <td className="px-2 py-3">{entry.store}</td>
-                        <td className="px-2 py-3">{entry.expenseCategory}</td>
-                        <td className="px-2 py-3">{entry.amount}</td>
-                        <td className="px-2 py-3">{entry.balance}</td>
-                        <td className="px-2 py-3">{entry.note}</td>
-                        <td className="px-2 py-3">{entry.date}</td>
-                        <td className="px-4 py-3">{entry.type}</td>
+                  <tbody className="text-sm divide-y divide-slate-200">
+                    {cashBooks?.docs?.length > 0 ? (
+                      cashBooks.docs.map((entry, index) => (
+                        <tr key={entry._id}>
+                          <td className="px-4 py-3">{index + 1}</td>
+                          <td className="px-2 py-3">
+                            {entry?.store?.companyName}
+                          </td>
+                          <td className="px-2 py-3">
+                            {entry?.expenseCategory}
+                          </td>
+                          <td className="px-2 py-3">{entry?.amount}</td>
+                          <td className="px-2 py-3">{entry?.balance}</td>
+                          <td className="px-2 py-3">{entry?.notes}</td>
+                          <td className="px-2 py-3">
+                            {moment(entry?.createdAt).format("DD/MM/YYYY")}
+                          </td>
+                          <td className="px-4 py-3">{entry?.type}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="8"
+                          className="px-4 py-3 custom-perchase-th text-center"
+                        >
+                          No data found
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -264,9 +337,8 @@ const ViewCashbook = () => {
           </div>
           <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
             <div className="text-sm ">
-              Showing{" "}
-              <span className="fw-bold ">{filteredCashbooks.length}</span> of{" "}
-              <span className="fw-bold ">{cashbooks.length}</span> results
+              Showing <span className="fw-bold ">{cashBooks.length}</span> of{" "}
+              <span className="fw-bold ">{cashBooks.length}</span> results
             </div>
             <nav aria-label="Navigation">
               <ul className="d-flex list-unstyled">

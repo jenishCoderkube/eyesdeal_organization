@@ -9,6 +9,7 @@ import { printLogs } from "../../utils/constants";
 import { toast } from "react-toastify";
 import moment from "moment";
 import PurchaseModal from "../../components/Perchase/PurchaseModal";
+import CommonButton from "../../components/CommonButton/CommonButton";
 function ViewPurchase() {
   const [vendor, setVendor] = useState(null);
   const [store, setStore] = useState(null);
@@ -37,6 +38,7 @@ function ViewPurchase() {
   const getPurchaseLogs = async () => {
     const vendorId = vendor.map((option) => option.value);
     const storeId = store.map((option) => option.value);
+    setLoading(true);
 
     try {
       const response = await purchaseService.getPurchaseLog(
@@ -96,7 +98,7 @@ function ViewPurchase() {
 
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
-    label: `${vendor.name} / ${vendor.companyName}`,
+    label: `${vendor.name}`,
   }));
 
   const btnSubmit = (e) => {
@@ -110,6 +112,83 @@ function ViewPurchase() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedPurchase(null);
+  };
+
+  const filteredData = purchaseData?.docs?.filter((item) => {
+    const searchText = search.toLowerCase();
+    return (
+      item?.vendor?.companyName?.toLowerCase().includes(searchText) ||
+      item?.store?.companyName?.toLowerCase().includes(searchText) ||
+      moment(item?.invoiceDate).format("DD-MM-YYYY").includes(searchText) ||
+      String(item?.totalQuantity).includes(searchText) ||
+      String(item?.netAmount).includes(searchText)
+    );
+  });
+  console.log("filteredData", filteredData);
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+
+    let finalData = []; // Initialize the finalData array
+
+    filteredData?.forEach((item) => {
+      const selected = item?.products; // Assuming 'products' is an array
+      selected?.forEach((product) => {
+        // Loop through each product
+        const sku = product?.product?.sku;
+        const newBarcode = product?.product?.newBarcode;
+        const sellPrice = product?.product?.sellPrice;
+        const quantity = parseInt(product.quantity) || 0;
+
+        console.log("Selected Product:", quantity);
+
+        // Push to finalData based on quantity
+        for (let i = 0; i < quantity; i++) {
+          finalData.push({
+            sku: sku,
+            barcode: newBarcode,
+            price: sellPrice,
+          });
+        }
+      });
+    });
+
+    // Wrap finalData inside an object with a 'data' key
+    const result = {
+      data: finalData,
+    };
+
+    console.log("result", result); // This will log the final object in the desired format
+
+    setLoading(true);
+
+    try {
+      const response = await purchaseService.exportCsv(result);
+
+      if (response.success) {
+        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
+
+        // Create a Blob from the CSV string
+        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        document.body.appendChild(link);
+        link.click(); // Trigger the download
+        document.body.removeChild(link); // Clean up
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+
+    // Call your API here with `finalData`
   };
 
   return (
@@ -169,13 +248,12 @@ function ViewPurchase() {
                 />
               </div>
               <div className="col-12 mt-3 ">
-                <button
+                <CommonButton
+                  loading={loading}
+                  buttonText="Submit"
                   onClick={(e) => btnSubmit(e)}
-                  type="submit"
-                  className="btn btn-primary"
-                >
-                  Submit
-                </button>
+                  className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+                />
               </div>
             </div>
           </form>
@@ -240,22 +318,37 @@ function ViewPurchase() {
                   </tr>
                 </thead>
                 <tbody>
-                  {purchaseData?.docs?.map((item, index) => (
-                    <tr key={index}>
-                      <td>{index + 1}</td>
-                      <td>{item?.vendor?.companyName}</td>
-                      <td>{item?.store?.companyName}</td>
-                      <td>{moment(item?.invoiceDate).format("DD-MM-YYYY")}</td>
-                      <td>{item?.totalQuantity}</td>
-                      <td>{item?.netAmount}</td>
-                      <td role="button" onClick={() => handleViewClick(item)}>
-                        <i className="bi bi-eye text-primary"></i>
-                      </td>
-                      <td>
-                        <div className="btn btn-sm btn-primary">DOWNLOAD</div>
+                  {purchaseData?.docs?.length > 0 ? (
+                    purchaseData?.docs?.map((item, index) => (
+                      <tr key={index}>
+                        <td>{index + 1}</td>
+                        <td>{item?.vendor?.companyName}</td>
+                        <td>{item?.store?.companyName}</td>
+                        <td>
+                          {moment(item?.invoiceDate).format("DD-MM-YYYY")}
+                        </td>
+                        <td>{item?.totalQuantity}</td>
+                        <td>{item?.netAmount}</td>
+                        <td role="button" onClick={() => handleViewClick(item)}>
+                          <i className="bi bi-eye text-primary"></i>
+                        </td>
+                        <td>
+                          <div
+                            onClick={(e) => handleDownload(e)}
+                            className="btn btn-sm btn-primary"
+                          >
+                            DOWNLOAD
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="px-4 py-3 text-center">
+                        No data found
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

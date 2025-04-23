@@ -1,15 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
-
-const productOptions = [
-  { value: "product1", label: "Product 1" },
-  { value: "product2", label: "Product 2" },
-  { value: "product3", label: "Product 3" },
-];
+import { purchaseService } from "../../services/purchaseService";
+import { toast } from "react-toastify";
 
 function BarcodeGenerate() {
   const [items, setItems] = useState([]);
+  const [productData, setProductData] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const productOptions = productData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.oldBarcode} ${vendor.sku}`,
+    vendor,
+  }));
 
   const handleAddMore = () => {
     setItems([...items, { product: null, quantity: "" }]);
@@ -31,13 +36,79 @@ function BarcodeGenerate() {
     setItems(newItems);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
+
+    const finalData = [];
+
+    items.forEach((item) => {
+      const selected = item.product.vendor;
+      const quantity = parseInt(item.quantity) || 0;
+
+      for (let i = 0; i < quantity; i++) {
+        finalData.push({
+          sku: selected.sku,
+          barcode: selected.oldBarcode,
+          price: selected.sellPrice,
+        });
+      }
+    });
+
+    const finalPayload = {
+      data: finalData, // Wrap your array like this
+    };
+
+    setLoading(true);
+
+    try {
+      const response = await purchaseService.exportCsv(finalPayload);
+
+      if (response.success) {
+        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
+
+        // Create a Blob from the CSV string
+        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        document.body.appendChild(link);
+        link.click(); // Trigger the download
+        document.body.removeChild(link); // Clean up
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+
+    // Call your API here with `finalData`
+  };
+
+  const getProduct = async (search) => {
+    setLoading(true);
+
+    try {
+      const response = await purchaseService.generateBarcode(search);
+      if (response.success) {
+        setProductData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="container-fluid p-md-5 ">
+      <h1 className="h2 text-dark fw-bold">Generate Barcodes</h1>
       <form onSubmit={handleSubmit} className="px-md-5 px-2 ">
         <div className="card mb-4">
           <div className="card-body ">
@@ -62,6 +133,14 @@ function BarcodeGenerate() {
                         className="basic-select"
                         classNamePrefix="select"
                         inputId={`product-${index}`}
+                        onInputChange={(value) => {
+                          getProduct(value);
+                        }}
+                        isLoading={loading} // ✅ shows spinner while loading
+                        loadingMessage={() => "Loading..."} // ✅ custom loading message
+                        noOptionsMessage={({ inputValue }) =>
+                          inputValue ? "No products found" : "Type to search"
+                        }
                       />
                     </div>
                     <div className="col-md-4">

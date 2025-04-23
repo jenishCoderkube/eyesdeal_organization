@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import { cashbookService } from "../../services/cashbookService";
+import { toast } from "react-toastify";
+import CommonButton from "../../components/CommonButton/CommonButton";
 
 const AddCashbook = () => {
   const [formData, setFormData] = useState({
@@ -11,24 +14,33 @@ const AddCashbook = () => {
     notes: "",
   });
   const [errors, setErrors] = useState({});
+  const [storeData, setStoreData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  console.log("categoryData", categoryData);
+  const [loading, setLoading] = useState(false);
 
   // Sample store options (replace with actual data from API)
-  const storeOptions = [
-    { value: "65aa1d545b58e0343976de38", label: "ELITE HOSPITAL / 27" },
-    { value: "store2", label: "STORE 2 / 28" },
-    { value: "store3", label: "STORE 3 / 29" },
-  ];
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const expenseCategoryOptions = categoryData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
 
   // Sample expense category options
-  const expenseCategoryOptions = [
-    { value: "sales_return", label: "SALES RETURN" },
-    { value: "rent", label: "RENT" },
-    { value: "utilities", label: "UTILITIES" },
-  ];
+  // const expenseCategoryOptions = [
+  //   { value: "sales_return", label: "SALES RETURN" },
+  //   { value: "rent", label: "RENT" },
+  //   { value: "utilities", label: "UTILITIES" },
+  // ];
 
   // Sample mode options
   const modeOptions = [
-    { value: "upi", label: "UPI" },
+    { value: "card", label: "UPI" },
     { value: "bank", label: "BANK" },
     { value: "cash", label: "CASH" },
   ];
@@ -54,6 +66,16 @@ const AddCashbook = () => {
     if (!formData.expenseCategory) {
       newErrors.expenseCategory = "Expense Category is a required field";
     }
+    if (!formData.mode) {
+      newErrors.mode = "Mode is a required field";
+    }
+
+    if (!formData.type) {
+      newErrors.type = "Type is a required field";
+    }
+    if (!formData.notes) {
+      newErrors.notes = "Notes is a required field";
+    }
     if (
       !formData.amount ||
       isNaN(formData.amount) ||
@@ -64,7 +86,7 @@ const AddCashbook = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -73,7 +95,76 @@ const AddCashbook = () => {
     }
     setErrors({});
     console.log("Form submitted:", formData);
-    // Add API call here (e.g., axios.post)
+
+    const body = {
+      store: formData?.store?.value,
+      expenseCategory: formData?.expenseCategory?.value,
+      amount: formData?.amount,
+      mode: formData?.mode?.value,
+      notes: formData?.notes,
+      type: formData?.type?.value,
+    };
+
+    setLoading(true);
+    try {
+      const response = await cashbookService.addExpense(body);
+      if (response.success) {
+        console.log("res", response);
+        setFormData({
+          store: null,
+          expenseCategory: null,
+          amount: "",
+          mode: null,
+          type: null,
+          notes: "",
+        });
+        // setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getStores();
+    getCategoryData();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await cashbookService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryData = async () => {
+    setLoading(true);
+    try {
+      const response = await cashbookService.getCategory();
+      if (response.success) {
+        console.log("res", response?.data?.data?.docs);
+        setCategoryData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -186,7 +277,7 @@ const AddCashbook = () => {
                       htmlFor="mode"
                       className="form-label fw-medium text-sm"
                     >
-                      Mode
+                      Mode <span className="text-danger">*</span>
                     </label>
                     <Select
                       id="mode"
@@ -201,13 +292,21 @@ const AddCashbook = () => {
                       type="hidden"
                       value={formData.mode ? formData.mode.value : ""}
                     />
+                    {errors.mode && (
+                      <div
+                        id="amountError"
+                        className="text-danger text-xs mt-1"
+                      >
+                        {errors.mode}
+                      </div>
+                    )}
                   </div>
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="type"
                       className="form-label fw-medium text-sm"
                     >
-                      Type
+                      Type <span className="text-danger">*</span>
                     </label>
                     <Select
                       id="type"
@@ -222,13 +321,21 @@ const AddCashbook = () => {
                       type="hidden"
                       value={formData.type ? formData.type.value : ""}
                     />
+                    {errors.type && (
+                      <div
+                        id="amountError"
+                        className="text-danger text-xs mt-1"
+                      >
+                        {errors.type}
+                      </div>
+                    )}
                   </div>
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="notes"
                       className="form-label fw-medium text-sm"
                     >
-                      Notes
+                      Notes <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
@@ -240,11 +347,25 @@ const AddCashbook = () => {
                         handleInputChange("notes", e.target.value)
                       }
                     />
+                    {errors.notes && (
+                      <div
+                        id="amountError"
+                        className="text-danger text-xs mt-1"
+                      >
+                        {errors.notes}
+                      </div>
+                    )}
                   </div>
                   <div className="col-12">
-                    <button type="submit" className="btn btn-primary">
+                    {/* <button type="submit" className="btn btn-primary">
                       Submit
-                    </button>
+                    </button> */}
+                    <CommonButton
+                      loading={loading}
+                      buttonText="Submit"
+                      onClick={handleSubmit}
+                      className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+                    />
                   </div>
                 </div>
               </form>

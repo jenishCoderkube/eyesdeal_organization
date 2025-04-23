@@ -1,40 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaSearch } from "react-icons/fa";
+import { toast } from "react-toastify";
+import { cashbookService } from "../../services/cashbookService";
+import DeleteModal from "../../components/DeleteModal/DeleteModal";
+import CommonButton from "../../components/CommonButton/CommonButton";
 const AddExpenseCategory = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryData, setCategoryData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(false);
   const [formData, setFormData] = useState({
     expenseCategory: "",
   });
   const [errors, setErrors] = useState({});
-  // Dummy store data
-  const stores = [
-    {
-      id: 1,
-
-      storeName: "ELITE HOSPITAL",
-    },
-    {
-      id: 2,
-
-      storeName: "SAFENT",
-    },
-    {
-      id: 3,
-
-      storeName: "CLOSED NIKOL",
-    },
-    {
-      id: 4,
-
-      storeName: "EYESDEAL ADAJAN",
-    },
-    {
-      id: 5,
-
-      storeName: "EYESDEAL UDHANA",
-    },
-  ];
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -43,18 +23,32 @@ const AddExpenseCategory = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    alert("Are you sure you want to delete");
-    console.log(`Delete store with id: ${id}`);
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const response = await cashbookService.deleteExpense(deleteId);
+      if (response.success) {
+        console.log("res", response?.data?.message);
+        toast.success(response?.data?.message);
+        setDeleteId(null);
+        getCategoryData();
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
   const validateForm = () => {
     const newErrors = {};
     if (!formData.expenseCategory) {
-      newErrors.expenseCategory = "expenseCategory is a required field";
+      newErrors.expenseCategory = "Expense Category is a required field";
     }
     return newErrors;
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -63,11 +57,61 @@ const AddExpenseCategory = () => {
     }
     setErrors({});
     console.log("Form submitted:", formData);
+    const body = {
+      name: formData?.expenseCategory,
+    };
+
+    setLoading(true);
+    try {
+      const response = await cashbookService.createExpense(body);
+      if (response.success) {
+        console.log("res", response.message);
+        toast.success(response?.data?.message);
+        getCategoryData();
+        setFormData({ expenseCategory: "" });
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
     // Add API call here (e.g., axios.post)
   };
-  const filteredStores = stores.filter((store) =>
-    store.storeName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+
+  useEffect(() => {
+    getCategoryData();
+  }, [searchQuery]);
+
+  const getCategoryData = async () => {
+    setLoading(true);
+    try {
+      const response = await cashbookService.getCategory(searchQuery);
+      if (response.success) {
+        console.log("res", response?.data?.data?.docs);
+        setCategoryData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hideDeleteModal = () => {
+    setDeleteId(null);
+  };
+
+  useEffect(() => {
+    if (deleteId) {
+      setDeleteModal(true);
+    } else {
+      setDeleteModal(false);
+    }
+  }, [deleteId]);
 
   return (
     <div className="container-fluid py-5 px-4 px-sm-5 px-lg-5">
@@ -111,9 +155,12 @@ const AddExpenseCategory = () => {
               </div>
             </div>
             <div className="col-12 mt-3">
-              <button type="submit" className="btn btn-primary px-3 py-2">
-                Submit
-              </button>
+              <CommonButton
+                loading={loading}
+                buttonText="Submit"
+                onClick={handleSubmit}
+                className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+              />
             </div>
           </form>
           <div
@@ -123,7 +170,7 @@ const AddExpenseCategory = () => {
             <h6 className="fw-bold px-3 pt-3">Expense Category</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
-                <div className="input-group">
+                <div className="input-group px-3">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch className="text-muted custom-search-icon" />
                   </span>
@@ -162,23 +209,32 @@ const AddExpenseCategory = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {filteredStores.map((store) => (
-                      <tr key={store.id}>
-                        <td className="p-3">{store.id}</td>
-
-                        <td className="p-3">{store.storeName}</td>
-
-                        <td className="p-3">
-                          <div className="d-flex gap-2 align-items-center">
-                            <AiOutlineDelete
-                              size={30}
-                              className="text-danger cursor-pointer"
-                              onClick={() => handleDelete(store.id)}
-                            />
-                          </div>
+                    {categoryData?.length > 0 ? (
+                      categoryData?.map((store, index) => (
+                        <tr key={store.id}>
+                          <td className="p-3">{index + 1}</td>
+                          <td className="p-3">{store.name}</td>
+                          <td className="p-3">
+                            <div
+                              className="d-flex gap-2 align-items-center"
+                              role="button"
+                            >
+                              <AiOutlineDelete
+                                size={30}
+                                className="text-danger cursor-pointer"
+                                onClick={() => setDeleteId(store?._id)}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="text-center p-3 text-muted">
+                          No data found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -186,6 +242,14 @@ const AddExpenseCategory = () => {
           </div>
         </div>
       </div>
+
+      <DeleteModal
+        show={deleteModal}
+        onHide={hideDeleteModal}
+        onDelete={handleDelete}
+        title="Delete Expense Category"
+        body="Are you sure you want to delete this record?"
+      />
     </div>
   );
 };
