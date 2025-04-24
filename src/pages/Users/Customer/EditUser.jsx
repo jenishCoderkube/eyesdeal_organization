@@ -23,7 +23,7 @@ const EditCustomer = () => {
     try {
       const response = await saleService.getUser(userId);
       if (response.success) {
-        setUser(response.data.data.docs[0])
+        setUser(response.data.data.docs[0]);
       } else {
         console.error("Failed to fetch user:", response.data.message);
       }
@@ -38,8 +38,16 @@ const EditCustomer = () => {
     <div className="bg-white rounded-sm mb-8">
       <div className="px-4 py-8 w-full max-w-9xl mx-auto">
         <UserEditDetailForm
-          onAddSpecs={() => setShowSpecsModal(true)}
-          onAddContacts={() => setShowContactsModal(true)}
+          onAddSpecs={() => {
+            setShowSpecsModal(true);
+            // Reset the prescription data when opening the modal
+            setShowSpecsModal(firstPrescription);
+          }}
+          onAddContacts={() => {
+            setShowContactsModal(true);
+            // Reset the prescription data when opening the modal
+            setShowContactsModal(firstPrescription);
+          }}
           initialData={user}
           isEdit={true}
         />
@@ -54,7 +62,6 @@ const EditCustomer = () => {
           show={showContactsModal}
           onHide={() => setShowContactsModal(false)}
           editData={firstPrescription}
-
         />
       </div>
     </div>

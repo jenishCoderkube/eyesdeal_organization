@@ -263,7 +263,7 @@ const routes = [
   },
   {
     title: "EditUser",
-    path: "/users/editUser",
+    path: "/customer/:id",
     element: (
       <PrivateRoute>
         <EditUser />

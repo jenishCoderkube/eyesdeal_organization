@@ -9,6 +9,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Country, State, City } from "country-state-city";
 import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -59,19 +60,12 @@ const genderOptions = [
   { value: "Female", label: "Female" },
 ];
 
-const storeOptions = [
-  { value: "EYESDEAL ADAJAN", label: "EYESDEAL ADAJAN" },
-  { value: "EYESDEAL UDHANA", label: "EYESDEAL UDHANA" },
-  { value: "SAFENT", label: "SAFENT" },
-  { value: "CLOSED NIKOL", label: "CLOSED NIKOL" },
-  { value: "ELITE HOSPITAL", label: "ELITE HOSPITAL" },
-];
-
 function EditEmployee() {
   const { id } = useParams();
   const location = useLocation();
   const employee = location.state?.user || {};
   const [stores, setStores] = useState([]);
+  const [storesLoaded, setStoresLoaded] = useState(false);
   const storeOptions = stores.map((store) => ({
     value: store?._id,
     label: store?.name,
@@ -82,13 +76,16 @@ function EditEmployee() {
       .getStores()
       .then((res) => {
         setStores(res?.data?.data);
+        setStoresLoaded(true);
       })
       .catch((e) => console.log("failed to fetch stores: ", e));
-    if (id) {
-      // fetch employee details here and set data accodingly
+  }, []);
+
+  useEffect(() => {
+    if (storesLoaded && id) {
       fetchEmployeeDetail();
     }
-  }, [id]);
+  }, [storesLoaded, id]);
 
   // Parse JoiningDate string (e.g., "20/08/2024") to Date
   const parseDate = (dateStr) => {
@@ -121,10 +118,17 @@ function EditEmployee() {
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Form Values:", {
+      const data = {
         ...values,
-        stores: values.stores.map((store) => store.value), // Convert to array of strings
-      });
+        stores: values.stores.map((store) => store.value),
+        country: values.country?.label,
+        state: values.state?.label,
+        city: values.city?.label,
+        role: values.role?.value,
+        gender: values.gender?.value,
+      };
+      console.log("update data: ", data);
+      updateEmployeeDetails(data);
     },
   });
 
@@ -149,15 +153,37 @@ function EditEmployee() {
         const city = cityOptions.find(
           (city) => city.label.toLowerCase() === employee?.city
         );
+        const role = roleOptions.find((item) => item.value === employee?.role);
+        const gender = genderOptions.find(
+          (item) =>
+            item.value?.toLowerCase() === employee?.gender?.toLowerCase()
+        );
+        const stores = storeOptions.filter((store) =>
+          employee?.stores?.includes(store.value)
+        );
         formik.setValues({
           ...employee,
           id: employee?._id,
           country,
           state,
           city,
+          role,
+          gender,
+          stores,
+          password: "",
         });
       })
       .catch((e) => console.log("Failed to fetch employee details: ", e));
+  };
+
+  const updateEmployeeDetails = async (data) => {
+    const response = await userService.updateEmployee(data);
+    if (response.success) {
+      fetchEmployeeDetail();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Fetch countries from country-state-city

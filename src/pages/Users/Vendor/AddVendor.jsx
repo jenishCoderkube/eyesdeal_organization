@@ -14,8 +14,10 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { Country, State, City } from "country-state-city";
-import { IoIosCloseCircleOutline } from "react-icons/io";
+import { IoIosAddCircle, IoIosCloseCircleOutline } from "react-icons/io";
 import EditVendorModal from "../../../components/Users/Vendor/EditVendorModal";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -40,15 +42,21 @@ const validationSchema = Yup.object({
   pincode: Yup.string().trim().required("Pincode is required"),
   address: Yup.string().trim(),
   GST: Yup.string().trim(),
+  contactNumber: Yup.array().of(Yup.object().shape({
+    name: Yup.string(),
+    phone: Yup.string(),
+  })).notRequired()
 });
 
 const AddVendors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editVendor, setEditVendor] = useState(null);
   const [showcontactInput, setShowContactInput] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [formData, setFormData] = useState([
     {
       name: "",
@@ -56,87 +64,45 @@ const AddVendors = () => {
     },
   ]);
 
-  // Memoized dummy vendor data
-  const vendors = useMemo(
-    () => [
-      {
-        _id: "67ff63f53601ef3b05908dac",
-        companyName: "VISION RX",
-        phone: "+918401773899",
-        type: "lens_vendor",
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pincode: "395003",
-        address: "VARACHA BOMBE MARKIT",
-        GST: "",
-      },
-      {
-        _id: "67ff63f53601ef3b05908dad",
-        companyName: "RAVI RAJ VARACCHA",
-        phone: "+919033278758",
-        type: "lens_vendor",
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pincode: "395003",
-        address: "VARACHA BOMBE MARKIT",
-        GST: "",
-      },
-      ...Array.from({ length: 10 }, (_, index) => ({
-        _id: `67ff63f53601ef3b05908${index + 100}`,
-        companyName: `Vendor ${index + 3}`,
-        phone: `+919${String(100000000 + index).padStart(9, "0")}`,
-        type: ["lens_vendor", "frame_vendor", "accessory_vendor"][
-          Math.floor(Math.random() * 3)
-        ],
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pin桌上: "39500" + (index % 10),
-        address: "Sample Address " + (index + 3),
-        GST: "",
-      })),
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchVendors();
+  }, []);
 
-  // Filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          String(item._id),
-          item.companyName,
-          String(item.phone),
-          item.type,
-          item.email,
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
+  const fetchVendors = (searchKey = "") => {
+    userService.getVendors(searchKey)
+    .then(res => {
+      setVendors(res.data?.data?.docs);
+      setDataLoaded(true);
+    })
+    .catch(e => console.log("Error fetching vendors: ", e));
+  }
 
   // Debounced filter
   useEffect(() => {
+    if(!dataLoaded) return;
     const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(vendors, query));
+      fetchVendors(query);
     }, 200);
 
     debouncedFilter(searchQuery);
 
     return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, vendors, filterGlobally]);
+  }, [searchQuery]);
 
   // Handle search
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
+
+  const addVendor = async (data) => {
+    const response = await userService.addVendor(data);
+    if(response.success){
+      toast.success(response.message);
+      setShowForm(false);
+    } else {
+      toast.error(response.message);
+    }
+  }
 
   // Table data
   const tableData = filteredData || vendors;
@@ -246,11 +212,18 @@ const AddVendors = () => {
       pincode: "",
       address: "",
       GST: "",
+      contactNumber: []
     },
     validationSchema,
     onSubmit: (values) => {
       console.log("Create Vendor:", values);
-      setShowForm(false);
+      const data = {
+        ...values,
+        country: values.country.label,
+        state: values.state.label,
+        city: values.city.label,
+      }
+      // addVendor(values);
     },
   });
 
@@ -398,10 +371,11 @@ const AddVendors = () => {
           <label className="form-label fw-medium" htmlFor="type">
             Contact Person
           </label>
+          <IoIosAddCircle onClick={handleAddPhone} size={24} />
           {showcontactInput && (
             <>
               <div className="w-100">
-                <IoIosCloseCircleOutline onClick={handleAddPhone} size={24} />
+                <IoIosCloseCircleOutline size={25} color="red" className="position-absolute" />
                 <label className="form-label fw-medium" htmlFor="companyName">
                   Name
                 </label>

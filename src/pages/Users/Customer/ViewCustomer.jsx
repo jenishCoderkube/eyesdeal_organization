@@ -9,6 +9,8 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -22,56 +24,19 @@ const debounce = (func, wait) => {
 const ViewCustomer = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
+  const [customers, setCustomers] = useState([]);
   const navigate = useNavigate();
 
-  // Memoized dummy store data (100 records)
-  const stores = useMemo(
-    () => [
-      {
-        id: 1,
-        Name: "ELITE HOSPITAL",
-        Phone: 919898540502,
-        Prescriptions: 1,
-        Email: "abcd@gmail.com",
-      },
-      {
-        id: 2,
-        Phone: 919712083357,
-        Prescriptions: 1,
-        Name: "SAFENT",
-        Email: "abcd@gmail.com",
-      },
-      {
-        id: 3,
-        Phone: 918141069135,
-        Prescriptions: 1,
-        Name: "CLOSED NIKOL",
-        Email: "abcd@gmail.com",
-      },
-      {
-        id: 4,
-        Phone: 917096780268,
-        Prescriptions: 1,
-        Name: "EYESDEAL ADAJAN",
-        Email: "abcd@gmail.com",
-      },
-      {
-        id: 5,
-        Phone: 918017286275,
-        Prescriptions: 1,
-        Name: "EYESDEAL UDHANA",
-        Email: "abcd@gmail.com",
-      },
-      // Additional data to reach 100 records
-      ...Array.from({ length: 95 }, (_, index) => ({
-        id: index + 6,
-        Name: `Customer ${index + 6}`,
-        Phone: 910000000000 + index,
-        Prescriptions: Math.floor(Math.random() * 5) + 1,
-      })),
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = () => {
+    userService
+      .getCustomers()
+      .then((res) => setCustomers(res.data?.data?.docs))
+      .catch((e) => console.log("Failed to fetch customers: ", e));
+  };
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -93,13 +58,13 @@ const ViewCustomer = () => {
   // Debounced filter logic in useEffect
   useEffect(() => {
     const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(stores, query));
+      setFilteredData(filterGlobally(customers, query));
     }, 200);
 
     debouncedFilter(searchQuery);
 
     return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, stores, filterGlobally]);
+  }, [searchQuery, customers, filterGlobally]);
 
   // Handle search input change
   const handleSearch = (value) => {
@@ -107,7 +72,7 @@ const ViewCustomer = () => {
   };
 
   // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredData || stores;
+  const tableData = filteredData || customers;
 
   // Define columns
   const columns = useMemo(
@@ -115,22 +80,28 @@ const ViewCustomer = () => {
       {
         accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue, table, row }) => (
+          <div className="text-left">
+            {table?.getSortedRowModel()?.flatRows?.indexOf(row) + 1}
+          </div>
+        ),
       },
       {
-        accessorKey: "Name",
+        accessorKey: "name",
         header: "Name",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "Phone",
+        accessorKey: "phone",
         header: "Phone",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "Prescriptions",
+        accessorKey: "prescriptions",
         header: "Prescriptions",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.length}</div>
+        ),
       },
       {
         id: "action",
@@ -145,7 +116,7 @@ const ViewCustomer = () => {
             <MdDeleteOutline
               size={24}
               className="text-danger cursor-pointer"
-              onClick={() => handleDelete(row.original.id)}
+              onClick={() => handleDelete(row.original._id)}
             />
           </div>
         ),
@@ -169,12 +140,19 @@ const ViewCustomer = () => {
   });
 
   const handleEdit = (store) => {
-    navigate("/users/editUser", { state: { user: store } });
+    navigate(`/customer/${store?._id}`);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     alert("Are you sure you want to delete?");
     console.log(`Delete store with id: ${id}`);
+    const response = await userService.deleteCustomer(id);
+    if (response.success) {
+      fetchCustomers();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Calculate the range of displayed rows
