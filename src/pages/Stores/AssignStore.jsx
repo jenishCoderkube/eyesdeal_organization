@@ -1,12 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import Select from 'react-select';
-import {storeService} from '../../services/storeService';
-import {toast} from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import Select from "react-select";
+import { storeService } from "../../services/storeService";
+import { toast } from "react-toastify";
 
 const AssignStore = () => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [storeOptions, setStoreOptions] = useState(null);
-
 
   useEffect(() => {
     getData();
@@ -24,17 +23,17 @@ const AssignStore = () => {
         setStoreOptions(options);
       }
     } catch (error) {
-      console.log('err', error);
+      console.log("err", error);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStore) {
-      alert('Please select a store');
+      alert("Please select a store");
       return;
     }
-    let userId = JSON.parse(localStorage.getItem('user'))?._id;
+    let userId = JSON.parse(localStorage.getItem("user"))?._id;
 
     const bodyData = {
       id: selectedStore.value, // Replace with actual data
@@ -45,10 +44,10 @@ const AssignStore = () => {
       const response = await storeService.assignStore(bodyData);
       if (response?.success) {
         toast.success(response.message);
-        setSelectedStore("")
+        setSelectedStore("");
       }
     } catch (error) {
-      console.log('err', error);
+      console.log("err", error);
     }
   };
 
@@ -65,10 +64,14 @@ const AssignStore = () => {
             <div className="card-body p-4 p-sm-5 p-lg-5">
               <form
                 onSubmit={handleSubmit}
-                className="d-flex flex-column gap-4">
+                className="d-flex flex-column gap-4"
+              >
                 <div>
                   <div className="d-flex align-items-center gap-2 mb-1">
-                    <label htmlFor="store" className="form-label fw-medium m-0">
+                    <label
+                      htmlFor="store"
+                      className="form-label font-weight-500 m-0"
+                    >
                       Store <span className="text-danger">*</span>
                     </label>
                   </div>
@@ -83,7 +86,7 @@ const AssignStore = () => {
                   <input
                     name="store"
                     type="hidden"
-                    value={selectedStore ? selectedStore.value : ''}
+                    value={selectedStore ? selectedStore.value : ""}
                   />
                 </div>
                 <div>
@@ -91,15 +94,16 @@ const AssignStore = () => {
                     type="submit"
                     className="btn btn-primary"
                     style={{
-                      backgroundColor: '#6366F1',
-                      borderColor: '#6366F1',
+                      backgroundColor: "#6366F1",
+                      borderColor: "#6366F1",
                     }}
                     onMouseOver={(e) =>
-                      (e.target.style.backgroundColor = '#4F46E5')
+                      (e.target.style.backgroundColor = "#4F46E5")
                     }
                     onMouseOut={(e) =>
-                      (e.target.style.backgroundColor = '#6366F1')
-                    }>
+                      (e.target.style.backgroundColor = "#6366F1")
+                    }
+                  >
                     Submit
                   </button>
                 </div>

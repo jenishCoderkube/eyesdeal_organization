@@ -143,7 +143,7 @@ function AddProductAttributes() {
             <div className="card-body p-4">
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-4">
-                  <Form.Label className="block text-sm font-medium mb-1">
+                  <Form.Label className="block text-sm font-weight-500 mb-1">
                     Name <span className="text-danger">*</span>
                   </Form.Label>
                   <Form.Control

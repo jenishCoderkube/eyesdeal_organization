@@ -181,7 +181,7 @@ function AddEmployee() {
           >
             {/* Name */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="name">
+              <label className="form-label font-weight-500" htmlFor="name">
                 Name <span className="text-danger">*</span>
               </label>
               <input
@@ -202,7 +202,7 @@ function AddEmployee() {
 
             {/* Phone */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="phone">
+              <label className="form-label font-weight-500" htmlFor="phone">
                 Phone <span className="text-danger">*</span>
               </label>
               <PhoneInput
@@ -226,7 +226,7 @@ function AddEmployee() {
 
             {/* Email */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="email">
+              <label className="form-label font-weight-500" htmlFor="email">
                 Email <span className="text-danger">*</span>
               </label>
               <input
@@ -249,7 +249,7 @@ function AddEmployee() {
 
             {/* Password */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="password">
+              <label className="form-label font-weight-500" htmlFor="password">
                 Password
               </label>
               <input
@@ -265,7 +265,7 @@ function AddEmployee() {
 
             {/* Role */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="role">
+              <label className="form-label font-weight-500" htmlFor="role">
                 Role <span className="text-danger">*</span>
               </label>
               <Select
@@ -283,7 +283,7 @@ function AddEmployee() {
 
             {/* Country */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="country">
+              <label className="form-label font-weight-500" htmlFor="country">
                 Country <span className="text-danger">*</span>
               </label>
               <Select
@@ -301,7 +301,7 @@ function AddEmployee() {
 
             {/* State */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="state">
+              <label className="form-label font-weight-500" htmlFor="state">
                 State <span className="text-danger">*</span>
               </label>
               <Select
@@ -320,7 +320,7 @@ function AddEmployee() {
 
             {/* City */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="city">
+              <label className="form-label font-weight-500" htmlFor="city">
                 City <span className="text-danger">*</span>
               </label>
               <Select
@@ -339,7 +339,7 @@ function AddEmployee() {
 
             {/* Pincode */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="pincode">
+              <label className="form-label font-weight-500" htmlFor="pincode">
                 Pincode <span className="text-danger">*</span>
               </label>
               <input
@@ -362,7 +362,7 @@ function AddEmployee() {
 
             {/* Gender */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="gender">
+              <label className="form-label font-weight-500" htmlFor="gender">
                 Gender <span className="text-danger">*</span>
               </label>
               <Select
@@ -380,7 +380,7 @@ function AddEmployee() {
 
             {/* Stores */}
             <div className="w-100">
-              <label className="form-label fw-medium" htmlFor="stores">
+              <label className="form-label font-weight-500" htmlFor="stores">
                 Stores <span className="text-danger">*</span>
               </label>
               <Select
@@ -399,7 +399,10 @@ function AddEmployee() {
 
             {/* Joining Date */}
             <div className="w-auto">
-              <label className="form-label fw-medium" htmlFor="joiningDate">
+              <label
+                className="form-label font-weight-500"
+                htmlFor="joiningDate"
+              >
                 Joining Date <span className="text-danger">*</span>
               </label>
               <DatePicker

@@ -54,7 +54,7 @@ const BulkUploadInventory = () => {
                 style={{ gap: "1rem" }}
               >
                 <div className="w-100">
-                  <label className="form-label fw-medium" htmlFor="store">
+                  <label className="form-label font-weight-500" htmlFor="store">
                     Store <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -78,7 +78,7 @@ const BulkUploadInventory = () => {
                 </div>
                 <div className="w-100">
                   <label
-                    className="form-label fw-medium"
+                    className="form-label font-weight-500"
                     htmlFor="bulkUploadFile"
                   >
                     File <span className="text-danger">*</span>

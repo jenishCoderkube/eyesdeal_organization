@@ -184,7 +184,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="store"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Stores <span className="text-danger">*</span>
                     </label>
@@ -211,7 +211,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="expenseCategory"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Expense Category <span className="text-danger">*</span>
                     </label>
@@ -247,7 +247,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="amount"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Amount <span className="text-danger">*</span>
                     </label>
@@ -275,7 +275,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="mode"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Mode <span className="text-danger">*</span>
                     </label>
@@ -304,7 +304,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="type"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Type <span className="text-danger">*</span>
                     </label>
@@ -333,7 +333,7 @@ const AddCashbook = () => {
                   <div className="col-12 col-md-6 col-lg-4">
                     <label
                       htmlFor="notes"
-                      className="form-label fw-medium text-sm"
+                      className="form-label font-weight-500 text-sm"
                     >
                       Notes <span className="text-danger">*</span>
                     </label>

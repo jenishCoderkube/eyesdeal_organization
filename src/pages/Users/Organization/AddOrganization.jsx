@@ -125,7 +125,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
         <form onSubmit={formik.handleSubmit}>
           <div className="row g-3">
             <div className="col-12 col-md-6 col-lg-4">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Name <span className="text-danger">*</span>
               </label>
               <input
@@ -144,7 +144,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6 col-lg-4">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Phone <span className="text-danger">*</span>
               </label>
               <PhoneInput
@@ -163,7 +163,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6 col-lg-4">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Gender <span className="text-danger">*</span>
               </label>
               <Select
@@ -180,7 +180,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row g-3 mt-1">
             <div className="col-12 col-md-6">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Role <span className="text-danger">*</span>
               </label>
               <input
@@ -199,7 +199,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6">
-              <label className="form-label custom-label_user">Password</label>
+              <label className="form-label font-weight-500">Password</label>
               <input
                 type="text"
                 className="form-control"
@@ -213,7 +213,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row g-3 mt-1">
             <div className="col-12 col-md-6">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Company Name <span className="text-danger">*</span>
               </label>
               <input
@@ -236,7 +236,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 GST Number <span className="text-danger">*</span>
               </label>
               <input
@@ -261,7 +261,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row g-3 mt-3">
             <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 Country <span className="text-danger">*</span>
               </label>
               <Select
@@ -276,7 +276,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 State <span className="text-danger">*</span>
               </label>
               <Select
@@ -292,7 +292,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label custom-label_user">
+              <label className="form-label font-weight-500">
                 City <span className="text-danger">*</span>
               </label>
               <Select
@@ -308,7 +308,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
               )}
             </div>
             <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label custom-label_user">Pincode</label>
+              <label className="form-label font-weight-500">Pincode</label>
               <input
                 type="text"
                 className="form-control"
@@ -321,7 +321,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row g-3 mt-3">
             <div className="col-12">
-              <label className="form-label custom-label_user">Address</label>
+              <label className="form-label font-weight-500">Address</label>
               <textarea
                 className="form-control"
                 rows="5"

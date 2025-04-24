@@ -401,7 +401,7 @@ function ProductTable({ filters }) {
   const totalRows = tableData.length;
 
   return (
-    <div className="card">
+    <div className="card shadow-none border">
       <div className="card-body p-3">
         <div className="d-flex flex-column flex-md-row gap-3 mb-4">
           <h5>{filters?.model || "eyeGlasses"}</h5>

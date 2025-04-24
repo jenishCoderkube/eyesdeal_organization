@@ -53,7 +53,7 @@ const TransferReportsForm = ({ onSubmit, data }) => {
       <div className="row g-3">
         {/* Store From Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="storeFrom" className="form-label fw-medium">
+          <label htmlFor="storeFrom" className="form-label font-weight-500">
             Store From
           </label>
           <Select
@@ -72,7 +72,7 @@ const TransferReportsForm = ({ onSubmit, data }) => {
 
         {/* Store To Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="storeTo" className="form-label fw-medium">
+          <label htmlFor="storeTo" className="form-label font-weight-500">
             Store To
           </label>
           <Select
@@ -91,7 +91,7 @@ const TransferReportsForm = ({ onSubmit, data }) => {
 
         {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="from" className="form-label fw-medium">
+          <label htmlFor="from" className="form-label font-weight-500">
             Date From
           </label>
           <DatePicker
@@ -109,7 +109,7 @@ const TransferReportsForm = ({ onSubmit, data }) => {
 
         {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="to" className="form-label fw-medium">
+          <label htmlFor="to" className="form-label font-weight-500">
             Date To
           </label>
           <DatePicker

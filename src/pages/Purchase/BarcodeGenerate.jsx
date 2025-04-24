@@ -110,7 +110,7 @@ function BarcodeGenerate() {
     <div className="container-fluid p-md-5 ">
       <h1 className="h2 text-dark fw-bold">Generate Barcodes</h1>
       <form onSubmit={handleSubmit} className="px-md-5 px-2 ">
-        <div className="card mb-4">
+        <div className="card shadow-none border py-3 mb-4">
           <div className="card-body ">
             {items.map((item, index) => (
               <div key={index} className="card mb-3">

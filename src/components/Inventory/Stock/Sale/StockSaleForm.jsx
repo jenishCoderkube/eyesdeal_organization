@@ -60,7 +60,7 @@ const StockSaleForm = () => {
           <div className="border  border-black  p-4 bg-white d-flex flex-column gap-4">
             <div className="row g-4">
               <div className="col-md-4 col-12">
-                <label htmlFor="from" className="custom-label">
+                <label htmlFor="from" className="custom-label font-weight-500">
                   From
                 </label>
                 <select
@@ -83,7 +83,7 @@ const StockSaleForm = () => {
                 )}
               </div>
               <div className="col-md-4 col-12">
-                <label htmlFor="to" className="custom-label">
+                <label htmlFor="to" className="custom-label font-weight-500">
                   To
                 </label>
                 <select
@@ -108,7 +108,10 @@ const StockSaleForm = () => {
 
             <div className="d-flex gap-4 w-100">
               <div className="w-100">
-                <label htmlFor="product" className="custom-label">
+                <label
+                  htmlFor="product"
+                  className="custom-label font-weight-500"
+                >
                   Product
                 </label>
                 <select
@@ -233,7 +236,10 @@ const StockSaleForm = () => {
                 className="d-flex gap-2 align-items-center mb-2"
                 key={field.name}
               >
-                <label className="custom-label" htmlFor={field.name}>
+                <label
+                  className="custom-label font-weight-500"
+                  htmlFor={field.name}
+                >
                   {field.label}
                 </label>
                 <div className="flex-grow-1">

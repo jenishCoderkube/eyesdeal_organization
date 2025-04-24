@@ -35,7 +35,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
       <div className="row g-3">
         {/* Store Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="store" className="form-label fw-medium">
+          <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
@@ -51,7 +51,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
 
         {/* Vendor Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="vendor" className="form-label fw-medium">
+          <label htmlFor="vendor" className="form-label font-weight-500">
             Vendor
           </label>
           <Select
@@ -67,7 +67,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
 
         {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="from" className="form-label fw-medium">
+          <label htmlFor="from" className="form-label font-weight-500">
             Date From
           </label>
           <DatePicker
@@ -85,7 +85,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
 
         {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="to" className="form-label fw-medium">
+          <label htmlFor="to" className="form-label font-weight-500">
             Date To
           </label>
           <DatePicker

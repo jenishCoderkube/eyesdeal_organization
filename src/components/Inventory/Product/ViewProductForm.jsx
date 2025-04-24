@@ -33,7 +33,7 @@ const ViewProductForm = () => {
       <form onSubmit={formik.handleSubmit}>
         <div className="row row-cols-1  g-3">
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="product">
+            <label className="form-label font-weight-500" htmlFor="product">
               Product <span className="text-danger">*</span>
             </label>
             <Select

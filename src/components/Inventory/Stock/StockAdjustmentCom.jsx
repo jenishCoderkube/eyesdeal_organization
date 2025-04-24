@@ -137,7 +137,7 @@ const StockAdjustmentCom = () => {
             <div className="row g-3">
               <div className="col-12 ">
                 <div className="">
-                  <label htmlFor="to" className="form-label fw-semibold">
+                  <label htmlFor="to" className="form-label font-weight-500">
                     Select Store
                   </label>
                   <Select
@@ -153,7 +153,10 @@ const StockAdjustmentCom = () => {
               </div>
               <div className="col-12">
                 <div className="">
-                  <label htmlFor="product" className="form-label fw-semibold">
+                  <label
+                    htmlFor="product"
+                    className="form-label font-weight-500"
+                  >
                     Product
                   </label>
                   <Select

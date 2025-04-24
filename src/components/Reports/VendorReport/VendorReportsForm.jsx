@@ -66,7 +66,7 @@ const VendorReportsForm = ({ onSubmit, data }) => {
       <div className="row g-3">
         {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="store" className="form-label fw-medium">
+          <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
@@ -83,7 +83,7 @@ const VendorReportsForm = ({ onSubmit, data }) => {
 
         {/* Vendor Name Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="vendorName" className="form-label fw-medium">
+          <label htmlFor="vendorName" className="form-label font-weight-500">
             Vendor Name
           </label>
           <Select
@@ -102,7 +102,7 @@ const VendorReportsForm = ({ onSubmit, data }) => {
 
         {/* Status Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="status" className="form-label fw-medium">
+          <label htmlFor="status" className="form-label font-weight-500">
             Select Status
           </label>
           <Select
@@ -121,7 +121,7 @@ const VendorReportsForm = ({ onSubmit, data }) => {
 
         {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="from" className="form-label fw-medium">
+          <label htmlFor="from" className="form-label font-weight-500">
             Date From
           </label>
           <DatePicker
@@ -139,7 +139,7 @@ const VendorReportsForm = ({ onSubmit, data }) => {
 
         {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="to" className="form-label fw-medium">
+          <label htmlFor="to" className="form-label font-weight-500">
             Date To
           </label>
           <DatePicker

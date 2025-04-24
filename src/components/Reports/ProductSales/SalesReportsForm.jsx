@@ -80,7 +80,7 @@ const SalesReportsForm = ({ onSubmit }) => {
       <div className="row g-3">
         {/* Store Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="store" className="form-label fw-medium">
+          <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
@@ -96,7 +96,7 @@ const SalesReportsForm = ({ onSubmit }) => {
 
         {/* Brand Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="brand" className="form-label fw-medium">
+          <label htmlFor="brand" className="form-label font-weight-500">
             Select Brand
           </label>
           <Select
@@ -112,7 +112,7 @@ const SalesReportsForm = ({ onSubmit }) => {
 
         {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="from" className="form-label fw-medium">
+          <label htmlFor="from" className="form-label font-weight-500">
             Date From
           </label>
           <DatePicker
@@ -130,7 +130,7 @@ const SalesReportsForm = ({ onSubmit }) => {
 
         {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
-          <label htmlFor="to" className="form-label fw-medium">
+          <label htmlFor="to" className="form-label font-weight-500">
             Date To
           </label>
           <DatePicker

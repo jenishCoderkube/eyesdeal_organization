@@ -74,7 +74,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
       <div className="row g-3">
         {/* Mode Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="mode" className="form-label fw-medium">
+          <label htmlFor="mode" className="form-label font-weight-500">
             Mode
           </label>
           <Select
@@ -91,7 +91,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
 
         {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="store" className="form-label fw-medium">
+          <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
@@ -108,7 +108,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
 
         {/* Type Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="type" className="form-label fw-medium">
+          <label htmlFor="type" className="form-label font-weight-500">
             Type
           </label>
           <Select
@@ -125,7 +125,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
 
         {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="from" className="form-label fw-medium">
+          <label htmlFor="from" className="form-label font-weight-500">
             Date From
           </label>
           <DatePicker
@@ -143,7 +143,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
 
         {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-2">
-          <label htmlFor="to" className="form-label fw-medium">
+          <label htmlFor="to" className="form-label font-weight-500">
             Date To
           </label>
           <DatePicker

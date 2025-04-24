@@ -31,7 +31,7 @@ function ViewProductAttributesCom() {
   const [loading, setLoading] = useState(false);
   const [attributeData, setAttributeData] = useState({});
 
-  console.log(activeTab)
+  console.log(activeTab);
   // Attribute list for tabs
   const attributes = [
     "brand",
@@ -54,19 +54,21 @@ function ViewProductAttributesCom() {
   useEffect(() => {
     console.log(`Tab changed to: ${activeTab}`);
     console.log(`Current attribute data:`, attributeData);
-    console.log(`Has data for ${activeTab}: ${Boolean(attributeData[activeTab])}`);
-    
+    console.log(
+      `Has data for ${activeTab}: ${Boolean(attributeData[activeTab])}`
+    );
+
     // Reset filtered data when changing tabs
     setFilteredData(null);
     setSearchQuery("");
-    
+
     const fetchData = async () => {
       setLoading(true);
       try {
         console.log(`Fetching ${activeTab} data...`);
         const response = await productAttributeService.getAttributes(activeTab);
         console.log(`${activeTab} API response:`, response);
-        
+
         if (response.success) {
           if (!response.data || !Array.isArray(response.data)) {
             console.error(`${activeTab} data is not an array:`, response.data);
@@ -74,34 +76,34 @@ function ViewProductAttributesCom() {
             setLoading(false);
             return;
           }
-          
-          const formattedData = response.data.map(item => ({
+
+          const formattedData = response.data.map((item) => ({
             id: item._id,
-            name: item.name
+            name: item.name,
           }));
-          
+
           console.log(`${activeTab} formatted data:`, formattedData);
-          
-          setAttributeData(prev => ({
+
+          setAttributeData((prev) => ({
             ...prev,
-            [activeTab]: formattedData
+            [activeTab]: formattedData,
           }));
         } else {
           console.error(`Error fetching ${activeTab}:`, response.message);
           toast.error(response.message || `Error fetching ${activeTab} data`);
           // Clear data for this tab if fetch failed
-          setAttributeData(prev => ({
+          setAttributeData((prev) => ({
             ...prev,
-            [activeTab]: []
+            [activeTab]: [],
           }));
         }
       } catch (error) {
         console.error(`Error fetching ${activeTab} data:`, error);
         toast.error(`Failed to load ${activeTab} data`);
         // Clear data for this tab if fetch failed
-        setAttributeData(prev => ({
+        setAttributeData((prev) => ({
           ...prev,
-          [activeTab]: []
+          [activeTab]: [],
         }));
       } finally {
         setLoading(false);
@@ -110,7 +112,6 @@ function ViewProductAttributesCom() {
 
     // Always fetch data when the tab changes
     fetchData();
-    
   }, [activeTab]);
 
   // Custom global filter function
@@ -130,7 +131,7 @@ function ViewProductAttributesCom() {
   // Debounced filter logic in useEffect
   useEffect(() => {
     if (!attributeData[activeTab]) return;
-    
+
     const debouncedFilter = debounce((query) => {
       setFilteredData(filterGlobally(attributeData[activeTab], query));
     }, 200);
@@ -146,7 +147,7 @@ function ViewProductAttributesCom() {
   };
 
   // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredData || (attributeData[activeTab] || []);
+  const tableData = filteredData || attributeData[activeTab] || [];
 
   // Define table columns
   const columns = useMemo(
@@ -168,10 +169,10 @@ function ViewProductAttributesCom() {
           // Capture the current active tab for this row's actions
           const rowTab = activeTab;
           const rowData = row.original;
-          
+
           // Log the row data for debugging
           console.log(`Row data for ${rowTab}:`, rowData);
-          
+
           return (
             <div className="d-flex gap-2 align-items-center">
               <FiEdit2
@@ -183,7 +184,9 @@ function ViewProductAttributesCom() {
                 size={24}
                 className="text-danger cursor-pointer"
                 onClick={() => {
-                  console.log(`Delete icon clicked for ${rowTab}, id: ${rowData.id}`);
+                  console.log(
+                    `Delete icon clicked for ${rowTab}, id: ${rowData.id}`
+                  );
                   handleDelete(rowData.id, rowTab);
                 }}
               />
@@ -219,35 +222,43 @@ function ViewProductAttributesCom() {
     try {
       // Prepare the data with the format required by the API
       const apiData = {
-        name: updatedData.name
+        name: updatedData.name,
       };
-      
+
       console.log(`Submitting update for ${activeTab}:`, {
         id: updatedData.id,
-        data: apiData
+        data: apiData,
       });
-      
+
       const response = await productAttributeService.updateAttribute(
         activeTab,
         updatedData.id,
         apiData
       );
-      
+
       if (response.success) {
         // Update the local state
         const updatedAttributeData = {
           ...attributeData,
           [activeTab]: attributeData[activeTab].map((item) =>
-            item.id === updatedData.id ? { ...item, name: updatedData.name } : item
+            item.id === updatedData.id
+              ? { ...item, name: updatedData.name }
+              : item
           ),
         };
-        
+
         setAttributeData(updatedAttributeData);
         setFilteredData(
-          searchQuery ? filterGlobally(updatedAttributeData[activeTab], searchQuery) : null
+          searchQuery
+            ? filterGlobally(updatedAttributeData[activeTab], searchQuery)
+            : null
         );
-        
-        toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} updated successfully`);
+
+        toast.success(
+          `${
+            activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+          } updated successfully`
+        );
       } else {
         toast.error(response.message || `Failed to update ${activeTab}`);
       }
@@ -260,25 +271,29 @@ function ViewProductAttributesCom() {
   const handleDelete = async (id, tabName) => {
     // Use the passed tabName parameter instead of activeTab
     const currentTab = tabName || activeTab;
-    
+
     console.log(`Delete initiated for id ${id} on tab "${currentTab}"`);
     console.log(`Current state of attributeData:`, attributeData);
-    
+
     // Check if the data for current tab exists - force fetch if not available
     if (!attributeData[currentTab] || attributeData[currentTab].length === 0) {
-      console.log(`Data not yet available for ${currentTab}, fetching it first...`);
+      console.log(
+        `Data not yet available for ${currentTab}, fetching it first...`
+      );
       try {
-        const fetchResponse = await productAttributeService.getAttributes(currentTab);
+        const fetchResponse = await productAttributeService.getAttributes(
+          currentTab
+        );
         if (fetchResponse.success) {
-          const formattedData = fetchResponse.data.map(item => ({
+          const formattedData = fetchResponse.data.map((item) => ({
             id: item._id,
-            name: item.name
+            name: item.name,
           }));
-          
+
           // Update attribute data with the fetched data
-          setAttributeData(prev => ({
+          setAttributeData((prev) => ({
             ...prev,
-            [currentTab]: formattedData
+            [currentTab]: formattedData,
           }));
         } else {
           console.error(`Failed to fetch data for ${currentTab}`);
@@ -294,33 +309,38 @@ function ViewProductAttributesCom() {
 
     if (window.confirm(`Are you sure you want to delete this ${currentTab}?`)) {
       try {
-        console.log(`Delete operation initiated for attribute type: ${currentTab} with id: ${id}`);
-        
-        const response = await productAttributeService.deleteAttribute(currentTab, id);
-        
+        console.log(
+          `Delete operation initiated for attribute type: ${currentTab} with id: ${id}`
+        );
+
+        const response = await productAttributeService.deleteAttribute(
+          currentTab,
+          id
+        );
+
         if (response.success) {
           console.log(`Delete response for ${currentTab}:`, response);
-          
+
           // If the API returned the updated list, use it directly
           if (response.updatedList && Array.isArray(response.updatedList)) {
             console.log(`Using updatedList from response for ${currentTab}`);
-            const formattedData = response.updatedList.map(item => ({
+            const formattedData = response.updatedList.map((item) => ({
               id: item._id,
-              name: item.name
+              name: item.name,
             }));
-            
+
             console.log(`Formatted data for ${currentTab}:`, formattedData);
-            
+
             // Update the attribute data in state
-            setAttributeData(prev => {
+            setAttributeData((prev) => {
               const newData = {
                 ...prev,
-                [currentTab]: formattedData
+                [currentTab]: formattedData,
               };
               console.log(`Updated attributeData after delete:`, newData);
               return newData;
             });
-            
+
             // Only update filtered data if we're still on the same tab
             if (currentTab === activeTab) {
               setFilteredData(
@@ -329,64 +349,98 @@ function ViewProductAttributesCom() {
             }
           } else {
             // Otherwise refresh the data manually
-            console.log(`No updatedList in response, manually refreshing ${currentTab}`);
-            const refreshResponse = await productAttributeService.refreshAttributeData(currentTab);
-            
+            console.log(
+              `No updatedList in response, manually refreshing ${currentTab}`
+            );
+            const refreshResponse =
+              await productAttributeService.refreshAttributeData(currentTab);
+
             if (refreshResponse.success) {
               console.log(`Manual refresh successful for ${currentTab}`);
-              const formattedData = refreshResponse.data.map(item => ({
+              const formattedData = refreshResponse.data.map((item) => ({
                 id: item._id,
-                name: item.name
+                name: item.name,
               }));
-              
-              console.log(`Manually refreshed data for ${currentTab}:`, formattedData);
-              
-              setAttributeData(prev => {
+
+              console.log(
+                `Manually refreshed data for ${currentTab}:`,
+                formattedData
+              );
+
+              setAttributeData((prev) => {
                 const newData = {
                   ...prev,
-                  [currentTab]: formattedData
+                  [currentTab]: formattedData,
                 };
-                console.log(`Updated attributeData after manual refresh:`, newData);
+                console.log(
+                  `Updated attributeData after manual refresh:`,
+                  newData
+                );
                 return newData;
               });
-              
+
               // Only update filtered data if we're still on the same tab
               if (currentTab === activeTab) {
                 setFilteredData(
-                  searchQuery ? filterGlobally(formattedData, searchQuery) : null
+                  searchQuery
+                    ? filterGlobally(formattedData, searchQuery)
+                    : null
                 );
               }
             } else {
               // If refresh fails, just remove the deleted item from state
-              console.log(`Manual refresh failed for ${currentTab}, removing item from state`);
-              
+              console.log(
+                `Manual refresh failed for ${currentTab}, removing item from state`
+              );
+
               // Only update state if we have data for this tab
               if (attributeData[currentTab]) {
                 const updatedAttributeData = {
                   ...attributeData,
-                  [currentTab]: attributeData[currentTab].filter(item => item.id !== id)
+                  [currentTab]: attributeData[currentTab].filter(
+                    (item) => item.id !== id
+                  ),
                 };
-                
-                console.log(`Updated attributeData after filter:`, updatedAttributeData);
+
+                console.log(
+                  `Updated attributeData after filter:`,
+                  updatedAttributeData
+                );
                 setAttributeData(updatedAttributeData);
-                
+
                 // Only update filtered data if we're still on the same tab
                 if (currentTab === activeTab) {
                   setFilteredData(
-                    searchQuery ? filterGlobally(updatedAttributeData[currentTab], searchQuery) : null
+                    searchQuery
+                      ? filterGlobally(
+                          updatedAttributeData[currentTab],
+                          searchQuery
+                        )
+                      : null
                   );
                 }
               }
             }
           }
-          
-          toast.success(response.message || `${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} deleted successfully`);
+
+          toast.success(
+            response.message ||
+              `${
+                currentTab.charAt(0).toUpperCase() + currentTab.slice(1)
+              } deleted successfully`
+          );
         } else {
-          console.error(`Delete operation failed for ${currentTab}:`, response.message);
+          console.error(
+            `Delete operation failed for ${currentTab}:`,
+            response.message
+          );
           toast.error(response.message || `Failed to delete ${currentTab}`);
         }
       } catch (error) {
-        console.error(`Error during delete operation for ${currentTab}:`, error);
+        console.error(
+          `Error during delete operation for ${currentTab}:`,
+          error
+        );
         toast.error(`Failed to delete ${currentTab}`);
       }
     }

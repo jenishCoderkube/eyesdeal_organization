@@ -5,7 +5,6 @@ import Select from "react-select";
 
 // Validation schema
 const validationSchema = Yup.object({
-  store: Yup.object().nullable().required("Store is required"),
   bulkUploadFile: Yup.mixed().required("File is required"),
 });
 
@@ -54,8 +53,8 @@ const BulkUploadProduct = () => {
                 style={{ gap: "1rem" }}
               >
                 <div className="w-100">
-                  <label className="form-label fw-medium" htmlFor="store">
-                    Store <span className="text-danger">*</span>
+                  <label className="form-label font-weight-500" htmlFor="store">
+                    Product Type
                   </label>
                   <Select
                     options={storeOptions}
@@ -78,7 +77,7 @@ const BulkUploadProduct = () => {
                 </div>
                 <div className="w-100">
                   <label
-                    className="form-label fw-medium"
+                    className="form-label font-weight-500"
                     htmlFor="bulkUploadFile"
                   >
                     File <span className="text-danger">*</span>

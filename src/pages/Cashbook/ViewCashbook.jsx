@@ -175,7 +175,10 @@ const ViewCashbook = () => {
           <form onSubmit={handleSubmit}>
             <div className="row g-4 mb-4">
               <div className="col-12 col-md-6 col-lg-3">
-                <label htmlFor="mode" className="form-label fw-medium text-sm">
+                <label
+                  htmlFor="mode"
+                  className="form-label font-weight-500 text-sm"
+                >
                   Mode
                 </label>
                 <Select
@@ -193,7 +196,10 @@ const ViewCashbook = () => {
                 />
               </div>
               <div className="col-12 col-md-6 col-lg-3">
-                <label htmlFor="store" className="form-label fw-medium text-sm">
+                <label
+                  htmlFor="store"
+                  className="form-label font-weight-500 text-sm"
+                >
                   Stores
                 </label>
                 <Select
@@ -212,7 +218,10 @@ const ViewCashbook = () => {
                 />
               </div>
               <div className="col-12 col-md-6 col-lg-3">
-                <label htmlFor="from" className="form-label fw-medium text-sm">
+                <label
+                  htmlFor="from"
+                  className="form-label font-weight-500 text-sm"
+                >
                   From
                 </label>
                 <DatePicker
@@ -223,7 +232,10 @@ const ViewCashbook = () => {
                 />
               </div>
               <div className="col-12 col-md-6 col-lg-3">
-                <label htmlFor="to" className="form-label fw-medium text-sm">
+                <label
+                  htmlFor="to"
+                  className="form-label font-weight-500 text-sm"
+                >
                   To
                 </label>
                 <DatePicker
@@ -251,13 +263,13 @@ const ViewCashbook = () => {
               Closing Balance: <span>{closingBalance}</span>
             </h6>
           </div>
-          <div className="card">
+          <div className="card shadow-none border">
             <div className="card-header border-0 px-4 pt-3">
               <h5 className="fw-bold pt-3">Cashbooks</h5>
             </div>
             <div className="card-body p-0">
               <div className="mb-4 col-md-5">
-                <div className="input-group px-4 pt-3">
+                <div className="input-group ">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch className="text-muted custom-search-icon" />
                   </span>

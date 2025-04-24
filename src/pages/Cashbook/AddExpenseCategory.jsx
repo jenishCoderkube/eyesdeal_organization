@@ -128,7 +128,7 @@ const AddExpenseCategory = () => {
               <div className="col-12">
                 <label
                   htmlFor="amount"
-                  className="form-label fw-medium text-sm"
+                  className="form-label font-weight-500 text-sm"
                 >
                   Expense Category <span className="text-danger">*</span>
                 </label>

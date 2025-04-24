@@ -122,9 +122,8 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
         const stateOptions = values.country
           ? State.getStatesOfCountry(
               Country.getCountryByCode(
-                Country.getAllCountries().find(
-                  (c) => c.name === values.country
-                )?.isoCode
+                Country.getAllCountries().find((c) => c.name === values.country)
+                  ?.isoCode
               )?.isoCode
             ).map((state) => ({
               value: state.name,
@@ -160,7 +159,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               <h3 className="mb-4 user_main_title mt-4">Add Users</h3>
               <div className="row g-3">
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Name <span className="text-danger">*</span>
                   </label>
                   <Field
@@ -175,7 +174,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Phone <span className="text-danger">*</span>
                   </label>
                   <PhoneInput
@@ -191,7 +190,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Customer Reference <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -218,7 +217,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </div>
               <div className="row g-3 mt-1">
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Gender <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -234,7 +233,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">Email</label>
+                  <label className="form-label font-weight-500">Email</label>
                   <Field
                     name="email"
                     type="email"
@@ -247,7 +246,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
-                  <label className="form-label custom-label_user">Role</label>
+                  <label className="form-label font-weight-500">Role</label>
                   <Field
                     name="role"
                     type="text"
@@ -259,7 +258,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </div>
               <div className="row g-3 mt-3">
                 <div className="col-12 col-md-6 col-lg-3">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Country <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -279,7 +278,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     State <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -299,14 +298,12 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     City <span className="text-danger">*</span>
                   </label>
                   <Select
                     options={cityOptions}
-                    value={cityOptions.find(
-                      (opt) => opt.value === values.city
-                    )}
+                    value={cityOptions.find((opt) => opt.value === values.city)}
                     onChange={(option) => setFieldValue("city", option.value)}
                     placeholder="Select City..."
                     isDisabled={!values.state}
@@ -316,9 +313,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
-                  <label className="form-label custom-label_user">
-                    Pincode
-                  </label>
+                  <label className="form-label font-weight-500">Pincode</label>
                   <Field
                     name="pincode"
                     type="text"
@@ -333,7 +328,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </div>
               <div className="row g-3 mt-3">
                 <div className="col-12 col-md-3">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Birth Date
                   </label>
                   <DatePicker
@@ -344,7 +339,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label custom-label_user">
+                  <label className="form-label font-weight-500">
                     Anniversary Date
                   </label>
                   <DatePicker
@@ -357,9 +352,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </div>
               <div className="row g-3 mt-3">
                 <div className="col-12 col-md-6">
-                  <label className="form-label custom-label_user">
-                    Address
-                  </label>
+                  <label className="form-label font-weight-500">Address</label>
                   <Field
                     name="address"
                     as="textarea"
@@ -368,7 +361,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label custom-label_user">Notes</label>
+                  <label className="form-label font-weight-500">Notes</label>
                   <Field
                     name="note"
                     as="textarea"

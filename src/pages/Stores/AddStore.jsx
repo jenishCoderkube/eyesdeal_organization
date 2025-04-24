@@ -1,24 +1,23 @@
-import React, {useState} from 'react';
-import Select from 'react-select';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
-import {Country, State, City} from 'country-state-city';
-import styles from '../../assets/css/Stores/AddStores.module.css';
-import { storeService} from '../../services/storeService';
-import {toast} from 'react-toastify';
-import {uploadImage} from '../../utils/constants';
+import React, { useState } from "react";
+import Select from "react-select";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { Country, State, City } from "country-state-city";
+import styles from "../../assets/css/Stores/AddStores.module.css";
+import { storeService } from "../../services/storeService";
+import { toast } from "react-toastify";
+import { uploadImage } from "../../utils/constants";
 const AddStore = () => {
-
   const [formData, setFormData] = useState({
-    name: '',
-    locationUrl: '',
-    address: '',
-    companyName: '',
+    name: "",
+    locationUrl: "",
+    address: "",
+    companyName: "",
     country: null,
     state: null,
     city: null,
-    pincode: '',
-    GSTNumber: '',
+    pincode: "",
+    GSTNumber: "",
     emails: [],
     phones: [],
     photos: [],
@@ -26,8 +25,8 @@ const AddStore = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('+91');
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("+91");
   const [newPhoto, setNewPhoto] = useState(null);
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
@@ -54,32 +53,32 @@ const AddStore = () => {
           (city) => ({
             value: city.name,
             label: city.name,
-          }),
+          })
         )
       : [];
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Store Name is required';
+    if (!formData.name.trim()) newErrors.name = "Store Name is required";
     if (!formData.address.trim())
-      newErrors.address = 'Store Address is required';
-    if (!formData.country) newErrors.country = 'Country is required';
-    if (!formData.state) newErrors.state = 'State is required';
-    if (!formData.city) newErrors.city = 'City is required';
+      newErrors.address = "Store Address is required";
+    if (!formData.country) newErrors.country = "Country is required";
+    if (!formData.state) newErrors.state = "State is required";
+    if (!formData.city) newErrors.city = "City is required";
     return newErrors;
   };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
-      const newFormData = {...prev, [field]: value};
+      const newFormData = { ...prev, [field]: value };
 
       // Reset state and city when country changes
-      if (field === 'country') {
+      if (field === "country") {
         newFormData.state = null;
         newFormData.city = null;
       }
       // Reset city when state changes
-      if (field === 'state') {
+      if (field === "state") {
         newFormData.city = null;
       }
 
@@ -87,7 +86,7 @@ const AddStore = () => {
     });
 
     if (errors[field]) {
-      setErrors({...errors, [field]: ''});
+      setErrors({ ...errors, [field]: "" });
     }
   };
 
@@ -101,12 +100,12 @@ const AddStore = () => {
         ...prev,
         emails: [...prev.emails, newEmail],
       }));
-      setNewEmail('');
+      setNewEmail("");
       setShowEmailInput(false); // Hide input after adding
     } else if (!showEmailInput) {
       setShowEmailInput(true); // Show input on first click
     } else {
-      alert('Please enter a valid email');
+      alert("Please enter a valid email");
     }
   };
 
@@ -116,12 +115,12 @@ const AddStore = () => {
         ...prev,
         phones: [...prev.phones, newPhone],
       }));
-      setNewPhone('+91');
+      setNewPhone("+91");
       setShowPhoneInput(false); // Hide input after adding
     } else if (!showPhoneInput) {
       setShowPhoneInput(true); // Show input on first click
     } else {
-      alert('Please enter a valid phone number');
+      alert("Please enter a valid phone number");
     }
   };
 
@@ -136,7 +135,7 @@ const AddStore = () => {
     } else if (!showPhotoInput) {
       setShowPhotoInput(true); // Show input on first click
     } else {
-      alert('Please select a photo');
+      alert("Please select a photo");
     }
   };
 
@@ -155,22 +154,22 @@ const AddStore = () => {
       state: formData?.state?.label,
       country: formData?.country?.label,
     };
-    console.log('Form submitted:', payload);
+    console.log("Form submitted:", payload);
 
     try {
       const response = await storeService.createStore(payload);
       if (response?.success) {
         toast.success(response.message);
         setFormData({
-          name: '',
-          locationUrl: '',
-          address: '',
-          companyName: '',
+          name: "",
+          locationUrl: "",
+          address: "",
+          companyName: "",
           country: null,
           state: null,
           city: null,
-          pincode: '',
-          GSTNumber: '',
+          pincode: "",
+          GSTNumber: "",
           emails: [],
           phones: [],
           photos: [],
@@ -178,7 +177,7 @@ const AddStore = () => {
         });
       }
     } catch (error) {
-      console.log('Error creating store:', error);
+      console.log("Error creating store:", error);
     }
     // Add API call or further submission logic here
   };
@@ -193,7 +192,7 @@ const AddStore = () => {
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
               <div className="col-12">
-                <label htmlFor="name" className="form-label fw-medium">
+                <label htmlFor="name" className="form-label font-weight-500">
                   Store Name <span className="text-danger">*</span>
                 </label>
                 <input
@@ -201,14 +200,17 @@ const AddStore = () => {
                   id="name"
                   className="form-control"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                 />
                 {errors.name && (
                   <div className="text-danger mt-1">{errors.name}</div>
                 )}
               </div>
               <div className="col-12">
-                <label htmlFor="locationUrl" className="form-label fw-medium">
+                <label
+                  htmlFor="locationUrl"
+                  className="form-label font-weight-500"
+                >
                   Location URL
                 </label>
                 <input
@@ -217,12 +219,12 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.locationUrl}
                   onChange={(e) =>
-                    handleInputChange('locationUrl', e.target.value)
+                    handleInputChange("locationUrl", e.target.value)
                   }
                 />
               </div>
               <div className="col-12">
-                <label htmlFor="address" className="form-label fw-medium">
+                <label htmlFor="address" className="form-label font-weight-500">
                   Store Address <span className="text-danger">*</span>
                 </label>
                 <textarea
@@ -230,14 +232,17 @@ const AddStore = () => {
                   className="form-control"
                   rows="5"
                   value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
                 />
                 {errors.address && (
                   <div className="text-danger mt-1">{errors.address}</div>
                 )}
               </div>
               <div className="col-12">
-                <label htmlFor="companyName" className="form-label fw-medium">
+                <label
+                  htmlFor="companyName"
+                  className="form-label font-weight-500"
+                >
                   Company Name
                 </label>
                 <input
@@ -246,18 +251,18 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.companyName}
                   onChange={(e) =>
-                    handleInputChange('companyName', e.target.value)
+                    handleInputChange("companyName", e.target.value)
                   }
                 />
               </div>
               <div className="col-12">
-                <label className="form-label fw-medium">
+                <label className="form-label font-weight-500">
                   Country <span className="text-danger">*</span>
                 </label>
                 <Select
                   options={countryOptions}
                   value={formData.country}
-                  onChange={(option) => handleInputChange('country', option)}
+                  onChange={(option) => handleInputChange("country", option)}
                   placeholder="Select Country..."
                 />
                 {errors.country && (
@@ -265,13 +270,13 @@ const AddStore = () => {
                 )}
               </div>
               <div className="col-12">
-                <label className="form-label fw-medium">
+                <label className="form-label font-weight-500">
                   State <span className="text-danger">*</span>
                 </label>
                 <Select
                   options={stateOptions}
                   value={formData.state}
-                  onChange={(option) => handleInputChange('state', option)}
+                  onChange={(option) => handleInputChange("state", option)}
                   placeholder="Select State..."
                   isDisabled={!formData.country}
                 />
@@ -280,13 +285,13 @@ const AddStore = () => {
                 )}
               </div>
               <div className="col-12">
-                <label className="form-label fw-medium">
+                <label className="form-label font-weight-500">
                   City <span className="text-danger">*</span>
                 </label>
                 <Select
                   options={cityOptions}
                   value={formData.city}
-                  onChange={(option) => handleInputChange('city', option)}
+                  onChange={(option) => handleInputChange("city", option)}
                   placeholder="Select City..."
                   isDisabled={!formData.state}
                 />
@@ -295,7 +300,7 @@ const AddStore = () => {
                 )}
               </div>
               <div className="col-12">
-                <label htmlFor="pincode" className="form-label fw-medium">
+                <label htmlFor="pincode" className="form-label font-weight-500">
                   Pincode
                 </label>
                 <input
@@ -303,11 +308,14 @@ const AddStore = () => {
                   id="pincode"
                   className="form-control"
                   value={formData.pincode}
-                  onChange={(e) => handleInputChange('pincode', e.target.value)}
+                  onChange={(e) => handleInputChange("pincode", e.target.value)}
                 />
               </div>
               <div className="col-12">
-                <label htmlFor="GSTNumber" className="form-label fw-medium">
+                <label
+                  htmlFor="GSTNumber"
+                  className="form-label font-weight-500"
+                >
                   GST Number
                 </label>
                 <input
@@ -316,17 +324,18 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.GSTNumber}
                   onChange={(e) =>
-                    handleInputChange('GSTNumber', e.target.value)
+                    handleInputChange("GSTNumber", e.target.value)
                   }
                 />
               </div>
               <div className="col-12">
                 <div className="d-flex align-items-center gap-3 mb-2">
-                  <h5 className="h6 mb-0 fw-medium">Emails</h5>
+                  <h5 className="h6 mb-0 font-weight-500">Emails</h5>
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddEmail}>
+                    onClick={handleAddEmail}
+                  >
                     Add
                   </button>
                 </div>
@@ -353,17 +362,18 @@ const AddStore = () => {
               </div>
               <div className="col-12">
                 <div className="d-flex align-items-center gap-3 mb-2">
-                  <h3 className="h6 mb-0 fw-medium">Phones</h3>
+                  <h3 className="h6 mb-0 font-weight-500">Phones</h3>
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddPhone}>
+                    onClick={handleAddPhone}
+                  >
                     Add
                   </button>
                 </div>
                 {showPhoneInput && (
                   <PhoneInput
-                    country={'in'}
+                    country={"in"}
                     value={newPhone}
                     onChange={(phone) => setNewPhone(phone)}
                     inputClass="form-control w-100"
@@ -381,11 +391,12 @@ const AddStore = () => {
               </div>
               <div className="col-12">
                 <div className="d-flex align-items-center gap-3 mb-2">
-                  <h3 className="h6 mb-0 fw-medium">Photos</h3>
+                  <h3 className="h6 mb-0 font-weight-500">Photos</h3>
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddPhoto}>
+                    onClick={handleAddPhoto}
+                  >
                     Add
                   </button>
                 </div>
@@ -396,7 +407,7 @@ const AddStore = () => {
                     onChange={async (e) => {
                       let res = await uploadImage(
                         e.target.files[0],
-                        e.target.files[0]?.name,
+                        e.target.files[0]?.name
                       );
                       setNewPhoto(res);
                     }}
@@ -421,12 +432,13 @@ const AddStore = () => {
                     className="form-check-input p-2 border-3"
                     checked={formData.activeInWebsite}
                     onChange={(e) =>
-                      handleInputChange('activeInWebsite', e.target.checked)
+                      handleInputChange("activeInWebsite", e.target.checked)
                     }
                   />
                   <label
                     htmlFor="activeInWebsite"
-                    className="form-check-label ms-2">
+                    className="form-check-label ms-2"
+                  >
                     Active In Website
                   </label>
                 </div>

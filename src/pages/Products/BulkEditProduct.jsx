@@ -248,7 +248,7 @@ const BulkEditProduct = () => {
     <div className="container-fluid px-4 py-8">
       <div className="row justify-content-center">
         <div className="col-12 col-lg-10">
-          <h1 className="h2 text-dark fw-bold my-4">Bulk Upload Product</h1>
+          <h1 className="h2 text-dark fw-bold my-4">Bulk Edit Product</h1>
           <div className="card shadow-sm mb-4 border-0">
             <div className="card-body p-4">
               <form
@@ -258,7 +258,10 @@ const BulkEditProduct = () => {
               >
                 {/* Product Type Selection */}
                 <div className="w-100">
-                  <label className="form-label fw-medium" htmlFor="productType">
+                  <label
+                    className="form-label font-weight-500"
+                    htmlFor="productType"
+                  >
                     Product Type <span className="text-danger">*</span>
                   </label>
                   <Select
@@ -283,67 +286,74 @@ const BulkEditProduct = () => {
                   )}
                 </div>
 
-                {/* Dynamic Product Range Buttons */}
-                {selectedProductType && productRanges.length > 0 && (
-                  <div className="w-100">
-                    <label className="form-label fw-medium">
-                      Product Ranges
-                    </label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {productRanges.map((range) => (
-                        <button
-                          key={range.value}
-                          type="button"
-                          className="btn text-white"
-                          style={{
-                            backgroundColor: "#6366f1",
-                          }}
-                          onMouseOver={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#4f46e5")
-                          }
-                          onMouseOut={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#6366f1")
-                          }
-                          onClick={() =>
-                            downloadExcel(range.value, selectedProductType)
-                          }
-                        >
-                          {range.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* File Upload */}
-                <div className="w-100">
-                  <label
-                    className="form-label fw-medium"
-                    htmlFor="bulkUploadFile"
-                  >
-                    File <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    name="bulkUploadFile"
-                    className={`form-control ${
-                      formik.touched.bulkUploadFile &&
-                      formik.errors.bulkUploadFile
-                        ? "is-invalid"
-                        : ""
-                    }`}
-                    onChange={handleFileChange}
-                    onBlur={formik.handleBlur}
-                  />
-                  {formik.touched.bulkUploadFile &&
-                    formik.errors.bulkUploadFile && (
-                      <div className="invalid-feedback">
-                        {formik.errors.bulkUploadFile}
+                {/* Conditional Rendering for Product Ranges, File Upload, and Submit Button */}
+                {selectedProductType && (
+                  <>
+                    {/* Dynamic Product Range Buttons */}
+                    {productRanges.length > 0 && (
+                      <div className="w-100">
+                        <label className="form-label fw-medium">
+                          Product Ranges
+                        </label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {productRanges.map((range) => (
+                            <button
+                              key={range.value}
+                              type="button"
+                              className="btn text-white"
+                              style={{
+                                backgroundColor: "#6366f1",
+                              }}
+                              onMouseOver={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#4f46e5")
+                              }
+                              onMouseOut={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#6366f1")
+                              }
+                              onClick={() =>
+                                downloadExcel(range.value, selectedProductType)
+                              }
+                            >
+                              {range.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
-                </div>
 
-                {/* Submit Button */}
+                    {/* File Upload */}
+                    <div className="w-100">
+                      <label
+                        className="form-label fw-medium"
+                        htmlFor="bulkUploadFile"
+                      >
+                        File <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        name="bulkUploadFile"
+                        className={`form-control ${
+                          formik.touched.bulkUploadFile &&
+                          formik.errors.bulkUploadFile
+                            ? "is-invalid"
+                            : ""
+                        }`}
+                        onChange={handleFileChange}
+                        onBlur={formik.handleBlur}
+                      />
+                      {formik.touched.bulkUploadFile &&
+                        formik.errors.bulkUploadFile && (
+                          <div className="invalid-feedback">
+                            {formik.errors.bulkUploadFile}
+                          </div>
+                        )}
+                    </div>
+
+                    {/* Submit Button */}
+                  </>
+                )}
                 <div>
                   <button
                     type="submit"

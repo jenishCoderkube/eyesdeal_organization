@@ -137,7 +137,7 @@ const AddStockTransferCom = () => {
             <div className="row g-3">
               <div className="col-12 ">
                 <div className="">
-                  <label htmlFor="from" className="form-label fw-semibold">
+                  <label htmlFor="from" className="form-label font-weight-500">
                     From
                   </label>
                   <Select
@@ -153,7 +153,7 @@ const AddStockTransferCom = () => {
               </div>
               <div className="col-12 ">
                 <div className="">
-                  <label htmlFor="to" className="form-label fw-semibold">
+                  <label htmlFor="to" className="form-label font-weight-500">
                     To
                   </label>
                   <Select
@@ -169,7 +169,10 @@ const AddStockTransferCom = () => {
               </div>
               <div className="col-12">
                 <div className="">
-                  <label htmlFor="product" className="form-label fw-semibold">
+                  <label
+                    htmlFor="product"
+                    className="form-label font-weight-500"
+                  >
                     Product
                   </label>
                   <Select

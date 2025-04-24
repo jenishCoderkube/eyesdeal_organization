@@ -193,11 +193,11 @@ const ViewReferences = () => {
             <h1 className="h2 text-dark fw-bold mt-3">Marketing Reference</h1>
           </div>
           {/* Create Form */}
-          <div className="card mt-3 border-0">
+          <div className="card shadow-none mt-3 border-0">
             <div className="card-body p-0">
               <form onSubmit={formik.handleSubmit}>
                 <div className="mb-2">
-                  <label className="form-label fw-medium" htmlFor="name">
+                  <label className="form-label font-weight-500" htmlFor="name">
                     Reference <span className="text-danger">*</span>
                   </label>
                   <input
