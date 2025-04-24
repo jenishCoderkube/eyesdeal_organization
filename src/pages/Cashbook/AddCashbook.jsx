@@ -16,7 +16,7 @@ const AddCashbook = () => {
   const [errors, setErrors] = useState({});
   const [storeData, setStoreData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
-  console.log("categoryData", categoryData);
+
   const [loading, setLoading] = useState(false);
 
   // Sample store options (replace with actual data from API)

@@ -16,8 +16,8 @@ const MediaLibrary = () => {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [folderName, setFolder] = useState([]);
 
-  console.log("folderName", folderName);
   const { folderTree, setFolderTree } = useFolderTree();
+
   const [loading, setLoading] = useState(false);
 
   // Root level: all top-level folders and their files
@@ -27,16 +27,6 @@ const MediaLibrary = () => {
   const handleFolderClick = (folderName) => {
     console.log("Navigating to folder:", folderName);
     navigate(`/media-library/${folderName}`);
-  };
-
-  const handleDeleteFile = (fileName) => {
-    console.log("Deleting file at root:", fileName);
-    setFolderTree((prevTree) =>
-      prevTree.map((folder) => ({
-        ...folder,
-        files: folder.files.filter((file) => file.name !== fileName),
-      }))
-    );
   };
 
   const handleAddFolder = (newFolder) => {
@@ -88,7 +78,6 @@ const MediaLibrary = () => {
   const path = useLocation();
   let currentFolder = extractMediaPath(path?.pathname);
   useEffect(() => {
-    console.log("object", currentFolder);
     getMedia(currentFolder);
   }, [currentFolder]);
 
@@ -109,16 +98,71 @@ const MediaLibrary = () => {
     }
   };
 
+  const btnHide = () => {
+    getMedia(currentFolder);
+    setShowFolderModal(false);
+    setShowAssetModal(false);
+  };
+
+  const handleDeleteFile = async (fileName) => {
+    // setLoading(true);
+    const keys = ["keys[0]"];
+    const params = {
+      [keys[0]]: fileName,
+      currentFolder: currentFolder,
+    };
+
+    const queryString = new URLSearchParams(params).toString();
+    setLoading(true);
+
+    try {
+      const response = await mediaService.deleteAssets(queryString);
+      if (response.success) {
+        toast.success(response?.data?.message);
+        getMedia(currentFolder);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const btnDeleteFolder = async () => {
+    const params = {
+      keys: currentFolder,
+      currentFolder: currentFolder,
+    };
+
+    const queryString = new URLSearchParams(params).toString();
+    setLoading(true);
+    try {
+      const response = await mediaService.deleteFolder(queryString);
+      if (response.success) {
+        toast.success(response?.data?.message);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      navigate(-1);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-width-90 mx-auto py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="h3 fw-bold mb-0">Media Library</h1>
         <div className="d-flex gap-2">
-          <Form.Control
+          {/* <Form.Control
             type="text"
             placeholder="Search..."
             style={{ width: "200px" }}
-          />
+          /> */}
           <Button variant="primary" onClick={() => setShowAssetModal(true)}>
             Add Asset
           </Button>
@@ -129,7 +173,9 @@ const MediaLibrary = () => {
             Add Folder
           </Button>
           {currentFolder !== "/" && (
-            <Button variant="danger">Delete Folder</Button>
+            <Button variant="danger" onClick={() => btnDeleteFolder()}>
+              Delete Folder
+            </Button>
           )}
         </div>
       </div>
@@ -145,12 +191,12 @@ const MediaLibrary = () => {
 
       <AddAssetModal
         show={showAssetModal}
-        onHide={() => setShowAssetModal(false)}
+        onHide={() => btnHide()}
         onSubmit={handleAddFile}
       />
       <AddFolderModal
         show={showFolderModal}
-        onHide={() => setShowFolderModal(false)}
+        onHide={() => btnHide()}
         onSubmit={handleAddFolder}
       />
     </div>

@@ -1,55 +1,43 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
+import { toast } from "react-toastify";
+import { inventoryService } from "../../../services/inventoryService";
 
 const InventoryForm = () => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [categoryData, setCategoryData] = useState([]);
+  const [frameType, setFrameType] = useState([]);
+  const [frameShape, setShapeType] = useState([]);
+  const [material, setMaterial] = useState([]);
+  const [color, setColor] = useState([]);
+  const [preType, setPreType] = useState([]);
+  const [collection, setCollection] = useState([]);
+
   // Options for select fields
-  const storeOptions = [
-    { value: "store1", label: "Store1" },
-    { value: "store2", label: "Store2" },
-  ];
+
   const productOptions = [
     { value: "eyeGlasses", label: "Eye Glasses" },
-    { value: "sunglasses", label: "Sunglasses" },
+    { value: "accessories", label: "Accessories" },
+    { value: "sunGlasses", label: "Sunglasses" },
+    { value: "spectacleLens", label: "Spectacle Lens" },
+    { value: "contactLens", label: "Contact Lens" },
+    { value: "readingGlasses", label: "Reading Glasses" },
+    { value: "contactSolutions", label: "Contact Solutions" },
   ];
-  const brandOptions = [
-    { value: "rayBan", label: "Ray-Ban" },
-    { value: "oakley", label: "Oakley" },
-  ];
-  const frameTypeOptions = [
-    { value: "fullRim", label: "Full Rim" },
-    { value: "rimless", label: "Rimless" },
-  ];
-  const frameShapeOptions = [
-    { value: "round", label: "Round" },
-    { value: "rectangle", label: "Rectangle" },
-  ];
+
   const genderOptions = [
     { value: "male", label: "Male" },
     { value: "female", label: "Female" },
     { value: "unisex", label: "Unisex" },
   ];
-  const frameMaterialOptions = [
-    { value: "metal", label: "Metal" },
-    { value: "plastic", label: "Plastic" },
-  ];
-  const frameColorOptions = [
-    { value: "transparentBrown", label: "Transparent Brown" },
-    { value: "black", label: "Black" },
-  ];
+
   const frameSizeOptions = [
     { value: "small", label: "Small" },
     { value: "medium", label: "Medium" },
     { value: "large", label: "Large" },
-  ];
-  const prescriptionTypeOptions = [
-    { value: "singleVision", label: "Single Vision" },
-    { value: "bifocal", label: "Bifocal" },
-  ];
-  const frameCollectionOptions = [
-    { value: "premium", label: "Premium" },
-    { value: "standard", label: "Standard" },
   ];
 
   // Formik setup with Yup validation
@@ -77,9 +65,220 @@ const InventoryForm = () => {
     }),
     onSubmit: (values) => {
       console.log("Form submitted:", values);
-      alert("Form submitted successfully!");
+      getInventoryData(values);
     },
   });
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const brandOptions = categoryData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameTypeOptions = frameType?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameShapeOptions = frameShape?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameMaterialOptions = material?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameColorOptions = color?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const prescriptionTypeOptions = preType?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+  const frameCollectionOptions = collection?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+    getCategoryData();
+    getFrameTypeData();
+    getFrameShapeData();
+    getMaterialData();
+    getColorData();
+    getPreTypeData();
+    getCollectionData();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getCategory();
+      if (response.success) {
+        setCategoryData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFrameTypeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getFrameType();
+      if (response.success) {
+        console.log("response", response?.data);
+        setFrameType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFrameShapeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getFrameShape();
+      if (response.success) {
+        console.log("response", response?.data);
+        setShapeType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMaterialData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getMaterial();
+      if (response.success) {
+        console.log("response", response?.data);
+        setMaterial(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getColorData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getColor();
+      if (response.success) {
+        console.log("response", response?.data);
+        setColor(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPreTypeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getPrescriptionType();
+      if (response.success) {
+        console.log("response", response?.data);
+        setPreType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCollectionData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getCollection();
+      if (response.success) {
+        console.log("response", response?.data);
+        setCollection(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInventoryData = async (values) => {
+    console.log("values", values);
+    //  const storeId = formData?.store?.map((option) => option.value);
+    // setLoading(true);
+
+    // try {
+    //   const response = await cashbookService.cashBook(
+    //     formData?.from?.getTime(),
+    //     formData?.to?.getTime(),
+    //     storeId,
+    //     1, // page
+    //     20, // limit,,
+    //     1
+    //   );
+    //   if (response.success) {
+    //     console.log("response", response);
+    //     setCashBook(response?.data?.data);
+    //   } else {
+    //     toast.error(response.message);
+    //   }
+    // } catch (error) {
+    //   console.error("error:", error);
+    // } finally {
+    //   setLoading(false);
+    // }
+  };
 
   return (
     <div className="card-body px-3 py-3">

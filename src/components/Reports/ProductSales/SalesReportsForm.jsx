@@ -1,24 +1,66 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import { toast } from "react-toastify";
+import { reportService } from "../../../services/reportService";
+import CommonButton from "../../../components/CommonButton/CommonButton";
 const SalesReportsForm = ({ onSubmit }) => {
   // Options for select fields
-  const storeOptions = [
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-    { value: "CITY OPTICS", label: "CITY OPTICS" },
-    { value: "ELITE HOSPITAL", label: "ELITE HOSPITAL" },
-  ];
-  const brandOptions = [
-    { value: "SeeLens spectacleLens", label: "SeeLens spectacleLens" },
-    { value: "I-Gog sunGlasses", label: "I-Gog sunGlasses" },
-    { value: "Ray-Ban eyeGlasses", label: "Ray-Ban eyeGlasses" },
-    { value: "Oakley sunGlasses", label: "Oakley sunGlasses" },
-    { value: "Fizan eyeGlasses", label: "Fizan eyeGlasses" },
-  ];
+
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [categoryData, setCategoryData] = useState([]);
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const brandOptions = categoryData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+    getCategoryData();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryData = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getCategory();
+      if (response.success) {
+        console.log("res", response?.data?.data?.docs);
+        setCategoryData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Formik setup without validation
   const formik = useFormik({
@@ -106,13 +148,12 @@ const SalesReportsForm = ({ onSubmit }) => {
 
         {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={formik.isSubmitting}
-          >
-            Submit
-          </button>
+          <CommonButton
+            loading={loading}
+            buttonText="Submit"
+            onClick={formik.handleSubmit}
+            className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+          />
         </div>
       </div>
     </form>
