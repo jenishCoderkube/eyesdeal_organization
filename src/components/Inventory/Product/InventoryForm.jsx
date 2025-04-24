@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import Select from "react-select";
-import { toast } from "react-toastify";
-import { inventoryService } from "../../../services/inventoryService";
+import React, {useEffect, useState} from 'react';
+import {useFormik} from 'formik';
+import * as Yup from 'yup';
+import Select from 'react-select';
+import {toast} from 'react-toastify';
+import {inventoryService} from '../../../services/inventoryService';
 
 const InventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
@@ -15,36 +15,37 @@ const InventoryForm = () => {
   const [color, setColor] = useState([]);
   const [preType, setPreType] = useState([]);
   const [collection, setCollection] = useState([]);
+  const [inventory, setInventory] = useState([]);
 
   // Options for select fields
 
   const productOptions = [
-    { value: "eyeGlasses", label: "Eye Glasses" },
-    { value: "accessories", label: "Accessories" },
-    { value: "sunGlasses", label: "Sunglasses" },
-    { value: "spectacleLens", label: "Spectacle Lens" },
-    { value: "contactLens", label: "Contact Lens" },
-    { value: "readingGlasses", label: "Reading Glasses" },
-    { value: "contactSolutions", label: "Contact Solutions" },
+    {value: 'eyeGlasses', label: 'Eye Glasses'},
+    {value: 'accessories', label: 'Accessories'},
+    {value: 'sunGlasses', label: 'Sunglasses'},
+    {value: 'spectacleLens', label: 'Spectacle Lens'},
+    {value: 'contactLens', label: 'Contact Lens'},
+    {value: 'readingGlasses', label: 'Reading Glasses'},
+    {value: 'contactSolutions', label: 'Contact Solutions'},
   ];
 
   const genderOptions = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
-    { value: "unisex", label: "Unisex" },
+    {value: 'male', label: 'Male'},
+    {value: 'female', label: 'Female'},
+    {value: 'unisex', label: 'Unisex'},
   ];
 
   const frameSizeOptions = [
-    { value: "small", label: "Small" },
-    { value: "medium", label: "Medium" },
-    { value: "large", label: "Large" },
+    {value: 'small', label: 'Small'},
+    {value: 'medium', label: 'Medium'},
+    {value: 'large', label: 'Large'},
   ];
 
   // Formik setup with Yup validation
   const formik = useFormik({
     initialValues: {
       stores: [],
-      selectedProduct: null,
+      selectedProduct: productOptions[0],
       brand: null,
       frameType: null,
       frameShape: null,
@@ -57,14 +58,14 @@ const InventoryForm = () => {
     },
     validationSchema: Yup.object({
       stores: Yup.array()
-        .of(Yup.object().shape({ value: Yup.string(), label: Yup.string() }))
-        .min(1, "At least one store is required")
-        .required("Store is required"),
-      selectedProduct: Yup.object().nullable().required("Product is required"),
-      brand: Yup.object().nullable().required("Brand is required"),
+        .of(Yup.object().shape({value: Yup.string(), label: Yup.string()}))
+        .min(1, 'At least one store is required')
+        .required('Store is required'),
+      selectedProduct: Yup.object().nullable().required('Product is required'),
+      brand: Yup.object().nullable().required('Brand is required'),
     }),
     onSubmit: (values) => {
-      console.log("Form submitted:", values);
+      console.log('Form submitted:', values);
       getInventoryData(values);
     },
   });
@@ -117,6 +118,7 @@ const InventoryForm = () => {
     getColorData();
     getPreTypeData();
     getCollectionData();
+    getInventoryData();
   }, []);
 
   const getStores = async () => {
@@ -129,7 +131,7 @@ const InventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ const InventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -156,13 +158,13 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getFrameType();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setFrameType(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -173,13 +175,13 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getFrameShape();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setShapeType(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -190,13 +192,13 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getMaterial();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setMaterial(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -207,13 +209,13 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getColor();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setColor(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -224,13 +226,13 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getPrescriptionType();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setPreType(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -241,43 +243,49 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getCollection();
       if (response.success) {
-        console.log("response", response?.data);
+        console.log('response', response?.data);
         setCollection(response?.data?.data);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const getInventoryData = async (values) => {
-    console.log("values", values);
-    //  const storeId = formData?.store?.map((option) => option.value);
-    // setLoading(true);
+    const storeId = values?.stores?.map((option) => option.value);
 
-    // try {
-    //   const response = await cashbookService.cashBook(
-    //     formData?.from?.getTime(),
-    //     formData?.to?.getTime(),
-    //     storeId,
-    //     1, // page
-    //     20, // limit,,
-    //     1
-    //   );
-    //   if (response.success) {
-    //     console.log("response", response);
-    //     setCashBook(response?.data?.data);
-    //   } else {
-    //     toast.error(response.message);
-    //   }
-    // } catch (error) {
-    //   console.error("error:", error);
-    // } finally {
-    //   setLoading(false);
-    // }
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getInventory(
+        values?.selectedProduct?.value || productOptions[0]?.value,
+        values?.brand?.value,
+        values?.gender?.value,
+        values?.frameSize?.value,
+        values?.frameType?.value,
+        values?.frameShape?.value,
+        values?.frameMaterial?.value,
+        values?.frameColor?.value,
+        values?.frameCollection?.value,
+        values?.prescriptionType?.value,
+        storeId,
+        1
+      );
+      if (response.success) {
+        console.log('response', response);
+        setInventory(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error('error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -292,14 +300,14 @@ const InventoryForm = () => {
               options={storeOptions}
               value={formik.values.stores}
               isMulti
-              onChange={(option) => formik.setFieldValue("stores", option)}
-              onBlur={() => formik.setFieldTouched("stores", true)}
+              onChange={(option) => formik.setFieldValue('stores', option)}
+              onBlur={() => formik.setFieldTouched('stores', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
               className={
                 formik.touched.stores && formik.errors.stores
-                  ? "is-invalid"
-                  : ""
+                  ? 'is-invalid'
+                  : ''
               }
             />
             {formik.touched.stores && formik.errors.stores && (
@@ -314,15 +322,15 @@ const InventoryForm = () => {
               options={productOptions}
               value={formik.values.selectedProduct}
               onChange={(option) =>
-                formik.setFieldValue("selectedProduct", option)
+                formik.setFieldValue('selectedProduct', option)
               }
-              onBlur={() => formik.setFieldTouched("selectedProduct", true)}
+              onBlur={() => formik.setFieldTouched('selectedProduct', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
               className={
                 formik.touched.selectedProduct && formik.errors.selectedProduct
-                  ? "is-invalid"
-                  : ""
+                  ? 'is-invalid'
+                  : ''
               }
             />
             {formik.touched.selectedProduct &&
@@ -339,12 +347,12 @@ const InventoryForm = () => {
             <Select
               options={brandOptions}
               value={formik.values.brand}
-              onChange={(option) => formik.setFieldValue("brand", option)}
-              onBlur={() => formik.setFieldTouched("brand", true)}
+              onChange={(option) => formik.setFieldValue('brand', option)}
+              onBlur={() => formik.setFieldTouched('brand', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
               className={
-                formik.touched.brand && formik.errors.brand ? "is-invalid" : ""
+                formik.touched.brand && formik.errors.brand ? 'is-invalid' : ''
               }
             />
             {formik.touched.brand && formik.errors.brand && (
@@ -358,8 +366,8 @@ const InventoryForm = () => {
             <Select
               options={frameTypeOptions}
               value={formik.values.frameType}
-              onChange={(option) => formik.setFieldValue("frameType", option)}
-              onBlur={() => formik.setFieldTouched("frameType", true)}
+              onChange={(option) => formik.setFieldValue('frameType', option)}
+              onBlur={() => formik.setFieldTouched('frameType', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -371,8 +379,8 @@ const InventoryForm = () => {
             <Select
               options={frameShapeOptions}
               value={formik.values.frameShape}
-              onChange={(option) => formik.setFieldValue("frameShape", option)}
-              onBlur={() => formik.setFieldTouched("frameShape", true)}
+              onChange={(option) => formik.setFieldValue('frameShape', option)}
+              onBlur={() => formik.setFieldTouched('frameShape', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -384,8 +392,8 @@ const InventoryForm = () => {
             <Select
               options={genderOptions}
               value={formik.values.gender}
-              onChange={(option) => formik.setFieldValue("gender", option)}
-              onBlur={() => formik.setFieldTouched("gender", true)}
+              onChange={(option) => formik.setFieldValue('gender', option)}
+              onBlur={() => formik.setFieldTouched('gender', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -398,9 +406,9 @@ const InventoryForm = () => {
               options={frameMaterialOptions}
               value={formik.values.frameMaterial}
               onChange={(option) =>
-                formik.setFieldValue("frameMaterial", option)
+                formik.setFieldValue('frameMaterial', option)
               }
-              onBlur={() => formik.setFieldTouched("frameMaterial", true)}
+              onBlur={() => formik.setFieldTouched('frameMaterial', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -412,8 +420,8 @@ const InventoryForm = () => {
             <Select
               options={frameColorOptions}
               value={formik.values.frameColor}
-              onChange={(option) => formik.setFieldValue("frameColor", option)}
-              onBlur={() => formik.setFieldTouched("frameColor", true)}
+              onChange={(option) => formik.setFieldValue('frameColor', option)}
+              onBlur={() => formik.setFieldTouched('frameColor', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -425,8 +433,8 @@ const InventoryForm = () => {
             <Select
               options={frameSizeOptions}
               value={formik.values.frameSize}
-              onChange={(option) => formik.setFieldValue("frameSize", option)}
-              onBlur={() => formik.setFieldTouched("frameSize", true)}
+              onChange={(option) => formik.setFieldValue('frameSize', option)}
+              onBlur={() => formik.setFieldTouched('frameSize', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -439,9 +447,9 @@ const InventoryForm = () => {
               options={prescriptionTypeOptions}
               value={formik.values.prescriptionType}
               onChange={(option) =>
-                formik.setFieldValue("prescriptionType", option)
+                formik.setFieldValue('prescriptionType', option)
               }
-              onBlur={() => formik.setFieldTouched("prescriptionType", true)}
+              onBlur={() => formik.setFieldTouched('prescriptionType', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -454,9 +462,9 @@ const InventoryForm = () => {
               options={frameCollectionOptions}
               value={formik.values.frameCollection}
               onChange={(option) =>
-                formik.setFieldValue("frameCollection", option)
+                formik.setFieldValue('frameCollection', option)
               }
-              onBlur={() => formik.setFieldTouched("frameCollection", true)}
+              onBlur={() => formik.setFieldTouched('frameCollection', true)}
               placeholder="Select..."
               classNamePrefix="react-select"
             />
@@ -466,7 +474,7 @@ const InventoryForm = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={formik.isSubmitting}
+            // disabled={formik.isSubmitting}
           >
             Submit
           </button>

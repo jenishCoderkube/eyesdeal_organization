@@ -10,7 +10,7 @@ const INVENTORY_ENDPOINTS = {
   COLOR: "/master/color",
   PRESCRIPTION: `master/prescriptionType`,
   COLLECTION: `master/collection`,
-  INVENTORY: (params) => `cashbook/cash?populate=true&${params}`,
+  INVENTORY: (params) => `/inventory?populate=true&${params}`,
 };
 
 const buildPurchaseLogParams = (
@@ -24,9 +24,12 @@ const buildPurchaseLogParams = (
   frameColor_id,
   frameCollection_id,
   prescriptionType_id,
-  storeIds = []
+  storeIds,
+  page
 ) => {
   const params = new URLSearchParams();
+
+
 
   // Invoice date filters
   if (_t) params.append("product._t", _t);
@@ -42,10 +45,13 @@ const buildPurchaseLogParams = (
     params.append("product.frameCollection._id", frameCollection_id);
   if (prescriptionType_id)
     params.append("product.prescriptionType._id", prescriptionType_id);
+  if (page)
+    params.append("page", page);
 
+  console.log("storeIds:----",storeIds)
   // Store IDs
   storeIds.forEach((storeId, index) => {
-    params.append(`storeArr[${index}]`, storeId);
+    params.append(`storesArr[${index}]`, storeId);
   });
 
   return params.toString();
@@ -183,8 +189,10 @@ export const inventoryService = {
     frameColor_id,
     frameCollection_id,
     prescriptionType_id,
-    storeIds = []
+    storeIds = [],
+    page
   ) => {
+    console.log("storeIds",storeIds)
     try {
       let params = buildPurchaseLogParams(
         _t,
@@ -197,7 +205,8 @@ export const inventoryService = {
         frameColor_id,
         frameCollection_id,
         prescriptionType_id,
-        (storeIds = [])
+        storeIds,
+        page
       );
       const response = await api.get(INVENTORY_ENDPOINTS.INVENTORY(params));
 
