@@ -60,12 +60,12 @@ const storeOptions = [
 ];
 
 function EditEmployee() {
-  const {id} = useParams();
+  const { id } = useParams();
   const location = useLocation();
   const employee = location.state?.user || {};
 
   useEffect(() => {
-    if(id){
+    if (id) {
       // fetch employee details here and set data accodingly
     }
   }, [id]);
@@ -152,7 +152,7 @@ function EditEmployee() {
       <div className="mb-4">
         <h1 className="h2 fw-bold text-dark">Edit Employee</h1>
       </div>
-      <div className="card border-0 p-0 mb-4">
+      <div className=" p-0 mb-4">
         <div className="card-body">
           <form
             className="d-flex flex-column"

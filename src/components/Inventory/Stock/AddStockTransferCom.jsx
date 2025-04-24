@@ -131,7 +131,7 @@ const AddStockTransferCom = () => {
       <h1 className="h2 text-dark fw-bold mb-4 px-md-5 px-2">
         Add Stock Transfer
       </h1>
-      <div className="card border-0 px-md-5">
+      <div className=" px-md-5">
         <div className="card-body ">
           <form onSubmit={handleSubmit}>
             <div className="row g-3">

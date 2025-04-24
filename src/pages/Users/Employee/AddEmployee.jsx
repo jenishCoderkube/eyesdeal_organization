@@ -27,10 +27,15 @@ const validationSchema = Yup.object({
   city: Yup.object().nullable().required("City is required"),
   pincode: Yup.string().trim().required("Pincode is required"),
   gender: Yup.object().nullable().required("Gender is required"),
-  stores: Yup.array().of(Yup.object().shape({
-    value: Yup.string(),
-    label: Yup.string(),
-  })).min(1, "At least 1 store is required").required("Store is required"),
+  stores: Yup.array()
+    .of(
+      Yup.object().shape({
+        value: Yup.string(),
+        label: Yup.string(),
+      })
+    )
+    .min(1, "At least 1 store is required")
+    .required("Store is required"),
   joiningDate: Yup.date().nullable().required("Joining date is required"),
   isActive: Yup.boolean().required("Active status is required"),
 });
@@ -168,7 +173,7 @@ function AddEmployee() {
       <div className="mb-4">
         <h1 className="h2 fw-bold text-dark">Add Employee</h1>
       </div>
-      <div className="card border-0 p-0 mb-4">
+      <div className=" p-0 mb-4">
         <div className="card-body">
           <form
             className="d-flex flex-column gap-3"

@@ -66,7 +66,7 @@ const ProductInventoryReportCom = () => {
           <div>
             <h1 className="h2 text-dark fw-bold">Product Inventory Report</h1>
           </div>
-          <div className="card p-0 mt-5">
+          <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Product Inventory Report</h6>
             <ProductInventoryReportsTable data={initialData} />
           </div>

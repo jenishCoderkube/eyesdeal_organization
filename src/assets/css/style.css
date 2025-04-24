@@ -1302,7 +1302,9 @@
   font-size: 1.88rem;        
   letter-spacing: -0.01em;    
   line-height: 1.33;          
-  margin-bottom: 2rem;       
+  margin-bottom: 2rem;
+  font-weight: 400;
+  color: black       
 }
 
 .product_head_title{

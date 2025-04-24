@@ -153,7 +153,7 @@ const AddStore = () => {
       <h1 className={`h2 mt-4 text-dark fw-bold ${styles.store_add_title}`}>
         Add Stores
       </h1>
-      <div className="card border-0 shadow-sm px-md-5">
+      <div className=" shadow-sm px-md-5">
         <div className="card-body p-md-5 p-2">
           <form onSubmit={handleSubmit}>
             <div className="row g-3">

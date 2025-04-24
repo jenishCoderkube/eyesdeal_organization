@@ -135,10 +135,10 @@ const SalesReportCom = () => {
           <div>
             <h1 className="h2 text-dark fw-bold">Sales Report</h1>
           </div>
-          <div className="card border-0 mt-5">
+          <div className=" mt-5">
             <SalesReportsForm onSubmit={handleFormSubmit} data={filteredData} />
           </div>
-          <div className="card p-0 mt-5">
+          <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Sales Report</h6>
             <SalesReportsTable data={filteredData} />
           </div>

@@ -10,10 +10,10 @@ const ViewProductStoreCom = () => {
           <div>
             <h1 className="h2 text-dark fw-bold">View Product Store</h1>
           </div>
-          <div className="card border-0  mt-5">
+          <div className="  mt-5">
             <ViewProductForm />
           </div>
-          <div className="card p-0  mt-5">
+          <div className="shadow-none border mt-5">
             <h6 className="fw-bold px-3 pt-3">Product Store</h6>
             <ViewProductTable />
           </div>

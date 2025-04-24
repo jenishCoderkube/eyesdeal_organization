@@ -30,7 +30,7 @@ const AssignStore = () => {
               Add Stores
             </h1>
           </div>
-          <div className="card border-0 shadow-sm">
+          <div className=" shadow-sm">
             <div className="card-body p-4 p-sm-5 p-lg-5">
               <form
                 onSubmit={handleSubmit}

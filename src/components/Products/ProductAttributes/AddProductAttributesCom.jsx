@@ -136,7 +136,7 @@ function AddProductAttributes() {
         </Col>
         {/* Right-side Form */}
         <Col md={10} className="p-md-4 mt-5 mt-md-0">
-          <div className="card border-0">
+          <div className="">
             <h6 className="fw-bold px-3 pt-3">
               Add {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
             </h6>

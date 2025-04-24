@@ -29,7 +29,7 @@ const SaleForm = () => {
     netAmount: 0,
     note: "",
     dueAmount: 0,
-    prescriptions: []
+    prescriptions: [],
   });
 
   const [receivedAmounts, setReceivedAmounts] = useState([]);
@@ -113,7 +113,8 @@ const SaleForm = () => {
     }
   };
 
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
+    useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [OrderModelVisible, setOrderModelVisible] = useState(false);
 
@@ -189,8 +190,9 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerName ? "is-invalid" : ""
+                  }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
@@ -208,8 +210,9 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerPhone ? "is-invalid" : ""
+                  }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
@@ -225,8 +228,9 @@ const SaleForm = () => {
                   Sales Rep
                 </label>
                 <select
-                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
-                    }`}
+                  className={`form-select w-100 ${
+                    errors.salesRep ? "is-invalid" : ""
+                  }`}
                   id="salesRep"
                   name="salesRep"
                   value={formData.salesRep}
@@ -248,25 +252,39 @@ const SaleForm = () => {
                 <button
                   type="button"
                   className="btn border-secondary-subtle text-primary"
-                  onClick={() => openPrescriptionModel(formData.prescriptions)}>View Prescriptions</button>
+                  onClick={() => openPrescriptionModel(formData.prescriptions)}
+                >
+                  View Prescriptions
+                </button>
               </div>
               <div className="col-md-3 col-12">
                 <button
                   type="button"
                   className="btn border-secondary-subtle text-primary"
-                  onClick={() => openOrderModel(formData.prescriptions)}>View Orders</button>
+                  onClick={() => openOrderModel(formData.prescriptions)}
+                >
+                  View Orders
+                </button>
               </div>
               <div className="col-md-3 col-12">
-                <button className="btn border-secondary-subtle text-primary">Add Power</button>
+                <button className="btn border-secondary-subtle text-primary">
+                  Add Power
+                </button>
               </div>
             </div>
 
             {PrescriptionModelVisible && selectedCust && (
-              <PrescriptionModel closePrescriptionModel={closePrescriptionModel} selectedCust={selectedCust} />
+              <PrescriptionModel
+                closePrescriptionModel={closePrescriptionModel}
+                selectedCust={selectedCust}
+              />
             )}
 
             {OrderModelVisible && selectedCust && (
-              <OrdersModel closeOrderModel={closeOrderModel} selectedCust={selectedCust} />
+              <OrdersModel
+                closeOrderModel={closeOrderModel}
+                selectedCust={selectedCust}
+              />
             )}
 
             <div className="d-flex gap-4 w-100">
@@ -440,8 +458,9 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${field.readOnly ? "custom-disabled" : ""
-                      }`}
+                    className={`form-control w-auto ${
+                      field.readOnly ? "custom-disabled" : ""
+                    }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}
@@ -532,7 +551,7 @@ const SaleForm = () => {
               <label className="custom-label">Received Amount</label>
               <button
                 type="button"
-                className="btn px-3 py-1"
+                className="btn px-3 py-2"
                 style={{
                   borderColor: "#e2e8f0",
                   color: "#4f46e5",
@@ -657,8 +676,8 @@ const SaleForm = () => {
           </div>
         </div>
 
-        <div className="col-12 mt-3">
-          <button type="submit" className="btn btn-primary">
+        <div className="col-12 mb-5 p-0 mt-3">
+          <button type="submit" className="btn btn-primary py-2">
             Submit
           </button>
         </div>

@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { FaArrowLeft, FaArrowRight, FaSearch } from "react-icons/fa";
 import { purchaseService } from "../../services/purchaseService";
 import { printLogs } from "../../utils/constants";
 import { toast } from "react-toastify";
@@ -119,7 +119,10 @@ function ViewPurchase() {
           <form>
             <div className="row g-3">
               <div className="col-md-3">
-                <label htmlFor="vendorName" className="form-label fw-medium">
+                <label
+                  htmlFor="vendorName"
+                  className="form-label font-weight-600"
+                >
                   SELECT VENDOR
                 </label>
                 <Select
@@ -133,7 +136,7 @@ function ViewPurchase() {
                 />
               </div>
               <div className="col-md-3">
-                <label htmlFor="store" className="form-label fw-medium">
+                <label htmlFor="store" className="form-label font-weight-600">
                   STORES
                 </label>
                 <Select
@@ -147,7 +150,7 @@ function ViewPurchase() {
                 />
               </div>
               <div className="col-md-3">
-                <label htmlFor="from" className="form-label fw-medium">
+                <label htmlFor="from" className="form-label font-weight-600">
                   DATE FROM
                 </label>
                 <DatePicker
@@ -158,7 +161,7 @@ function ViewPurchase() {
                 />
               </div>
               <div className="col-md-3">
-                <label htmlFor="to" className="form-label fw-medium">
+                <label htmlFor="to" className="form-label font-weight-600">
                   DATE TO
                 </label>
                 <DatePicker
@@ -183,26 +186,22 @@ function ViewPurchase() {
       </div>
 
       <div className="px-md-3">
-        <div className="card p-3">
+        <div className="card shadow-none border">
           <div className="">
-            <h2 className="h5 mb-0 py-3">Purchases</h2>
+            <h4 className="h6 mb-0 p-3 fw-bold">Purchases</h4>
           </div>
           <div className="">
             <div className="mb-3">
               <div className="input-group w-25">
-                <span className="input-group-text">
-                  <svg
-                    className="bi"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                  >
-                    <use xlinkHref="/node_modules/bootstrap-icons/bootstrap-icons.svg#search" />
-                  </svg>
+                <span className="input-group-text bg-white border-end-0">
+                  <FaSearch
+                    className="text-muted custom-search-icon"
+                    style={{ color: "#94a3b8" }}
+                  />
                 </span>
                 <input
-                  type="text"
-                  className="form-control"
+                  type="search"
+                  className="form-control border-start-0 py-2q"
                   placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -259,7 +258,7 @@ function ViewPurchase() {
                 </tbody>
               </table>
             </div>
-            <div className="d-flex justify-content-between align-items-center ">
+            <div className="d-flex px-3 justify-content-between align-items-center ">
               <div className="text-muted fw-normal">
                 Showing <span className="fw-medium">1</span> to{" "}
                 <span className="fw-medium">0</span> of{" "}

@@ -25,7 +25,7 @@ const menuItems = [
       // { label: "Process History", link: "/process/history" },
       { label: "Shop Process", link: "/process/shop" },
       { label: "Workshop Process", link: "/process/Workshop" },
-      { label: "Vendor List", link: "/process/history" },
+      { label: "Vendor List", link: "/process/vendorList" },
     ],
   },
   {

@@ -60,6 +60,7 @@ import GstReport from "../pages/Reports/GstReport";
 import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
 import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
 import SubFolder from "../pages/MediaLibrary/SubFolder";
+import VendorListProcess from "../pages/Process/vendorListProcess";
 
 const routes = [
   {
@@ -122,6 +123,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <WorkshopProcess />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "VendorListProcess",
+    path: "/process/vendorList",
+    element: (
+      <PrivateRoute>
+        <VendorListProcess />
       </PrivateRoute>
     ),
   },

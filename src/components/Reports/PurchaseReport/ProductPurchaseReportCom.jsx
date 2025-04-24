@@ -99,10 +99,10 @@ const ProductPurchaseReportCom = () => {
           <div>
             <h1 className="h2 text-dark fw-bold">Product Purchase Report</h1>
           </div>
-          <div className="card border-0 mt-5">
+          <div className=" mt-5">
             <ProductPurchaseReportsForm onSubmit={handleFormSubmit} />
           </div>
-          <div className="card p-0 mt-5">
+          <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Product Purchase Report</h6>
             <ProductPurchaseReportsTable data={filteredData} />
           </div>

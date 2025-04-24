@@ -7,7 +7,7 @@ const BrandGroupWiseCom = () => {
       <div className="row justify-content-center">
         <div className="col-12 col-lg-11">
           <div
-            className="card p-0  mt-5"
+            className="shadow-none border mt-5"
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">Inventory</h6>

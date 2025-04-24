@@ -83,7 +83,7 @@ const AddCashbook = () => {
           <div className="">
             <h1 className="h3 text-dark fw-bold">Add Expense</h1>
           </div>
-          <div className="card border-0 shadow-sm">
+          <div className=" shadow-sm">
             <div className="card-body p-4 p-sm-5">
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">

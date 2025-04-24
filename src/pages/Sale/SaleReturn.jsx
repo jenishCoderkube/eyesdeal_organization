@@ -82,10 +82,13 @@ const SaleReturn = () => {
         <HeaderTitle title="Return Sale" />
       </div>
       <form onSubmit={handleSubmit}>
-        <div className="card border border-dark p-3 mb-4">
+        <div className="card shadow-none border border-dark p-3 mb-4">
           <div className="row g-3">
             <div className="col-12">
-              <label htmlFor="customerId" className="form-label fw-medium mb-1">
+              <label
+                htmlFor="customerId"
+                className="form-label font-weight-600 mb-1"
+              >
                 Customer
               </label>
               <Select
@@ -107,7 +110,7 @@ const SaleReturn = () => {
                 <div className="col-12 col-md-6 col-lg-3">
                   <label
                     htmlFor="customerName"
-                    className="form-label fw-medium mb-1"
+                    className="form-label  font-weight-600 mb-1"
                   >
                     Customer Name
                   </label>
@@ -133,7 +136,7 @@ const SaleReturn = () => {
                 <div className="col-12 col-md-6 col-lg-3">
                   <label
                     htmlFor="customerPhone"
-                    className="form-label fw-medium mb-1"
+                    className="form-label font-weight-600 mb-1"
                   >
                     Customer Phone
                   </label>
@@ -159,7 +162,7 @@ const SaleReturn = () => {
                 <div className="col-12 col-md-6 col-lg-3">
                   <label
                     htmlFor="salesRep"
-                    className="form-label fw-medium mb-1"
+                    className="form-label font-weight-600 mb-1"
                   >
                     Sales Rep
                   </label>
@@ -185,7 +188,10 @@ const SaleReturn = () => {
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
-                  <label htmlFor="store" className="form-label fw-medium mb-1">
+                  <label
+                    htmlFor="store"
+                    className="form-label font-weight-600 mb-1"
+                  >
                     Store
                   </label>
                   <Select
@@ -215,7 +221,7 @@ const SaleReturn = () => {
                         scope="col"
                         className="px-3 first:pl-5 last:pr-5 text-start"
                       >
-                        <div className="custom-th fw-medium product_head_title">
+                        <div className="custom-th  product_head_title">
                           BARCODE
                         </div>
                       </th>
@@ -223,17 +229,13 @@ const SaleReturn = () => {
                         scope="col"
                         className="px-2 first:pl-5 last:pr-5 py-3 text-start"
                       >
-                        <div className="fw-medium custom-th product_head_title">
-                          SRP
-                        </div>
+                        <div className=" custom-th product_head_title">SRP</div>
                       </th>
                       <th
                         scope="col"
                         className="px-2 first:pl-5 last:pr-5 py-3 text-start"
                       >
-                        <div className="fw-medium custom-th product_head_title">
-                          SKU
-                        </div>
+                        <div className=" custom-th product_head_title">SKU</div>
                       </th>
                     </tr>
                   </thead>
