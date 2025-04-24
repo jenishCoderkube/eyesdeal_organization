@@ -11,6 +11,7 @@ const INVENTORY_ENDPOINTS = {
   PRESCRIPTION: `master/prescriptionType`,
   COLLECTION: `master/collection`,
   INVENTORY: (params) => `/inventory?populate=true&${params}`,
+  EXPORT: "/exportCsv",
 };
 
 const buildPurchaseLogParams = (
@@ -25,14 +26,13 @@ const buildPurchaseLogParams = (
   frameCollection_id,
   prescriptionType_id,
   storeIds,
-  page
+  page,
+  search
 ) => {
   const params = new URLSearchParams();
 
-
-
   // Invoice date filters
-  if (_t) params.append("product._t", _t);
+  if (_t) params.append("product.__t", _t);
   if (brand) params.append("product.brand", brand);
   if (gender) params.append("product.gender", gender);
   if (frameSize) params.append("product.frameSize", frameSize);
@@ -45,10 +45,12 @@ const buildPurchaseLogParams = (
     params.append("product.frameCollection._id", frameCollection_id);
   if (prescriptionType_id)
     params.append("product.prescriptionType._id", prescriptionType_id);
-  if (page)
-    params.append("page", page);
+  if (page) params.append("page", page);
 
-  console.log("storeIds:----",storeIds)
+  if (search) {
+    params.append("search[search]", search);
+  }
+
   // Store IDs
   storeIds.forEach((storeId, index) => {
     params.append(`storesArr[${index}]`, storeId);
@@ -190,9 +192,10 @@ export const inventoryService = {
     frameCollection_id,
     prescriptionType_id,
     storeIds = [],
-    page
+    page,
+    search
   ) => {
-    console.log("storeIds",storeIds)
+    console.log("storeIds", storeIds);
     try {
       let params = buildPurchaseLogParams(
         _t,
@@ -206,7 +209,8 @@ export const inventoryService = {
         frameCollection_id,
         prescriptionType_id,
         storeIds,
-        page
+        page,
+        search
       );
       const response = await api.get(INVENTORY_ENDPOINTS.INVENTORY(params));
 
@@ -217,6 +221,21 @@ export const inventoryService = {
     } catch (error) {
       printLogs(error);
 
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  exportCsv: async (data) => {
+    try {
+      const response = await api.post(INVENTORY_ENDPOINTS.EXPORT, data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
       return {
         success: false,
         message: error.response?.data?.message || "Error",

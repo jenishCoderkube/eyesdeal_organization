@@ -1,55 +1,47 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
+import { toast } from "react-toastify";
+import { inventoryService } from "../../../services/inventoryService";
+import { FaSearch } from "react-icons/fa";
 
 const StoreInventoryForm = () => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [categoryData, setCategoryData] = useState([]);
+  const [frameType, setFrameType] = useState([]);
+  const [frameShape, setShapeType] = useState([]);
+  const [material, setMaterial] = useState([]);
+  const [color, setColor] = useState([]);
+  const [preType, setPreType] = useState([]);
+  const [collection, setCollection] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
   // Options for select fields
-  const storeOptions = [
-    { value: "store1", label: "Store1" },
-    { value: "store2", label: "Store2" },
-  ];
   const productOptions = [
     { value: "eyeGlasses", label: "Eye Glasses" },
-    { value: "sunglasses", label: "Sunglasses" },
+    { value: "accessories", label: "Accessories" },
+    { value: "sunGlasses", label: "Sunglasses" },
+    { value: "spectacleLens", label: "Spectacle Lens" },
+    { value: "contactLens", label: "Contact Lens" },
+    { value: "readingGlasses", label: "Reading Glasses" },
+    { value: "contactSolutions", label: "Contact Solutions" },
   ];
-  const brandOptions = [
-    { value: "rayBan", label: "Ray-Ban" },
-    { value: "oakley", label: "Oakley" },
-  ];
-  const frameTypeOptions = [
-    { value: "fullRim", label: "Full Rim" },
-    { value: "rimless", label: "Rimless" },
-  ];
-  const frameShapeOptions = [
-    { value: "round", label: "Round" },
-    { value: "rectangle", label: "Rectangle" },
-  ];
+
   const genderOptions = [
     { value: "male", label: "Male" },
     { value: "female", label: "Female" },
     { value: "unisex", label: "Unisex" },
   ];
-  const frameMaterialOptions = [
-    { value: "metal", label: "Metal" },
-    { value: "plastic", label: "Plastic" },
-  ];
-  const frameColorOptions = [
-    { value: "transparentBrown", label: "Transparent Brown" },
-    { value: "black", label: "Black" },
-  ];
+
   const frameSizeOptions = [
     { value: "small", label: "Small" },
     { value: "medium", label: "Medium" },
     { value: "large", label: "Large" },
-  ];
-  const prescriptionTypeOptions = [
-    { value: "singleVision", label: "Single Vision" },
-    { value: "bifocal", label: "Bifocal" },
-  ];
-  const frameCollectionOptions = [
-    { value: "premium", label: "Premium" },
-    { value: "standard", label: "Standard" },
   ];
 
   // Formik setup with Yup validation
@@ -77,9 +69,358 @@ const StoreInventoryForm = () => {
     }),
     onSubmit: (values) => {
       console.log("Form submitted:", values);
-      alert("Form submitted successfully!");
+      getInventoryData(values);
     },
   });
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const brandOptions = categoryData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameTypeOptions = frameType?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameShapeOptions = frameShape?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameMaterialOptions = material?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const frameColorOptions = color?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const prescriptionTypeOptions = preType?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+  const frameCollectionOptions = collection?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+    getCategoryData();
+    getFrameTypeData();
+    getFrameShapeData();
+    getMaterialData();
+    getColorData();
+    getPreTypeData();
+    getCollectionData();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getCategory();
+      if (response.success) {
+        setCategoryData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFrameTypeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getFrameType();
+      if (response.success) {
+        console.log("response", response?.data);
+        setFrameType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFrameShapeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getFrameShape();
+      if (response.success) {
+        console.log("response", response?.data);
+        setShapeType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMaterialData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getMaterial();
+      if (response.success) {
+        console.log("response", response?.data);
+        setMaterial(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getColorData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getColor();
+      if (response.success) {
+        console.log("response", response?.data);
+        setColor(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPreTypeData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getPrescriptionType();
+      if (response.success) {
+        console.log("response", response?.data);
+        setPreType(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCollectionData = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getCollection();
+      if (response.success) {
+        console.log("response", response?.data);
+        setCollection(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      getInventoryData();
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  const getInventoryData = async (values) => {
+    const storeId = values?.stores?.map((option) => option.value);
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getInventory(
+        values?.selectedProduct?.value || productOptions[0]?.value,
+        values?.brand?.value,
+        values?.gender?.value,
+        values?.frameSize?.value,
+        values?.frameType?.value,
+        values?.frameShape?.value,
+        values?.frameMaterial?.value,
+        values?.frameColor?.value,
+        values?.frameCollection?.value,
+        values?.prescriptionType?.value,
+        storeId || user?.stores,
+        1,
+        searchQuery
+      );
+      if (response.success) {
+        console.log("response", response);
+        setInventory(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportProduct = async (e) => {
+    e.preventDefault();
+
+    const finalData = [];
+
+    inventory?.docs?.forEach((item) => {
+      const selected = item.product;
+      console.log("item", item);
+      const quantity = parseInt(item.quantity) || 0;
+
+      // for (let i = 0; i < quantity; i++) {
+      finalData.push({
+        sku: selected.sku,
+        Barcode: selected.oldBarcode,
+        stock: item.quantity,
+        sold: item?.sold,
+        mrp: selected?.MRP,
+        brand: selected?.brandData?.name,
+        "Frame Type": selected?.frameType?.name,
+        "Frame Shape": selected?.frameShape?.name,
+        gender: selected?.gender,
+        "Frame Material": selected?.frameMaterial?.name,
+        "Frame Color": selected?.frameColor?.name,
+        "Frame Size": selected?.frameSize,
+      });
+      // }
+    });
+
+    const finalPayload = {
+      data: finalData, // Wrap your array like this
+    };
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.exportCsv(finalPayload);
+
+      if (response.success) {
+        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
+
+        // Create a Blob from the CSV string
+        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        document.body.appendChild(link);
+        link.click(); // Trigger the download
+        document.body.removeChild(link); // Clean up
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportProductCp = async (e) => {
+    e.preventDefault();
+
+    const finalData = [];
+
+    inventory?.docs?.forEach((item) => {
+      const selected = item.product;
+      console.log("item", item);
+      const quantity = parseInt(item.quantity) || 0;
+
+      // for (let i = 0; i < quantity; i++) {
+      finalData.push({
+        sku: selected.sku,
+        Barcode: selected.oldBarcode,
+        stock: item.quantity,
+        sold: item?.sold,
+        mrp: selected?.MRP,
+        costPrice: selected?.sellPrice,
+        brand: selected?.brandData?.name,
+        "Frame Type": selected?.frameType?.name,
+        "Frame Shape": selected?.frameShape?.name,
+        gender: selected?.gender,
+        "Frame Material": selected?.frameMaterial?.name,
+        "Frame Color": selected?.frameColor?.name,
+        "Frame Size": selected?.frameSize,
+      });
+      // }
+    });
+
+    const finalPayload = {
+      data: finalData, // Wrap your array like this
+    };
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.exportCsv(finalPayload);
+
+      if (response.success) {
+        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
+
+        // Create a Blob from the CSV string
+        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        document.body.appendChild(link);
+        link.click(); // Trigger the download
+        document.body.removeChild(link); // Clean up
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="card-body px-3 py-3">
@@ -285,6 +626,109 @@ const StoreInventoryForm = () => {
           </button>
         </div>
       </form>
+
+      <div className="card p-0  mt-5">
+        <h6 className="fw-bold px-3 pt-3">Inventory</h6>
+        <div className="card-body p-0">
+          <div className="d-flex flex-column px-3  flex-md-row gap-3 mb-4">
+            <p className="mb-0 fw-normal text-black">
+              Total Quantity: {inventory?.countResult?.[0]?.totalQuantity}
+            </p>
+            <p className="mb-0 fw-normal text-black">
+              Total Sold: {inventory?.countResult?.[0]?.totalQuantity}
+            </p>
+
+            <button
+              className="btn btn-primary ms-md-auto"
+              onClick={(e) => exportProduct(e)}
+            >
+              Export Product
+            </button>
+            <button
+              onClick={(e) => exportProductCp(e)}
+              className="btn btn-primary"
+            >
+              Export Product CP
+            </button>
+          </div>
+          <div className="mb-4  col-md-5">
+            <div className="input-group px-3">
+              <span className="input-group-text bg-white border-end-0">
+                <FaSearch
+                  className="text-muted custom-search-icon"
+                  style={{ color: "#94a3b8" }}
+                />
+              </span>
+              <input
+                type="search"
+                className="form-control border-start-0"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="table-responsive">
+            <table className="table table-sm">
+              <thead className="text-xs text-uppercase text-muted bg-light border">
+                <tr>
+                  <th>Barcode</th>
+                  <th>Photo</th>
+                  <th>SKU</th>
+                  <th>MRP</th>
+                  <th>Stock</th>
+                  <th>Sold</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {inventory?.docs?.length > 0 ? (
+                  inventory.docs.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>{item.product?.oldBarcode}</td>
+                      <td>
+                        <img
+                          src={item.photo}
+                          alt="Product"
+                          width="40"
+                          height="40"
+                        />
+                      </td>
+                      <td>{item.product?.sku}</td>
+                      <td>{item.product?.mrp}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.sold}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center py-3">
+                      No data available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+            <div className="text-sm text-muted mb-3 mb-sm-0">
+              Showing <span className="fw-medium">1</span> to{" "}
+              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
+              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              results
+            </div>
+            <div className="btn-group">
+              <button className="btn btn-outline-primary">Previous</button>
+              <button className="btn btn-outline-primary">Next</button>
+            </div>
+          </div>
+        </div>
+        {/* <ImageSliderModal
+        show={showModal}
+        onHide={closeImageModal}
+        images={modalImages}
+      /> */}
+        {/* <InventoryTable data={inventory} /> */}
+      </div>
     </div>
   );
 };

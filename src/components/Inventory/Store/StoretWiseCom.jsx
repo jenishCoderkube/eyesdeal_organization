@@ -13,10 +13,10 @@ const StoretWiseCom = () => {
           <div className=" mt-5">
             <StoreInventoryForm />
           </div>
-          <div className="card shadow-none border p-0  mt-5">
+          {/* <div className="card shadow-none border p-0  mt-5">
             <h6 className="fw-bold px-3 pt-3">Inventory</h6>
             <StoreInventoryTable />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
