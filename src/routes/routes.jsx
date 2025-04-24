@@ -635,7 +635,6 @@ const routes = [
     path: "/media-library/*",
     element: (
       <PrivateRoute>
-        {/* <SubFolder /> */}
         <MediaLibrary />
       </PrivateRoute>
     ),

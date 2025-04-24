@@ -1,12 +1,46 @@
 import React, { useState } from "react";
 import { Modal, Button, Form, Nav, ListGroup } from "react-bootstrap";
 import { FaTimes, FaTrash } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
+import { uploadToMediaLibrary } from "../../services/uploadToMediaLibrary";
+import CommonButton from "../CommonButton/CommonButton";
+import { toast } from "react-toastify";
 
 const AddAssetModal = ({ show, onHide, onSubmit }) => {
   const [activeTab, setActiveTab] = useState("image");
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileList, setFileList] = useState([]); // Array of { name, file }
+  const [loading, setLoading] = useState(false);
+
+  function extractMediaPath(input) {
+    const prefix = "/media-library";
+
+    if (input === prefix) {
+      return "/";
+    }
+
+    if (input.startsWith(prefix)) {
+      let result = input.slice(prefix.length);
+
+      // Remove leading slash if it exists
+      if (result.startsWith("/")) {
+        result = result.slice(1);
+      }
+
+      // Ensure trailing slash
+      if (!result.endsWith("/")) {
+        result += "/";
+      }
+
+      return result;
+    }
+
+    return input;
+  }
+
+  const path = useLocation();
+  let currentFolder = extractMediaPath(path?.pathname);
 
   const handleAddFile = () => {
     if (fileName && selectedFile) {
@@ -22,25 +56,34 @@ const AddAssetModal = ({ show, onHide, onSubmit }) => {
     setFileList((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     if (fileList.length > 0) {
-      fileList.forEach(({ name, file }) => {
-        onSubmit({
-          name,
-          url: URL.createObjectURL(file), // In production, upload to a server
-        });
+      fileList.forEach(async ({ name, file }) => {
+        // onSubmit({
+        //   name,
+        //   url: URL.createObjectURL(file), // In production, upload to a server
+        // });
+        const response = await uploadToMediaLibrary(file, currentFolder, name);
+        if (response.success) {
+          setLoading(false);
+
+          setFileList([]);
+          setFileName("");
+          setSelectedFile(null);
+          onHide();
+        } else {
+          toast.error(response.message);
+          setLoading(false);
+        }
       });
-      setFileList([]);
-      setFileName("");
-      setSelectedFile(null);
-      onHide();
     }
   };
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header>
+      <Modal.Header className="d-flex justify-content-between align-items-center">
         <Modal.Title>Add Asset</Modal.Title>
         <Button variant="link" className="p-0" onClick={onHide}>
           <FaTimes />
@@ -63,7 +106,7 @@ const AddAssetModal = ({ show, onHide, onSubmit }) => {
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
             <Form.Label>Location</Form.Label>
-            <Form.Control type="text" value="/" readOnly />
+            <Form.Control type="text" value={currentFolder} disabled />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>File Name</Form.Label>
@@ -118,13 +161,30 @@ const AddAssetModal = ({ show, onHide, onSubmit }) => {
             </div>
           )}
 
-          <Button
+          {/* <Button
             variant="primary"
             type="submit"
             disabled={fileList.length === 0}
           >
             Submit
+          </Button> */}
+
+          {/* <div className="text-end"> */}
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={fileList.length === 0}
+          >
+            {loading ? (
+              <span className="indicator-progress" style={{ display: "block" }}>
+                Please wait...
+                <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
+              </span>
+            ) : (
+              <span className="indicator-label">Submit</span>
+            )}
           </Button>
+          {/* </div> */}
         </Form>
       </Modal.Body>
     </Modal>
