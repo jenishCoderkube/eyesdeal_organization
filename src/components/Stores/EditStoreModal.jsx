@@ -3,8 +3,12 @@ import Select from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { Country, State, City } from "country-state-city";
+import { storeService } from "../../services/storeService";
+import { toast } from "react-toastify";
+import { uploadImage } from "../../utils/constants";
 
 const EditStoreModal = ({ show, onHide, storeData }) => {
+
   const [formData, setFormData] = useState({
     SystemId: "",
     storeNumber: "",
@@ -34,21 +38,28 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
   // Populate form with store data when modal opens
   useEffect(() => {
     if (storeData) {
+      const selectedCountry = countryOptions.find(
+        (c) => c.label === storeData.country
+      );
+      const selectedState = stateOptions.find(
+        (s) => s.label === storeData.state
+      );
+      const selectedCity = cityOptions.find((c) => c.label === storeData.city);
       setFormData({
-        SystemId: storeData.systemId || "",
-        storeNumber: storeData.id || "",
-        name: storeData.storeName || "",
-        locationUrl: "",
-        address: "",
-        companyName: "",
-        country: null,
-        state: null,
-        city: null,
-        pincode: "",
-        GSTNumber: "",
-        emails: [],
-        phones: [],
-        photos: [],
+        SystemId: storeData._id || "",
+        storeNumber: storeData.storeNumber || "",
+        name: storeData.name || "",
+        locationUrl: storeData?.locationUrl,
+        address: storeData?.address,
+        companyName: storeData?.companyName,
+        country: selectedCountry || "",
+        state: selectedState || "",
+        city: selectedCity || "",
+        pincode: storeData?.pincode,
+        GSTNumber: storeData?.GSTNumber,
+        emails: storeData?.emails || [],
+        phones: storeData?.phones || [],
+        photos: storeData?.photos || [],
         activeInWebsite: storeData.activeInWebsite || false,
       });
     }
@@ -146,7 +157,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
     if (showPhotoInput && newPhoto) {
       setFormData((prev) => ({
         ...prev,
-        photos: [...prev.photos, newPhoto.name],
+        photos: [...prev.photos, newPhoto],
       }));
       setNewPhoto(null);
       setShowPhotoInput(false);
@@ -157,7 +168,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -167,6 +178,41 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
     setErrors({});
     console.log("Updated store data:", formData);
     // Add API call to update store here
+
+    const payload = {
+      ...formData,
+      _id: formData?.SystemId,
+      city: formData?.city?.label ? formData?.city?.label : formData?.city,
+      state: formData?.state?.label ? formData?.state?.label : formData?.state,
+      country: formData?.country?.label
+        ? formData?.country?.label
+        : formData?.country,
+    };
+    console.log("Form submitted:", payload);
+
+    try {
+      const response = await storeService.updateStore(payload);
+      if (response?.success) {
+        toast.success(response.message);
+        setFormData({
+          name: "",
+          locationUrl: "",
+          address: "",
+          companyName: "",
+          country: null,
+          state: null,
+          city: null,
+          pincode: "",
+          GSTNumber: "",
+          emails: [],
+          phones: [],
+          photos: [],
+          activeInWebsite: false,
+        });
+      }
+    } catch (error) {
+      console.log("Error creating store:", error);
+    }
     onHide(); // Close modal after submission
   };
   // Handle click on backdrop to close modal
@@ -175,6 +221,14 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
       onHide();
     }
   };
+
+  const handleRemovePhoto = (indexToRemove) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      photos: prevData.photos.filter((_, index) => index !== indexToRemove),
+    }));
+  };
+
   return (
     <>
       {show && (
@@ -483,15 +537,29 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <input
                             type="file"
                             className="form-control mb-3"
-                            onChange={(e) => setNewPhoto(e.target.files[0])}
+                            onChange={async (e) => {
+                              let res = await uploadImage(
+                                e.target.files[0],
+                                e.target.files[0]?.name
+                              );
+                              setNewPhoto(res);
+                            }}
                             accept="image/*"
                           />
                         )}
                         {formData.photos.length > 0 && (
-                          <ul className="list-group mb-3">
+                          <ul className="list-group">
                             {formData.photos.map((photo, index) => (
-                              <li key={index} className="list-group-item">
+                              <li
+                                key={index}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                              >
                                 {photo}
+                                <i
+                                  role="button"
+                                  className="bi bi-x fs-4 text-danger cursor-pointer"
+                                  onClick={() => handleRemovePhoto(index)}
+                                ></i>
                               </li>
                             ))}
                           </ul>

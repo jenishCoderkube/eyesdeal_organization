@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import { FiEdit2 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 import {
   flexRender,
   getCoreRowModel,
@@ -11,6 +10,8 @@ import {
 } from "@tanstack/react-table";
 import EditAttributeModal from "./EditAttributeModal"; // Adjust the path as needed
 import "bootstrap/dist/css/bootstrap.min.css";
+import { productAttributeService } from "../../../services/productAttributeService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -27,8 +28,10 @@ function ViewProductAttributesCom() {
   const [filteredData, setFilteredData] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [attributeData, setAttributeData] = useState({});
 
+  console.log(activeTab)
   // Attribute list for tabs
   const attributes = [
     "brand",
@@ -43,127 +46,72 @@ function ViewProductAttributesCom() {
     "readingPower",
     "prescriptionType",
     "subCategory",
-    "tax",
-    "warranty",
     "lensTechnology",
     "disposability",
   ];
 
-  // Sample data for each attribute with 5 dummy records
-  const attributeData = {
-    brand: [
-      { id: 1, name: "Ray-Ban" },
-      { id: 2, name: "FFELIZ" },
-      { id: 3, name: "Oakley" },
-      { id: 4, name: "Gucci" },
-      { id: 5, name: "Prada" },
-    ],
-    collection: [
-      { id: 1, name: "Classic" },
-      { id: 2, name: "Trendy" },
-      { id: 3, name: "Vintage" },
-      { id: 4, name: "Modern" },
-      { id: 5, name: "Sporty" },
-    ],
-    feature: [
-      { id: 1, name: "Anti-Glare" },
-      { id: 2, name: "UV Protection" },
-      { id: 3, name: "Scratch Resistant" },
-      { id: 4, name: "Blue Light Filter" },
-      { id: 5, name: "Polarized" },
-    ],
-    color: [
-      { id: 1, name: "Black" },
-      { id: 2, name: "Blue" },
-      { id: 3, name: "Red" },
-      { id: 4, name: "Green" },
-      { id: 5, name: "Gold" },
-    ],
-    frameStyle: [
-      { id: 1, name: "Casual" },
-      { id: 2, name: "Formal" },
-      { id: 3, name: "Sport" },
-      { id: 4, name: "Fashion" },
-      { id: 5, name: "Retro" },
-    ],
-    frameType: [
-      { id: 1, name: "Full Rim" },
-      { id: 2, name: "Half Rim" },
-      { id: 3, name: "Rimless" },
-      { id: 4, name: "Semi-Rimless" },
-      { id: 5, name: "Shield" },
-    ],
-    unit: [
-      { id: 1, name: "Pair" },
-      { id: 2, name: "Piece" },
-      { id: 3, name: "Box" },
-      { id: 4, name: "Set" },
-      { id: 5, name: "Bottle" },
-    ],
-    frameShape: [
-      { id: 1, name: "Rectangle" },
-      { id: 2, name: "Round" },
-      { id: 3, name: "Cat Eye" },
-      { id: 4, name: "Aviator" },
-      { id: 5, name: "Square" },
-    ],
-    material: [
-      { id: 1, name: "Metal" },
-      { id: 2, name: "Plastic" },
-      { id: 3, name: "Acetate" },
-      { id: 4, name: "Titanium" },
-      { id: 5, name: "Wood" },
-    ],
-    readingPower: [
-      { id: 1, name: "+1.00" },
-      { id: 2, name: "+1.50" },
-      { id: 3, name: "+2.00" },
-      { id: 4, name: "+2.50" },
-      { id: 5, name: "+3.00" },
-    ],
-    prescriptionType: [
-      { id: 1, name: "Single Vision" },
-      { id: 2, name: "Bifocal" },
-      { id: 3, name: "Progressive" },
-      { id: 4, name: "Reading" },
-      { id: 5, name: "Non-Prescription" },
-    ],
-    subCategory: [
-      { id: 1, name: "Eyeglasses" },
-      { id: 2, name: "Sunglasses" },
-      { id: 3, name: "Contact Lenses" },
-      { id: 4, name: "Accessories" },
-      { id: 5, name: "Reading Glasses" },
-    ],
-    tax: [
-      { id: 1, name: "5%" },
-      { id: 2, name: "12%" },
-      { id: 3, name: "18%" },
-      { id: 4, name: "28%" },
-      { id: 5, name: "0%" },
-    ],
-    warranty: [
-      { id: 1, name: "1 Year" },
-      { id: 2, name: "2 Years" },
-      { id: 3, name: "6 Months" },
-      { id: 4, name: "3 Years" },
-      { id: 5, name: "No Warranty" },
-    ],
-    lensTechnology: [
-      { id: 1, name: "Blue Cut" },
-      { id: 2, name: "Photochromic" },
-      { id: 3, name: "Anti-Reflective" },
-      { id: 4, name: "High Index" },
-      { id: 5, name: "Polycarbonate" },
-    ],
-    disposability: [
-      { id: 1, name: "Daily" },
-      { id: 2, name: "Weekly" },
-      { id: 3, name: "Monthly" },
-      { id: 4, name: "Quarterly" },
-      { id: 5, name: "Yearly" },
-    ],
-  };
+  // Fetch attribute data when active tab changes
+  useEffect(() => {
+    console.log(`Tab changed to: ${activeTab}`);
+    console.log(`Current attribute data:`, attributeData);
+    console.log(`Has data for ${activeTab}: ${Boolean(attributeData[activeTab])}`);
+    
+    // Reset filtered data when changing tabs
+    setFilteredData(null);
+    setSearchQuery("");
+    
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        console.log(`Fetching ${activeTab} data...`);
+        const response = await productAttributeService.getAttributes(activeTab);
+        console.log(`${activeTab} API response:`, response);
+        
+        if (response.success) {
+          if (!response.data || !Array.isArray(response.data)) {
+            console.error(`${activeTab} data is not an array:`, response.data);
+            toast.error(`Invalid ${activeTab} data format`);
+            setLoading(false);
+            return;
+          }
+          
+          const formattedData = response.data.map(item => ({
+            id: item._id,
+            name: item.name
+          }));
+          
+          console.log(`${activeTab} formatted data:`, formattedData);
+          
+          setAttributeData(prev => ({
+            ...prev,
+            [activeTab]: formattedData
+          }));
+        } else {
+          console.error(`Error fetching ${activeTab}:`, response.message);
+          toast.error(response.message || `Error fetching ${activeTab} data`);
+          // Clear data for this tab if fetch failed
+          setAttributeData(prev => ({
+            ...prev,
+            [activeTab]: []
+          }));
+        }
+      } catch (error) {
+        console.error(`Error fetching ${activeTab} data:`, error);
+        toast.error(`Failed to load ${activeTab} data`);
+        // Clear data for this tab if fetch failed
+        setAttributeData(prev => ({
+          ...prev,
+          [activeTab]: []
+        }));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Always fetch data when the tab changes
+    fetchData();
+    
+  }, [activeTab]);
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -181,6 +129,8 @@ function ViewProductAttributesCom() {
 
   // Debounced filter logic in useEffect
   useEffect(() => {
+    if (!attributeData[activeTab]) return;
+    
     const debouncedFilter = debounce((query) => {
       setFilteredData(filterGlobally(attributeData[activeTab], query));
     }, 200);
@@ -188,7 +138,7 @@ function ViewProductAttributesCom() {
     debouncedFilter(searchQuery);
 
     return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, activeTab, filterGlobally]);
+  }, [searchQuery, activeTab, filterGlobally, attributeData]);
 
   // Handle search input change
   const handleSearch = (value) => {
@@ -196,7 +146,7 @@ function ViewProductAttributesCom() {
   };
 
   // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredData || attributeData[activeTab];
+  const tableData = filteredData || (attributeData[activeTab] || []);
 
   // Define table columns
   const columns = useMemo(
@@ -204,7 +154,7 @@ function ViewProductAttributesCom() {
       {
         accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "name",
@@ -214,23 +164,35 @@ function ViewProductAttributesCom() {
       {
         id: "action",
         header: "Action",
-        cell: ({ row }) => (
-          <div className="d-flex gap-2 align-items-center">
-            <FiEdit2
-              size={18}
-              className="text-primary cursor-pointer"
-              onClick={() => handleEdit(row.original)}
-            />
-            <MdDeleteOutline
-              size={24}
-              className="text-danger cursor-pointer"
-              onClick={() => handleDelete(row.original.id)}
-            />
-          </div>
-        ),
+        cell: ({ row }) => {
+          // Capture the current active tab for this row's actions
+          const rowTab = activeTab;
+          const rowData = row.original;
+          
+          // Log the row data for debugging
+          console.log(`Row data for ${rowTab}:`, rowData);
+          
+          return (
+            <div className="d-flex gap-2 align-items-center">
+              <FiEdit2
+                size={18}
+                className="text-primary cursor-pointer"
+                onClick={() => handleEdit(rowData)}
+              />
+              <MdDeleteOutline
+                size={24}
+                className="text-danger cursor-pointer"
+                onClick={() => {
+                  console.log(`Delete icon clicked for ${rowTab}, id: ${rowData.id}`);
+                  handleDelete(rowData.id, rowTab);
+                }}
+              />
+            </div>
+          );
+        },
       },
     ],
-    []
+    [activeTab] // Add activeTab as a dependency so columns are re-created when tab changes
   );
 
   // @tanstack/react-table setup
@@ -253,23 +215,181 @@ function ViewProductAttributesCom() {
     setShowModal(true);
   };
 
-  const handleEditSubmit = (updatedData) => {
-    console.log("Updated attribute:", updatedData);
-    // Update attributeData (for demo purposes)
-    const updatedAttributeData = {
-      ...attributeData,
-      [activeTab]: attributeData[activeTab].map((item) =>
-        item.id === updatedData.id ? { ...item, name: updatedData.name } : item
-      ),
-    };
-    setFilteredData(
-      filterGlobally(updatedAttributeData[activeTab], searchQuery)
-    );
+  const handleEditSubmit = async (updatedData) => {
+    try {
+      // Prepare the data with the format required by the API
+      const apiData = {
+        name: updatedData.name
+      };
+      
+      console.log(`Submitting update for ${activeTab}:`, {
+        id: updatedData.id,
+        data: apiData
+      });
+      
+      const response = await productAttributeService.updateAttribute(
+        activeTab,
+        updatedData.id,
+        apiData
+      );
+      
+      if (response.success) {
+        // Update the local state
+        const updatedAttributeData = {
+          ...attributeData,
+          [activeTab]: attributeData[activeTab].map((item) =>
+            item.id === updatedData.id ? { ...item, name: updatedData.name } : item
+          ),
+        };
+        
+        setAttributeData(updatedAttributeData);
+        setFilteredData(
+          searchQuery ? filterGlobally(updatedAttributeData[activeTab], searchQuery) : null
+        );
+        
+        toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} updated successfully`);
+      } else {
+        toast.error(response.message || `Failed to update ${activeTab}`);
+      }
+    } catch (error) {
+      console.error(`Error updating ${activeTab}:`, error);
+      toast.error(`Failed to update ${activeTab}`);
+    }
   };
 
-  const handleDelete = (id) => {
-    alert("Are you sure you want to delete?");
-    console.log(`Delete attribute with id: ${id}`);
+  const handleDelete = async (id, tabName) => {
+    // Use the passed tabName parameter instead of activeTab
+    const currentTab = tabName || activeTab;
+    
+    console.log(`Delete initiated for id ${id} on tab "${currentTab}"`);
+    console.log(`Current state of attributeData:`, attributeData);
+    
+    // Check if the data for current tab exists - force fetch if not available
+    if (!attributeData[currentTab] || attributeData[currentTab].length === 0) {
+      console.log(`Data not yet available for ${currentTab}, fetching it first...`);
+      try {
+        const fetchResponse = await productAttributeService.getAttributes(currentTab);
+        if (fetchResponse.success) {
+          const formattedData = fetchResponse.data.map(item => ({
+            id: item._id,
+            name: item.name
+          }));
+          
+          // Update attribute data with the fetched data
+          setAttributeData(prev => ({
+            ...prev,
+            [currentTab]: formattedData
+          }));
+        } else {
+          console.error(`Failed to fetch data for ${currentTab}`);
+          toast.error(`Cannot delete: Failed to load ${currentTab} data`);
+          return;
+        }
+      } catch (error) {
+        console.error(`Error fetching ${currentTab} data:`, error);
+        toast.error(`Cannot delete: Failed to load ${currentTab} data`);
+        return;
+      }
+    }
+
+    if (window.confirm(`Are you sure you want to delete this ${currentTab}?`)) {
+      try {
+        console.log(`Delete operation initiated for attribute type: ${currentTab} with id: ${id}`);
+        
+        const response = await productAttributeService.deleteAttribute(currentTab, id);
+        
+        if (response.success) {
+          console.log(`Delete response for ${currentTab}:`, response);
+          
+          // If the API returned the updated list, use it directly
+          if (response.updatedList && Array.isArray(response.updatedList)) {
+            console.log(`Using updatedList from response for ${currentTab}`);
+            const formattedData = response.updatedList.map(item => ({
+              id: item._id,
+              name: item.name
+            }));
+            
+            console.log(`Formatted data for ${currentTab}:`, formattedData);
+            
+            // Update the attribute data in state
+            setAttributeData(prev => {
+              const newData = {
+                ...prev,
+                [currentTab]: formattedData
+              };
+              console.log(`Updated attributeData after delete:`, newData);
+              return newData;
+            });
+            
+            // Only update filtered data if we're still on the same tab
+            if (currentTab === activeTab) {
+              setFilteredData(
+                searchQuery ? filterGlobally(formattedData, searchQuery) : null
+              );
+            }
+          } else {
+            // Otherwise refresh the data manually
+            console.log(`No updatedList in response, manually refreshing ${currentTab}`);
+            const refreshResponse = await productAttributeService.refreshAttributeData(currentTab);
+            
+            if (refreshResponse.success) {
+              console.log(`Manual refresh successful for ${currentTab}`);
+              const formattedData = refreshResponse.data.map(item => ({
+                id: item._id,
+                name: item.name
+              }));
+              
+              console.log(`Manually refreshed data for ${currentTab}:`, formattedData);
+              
+              setAttributeData(prev => {
+                const newData = {
+                  ...prev,
+                  [currentTab]: formattedData
+                };
+                console.log(`Updated attributeData after manual refresh:`, newData);
+                return newData;
+              });
+              
+              // Only update filtered data if we're still on the same tab
+              if (currentTab === activeTab) {
+                setFilteredData(
+                  searchQuery ? filterGlobally(formattedData, searchQuery) : null
+                );
+              }
+            } else {
+              // If refresh fails, just remove the deleted item from state
+              console.log(`Manual refresh failed for ${currentTab}, removing item from state`);
+              
+              // Only update state if we have data for this tab
+              if (attributeData[currentTab]) {
+                const updatedAttributeData = {
+                  ...attributeData,
+                  [currentTab]: attributeData[currentTab].filter(item => item.id !== id)
+                };
+                
+                console.log(`Updated attributeData after filter:`, updatedAttributeData);
+                setAttributeData(updatedAttributeData);
+                
+                // Only update filtered data if we're still on the same tab
+                if (currentTab === activeTab) {
+                  setFilteredData(
+                    searchQuery ? filterGlobally(updatedAttributeData[currentTab], searchQuery) : null
+                  );
+                }
+              }
+            }
+          }
+          
+          toast.success(response.message || `${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} deleted successfully`);
+        } else {
+          console.error(`Delete operation failed for ${currentTab}:`, response.message);
+          toast.error(response.message || `Failed to delete ${currentTab}`);
+        }
+      } catch (error) {
+        console.error(`Error during delete operation for ${currentTab}:`, error);
+        toast.error(`Failed to delete ${currentTab}`);
+      }
+    }
   };
 
   const handleModalClose = () => {
@@ -354,6 +474,7 @@ function ViewProductAttributesCom() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
+                      console.log(`Clicked on tab: ${item}`);
                       setActiveTab(item);
                     }}
                   >
@@ -394,64 +515,79 @@ function ViewProductAttributesCom() {
               </div>
               {/* Table */}
               <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-3 text-left custom-perchase-th"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className="text-sm">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="p-3">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {loading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-2">Loading {activeTab} data...</p>
+                  </div>
+                ) : tableData.length === 0 ? (
+                  <div className="text-center py-5">
+                    <p>No {activeTab} data found.</p>
+                  </div>
+                ) : (
+                  <table className="table table-sm">
+                    <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
+                      {table.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <th
+                              key={header.id}
+                              className="p-3 text-left custom-perchase-th"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                            </th>
+                          ))}
+                        </tr>
+                      ))}
+                    </thead>
+                    <tbody className="text-sm">
+                      {table.getRowModel().rows.map((row) => (
+                        <tr key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id} className="p-3">
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
               {/* Pagination */}
-              <div className="d-flex justify-content-between align-items-center mt-3 px-3">
-                <div>
-                  Showing {startRow} to {endRow} of {totalRows} results
+              {!loading && tableData.length > 0 && (
+                <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                  <div>
+                    Showing {startRow} to {endRow} of {totalRows} results
+                  </div>
+                  <div className="btn-group">
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => table.previousPage()}
+                      disabled={!table.getCanPreviousPage()}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => table.nextPage()}
+                      disabled={!table.getCanNextPage()}
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

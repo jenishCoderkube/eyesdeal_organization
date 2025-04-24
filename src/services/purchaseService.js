@@ -8,7 +8,9 @@ const AUTH_ENDPOINTS = {
   PRODUCTS: (search) => `/products/product?search=${search}&manageStock=true`,
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
   EXPORT: "/exportCsv",
+  GENERATEBARCODE: (params) => `/products/product?search=${params}`,
 };
+
 const buildPurchaseLogParams = (
   invoiceDateGte,
   invoiceDateLte,
@@ -103,7 +105,7 @@ export const purchaseService = {
         vendorIds
       );
       const response = await api.get(AUTH_ENDPOINTS.PURCHASELOG(params));
-      printLogs(response);
+
       return {
         success: true,
         data: response.data,
@@ -120,7 +122,22 @@ export const purchaseService = {
 
   exportCsv: async (data) => {
     try {
-      const response = await api.post(AUTH_ENDPOINTS.EXPORT);
+      const response = await api.post(AUTH_ENDPOINTS.EXPORT, data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  generateBarcode: async (search) => {
+    try {
+      const response = await api.get(AUTH_ENDPOINTS.GENERATEBARCODE(search));
       return {
         success: true,
         data: response.data,

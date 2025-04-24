@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -8,6 +8,7 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Country, State, City } from "country-state-city";
+import { userService } from "../../../services/userService";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -40,10 +41,17 @@ const validationSchema = Yup.object({
 
 // Options for dropdowns
 const roleOptions = [
-  { value: "store_manager", label: "Store Manager" },
-  { value: "sales_associate", label: "Sales Associate" },
-  { value: "optician", label: "Optician" },
-  { value: "purchase_manager", label: "Purchase Manager" },
+  { value: "sales", label: "Sales" },
+  { value: "store manager", label: "Store Manager" },
+  { value: "order manager", label: "Order Manager" },
+  { value: "purchase manager", label: "Purchase Manager" },
+  { value: "sub admin", label: "Sub Admin" },
+  { value: "individual store", label: "Individual Store" },
+  { value: "owner", label: "Owner" },
+  { value: "local store", label: "Local Store" },
+  { value: "outside store", label: "Outside Store" },
+  { value: "ecommerce manager", label: "Ecommerce Manager" },
+  { value: "org admin", label: "Org Admin" },
 ];
 
 const genderOptions = [
@@ -63,10 +71,22 @@ function EditEmployee() {
   const { id } = useParams();
   const location = useLocation();
   const employee = location.state?.user || {};
+  const [stores, setStores] = useState([]);
+  const storeOptions = stores.map((store) => ({
+    value: store?._id,
+    label: store?.name,
+  }));
 
   useEffect(() => {
+    userService
+      .getStores()
+      .then((res) => {
+        setStores(res?.data?.data);
+      })
+      .catch((e) => console.log("failed to fetch stores: ", e));
     if (id) {
       // fetch employee details here and set data accodingly
+      fetchEmployeeDetail();
     }
   }, [id]);
 
@@ -107,6 +127,38 @@ function EditEmployee() {
       });
     },
   });
+
+  const fetchEmployeeDetail = () => {
+    userService
+      .getEmployeeById(id)
+      .then((res) => {
+        const employee = res.data?.data?.docs?.[0];
+        const country = countryOptions.find(
+          (con) => con.label.toLowerCase() === employee?.country
+        );
+        const stateOptions = State.getStatesOfCountry(country.value).map(
+          (state) => ({ value: state.isoCode, label: state.name })
+        );
+        const state = stateOptions.find(
+          (state) => state.label.toLowerCase() === employee?.state
+        );
+        const cityOptions = City.getCitiesOfState(
+          country.value,
+          state.value
+        ).map((city) => ({ value: city.name, label: city.name }));
+        const city = cityOptions.find(
+          (city) => city.label.toLowerCase() === employee?.city
+        );
+        formik.setValues({
+          ...employee,
+          id: employee?._id,
+          country,
+          state,
+          city,
+        });
+      })
+      .catch((e) => console.log("Failed to fetch employee details: ", e));
+  };
 
   // Fetch countries from country-state-city
   const countryOptions = Country.getAllCountries().map((country) => ({

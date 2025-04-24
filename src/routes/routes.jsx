@@ -91,6 +91,15 @@ const routes = [
     ),
   },
   {
+    title: "EditUser",
+    path: "/users/:id",
+    element: (
+      <PrivateRoute>
+        <EditUser />
+      </PrivateRoute>
+    ),
+  },
+  {
     title: "SaleList",
     path: "/sale/list",
     element: (
@@ -272,7 +281,7 @@ const routes = [
   },
   {
     title: "EditEmployee",
-    path: "/users/editEmployee",
+    path: "/employee/:id",
     element: (
       <PrivateRoute>
         <EditEmployee />
@@ -623,10 +632,11 @@ const routes = [
   },
   {
     title: "media-library",
-    path: "/media-library/:folderPath",
+    path: "/media-library/*",
     element: (
       <PrivateRoute>
-        <SubFolder />
+        {/* <SubFolder /> */}
+        <MediaLibrary />
       </PrivateRoute>
     ),
   },

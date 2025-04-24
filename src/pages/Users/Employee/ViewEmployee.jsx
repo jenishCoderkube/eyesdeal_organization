@@ -7,6 +7,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { userService } from "../../../services/userService";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -18,99 +19,25 @@ const debounce = (func, wait) => {
 };
 
 const ViewEmployees = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
-  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [employees, setEmployees] = useState([]);
 
-  // Memoized dummy employee data (100 records)
-  const employees = useMemo(
-    () => [
-      {
-        id: 1,
-        Name: "John Doe",
-        Phone: 919898540501,
-        Role: "store_manager",
-        Store: ["EYESDEAL ADAJAN", "EYESDEAL UDHANA"],
-        JoiningDate: "15/01/2023",
-        ActiveEmployee: "Yes",
-      },
-      {
-        id: 2,
-        Name: "Jane Smith",
-        Phone: 919712083356,
-        Role: "sales_associate",
-        Store: ["SAFENT"],
-        JoiningDate: "22/03/2023",
-        ActiveEmployee: "No",
-      },
-      {
-        id: 3,
-        Name: "Imran Poptani",
-        Phone: 912000033333,
-        Role: "purchase_manager",
-        Store: ["EYESDEAL UDHANA", "EYESDEAL ADAJAN"],
-        JoiningDate: "20/08/2024",
-        ActiveEmployee: "Yes",
-      },
-      {
-        id: 4,
-        Name: "Emily Brown",
-        Phone: 917096780267,
-        Role: "optician",
-        Store: ["CLOSED NIKOL"],
-        JoiningDate: "10/11/2022",
-        ActiveEmployee: "Yes",
-      },
-      {
-        id: 5,
-        Name: "Michael Lee",
-        Phone: 918017286274,
-        Role: "store_manager",
-        Store: ["ELITE HOSPITAL"],
-        JoiningDate: "05/06/2023",
-        ActiveEmployee: "No",
-      },
-      // Additional data to reach 100 records
-      ...Array.from({ length: 95 }, (_, index) => {
-        const possibleStores = [
-          "EYESDEAL ADAJAN",
-          "EYESDEAL UDHANA",
-          "SAFENT",
-          "CLOSED NIKOL",
-          "ELITE HOSPITAL",
-        ];
-        // Randomly select 1 to 3 stores
-        const numStores = Math.floor(Math.random() * 3) + 1;
-        const selectedStores = [];
-        for (let i = 0; i < numStores; i++) {
-          const randomStore =
-            possibleStores[Math.floor(Math.random() * possibleStores.length)];
-          if (!selectedStores.includes(randomStore)) {
-            selectedStores.push(randomStore);
-          }
-        }
-        return {
-          id: index + 6,
-          Name: `Employee ${index + 6}`,
-          Phone: 910000000000 + index,
-          Role: [
-            "store_manager",
-            "sales",
-            "sales_associate",
-            "optician",
-            "purchase_manager",
-          ][Math.floor(Math.random() * 5)],
-          Store:
-            selectedStores.length > 0 ? selectedStores : [possibleStores[0]],
-          JoiningDate: `01/${String((index % 12) + 1).padStart(2, "0")}/202${
-            Math.floor(Math.random() * 3) + 2
-          }`,
-          ActiveEmployee: Math.random() > 0.5 ? "Yes" : "No",
-        };
-      }),
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    userService
+      .getEmployees(currentPage)
+      .then((res) => {
+        console.log("res: ", res?.data);
+        setEmployees(res.data?.data?.docs);
+      })
+      .catch((e) => console.log("Failed to get employees: ", e));
+  };
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -164,28 +91,28 @@ const ViewEmployees = () => {
         ),
       },
       {
-        accessorKey: "Name",
+        accessorKey: "name",
         header: "Name",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "Phone",
+        accessorKey: "phone",
         header: "Phone",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "Role",
+        accessorKey: "role",
         header: "Role",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "Store",
+        accessorKey: "stores",
         header: "Store",
         cell: ({ getValue }) => {
           const stores = Array.isArray(getValue())
@@ -204,7 +131,7 @@ const ViewEmployees = () => {
                     }}
                     key={index}
                   >
-                    {store}
+                    {store?.name}
                   </p>
                 ))}
               </div>
@@ -213,17 +140,19 @@ const ViewEmployees = () => {
         },
       },
       {
-        accessorKey: "JoiningDate",
+        accessorKey: "joiningDate",
         header: "Joining Date",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "ActiveEmployee",
+        accessorKey: "isActive",
         header: "Active Employee",
         cell: ({ getValue }) => (
-          <div className="text-left break-words">{getValue()}</div>
+          <div className="text-left break-words">
+            {getValue() ? "Yes" : "No"}
+          </div>
         ),
       },
       {
@@ -286,7 +215,7 @@ const ViewEmployees = () => {
   });
 
   const handleEdit = (employee) => {
-    navigate("/users/editEmployee", { state: { user: employee } });
+    navigate(`/employee/${employee?._id}`, { state: { user: employee } });
   };
 
   const handleDelete = (id) => {

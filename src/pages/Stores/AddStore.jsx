@@ -1,20 +1,24 @@
-import React, { useState } from "react";
-import Select from "react-select";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
-import { Country, State, City } from "country-state-city";
-import styles from "../../assets/css/Stores/AddStores.module.css";
+import React, {useState} from 'react';
+import Select from 'react-select';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import {Country, State, City} from 'country-state-city';
+import styles from '../../assets/css/Stores/AddStores.module.css';
+import { storeService} from '../../services/storeService';
+import {toast} from 'react-toastify';
+import {uploadImage} from '../../utils/constants';
 const AddStore = () => {
+
   const [formData, setFormData] = useState({
-    name: "",
-    locationUrl: "",
-    address: "",
-    companyName: "",
+    name: '',
+    locationUrl: '',
+    address: '',
+    companyName: '',
     country: null,
     state: null,
     city: null,
-    pincode: "",
-    GSTNumber: "",
+    pincode: '',
+    GSTNumber: '',
     emails: [],
     phones: [],
     photos: [],
@@ -22,8 +26,8 @@ const AddStore = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [newEmail, setNewEmail] = useState("");
-  const [newPhone, setNewPhone] = useState("+91");
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('+91');
   const [newPhoto, setNewPhoto] = useState(null);
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
@@ -50,32 +54,32 @@ const AddStore = () => {
           (city) => ({
             value: city.name,
             label: city.name,
-          })
+          }),
         )
       : [];
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = "Store Name is required";
+    if (!formData.name.trim()) newErrors.name = 'Store Name is required';
     if (!formData.address.trim())
-      newErrors.address = "Store Address is required";
-    if (!formData.country) newErrors.country = "Country is required";
-    if (!formData.state) newErrors.state = "State is required";
-    if (!formData.city) newErrors.city = "City is required";
+      newErrors.address = 'Store Address is required';
+    if (!formData.country) newErrors.country = 'Country is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.city) newErrors.city = 'City is required';
     return newErrors;
   };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
-      const newFormData = { ...prev, [field]: value };
+      const newFormData = {...prev, [field]: value};
 
       // Reset state and city when country changes
-      if (field === "country") {
+      if (field === 'country') {
         newFormData.state = null;
         newFormData.city = null;
       }
       // Reset city when state changes
-      if (field === "state") {
+      if (field === 'state') {
         newFormData.city = null;
       }
 
@@ -83,7 +87,7 @@ const AddStore = () => {
     });
 
     if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
+      setErrors({...errors, [field]: ''});
     }
   };
 
@@ -97,12 +101,12 @@ const AddStore = () => {
         ...prev,
         emails: [...prev.emails, newEmail],
       }));
-      setNewEmail("");
+      setNewEmail('');
       setShowEmailInput(false); // Hide input after adding
     } else if (!showEmailInput) {
       setShowEmailInput(true); // Show input on first click
     } else {
-      alert("Please enter a valid email");
+      alert('Please enter a valid email');
     }
   };
 
@@ -112,12 +116,12 @@ const AddStore = () => {
         ...prev,
         phones: [...prev.phones, newPhone],
       }));
-      setNewPhone("+91");
+      setNewPhone('+91');
       setShowPhoneInput(false); // Hide input after adding
     } else if (!showPhoneInput) {
       setShowPhoneInput(true); // Show input on first click
     } else {
-      alert("Please enter a valid phone number");
+      alert('Please enter a valid phone number');
     }
   };
 
@@ -125,18 +129,18 @@ const AddStore = () => {
     if (showPhotoInput && newPhoto) {
       setFormData((prev) => ({
         ...prev,
-        photos: [...prev.photos, newPhoto.name],
+        photos: [...prev.photos, newPhoto],
       }));
       setNewPhoto(null);
       setShowPhotoInput(false); // Hide input after adding
     } else if (!showPhotoInput) {
       setShowPhotoInput(true); // Show input on first click
     } else {
-      alert("Please select a photo");
+      alert('Please select a photo');
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -144,7 +148,38 @@ const AddStore = () => {
       return;
     }
     setErrors({});
-    console.log("Form submitted:", formData);
+
+    const payload = {
+      ...formData,
+      city: formData?.city?.label,
+      state: formData?.state?.label,
+      country: formData?.country?.label,
+    };
+    console.log('Form submitted:', payload);
+
+    try {
+      const response = await storeService.createStore(payload);
+      if (response?.success) {
+        toast.success(response.message);
+        setFormData({
+          name: '',
+          locationUrl: '',
+          address: '',
+          companyName: '',
+          country: null,
+          state: null,
+          city: null,
+          pincode: '',
+          GSTNumber: '',
+          emails: [],
+          phones: [],
+          photos: [],
+          activeInWebsite: false,
+        });
+      }
+    } catch (error) {
+      console.log('Error creating store:', error);
+    }
     // Add API call or further submission logic here
   };
 
@@ -166,7 +201,7 @@ const AddStore = () => {
                   id="name"
                   className="form-control"
                   value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                 />
                 {errors.name && (
                   <div className="text-danger mt-1">{errors.name}</div>
@@ -182,7 +217,7 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.locationUrl}
                   onChange={(e) =>
-                    handleInputChange("locationUrl", e.target.value)
+                    handleInputChange('locationUrl', e.target.value)
                   }
                 />
               </div>
@@ -195,7 +230,7 @@ const AddStore = () => {
                   className="form-control"
                   rows="5"
                   value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
                 />
                 {errors.address && (
                   <div className="text-danger mt-1">{errors.address}</div>
@@ -211,7 +246,7 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.companyName}
                   onChange={(e) =>
-                    handleInputChange("companyName", e.target.value)
+                    handleInputChange('companyName', e.target.value)
                   }
                 />
               </div>
@@ -222,7 +257,7 @@ const AddStore = () => {
                 <Select
                   options={countryOptions}
                   value={formData.country}
-                  onChange={(option) => handleInputChange("country", option)}
+                  onChange={(option) => handleInputChange('country', option)}
                   placeholder="Select Country..."
                 />
                 {errors.country && (
@@ -236,7 +271,7 @@ const AddStore = () => {
                 <Select
                   options={stateOptions}
                   value={formData.state}
-                  onChange={(option) => handleInputChange("state", option)}
+                  onChange={(option) => handleInputChange('state', option)}
                   placeholder="Select State..."
                   isDisabled={!formData.country}
                 />
@@ -251,7 +286,7 @@ const AddStore = () => {
                 <Select
                   options={cityOptions}
                   value={formData.city}
-                  onChange={(option) => handleInputChange("city", option)}
+                  onChange={(option) => handleInputChange('city', option)}
                   placeholder="Select City..."
                   isDisabled={!formData.state}
                 />
@@ -268,7 +303,7 @@ const AddStore = () => {
                   id="pincode"
                   className="form-control"
                   value={formData.pincode}
-                  onChange={(e) => handleInputChange("pincode", e.target.value)}
+                  onChange={(e) => handleInputChange('pincode', e.target.value)}
                 />
               </div>
               <div className="col-12">
@@ -281,7 +316,7 @@ const AddStore = () => {
                   className="form-control"
                   value={formData.GSTNumber}
                   onChange={(e) =>
-                    handleInputChange("GSTNumber", e.target.value)
+                    handleInputChange('GSTNumber', e.target.value)
                   }
                 />
               </div>
@@ -291,8 +326,7 @@ const AddStore = () => {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddEmail}
-                  >
+                    onClick={handleAddEmail}>
                     Add
                   </button>
                 </div>
@@ -323,14 +357,13 @@ const AddStore = () => {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddPhone}
-                  >
+                    onClick={handleAddPhone}>
                     Add
                   </button>
                 </div>
                 {showPhoneInput && (
                   <PhoneInput
-                    country={"in"}
+                    country={'in'}
                     value={newPhone}
                     onChange={(phone) => setNewPhone(phone)}
                     inputClass="form-control w-100"
@@ -352,8 +385,7 @@ const AddStore = () => {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleAddPhoto}
-                  >
+                    onClick={handleAddPhoto}>
                     Add
                   </button>
                 </div>
@@ -361,7 +393,13 @@ const AddStore = () => {
                   <input
                     type="file"
                     className="form-control mb-3"
-                    onChange={(e) => setNewPhoto(e.target.files[0])}
+                    onChange={async (e) => {
+                      let res = await uploadImage(
+                        e.target.files[0],
+                        e.target.files[0]?.name,
+                      );
+                      setNewPhoto(res);
+                    }}
                     accept="image/*"
                   />
                 )}
@@ -383,13 +421,12 @@ const AddStore = () => {
                     className="form-check-input p-2 border-3"
                     checked={formData.activeInWebsite}
                     onChange={(e) =>
-                      handleInputChange("activeInWebsite", e.target.checked)
+                      handleInputChange('activeInWebsite', e.target.checked)
                     }
                   />
                   <label
                     htmlFor="activeInWebsite"
-                    className="form-check-label ms-2"
-                  >
+                    className="form-check-label ms-2">
                     Active In Website
                   </label>
                 </div>

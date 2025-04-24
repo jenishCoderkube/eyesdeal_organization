@@ -253,9 +253,7 @@ const Header = () => {
                     {user?.name || "User Name"}
                   </strong>
                   <br />
-                  <small style={{ fontStyle: "italic", fontFamily: "cursive" }}>
-                    {user?.role || "Role"}
-                  </small>
+                  <small>{user?.role || "Role"}</small>
                 </li>
                 <li>
                   <hr

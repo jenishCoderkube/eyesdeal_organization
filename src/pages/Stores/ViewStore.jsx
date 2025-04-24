@@ -1,63 +1,63 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { FiEdit2 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
 import EditStoreModal from "../../components/Stores/EditStoreModal.jsx";
 import DeactivateStoreModal from "../../components/Stores/DeactivateStoreModal.jsx";
+import { storeService } from "../../services/storeService.js";
+import { toast } from "react-toastify";
+import DeleteModal from "../../components/DeleteModal/DeleteModal.jsx";
 
 const ViewStore = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [stores, setStores] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const hideDeleteModal = () => {
+    setDeleteId(null);
+  };
 
-  // Dummy store data
-  const stores = [
-    {
-      id: 1,
-      activeInWebsite: true,
-      systemId: "67fe33393601ef3b058fd844",
-      storeName: "ELITE HOSPITAL",
-      billingSequence: 30,
-    },
-    {
-      id: 2,
-      activeInWebsite: false,
-      systemId: "67fe31723601ef3b058fd6d6",
-      storeName: "SAFENT",
-      billingSequence: 28,
-    },
-    {
-      id: 3,
-      activeInWebsite: false,
-      systemId: "66463ffddaaf6d64448d32c3",
-      storeName: "CLOSED NIKOL",
-      billingSequence: 25,
-    },
-    {
-      id: 4,
-      activeInWebsite: true,
-      systemId: "64febbd33db22f02719c0d06",
-      storeName: "EYESDEAL ADAJAN",
-      billingSequence: 24,
-    },
-    {
-      id: 5,
-      activeInWebsite: true,
-      systemId: "64febb863db22f02719c0cdf",
-      storeName: "EYESDEAL UDHANA",
-      billingSequence: 23,
-    },
-  ];
+  useEffect(() => {
+    if (deleteId) {
+      setDeleteModal(true);
+    } else {
+      setDeleteModal(false);
+    }
+  }, [deleteId]);
+
+  const fetchStores = async () => {
+    try {
+      const storeData = await storeService.getStores();
+      setStores(storeData);
+    } catch (err) {
+      console.log("Failed to load stores", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+  }, []);
 
   const handleEdit = (store) => {
     setSelectedStore(store);
     setShowEditModal(true);
   };
 
-  const handleDelete = (id) => {
-    alert("Are you sure you want to delete");
-    console.log(`Delete store with id: ${id}`);
+  const handleDelete = async () => {
+    try {
+      const response = await storeService.deleteStore(deleteId);
+      if (response?.data?.success) {
+        setDeleteId(null);
+        setDeleteModal(false);
+        toast.success(response?.data?.message);
+        fetchStores();
+      }
+    } catch (error) {
+      console.log("Error deleting store:", error);
+    }
   };
 
   const handleDeactivate = (store) => {
@@ -65,8 +65,8 @@ const ViewStore = () => {
     setShowDeactivateModal(true);
   };
 
-  const filteredStores = stores.filter((store) =>
-    store.storeName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredStores = stores?.filter((store) =>
+    store?.name?.toLowerCase()?.includes(searchQuery?.toLowerCase())
   );
 
   return (
@@ -83,7 +83,7 @@ const ViewStore = () => {
             <h6 className="fw-bold px-3 pt-3">Stores</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
-                <div className="input-group">
+                <div className="input-group px-3">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch
                       className="text-muted"
@@ -142,41 +142,46 @@ const ViewStore = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {filteredStores.map((store) => (
-                      <tr key={store.id}>
-                        <td className="p-3">{store.id}</td>
-                        <td className="p-3">
-                          {store.activeInWebsite.toString()}
-                        </td>
-                        <td className="p-3">{store.systemId}</td>
-                        <td className="p-3">{store.storeName}</td>
-                        <td className="p-3">{store.billingSequence}</td>
-                        <td className="p-3">
-                          <div className="d-flex gap-2 align-items-center">
-                            <FiEdit2
-                              size={24}
-                              className="text-dark cursor-pointer"
-                              onClick={() => handleEdit(store)}
-                            />
-                            <MdDeleteOutline
-                              size={24}
-                              className="text-danger cursor-pointer"
-                              onClick={() => handleDelete(store.id)}
-                            />
-                            <button
-                              className="btn btn-sm p-2"
-                              onClick={() => handleDeactivate(store)}
-                              style={{
-                                backgroundColor: "#f43f5e",
-                                color: "#fff",
-                              }}
-                            >
-                              Deactivate
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredStores?.map((store, index) => {
+                      return (
+                        <tr key={store.id}>
+                          {/* <td className="p-3">{store?.id}</td> */}
+                          <td className="p-3">{index + 1}</td>
+                          <td className="p-3">
+                            {store?.activeInWebsite.toString()}
+                          </td>
+                          {/* <td className="p-3">{store.systemId}</td> */}
+                          <td className="p-3">{store?._id}</td>
+                          <td className="p-3">{store?.name}</td>
+                          <td className="p-3">{store?.storeNumber}</td>
+                          <td className="p-3">
+                            <div className="d-flex gap-2 align-items-center">
+                              <FiEdit2
+                                size={24}
+                                className="text-dark cursor-pointer"
+                                onClick={() => handleEdit(store)}
+                              />
+                              <MdDeleteOutline
+                                size={24}
+                                role="button"
+                                className="text-danger cursor-pointer"
+                                onClick={() => setDeleteId(store?._id)}
+                              />
+                              <button
+                                className="btn btn-sm p-2"
+                                onClick={() => handleDeactivate(store)}
+                                style={{
+                                  backgroundColor: "#f43f5e",
+                                  color: "#fff",
+                                }}
+                              >
+                                Deactivate
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -184,6 +189,15 @@ const ViewStore = () => {
           </div>
         </div>
       </div>
+
+      <DeleteModal
+        show={deleteModal}
+        onHide={hideDeleteModal}
+        onDelete={handleDelete}
+        title="Delete Store"
+        body="Are you sure you want to delete this record?"
+      />
+
       <EditStoreModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}

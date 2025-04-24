@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import AsyncSelect from "react-select/async";
 import { saleService } from "../../services/saleService";
-import AssignPowerModel from "../../components/Process/AssignPowerModel";
 import PrescriptionModel from "../../components/Process/PrescriptionModel";
 import OrdersModel from "../../components/Process/OrdersModel";
 
@@ -97,19 +95,31 @@ const SaleForm = () => {
       const response = await saleService.listUsers(inputValue);
 
       if (response.success) {
-        console.log(response.data);
+        return response.data.data.docs.map((cust) => ({
+          value: cust._id,
+          label: `${cust.name} / ${cust.phone}`,
+          data: cust,
+        }));
       } else {
-        console.log(response.data.message);
+        console.error(response.data.message);
       }
-
-      return response.data.data.docs.map((cust) => ({
-        value: cust._id,
-        label: `${cust.name} / ${cust.phone}`,
-        data: cust,
-      }));
     } catch (error) {
       console.error("Error fetching customers:", error);
-      return [];
+    }
+  };
+
+  const [salesData, setSalesData] = useState([]);
+  const loadCustomerSalesData = async (custID) => {
+    try {
+      const response = await saleService.sales(custID);
+
+      if (response.success) {
+        setSalesData(response.data.data);
+      } else {
+        console.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching customers:", error);
     }
   };
 
@@ -117,6 +127,7 @@ const SaleForm = () => {
     useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [OrderModelVisible, setOrderModelVisible] = useState(false);
+  const [SalesOrderData, setSalesOrderData] = useState(null);
 
   const openPrescriptionModel = (PM) => {
     setSelectedCust(PM);
@@ -129,15 +140,14 @@ const SaleForm = () => {
   };
 
   const openOrderModel = (OM) => {
-    setSelectedCust(OM);
+    setSalesOrderData(OM);
     setOrderModelVisible(true);
   };
 
   const closeOrderModel = () => {
     setOrderModelVisible(false);
-    setSelectedCust(null);
+    setSalesOrderData(null);
   };
-  console.log(formData);
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
@@ -168,7 +178,7 @@ const SaleForm = () => {
               <AsyncSelect
                 cacheOptions
                 loadOptions={loadCustomerOptions}
-                onChange={(selectedOption) => {
+                onChange={async (selectedOption) => {
                   const customer = selectedOption?.data || {};
                   setFormData({
                     ...formData,
@@ -177,6 +187,7 @@ const SaleForm = () => {
                     customerPhone: customer.phone || "",
                     prescriptions: customer.prescriptions || [],
                   });
+                  loadCustomerSalesData(customer._id);
                 }}
                 placeholder="Search or select customer..."
               />
@@ -238,8 +249,15 @@ const SaleForm = () => {
                   style={{ color: "#808080" }}
                 >
                   <option value="">Select...</option>
-                  <option value="rep1">Rep 1</option>
-                  <option value="rep2">Rep 2</option>
+                  {salesData && (
+                    <>
+                      {salesData?.docs?.map((rep) => (
+                        <option key={rep.salesRep._id} value={rep.salesRep._id}>
+                          {rep.salesRep.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
                 {errors.salesRep && (
                   <div className="invalid-feedback">{errors.salesRep}</div>
@@ -261,13 +279,17 @@ const SaleForm = () => {
                 <button
                   type="button"
                   className="btn border-secondary-subtle text-primary"
-                  onClick={() => openOrderModel(formData.prescriptions)}
+                  onClick={() => openOrderModel(salesData)}
                 >
                   View Orders
                 </button>
               </div>
               <div className="col-md-3 col-12">
-                <button className="btn border-secondary-subtle text-primary">
+                <button
+                  type="button"
+                  className="btn border-secondary-subtle text-primary"
+                  onClick={() => navigate(`/users/${formData.customerId}`)}
+                >
                   Add Power
                 </button>
               </div>
@@ -280,10 +302,10 @@ const SaleForm = () => {
               />
             )}
 
-            {OrderModelVisible && selectedCust && (
+            {OrderModelVisible && SalesOrderData && (
               <OrdersModel
                 closeOrderModel={closeOrderModel}
-                selectedCust={selectedCust}
+                SalesOrderData={SalesOrderData}
               />
             )}
 
