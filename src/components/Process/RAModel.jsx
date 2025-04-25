@@ -1,169 +1,311 @@
-import React, { useState } from 'react'
-import DatePicker from 'react-datepicker';
-import Select from 'react-select/base';
+import React, { useState, useEffect } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import Select from "react-select";
+import { toast } from "react-toastify";
+import { shopProcessService } from "../../services/Process/shopProcessService";
 
-function RAModel({closeRAModal}) {
+function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
+  console.log("selectedRA<<<<<", selectedRA);
+  const [payments, setPayments] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for loading state
 
-    const [payments, setPayments] = useState([
+  const methodOptions = [
+    { value: "cash", label: "Cash" },
+    { value: "card", label: "Card" },
+    { value: "upi", label: "UPI" },
+  ];
+
+  useEffect(() => {
+    if (
+      selectedRA?.fullSale?.receivedAmount &&
+      selectedRA.fullSale.receivedAmount.length > 0
+    ) {
+      const initialPayments = selectedRA.fullSale.receivedAmount.map(
+        (payment) => ({
+          method:
+            methodOptions.find((opt) => opt.value === payment.method) || null,
+          amount: payment.amount.toString(),
+          date: payment.date ? new Date(payment.date) : null,
+          reference: payment.reference || "",
+        })
+      );
+      setPayments(initialPayments);
+    } else {
+      setPayments([
         {
-            method: null,
-            amount: '',
-            date: null,
-            reference: '',
+          method: null,
+          amount: "",
+          date: null,
+          reference: "",
         },
+      ]);
+    }
+  }, [selectedRA]);
+
+  const handleAddPayment = () => {
+    setPayments([
+      ...payments,
+      {
+        method: null,
+        amount: "",
+        date: null,
+        reference: "",
+      },
     ]);
+  };
 
-    const handleAddPayment = () => {
-        setPayments([ 
-            ...payments,
-            {
-                method: null,
-                amount: '',
-                date: null,
-                reference: '',
-            },
-        ]);
+  const handleChange = (index, field, value) => {
+    const updatedPayments = [...payments];
+    updatedPayments[index][field] = value;
+    setPayments(updatedPayments);
+  };
+
+  const handleSubmit = async () => {
+    // Validate payments
+    const isValid = payments.every(
+      (payment) =>
+        payment.method &&
+        payment.amount &&
+        !isNaN(payment.amount) &&
+        payment.date
+    );
+
+    if (!isValid) {
+      toast.error("Please fill all required fields (Method, Amount, Date)");
+      return;
+    }
+
+    setIsSubmitting(true);
+    // Format payments for API
+    const formattedPayments = payments.map((payment) => ({
+      method: payment.method.value,
+      amount: parseFloat(payment.amount),
+      date: payment.date.toISOString(),
+      reference: payment.reference || "",
+    }));
+
+    // Calculate total received amount
+    const totalReceived = formattedPayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
+
+    // Prepare payload for API
+    const payload = {
+      billNumber: selectedRA.billNumber,
+      receivedAmount: formattedPayments,
+      finalAmount: selectedRA.netAmount || 0,
+      amountDue: (selectedRA.netAmount || 0) - totalReceived,
     };
 
-    const methodoptions = [
-        { value: 'cash', label: 'Cash' },
-        { value: 'card', label: 'Card' },
-        { value: 'upi', label: 'UPI' },
-    ];
-    
-    const handleChange = (index, field, value) => {
-        const updatedPayments = [...payments];
-        updatedPayments[index][field] = value;
-        setPayments(updatedPayments);
-    };
+    try {
+      console.log("Submitting updateSale with payload:", payload);
+      const response = await shopProcessService.updateSale(
+        selectedRA._id,
+        payload
+      );
+      console.log("updateSale response:", response);
+      if (response.success) {
+        toast.success("Payments updated successfully");
+        if (refreshSalesData) {
+          console.log("Calling refreshSalesData");
+          await refreshSalesData(); // Await to ensure refresh completes
+        }
+        closeRAModal();
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update payments");
+      console.error("updateSale API Error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    return (
-        <section className="modal small" tabIndex="-1" role="dialog"
-            style={{
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1050,
-                overflowY: 'auto',
-                padding: '20px',
-
-            }}
-        >
-            <div className="modal-dialog overflow-auto" role="document" style={{
-                width: '100%',
-                maxWidth: '650px',
-                maxHeight: "500px",
-                backgroundColor: '#fff',
-                borderRadius: '5px',
-                overflow: 'hidden',
-                boxShadow: '0 5px 30px rgba(0,0,0,0.3)',
-                padding: '0px',
-            }}
-            >
-                <div className="modal-content border-0">
-                    <div className="modal-header border-bottom pb-2">
-                        <button type="button" className="btn-close small" onClick={closeRAModal} aria-label="Close"></button>
-                    </div>
-
-                    <div className="px-1 pt-3">
-                        <div className="px-2 pb-4">
-                            <div className="row g-3 mb-3">
-                                <div className="col-12">
-                                    <label htmlFor="systemid" className="form-label mb-0 fw-semibold">
-                                        System id
-                                    </label>
-                                    <input type="text" id="systemid" className="form-control" disabled />
-                                </div>
-                                <div className="col-12">
-                                    <label htmlFor="billnumber" className="form-label mb-0 fw-semibold">
-                                        Bill Number
-                                    </label>
-                                    <input type="text" id="billnumber" className="form-control" disabled />
-                                </div>
-                                <div className="col-12">
-                                    <label htmlFor="finalamount" className="form-label mb-0 fw-semibold">
-                                        Final Amount
-                                    </label>
-                                    <input type="text" id="finalamount" className="form-control" disabled />
-                                </div>
-                                <div className="col-12">
-                                    <label htmlFor="amountdue" className="form-label mb-0 fw-semibold">
-                                        Amount Due
-                                    </label>
-                                    <input type="text" id="amountdue" className="form-control" disabled />
-                                </div>
-                            </div>
-
-                            <button className="btn border-secondary-subtle text-primary fw-semibold"
-                                onClick={handleAddPayment}
-                            >Add</button>
-
-                            {payments.map((payment, index) => (
-                                <div className="row g-3 my-3" key={index}>
-                                    <div className="col-3">
-                                        <label className="form-label mb-1 fw-semibold">Method</label>
-                                        <Select 
-                                            options={methodoptions}
-                                            value={payment.method}
-                                            onChange={(selectedOption) =>
-                                                handleChange(index, 'method', selectedOption)
-                                            }
-                                            className="react-select-container"
-                                            classNamePrefix="react-select"
-                                        />
-                                    </div>
-
-                                    <div className="col-3">
-                                        <label className="form-label mb-1 fw-semibold">Amount</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={payment.amount}
-                                            onChange={(e) => handleChange(index, 'amount', e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="col-3">
-                                        <label className="form-label mb-1 fw-semibold">Date</label>
-                                        <DatePicker
-                                            selected={payment.date}
-                                            onChange={(date) => handleChange(index, 'date', date)}
-                                            className="form-control"
-                                            dateFormat="yyyy-MM-dd"
-                                            isClearable
-                                            autoComplete="off"
-                                        />
-                                    </div>
-
-                                    <div className="col-3">
-                                        <label className="form-label mb-1 fw-semibold">Reference</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={payment.reference}
-                                            onChange={(e) =>
-                                                handleChange(index, 'reference', e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-
-                            <button className="btn btn-primary">Submit</button>
-
-                        </div>
-                    </div>
+  return (
+    <section
+      className="modal small"
+      tabIndex="-1"
+      role="dialog"
+      style={{
+        backgroundColor: "rgba(0,0,0,0.5)",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1050,
+        overflowY: "auto",
+        padding: "20px",
+      }}
+    >
+      <div
+        className="modal-dialog overflow-auto"
+        role="document"
+        style={{
+          width: "100%",
+          maxWidth: "650px",
+          maxHeight: "500px",
+          backgroundColor: "#fff",
+          borderRadius: "5px",
+          overflow: "hidden",
+          boxShadow: "0 5px 30px rgba(0,0,0,0.3)",
+          padding: "0px",
+        }}
+      >
+        <div className="modal-content border-0">
+          <div className="modal-header border-bottom pb-2">
+            <button
+              type="button"
+              className="btn-close small"
+              onClick={closeRAModal}
+              aria-label="Close"
+            ></button>
+          </div>
+          <div className="px-1 pt-3">
+            <div className="px-2 pb-4">
+              <div className="row g-3 mb-3">
+                <div className="col-12">
+                  <label
+                    htmlFor="systemid"
+                    className="form-label mb-0 fw-semibold"
+                  >
+                    System id
+                  </label>
+                  <input
+                    type="text"
+                    id="systemid"
+                    className="form-control"
+                    value={selectedRA._id}
+                    disabled
+                  />
                 </div>
-
+                <div className="col-12">
+                  <label
+                    htmlFor="billnumber"
+                    className="form-label mb-0 fw-semibold"
+                  >
+                    Bill Number
+                  </label>
+                  <input
+                    type="text"
+                    id="billnumber"
+                    className="form-control"
+                    value={selectedRA.billNumber}
+                    disabled
+                  />
+                </div>
+                <div className="col-12">
+                  <label
+                    htmlFor="finalamount"
+                    className="form-label mb-0 fw-semibold"
+                  >
+                    Final Amount
+                  </label>
+                  <input
+                    type="text"
+                    id="finalamount"
+                    className="form-control"
+                    value={selectedRA.netAmount || 0}
+                    disabled
+                  />
+                </div>
+                <div className="col-12">
+                  <label
+                    htmlFor="amountdue"
+                    className="form-label mb-0 fw-semibold"
+                  >
+                    Amount Due
+                  </label>
+                  <input
+                    type="text"
+                    id="amountdue"
+                    className="form-control"
+                    value={selectedRA.remainingAmount || 0}
+                    disabled
+                  />
+                </div>
+              </div>
+              <button
+                className="btn border-secondary-subtle text-primary fw-semibold mb-3"
+                onClick={handleAddPayment}
+              >
+                Add
+              </button>
+              {payments.map((payment, index) => (
+                <div className="row g-3 my-3" key={index}>
+                  <div className="col-3">
+                    <label className="form-label mb-1 fw-semibold">
+                      Method
+                    </label>
+                    <Select
+                      options={methodOptions}
+                      value={payment.method}
+                      onChange={(selectedOption) =>
+                        handleChange(index, "method", selectedOption)
+                      }
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      placeholder="Select method"
+                    />
+                  </div>
+                  <div className="col-3">
+                    <label className="form-label mb-1 fw-semibold">
+                      Amount
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={payment.amount}
+                      onChange={(e) =>
+                        handleChange(index, "amount", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-3">
+                    <label className="form-label mb-1 fw-semibold">Date</label>
+                    <DatePicker
+                      selected={payment.date}
+                      onChange={(date) => handleChange(index, "date", date)}
+                      className="form-control"
+                      dateFormat="yyyy-MM-dd"
+                      isClearable
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="col-3">
+                    <label className="form-label mb-1 fw-semibold">
+                      Reference
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={payment.reference}
+                      onChange={(e) =>
+                        handleChange(index, "reference", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </button>
             </div>
-        </section>
-    )
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-export default RAModel
+export default RAModel;

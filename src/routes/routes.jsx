@@ -119,7 +119,7 @@ const routes = [
   },
   {
     title: "ShopProcess",
-    path: "/process/shop/id",
+    path: "/process/shop/:id",
     element: (
       <PrivateRoute>
         <ShopProcessEdit />

@@ -8,65 +8,78 @@ import "react-datepicker/dist/react-datepicker.css";
 const CustomerNameModal = ({ show, onHide, selectedRow }) => {
   const [activeTab, setActiveTab] = useState("specs");
 
-  // Parse date from DD/MM/YYYY format
-  const parseDate = (dateStr) => {
-    if (!dateStr) return null;
-    const [day, month, year] = dateStr.split("/").map(Number);
-    return new Date(year, month - 1, day);
+  // Format date to DD/MM/YYYY
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "";
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
-  // Use selectedRow data or fallback to empty values
+  // Use selectedRow.powerAtTime.specs or fallback to empty values
   const prescriptionData = {
-    createdAt: selectedRow?.date || "",
-    createdAtDate: parseDate(selectedRow?.date),
-    doctorName: selectedRow?.doctorName || "",
-    type: "specs",
-    prescribeBy: selectedRow?.prescribeBy || "",
+    createdAt: formatDate(selectedRow?.createdAt) || "",
+    createdAtDate: selectedRow?.createdAt
+      ? new Date(selectedRow.createdAt)
+      : null,
+    doctorName: selectedRow?.powerAtTime?.specs?.doctorName || "",
+    type: selectedRow?.powerAtTime?.specs?.__t || "specs",
+    prescribeBy: selectedRow?.powerAtTime?.specs?.prescribedBy || "",
     specsPower: {
       right: {
-        distance: selectedRow?.power?.dist || {
-          sph: "",
-          cyl: "",
-          axis: "",
-          vision: "",
-          add: "",
+        distance: {
+          sph: selectedRow?.powerAtTime?.specs?.right?.distance?.sph || "",
+          cyl: selectedRow?.powerAtTime?.specs?.right?.distance?.cyl || "",
+          axis: selectedRow?.powerAtTime?.specs?.right?.distance?.axis || "",
+          vision: selectedRow?.powerAtTime?.specs?.right?.distance?.vs || "",
+          add: selectedRow?.powerAtTime?.specs?.right?.distance?.add || "",
         },
-        near: selectedRow?.power?.near || {
-          sph: "",
-          cyl: "",
-          axis: "",
-          vision: "",
+        near: {
+          sph: selectedRow?.powerAtTime?.specs?.right?.near?.sph || "",
+          cyl: selectedRow?.powerAtTime?.specs?.right?.near?.cyl || "",
+          axis: selectedRow?.powerAtTime?.specs?.right?.near?.axis || "",
+          vision: selectedRow?.powerAtTime?.specs?.right?.near?.vs || "",
         },
       },
       left: {
-        distance: selectedRow?.power?.dist || {
-          sph: "",
-          cyl: "",
-          axis: "",
-          vision: "",
-          add: "",
+        distance: {
+          sph: selectedRow?.powerAtTime?.specs?.left?.distance?.sph || "",
+          cyl: selectedRow?.powerAtTime?.specs?.left?.distance?.cyl || "",
+          axis: selectedRow?.powerAtTime?.specs?.left?.distance?.axis || "",
+          vision: selectedRow?.powerAtTime?.specs?.left?.distance?.vs || "",
+          add: selectedRow?.powerAtTime?.specs?.left?.distance?.add || "",
         },
-        near: selectedRow?.power?.near || {
-          sph: "",
-          cyl: "",
-          axis: "",
-          vision: "",
+        near: {
+          sph: selectedRow?.powerAtTime?.specs?.left?.near?.sph || "",
+          cyl: selectedRow?.powerAtTime?.specs?.left?.near?.cyl || "",
+          axis: selectedRow?.powerAtTime?.specs?.left?.near?.axis || "",
+          vision: selectedRow?.powerAtTime?.specs?.left?.near?.vs || "",
         },
       },
     },
-    additionalFields: selectedRow?.additionalFields || {
-      right: { psm: "", pd: "", fh: "" },
-      left: { psm: "", pd: "", fh: "" },
-      ipd: "",
+    additionalFields: {
+      right: {
+        psm: selectedRow?.powerAtTime?.specs?.right?.psm || "",
+        pd: selectedRow?.powerAtTime?.specs?.right?.pd || "",
+        fh: selectedRow?.powerAtTime?.specs?.right?.fh || "",
+      },
+      left: {
+        psm: selectedRow?.powerAtTime?.specs?.left?.psm || "",
+        pd: selectedRow?.powerAtTime?.specs?.left?.pd || "",
+        fh: selectedRow?.powerAtTime?.specs?.left?.fh || "",
+      },
+      ipd: selectedRow?.powerAtTime?.specs?.ipd || "",
     },
-    frameFields: selectedRow?.frameFields || {
-      asize: "",
-      bsize: "",
-      dbl: "",
-      fth: "",
-      pdesign: "",
-      ftype: "",
-      de: "",
+    frameFields: {
+      asize: selectedRow?.powerAtTime?.specs?.aSize || "",
+      bsize: selectedRow?.powerAtTime?.specs?.bSize || "",
+      dbl: selectedRow?.powerAtTime?.specs?.dbl || "",
+      fth: selectedRow?.powerAtTime?.specs?.fth || "",
+      pdesign: selectedRow?.powerAtTime?.specs?.pDesign || "",
+      ftype: selectedRow?.powerAtTime?.specs?.ft || "",
+      de: selectedRow?.powerAtTime?.specs?.de || "",
     },
   };
 
@@ -151,7 +164,6 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
                       dateFormat="dd/MM/yyyy"
                       className="form-control"
                       readOnly
-                      // disabled
                     />
                   </div>
                   <div className="flex-grow-1">
@@ -231,7 +243,7 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
                         LVISION
                       </th>
                       <th className="border custom-perchase-th px-2 py-3">
-                        Add
+                        ADD
                       </th>
                     </tr>
                   </thead>
