@@ -48,7 +48,8 @@ const StoreInventoryForm = () => {
   const formik = useFormik({
     initialValues: {
       stores: [],
-      selectedProduct: null,
+      selectedProduct: productOptions[0],
+
       brand: null,
       frameType: null,
       frameShape: null,
@@ -60,15 +61,11 @@ const StoreInventoryForm = () => {
       frameCollection: null,
     },
     validationSchema: Yup.object({
-      stores: Yup.array()
-        .of(Yup.object().shape({ value: Yup.string(), label: Yup.string() }))
-        .min(1, "At least one store is required")
-        .required("Store is required"),
-      selectedProduct: Yup.object().nullable().required("Product is required"),
-      brand: Yup.object().nullable().required("Brand is required"),
+      stores: Yup.array().notRequired(),
+      selectedProduct: Yup.object().notRequired(),
+      brand: Yup.object().notRequired(),
     }),
     onSubmit: (values) => {
-      console.log("Form submitted:", values);
       getInventoryData(values);
     },
   });
@@ -160,7 +157,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getFrameType();
       if (response.success) {
-        console.log("response", response?.data);
         setFrameType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -177,7 +173,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getFrameShape();
       if (response.success) {
-        console.log("response", response?.data);
         setShapeType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -194,7 +189,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getMaterial();
       if (response.success) {
-        console.log("response", response?.data);
         setMaterial(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -211,7 +205,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getColor();
       if (response.success) {
-        console.log("response", response?.data);
         setColor(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -228,7 +221,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getPrescriptionType();
       if (response.success) {
-        console.log("response", response?.data);
         setPreType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -245,7 +237,6 @@ const StoreInventoryForm = () => {
     try {
       const response = await inventoryService.getCollection();
       if (response.success) {
-        console.log("response", response?.data);
         setCollection(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -271,7 +262,7 @@ const StoreInventoryForm = () => {
     setLoading(true);
 
     try {
-      const response = await inventoryService.getInventory(
+      const response = await inventoryService.getInventoryStore(
         values?.selectedProduct?.value || productOptions[0]?.value,
         values?.brand?.value,
         values?.gender?.value,
@@ -284,10 +275,10 @@ const StoreInventoryForm = () => {
         values?.prescriptionType?.value,
         storeId || user?.stores,
         1,
-        searchQuery
+        searchQuery,
+        20
       );
       if (response.success) {
-        console.log("response", response);
         setInventory(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -305,26 +296,25 @@ const StoreInventoryForm = () => {
     const finalData = [];
 
     inventory?.docs?.forEach((item) => {
-      const selected = item.product;
-      console.log("item", item);
-      const quantity = parseInt(item.quantity) || 0;
+      const product = item?.product;
+      if (!product) return;
 
-      // for (let i = 0; i < quantity; i++) {
-      finalData.push({
-        sku: selected.sku,
-        Barcode: selected.oldBarcode,
-        stock: item.quantity,
-        sold: item?.sold,
-        mrp: selected?.MRP,
-        brand: selected?.brandData?.name,
-        "Frame Type": selected?.frameType?.name,
-        "Frame Shape": selected?.frameShape?.name,
-        gender: selected?.gender,
-        "Frame Material": selected?.frameMaterial?.name,
-        "Frame Color": selected?.frameColor?.name,
-        "Frame Size": selected?.frameSize,
+      finalData?.push({
+        sku: product.sku || "",
+        Barcode: product.oldBarcode || "",
+        Store: product.displayName || "",
+        stock: item.quantity ?? 0,
+        sold: item.sold ?? 0,
+        mrp: product.MRP ?? 0,
+        brand: product.brand.name || "",
+        "Frame Type": product.frameType?.name || "",
+        "Frame Shape": product.frameShape?.name || "",
+        gender: product?.gender || "",
+        "Frame Material": product.frameMaterial?.name || "",
+        "Frame Color": product.frameColor?.name || "",
+        "Frame Size": product.frameSize || "",
       });
-      // }
+      console.log("object", product?.frameType?.name);
     });
 
     const finalPayload = {
@@ -333,30 +323,32 @@ const StoreInventoryForm = () => {
 
     setLoading(true);
 
-    try {
-      const response = await inventoryService.exportCsv(finalPayload);
+    if (finalData) {
+      try {
+        const response = await inventoryService.exportCsv(finalPayload);
 
-      if (response.success) {
-        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
+        if (response.success) {
+          const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
 
-        // Create a Blob from the CSV string
-        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
+          // Create a Blob from the CSV string
+          const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
 
-        // Create a temporary download link
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
-        document.body.appendChild(link);
-        link.click(); // Trigger the download
-        document.body.removeChild(link); // Clean up
-      } else {
-        toast.error(response.message);
+          // Create a temporary download link
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+          document.body.appendChild(link);
+          link.click(); // Trigger the download
+          document.body.removeChild(link); // Clean up
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Login error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -367,7 +359,6 @@ const StoreInventoryForm = () => {
 
     inventory?.docs?.forEach((item) => {
       const selected = item.product;
-      console.log("item", item);
       const quantity = parseInt(item.quantity) || 0;
 
       // for (let i = 0; i < quantity; i++) {
@@ -428,7 +419,7 @@ const StoreInventoryForm = () => {
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           <div className="col">
             <label className="form-label font-weight-500" htmlFor="stores">
-              Store <span className="text-danger">*</span>
+              Store
             </label>
             <Select
               options={storeOptions}
@@ -453,7 +444,7 @@ const StoreInventoryForm = () => {
               className="form-label font-weight-500"
               htmlFor="selectedProduct"
             >
-              Product <span className="text-danger">*</span>
+              Product
             </label>
             <Select
               options={productOptions}
@@ -479,7 +470,7 @@ const StoreInventoryForm = () => {
           </div>
           <div className="col">
             <label className="form-label font-weight-500" htmlFor="brand">
-              Brand <span className="text-danger">*</span>
+              Brand
             </label>
             <Select
               options={brandOptions}
@@ -620,7 +611,7 @@ const StoreInventoryForm = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={formik.isSubmitting}
+            // disabled={formik.isSubmitting}
           >
             Submit
           </button>
@@ -673,9 +664,12 @@ const StoreInventoryForm = () => {
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
                   <th>Barcode</th>
+                  <th>Date</th>
                   <th>Photo</th>
-                  <th>SKU</th>
-                  <th>MRP</th>
+                  <th>Store</th>
+                  <th>Sku</th>
+                  <th>Brand</th>
+                  <th>Mrp</th>
                   <th>Stock</th>
                   <th>Sold</th>
                 </tr>
@@ -685,6 +679,7 @@ const StoreInventoryForm = () => {
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
                       <td>{item.product?.oldBarcode}</td>
+                      <td>{item.product?.oldBarcode}</td>
                       <td>
                         <img
                           src={item.photo}
@@ -693,15 +688,18 @@ const StoreInventoryForm = () => {
                           height="40"
                         />
                       </td>
+                      <td>{item.product?.displayName}</td>
                       <td>{item.product?.sku}</td>
-                      <td>{item.product?.mrp}</td>
+
+                      <td>{item.product?.displayName}</td>
+                      <td>{item.product?.MRP}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center py-3">
+                    <td colSpan="8" className="text-center py-3">
                       No data available
                     </td>
                   </tr>

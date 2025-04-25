@@ -13,13 +13,13 @@ const GroupWiseCom = () => {
           <div className=" mt-5">
             <GroupInventoryForm />
           </div>
-          <div
+          {/* <div
             className="card shadow-none border p-0  mt-5"
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">Inventory</h6>
             <GroupInventoryTable />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

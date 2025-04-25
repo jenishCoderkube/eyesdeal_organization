@@ -13,10 +13,10 @@ const ViewProductStoreCom = () => {
           <div className="  mt-5">
             <ViewProductForm />
           </div>
-          <div className="shadow-none border mt-5">
+          {/* <div className="shadow-none border mt-5">
             <h6 className="fw-bold px-3 pt-3">Product Store</h6>
             <ViewProductTable />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

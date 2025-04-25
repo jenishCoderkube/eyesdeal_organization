@@ -70,7 +70,6 @@ const InventoryForm = () => {
       brand: Yup.object().nullable().required("Brand is required"),
     }),
     onSubmit: (values) => {
-      console.log("Form submitted:", values);
       getInventoryData(values);
     },
   });
@@ -162,7 +161,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getFrameType();
       if (response.success) {
-        console.log("response", response?.data);
         setFrameType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -179,7 +177,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getFrameShape();
       if (response.success) {
-        console.log("response", response?.data);
         setShapeType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -196,7 +193,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getMaterial();
       if (response.success) {
-        console.log("response", response?.data);
         setMaterial(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -213,7 +209,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getColor();
       if (response.success) {
-        console.log("response", response?.data);
         setColor(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -230,7 +225,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getPrescriptionType();
       if (response.success) {
-        console.log("response", response?.data);
         setPreType(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -247,7 +241,6 @@ const InventoryForm = () => {
     try {
       const response = await inventoryService.getCollection();
       if (response.success) {
-        console.log("response", response?.data);
         setCollection(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -285,10 +278,10 @@ const InventoryForm = () => {
         values?.prescriptionType?.value,
         storeId || user?.stores,
         1,
-        searchQuery
+        searchQuery,
+        20
       );
       if (response.success) {
-        console.log("response", response);
         setInventory(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -307,7 +300,6 @@ const InventoryForm = () => {
 
     inventory?.docs?.forEach((item) => {
       const selected = item.product;
-      console.log("item", item);
       const quantity = parseInt(item.quantity) || 0;
 
       // for (let i = 0; i < quantity; i++) {
@@ -368,7 +360,6 @@ const InventoryForm = () => {
 
     inventory?.docs?.forEach((item) => {
       const selected = item.product;
-      console.log("item", item);
       const quantity = parseInt(item.quantity) || 0;
 
       // for (let i = 0; i < quantity; i++) {
