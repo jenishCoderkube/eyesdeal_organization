@@ -1,32 +1,86 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
+import { FaSearch } from "react-icons/fa";
+import { inventoryService } from "../../../services/inventoryService";
+import { toast } from "react-toastify";
+import debounce from "lodash/debounce";
 
 const ViewProductForm = () => {
-  const productOptions = [
-    { value: "rayBan", label: "Ray-Ban" },
-    { value: "oakley", label: "Oakley" },
-  ];
+  const [inventory, setInventory] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [productData, setProductData] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const productOptions = productData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.oldBarcode} ${vendor.sku}`,
+  }));
 
   // Formik setup with Yup validation
   const formik = useFormik({
     initialValues: {
-      stores: [],
-      product: null,
+      product: [],
     },
     validationSchema: Yup.object({
-      stores: Yup.array()
-        .of(Yup.object().shape({ value: Yup.string(), label: Yup.string() }))
-        .min(1, "At least one store is required")
-        .required("Store is required"),
-      product: Yup.object().nullable().required("Product is required"),
+      product: Yup.array().notRequired(),
     }),
     onSubmit: (values) => {
       console.log("Form submitted:", values);
-      alert("Form submitted successfully!");
+      getInventoryData(values);
     },
   });
+
+  const getProduct = async (search) => {
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.universalSearch(search);
+      if (response.success) {
+        setProductData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInventoryData = async (values) => {
+    const productIds = values?.product?.map((option) => option.value);
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getProductStore(
+        productIds,
+        1,
+        20
+      );
+      if (response.success) {
+        setInventory(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const debouncedGetProduct = useCallback(
+    debounce((value) => {
+      if (value?.trim()) {
+        getProduct(value);
+      }
+    }, 1000),
+    [] // empty dependency to persist across re-renders
+  );
 
   return (
     <div className="card-body px-3 py-1">
@@ -34,11 +88,12 @@ const ViewProductForm = () => {
         <div className="row row-cols-1  g-3">
           <div className="col">
             <label className="form-label font-weight-500" htmlFor="product">
-              Product <span className="text-danger">*</span>
+              Product
             </label>
             <Select
               options={productOptions}
               value={formik.values.product}
+              isMulti
               onChange={(option) => formik.setFieldValue("product", option)}
               onBlur={() => formik.setFieldTouched("product", true)}
               placeholder="Select..."
@@ -48,22 +103,99 @@ const ViewProductForm = () => {
                   ? "is-invalid"
                   : ""
               }
+              onInputChange={(value) => {
+                debouncedGetProduct(value);
+              }}
+              isLoading={loading}
+              loadingMessage={() => "Loading..."}
+              noOptionsMessage={({ inputValue }) =>
+                inputValue ? "No products found" : "Type to search"
+              }
             />
+
             {formik.touched.product && formik.errors.product && (
               <div className="text-danger mt-1">{formik.errors.product}</div>
             )}
           </div>
         </div>
         <div className="mt-4">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={formik.isSubmitting}
-          >
+          <button type="submit" className="btn btn-primary">
             Submit
           </button>
         </div>
       </form>
+
+      <div className="card p-0  mt-5">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-sm">
+              <thead className="text-xs text-uppercase text-muted bg-light border">
+                <tr>
+                  <th>Barcode</th>
+
+                  <th>Date</th>
+                  <th>Photo</th>
+                  <th>Store</th>
+                  <th>Sku</th>
+                  <th>Brand</th>
+                  <th>Mrp</th>
+
+                  <th>Stock</th>
+                  <th>Sold</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {inventory?.docs?.length > 0 ? (
+                  inventory.docs.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>{item.product?.oldBarcode}</td>
+                      <td>{item.product?.data}</td>
+                      <td>
+                        <img
+                          src={item.photo}
+                          alt="Product"
+                          width="40"
+                          height="40"
+                        />
+                      </td>
+                      <td>{item.product?.store}</td>
+
+                      <td>{item.product?.sku}</td>
+                      <td>{item.product?.mrp}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.sold}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="9" className="text-center py-3">
+                      No data available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+            <div className="text-sm text-muted mb-3 mb-sm-0">
+              Showing <span className="fw-medium">1</span> to{" "}
+              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
+              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              results
+            </div>
+            <div className="btn-group">
+              <button className="btn btn-outline-primary">Previous</button>
+              <button className="btn btn-outline-primary">Next</button>
+            </div>
+          </div>
+        </div>
+        {/* <ImageSliderModal
+              show={showModal}
+              onHide={closeImageModal}
+              images={modalImages}
+            /> */}
+        {/* <InventoryTable data={inventory} /> */}
+      </div>
     </div>
   );
 };

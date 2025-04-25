@@ -6,6 +6,8 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { userService } from "../../../services/userService";
+import moment from "moment/moment";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -19,52 +21,18 @@ const debounce = (func, wait) => {
 const ViewOtp = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
+  const [otps, setOtps] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Memoized dummy OTP data (100 records)
-  const otps = useMemo(
-    () => [
-      {
-        id: 1,
-        Date: "15/01/2023",
-        Phone: 919898540502,
-        Otp: 1234,
-      },
-      {
-        id: 2,
-        Date: "22/03/2023",
-        Phone: 919712083357,
-        Otp: 5678,
-      },
-      {
-        id: 3,
-        Date: "10/11/2022",
-        Phone: 918141069135,
-        Otp: 9012,
-      },
-      {
-        id: 4,
-        Date: "05/06/2023",
-        Phone: 917096780268,
-        Otp: 3456,
-      },
-      {
-        id: 5,
-        Date: "20/08/2024",
-        Phone: 918017286275,
-        Otp: 7890,
-      },
-      // Additional data to reach 100 records
-      ...Array.from({ length: 10 }, (_, index) => ({
-        id: index + 6,
-        Date: `01/${String((index % 12) + 1).padStart(2, "0")}/202${
-          Math.floor(Math.random() * 3) + 2
-        }`,
-        Phone: 910000000000 + index,
-        Otp: Math.floor(1000 + Math.random() * 9000), // 4-digit OTP
-      })),
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchOTP();
+  }, []);
+
+  const fetchOTP = async () => {
+    userService.getOTP(currentPage)
+    .then(res => setOtps(res.data?.data?.docs))
+    .catch(e => console.log("Failed to fetch OTP: ", e));
+  }
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -110,21 +78,21 @@ const ViewOtp = () => {
         ),
       },
       {
-        accessorKey: "Date",
+        accessorKey: "createdAt",
         header: "Date",
         cell: ({ getValue }) => (
-          <div className="text-left break-words">{getValue()}</div>
+          <div className="text-left break-words">{moment(getValue()).format("DD/MM/YYYY hh:mm:ss a")}</div>
         ),
       },
       {
-        accessorKey: "Phone",
+        accessorKey: "phone",
         header: "Phone",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "Otp",
+        accessorKey: "otp",
         header: "Otp",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>

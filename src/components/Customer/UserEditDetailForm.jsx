@@ -13,6 +13,9 @@ import ContactsPowerModal from "./ContactsPowerModal";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Country, State, City } from "country-state-city";
 import { saleService } from "../../services/saleService";
+import { userService } from "../../services/userService";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const UserEditDetailForm = ({
   onAddSpecs,
@@ -24,6 +27,7 @@ const UserEditDetailForm = ({
   const [prescriptions, setPrescriptions] = useState([]);
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [editModal, setEditModal] = useState({
     show: false,
@@ -49,7 +53,7 @@ const UserEditDetailForm = ({
       const response = await saleService.getMarketingReferences();
       if (response.success) {
         const fetchedOptions = response.data.data.map((ref) => ({
-          value: ref._id,
+          value: ref.name,
           label: ref.name,
         }));
         setReferenceOptions(fetchedOptions);
@@ -57,14 +61,13 @@ const UserEditDetailForm = ({
         console.log(response.data.message);
       }
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error("Error fetching marketing references:", error);
     }
   };
 
   useEffect(() => {
     getMarketingReferences();
   }, []);
-
 
   // Formik validation schema (only for required fields)
   const validationSchema = Yup.object({
@@ -114,7 +117,7 @@ const UserEditDetailForm = ({
 
   const handleModalClose = () => {
     setEditModal({ show: false, type: null, data: null });
-  }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-GB"); // DD/MM/YYYY format
@@ -127,63 +130,84 @@ const UserEditDetailForm = ({
         initialValues={initialValues}
         validationSchema={validationSchema}
         enableReinitialize={true}
-        onSubmit={(values) => {
+        onSubmit={async (values) => {
           console.log("Updating user:", values);
-          // Dispatch update action or API call
+          // const data = {
+          //   ...values,
+          //   country: values.country?.label,
+          //   state: values?.state?.label,
+          //   city: values?.city?.label,
+          //   role: values.role?.value,
+          //   gender: values.gender?.value,
+          // }
+          // const response = await userService.updateCustomer(data);
+          // if(response.success){
+          //   toast.success(response.message);
+          //   navigate("/sale/new")
+          // } else {
+          //   toast.error(response.message);
+          // }
         }}
       >
         {({ values, setFieldValue, setValues, errors, touched }) => {
           // Fetch states based on selected country
           const stateOptions = values.country
             ? State.getStatesOfCountry(values.country.value).map((state) => ({
-              value: state.isoCode,
-              label: state.name,
-            }))
+                value: state.isoCode,
+                label: state.name,
+              }))
             : [];
 
           // Fetch cities based on selected country and state
           const cityOptions =
             values.country && values.state
               ? City.getCitiesOfState(
-                values.country.value,
-                values.state.value
-              ).map((city) => ({
-                value: city.name,
-                label: city.name,
-              }))
+                  values.country.value,
+                  values.state.value
+                ).map((city) => ({
+                  value: city.name,
+                  label: city.name,
+                }))
               : [];
 
           // Set values when initialData changes
           useEffect(() => {
             if (initialData) {
-              const reference = referenceOptions.find(ref => ref.label === initialData?.marketingReference)
-              const gender = genderOptions.find(gen => gen.value === initialData?.gender)
-              const country = countryOptions.find(con => con.label.toLowerCase() === initialData?.country)
-              const stateOptions = State.getStatesOfCountry(country.value).map((state) => ({
-                value: state.isoCode,
-                label: state.name,
-              }))
-              const state = stateOptions.find(state => state.label.toLowerCase() === initialData?.state)
+              const reference = referenceOptions.find(
+                (ref) => ref.label === initialData?.marketingReference
+              );
+              const gender = genderOptions.find(
+                (gen) => gen.value === initialData?.gender
+              );
+              const country = countryOptions.find(
+                (con) => con.label.toLowerCase() === initialData?.country
+              );
+              const stateOptions = State.getStatesOfCountry(country.value).map(
+                (state) => ({
+                  value: state.isoCode,
+                  label: state.name,
+                })
+              );
+              const state = stateOptions.find(
+                (state) => state.label.toLowerCase() === initialData?.state
+              );
               const cityOptions = City.getCitiesOfState(
                 country.value,
                 state.value
               ).map((city) => ({
                 value: city.name,
                 label: city.name,
-              }))
-              const city = cityOptions.find(city => city.label.toLowerCase() === initialData?.city)
+              }));
+              const city = cityOptions.find(
+                (city) => city.label.toLowerCase() === initialData?.city
+              );
               setValues({
-                name: initialData?.name,
-                phone: initialData?.phone,
+                ...initialData,
                 customerReference: reference,
                 gender: gender,
-                email: initialData?.email,
                 country: country,
                 state: state,
                 city: city,
-                pincode: initialData?.pincode,
-                address: initialData?.address,
-                note: initialData?.note,
               });
 
               if (initialData?.prescriptions) {
@@ -191,8 +215,6 @@ const UserEditDetailForm = ({
               }
             }
           }, [initialData]);
-
-          console.log(prescriptions);
 
           return (
             <Form>
@@ -500,20 +522,26 @@ const UserEditDetailForm = ({
                             <td className="px-3 py-2">
                               {formatDate(prescription.createdAt)}
                             </td>
+                            <td className="px-3 py-2">{prescription.__t}</td>
                             <td className="px-3 py-2">
-                              {prescription.__t}
+                              ({prescription.prescribedBy})
                             </td>
-                            <td className="px-3 py-2">({prescription.prescribedBy})</td>
                             <td className="px-3 py-2">
                               <button
                                 className="btn p-0 me-2"
-                                onClick={() => handleEdit(prescription)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleEdit(prescription);
+                                }}
                               >
                                 <FaEdit color="blue" />
                               </button>
                               <button
                                 className="btn p-0"
-                                onClick={() => handleDelete(prescription.id)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleDelete(prescription.id);
+                                }}
                               >
                                 <FaTrash color="red" />
                               </button>

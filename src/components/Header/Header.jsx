@@ -139,7 +139,6 @@ const menuItems = [
 
 const Header = () => {
   const user = JSON.parse(localStorage.getItem("user"));
-  console.log("user", user);
 
   const navigate = useNavigate();
 

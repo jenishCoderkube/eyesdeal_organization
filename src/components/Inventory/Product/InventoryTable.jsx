@@ -18,7 +18,8 @@ const debounce = (func, wait) => {
   };
 };
 
-const InventoryTable = () => {
+const InventoryTable = ({ data }) => {
+  console.log("dataTable", data);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
   const [modalImages, setModalImages] = useState([]);
@@ -100,15 +101,6 @@ const InventoryTable = () => {
   );
 
   // Debounced filter logic in useEffect
-  useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(products, query));
-    }, 200);
-
-    debouncedFilter(searchQuery);
-
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, products, filterGlobally]);
 
   // Handle search input change
   const handleSearch = (value) => {
@@ -116,7 +108,7 @@ const InventoryTable = () => {
   };
 
   // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredData || products;
+  const tableData = products;
 
   // Define table columns
   const columns = useMemo(
@@ -183,7 +175,7 @@ const InventoryTable = () => {
 
   // @tanstack/react-table setup
   const table = useReactTable({
-    data: tableData,
+    data: products,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

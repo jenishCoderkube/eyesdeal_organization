@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
 import { purchaseService } from "../../services/purchaseService";
 import { toast } from "react-toastify";
+import { debounce } from "lodash";
 
 function BarcodeGenerate() {
   const [items, setItems] = useState([]);
@@ -106,6 +107,15 @@ function BarcodeGenerate() {
     }
   };
 
+  const debouncedGetProduct = useCallback(
+    debounce((value) => {
+      if (value?.trim()) {
+        getProduct(value);
+      }
+    }, 1000),
+    [] // empty dependency to persist across re-renders
+  );
+
   return (
     <div className="container-fluid p-md-5 ">
       <h1 className="h2 text-dark fw-bold">Generate Barcodes</h1>
@@ -134,7 +144,7 @@ function BarcodeGenerate() {
                         classNamePrefix="select"
                         inputId={`product-${index}`}
                         onInputChange={(value) => {
-                          getProduct(value);
+                          debouncedGetProduct(value);
                         }}
                         isLoading={loading} // ✅ shows spinner while loading
                         loadingMessage={() => "Loading..."} // ✅ custom loading message

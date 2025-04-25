@@ -35,6 +35,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
 
   useEffect(() => {
     if (editData) {
+      console.log(editData);
       setFormData(editData);
     } else {
       setFormData({
@@ -249,7 +250,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                         <input
                           type="text"
                           className="form-control custom-disabled"
-                          value={editData._id}
+                          value={editData?._id}
                           readOnly
                         />
                       </div>
@@ -605,12 +606,12 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                     </div>
                     <div className="row g-3 mt-2 border p-2">
                       {[
-                        "asize",
-                        "bsize",
+                        "aSize",
+                        "bSize",
                         "dbl",
                         "fth",
-                        "pdesign",
-                        "ftype",
+                        "pDesign",
+                        "ft",
                         "de",
                       ].map((field) => (
                         <div className="col-6 col-md-3 col-lg-auto" key={field}>

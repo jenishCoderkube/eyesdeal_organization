@@ -14,8 +14,10 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { Country, State, City } from "country-state-city";
-import { IoIosCloseCircleOutline } from "react-icons/io";
+import { IoIosAddCircle, IoIosClose } from "react-icons/io";
 import EditVendorModal from "../../../components/Users/Vendor/EditVendorModal";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -39,16 +41,26 @@ const validationSchema = Yup.object({
   city: Yup.object().nullable().required("City is required"),
   pincode: Yup.string().trim().required("Pincode is required"),
   address: Yup.string().trim(),
-  GST: Yup.string().trim(),
+  GSTNumber: Yup.string().trim(),
+  contactNumber: Yup.array()
+    .of(
+      Yup.object().shape({
+        name: Yup.string(),
+        phone: Yup.string(),
+      })
+    )
+    .notRequired(),
 });
 
 const AddVendors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editVendor, setEditVendor] = useState(null);
   const [showcontactInput, setShowContactInput] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [formData, setFormData] = useState([
     {
       name: "",
@@ -56,86 +68,46 @@ const AddVendors = () => {
     },
   ]);
 
-  // Memoized dummy vendor data
-  const vendors = useMemo(
-    () => [
-      {
-        _id: "67ff63f53601ef3b05908dac",
-        companyName: "VISION RX",
-        phone: "+918401773899",
-        type: "lens_vendor",
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pincode: "395003",
-        address: "VARACHA BOMBE MARKIT",
-        GST: "",
-      },
-      {
-        _id: "67ff63f53601ef3b05908dad",
-        companyName: "RAVI RAJ VARACCHA",
-        phone: "+919033278758",
-        type: "lens_vendor",
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pincode: "395003",
-        address: "VARACHA BOMBE MARKIT",
-        GST: "",
-      },
-      ...Array.from({ length: 10 }, (_, index) => ({
-        _id: `67ff63f53601ef3b05908${index + 100}`,
-        companyName: `Vendor ${index + 3}`,
-        phone: `+919${String(100000000 + index).padStart(9, "0")}`,
-        type: ["lens_vendor", "frame_vendor", "accessory_vendor"][
-          Math.floor(Math.random() * 3)
-        ],
-        email: "",
-        country: "IN",
-        state: "GJ",
-        city: "Surat",
-        pin桌上: "39500" + (index % 10),
-        address: "Sample Address " + (index + 3),
-        GST: "",
-      })),
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchVendors();
+  }, []);
 
-  // Filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          String(item._id),
-          item.companyName,
-          String(item.phone),
-          item.type,
-          item.email,
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
+  const fetchVendors = (searchKey = "") => {
+    userService
+      .getVendors(searchKey)
+      .then((res) => {
+        setVendors(res.data?.data?.docs);
+        setDataLoaded(true);
+      })
+      .catch((e) => console.log("Error fetching vendors: ", e));
+  };
 
   // Debounced filter
   useEffect(() => {
+    if (!dataLoaded) return;
     const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(vendors, query));
+      fetchVendors(query);
     }, 200);
 
     debouncedFilter(searchQuery);
 
     return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, vendors, filterGlobally]);
+  }, [searchQuery]);
 
   // Handle search
   const handleSearch = (value) => {
     setSearchQuery(value);
+  };
+
+  const addVendor = async (data) => {
+    const response = await userService.addVendor(data);
+    if (response.success) {
+      toast.success(response.message);
+      fetchVendors();
+      setShowForm(false);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Table data
@@ -228,9 +200,16 @@ const AddVendors = () => {
   };
 
   // Handle delete
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     alert("Are you sure you want to delete?");
     console.log(`Delete vendor with id: ${id}`);
+    const response = await userService.deleteVendor(id);
+    if (response.success) {
+      fetchVendors();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Formik for create form
@@ -245,17 +224,39 @@ const AddVendors = () => {
       city: null,
       pincode: "",
       address: "",
-      GST: "",
+      GSTNumber: "",
+      contactNumber: [],
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Create Vendor:", values);
-      setShowForm(false);
+      const data = {
+        ...values,
+        country: values.country.label,
+        state: values.state.label,
+        city: values.city.label,
+        type: values.type?.value,
+        contactPerson: values.contactNumber,
+      };
+      addVendor(data);
     },
   });
 
+  const updateVendor = async (data) => {
+    const response = await userService.updateVendor(data);
+    if (response.success) {
+      toast.success(response.message);
+      fetchVendors();
+      setShowEditModal(false);
+    } else {
+      toast.error(response.message);
+    }
+  }
+
   const handleAddPhone = () => {
-    setShowContactInput((prev) => !prev);
+    createFormik.setFieldValue("contactNumber", [
+      ...createFormik.values.contactNumber,
+      { name: "", phone: "+91" },
+    ]);
   };
 
   // Country, state, city options
@@ -309,6 +310,26 @@ const AddVendors = () => {
   const startRow = pageIndex * pageSize + 1;
   const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
   const totalRows = tableData.length;
+
+  const handleNameChange = (e, index) => {
+    const { value } = e.target;
+    let contactNumber = createFormik.values.contactNumber;
+    contactNumber[index].name = value;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handlePhoneChange = (phone, index) => {
+    let contactNumber = createFormik.values.contactNumber;
+    contactNumber[index].phone = phone;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handleRemoveContact = (contactIndex) => {
+    const contactNumber = createFormik.values.contactNumber.filter(
+      (item, index) => index !== contactIndex
+    );
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
 
   // Render form
   const renderForm = (formik) => (
@@ -398,10 +419,26 @@ const AddVendors = () => {
           <label className="form-label fw-medium" htmlFor="type">
             Contact Person
           </label>
-          {showcontactInput && (
-            <>
-              <div className="w-100">
-                <IoIosCloseCircleOutline onClick={handleAddPhone} size={24} />
+          <br />
+          {/* <IoIosAddCircle onClick={handleAddPhone} size={24} /> */}
+          <button
+            className="btn btn-outline-primary"
+            onClick={(e) => {
+              e.preventDefault();
+              handleAddPhone();
+            }}
+          >
+            Add Phone
+          </button>
+          {createFormik.values.contactNumber.map((contact, index) => (
+            <div className="ms-3 mt-3">
+              <div className="w-100 position-relative">
+                <IoIosClose
+                  size={25}
+                  color="red"
+                  className="remove-icon"
+                  onClick={() => handleRemoveContact(index)}
+                />
                 <label className="form-label fw-medium" htmlFor="companyName">
                   Name
                 </label>
@@ -410,6 +447,8 @@ const AddVendors = () => {
                   className="w-full form-control"
                   name="name"
                   placeholder="Enter name"
+                  value={contact?.name}
+                  onChange={(e) => handleNameChange(e, index)}
                 />
               </div>
               <div className="w-100 mt-3">
@@ -420,12 +459,14 @@ const AddVendors = () => {
                   country={"in"}
                   inputClass={`form-control "is-invalid`}
                   containerClass="w-100"
+                  value={contact?.phone}
+                  onChange={(phone) => handlePhoneChange(phone, index)}
                   inputStyle={{ width: "100%" }}
                   placeholder="1 (702) 123-4567"
                 />
               </div>
-            </>
-          )}
+            </div>
+          ))}
         </div>
         <div className="w-100">
           <label className="form-label fw-medium" htmlFor="country">
@@ -513,22 +554,22 @@ const AddVendors = () => {
           />
         </div>
         <div className="w-100">
-          <label className="form-label fw-medium" htmlFor="GST">
+          <label className="form-label fw-medium" htmlFor="GSTNumber">
             GST Number
           </label>
           <input
             type="text"
-            name="GST"
+            name="GSTNumber"
             className={`form-control ${
-              formik.touched.GST && formik.errors.GST ? "is-invalid" : ""
+              formik.touched.GSTNumber && formik.errors.GSTNumber ? "is-invalid" : ""
             }`}
-            value={formik.values.GST}
+            value={formik.values.GSTNumber}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             placeholder="Enter GST number"
           />
-          {formik.touched.GST && formik.errors.GST && (
-            <div className="invalid-feedback">{formik.errors.GST}</div>
+          {formik.touched.GSTNumber && formik.errors.GSTNumber && (
+            <div className="invalid-feedback">{formik.errors.GSTNumber}</div>
           )}
         </div>
         <div>
@@ -647,6 +688,7 @@ const AddVendors = () => {
       <EditVendorModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
+        onSubmit={updateVendor}
         editVendor={editVendor}
       />
     </div>

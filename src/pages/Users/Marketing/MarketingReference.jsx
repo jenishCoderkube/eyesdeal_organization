@@ -9,6 +9,8 @@ import {
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import EditReferenceModal from "../../../components/Users/Marketing/EditReferenceModal";
+import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 // import EditReferenceModal from "./EditReferenceModal";
 
 // Debounce utility function
@@ -28,22 +30,9 @@ const validationSchema = Yup.object({
 const ViewReferences = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
+  const [references, setReferences] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editReference, setEditReference] = useState(null);
-
-  // Memoized reference data
-  const references = useMemo(
-    () => [
-      { id: "64427cdc04ce9c9e812c3ef0", name: "individual" },
-      { id: "64427cdc04ce9c9e812c3ef1", name: "bni group" },
-      { id: "64427cdc04ce9c9e812c3ef2", name: "doctor reference" },
-      { id: "64427cdc04ce9c9e812c3ef3", name: "facebook marketing" },
-      { id: "64427cdc04ce9c9e812c3ef4", name: "pamphlet marketing" },
-      { id: "64427cdc04ce9c9e812c3ef5", name: "website" },
-      { id: "64427cdc04ce9c9e812c3ef6", name: "eyesdeal customer reference" },
-    ],
-    []
-  );
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -58,6 +47,16 @@ const ViewReferences = () => {
     },
     []
   );
+
+  useEffect(() => {
+    fetchMarketingReferences();
+  }, []);
+
+  const fetchMarketingReferences = () => {
+    userService.getMarketingReferences()
+    .then(res => setReferences(res.data?.data))
+    .catch(e => console.log("Failed to fetch marketing references: ", e))
+  }
 
   // Debounced filter logic
   useEffect(() => {
@@ -127,7 +126,7 @@ const ViewReferences = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="cursor-pointer"
-                onClick={() => handleDelete(row.original.id)}
+                onClick={() => handleDelete(row.original._id)}
               >
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -161,9 +160,16 @@ const ViewReferences = () => {
   };
 
   // Handle delete
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     alert("Are you sure you want to delete?");
     console.log(`Delete reference with id: ${id}`);
+    const response = await userService.deleteMarketingReference(id);
+    if (response.success) {
+      fetchMarketingReferences();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Formik for create form
@@ -173,17 +179,38 @@ const ViewReferences = () => {
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Create Reference:", values);
-      formik.resetForm();
+      addMarketingReference(values);
     },
   });
+
+  const addMarketingReference = async (data) => {
+    const response = await userService.addMarketingReference(data);
+    if(response.success){
+      toast.success(response.message);
+      formik.resetForm();
+      fetchMarketingReferences();
+    } else {
+      toast.error(response.message);
+    }
+  }
+
+  const updateMarketingReference = async (data) => {
+    const response = await userService.updateMarketingReference(data);
+    if(response.success){
+      toast.success(response.message);
+      setShowEditModal(false);
+      fetchMarketingReferences();
+    } else {
+      toast.error(response.message);
+    }
+  }
 
   // Calculate the range of displayed rows
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
-  const totalRows = tableData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, tableData?.length);
+  const totalRows = tableData?.length;
 
   return (
     <div className="container-fluid px-4 py-8">
@@ -210,7 +237,20 @@ const ViewReferences = () => {
                     }`}
                     value={formik.values.name}
                     onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
+                    onBlur={() => {
+                      if(formik.values.name){
+                        userService.isMarketingRefernceExists(formik.values.name)
+                      .then(res => {
+                        if(res.data?.data?._id){
+                          formik.setFieldError("name", "Marketing Reference with this name already exists");
+                        } else {
+                          formik.setFieldError("name", "");
+                        }
+                      })
+                      .catch(e => console.log("Failed to check if reference exists: ", e))
+                      }
+                      formik.handleBlur()
+                    }}
                     placeholder="Enter reference name"
                   />
                   {formik.touched.name && formik.errors.name && (
@@ -323,6 +363,7 @@ const ViewReferences = () => {
       <EditReferenceModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
+        onSubmit={updateMarketingReference}
         editReference={editReference}
       />
     </div>

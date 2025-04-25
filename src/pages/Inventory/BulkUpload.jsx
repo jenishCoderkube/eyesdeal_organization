@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
+import { inventoryService } from "../../services/inventoryService";
+import { toast } from "react-toastify";
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -9,16 +11,9 @@ const validationSchema = Yup.object({
   bulkUploadFile: Yup.mixed().required("File is required"),
 });
 
-// Dummy store options (replace with actual data if available)
-const storeOptions = [
-  { value: "eyesdeal_adajan", label: "EYESDEAL ADAJAN" },
-  { value: "eyesdeal_udhana", label: "EYESDEAL UDHANA" },
-  { value: "safent", label: "SAFENT" },
-  { value: "closed_nikol", label: "CLOSED NIKOL" },
-  { value: "elite_hospital", label: "ELITE HOSPITAL" },
-];
-
 const BulkUploadInventory = () => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
   // Formik setup
   const formik = useFormik({
     initialValues: {
@@ -40,6 +35,31 @@ const BulkUploadInventory = () => {
     const file = event.currentTarget.files[0];
     formik.setFieldValue("bulkUploadFile", file);
   };
+
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
 
   return (
     <div className="container-fluid px-4 py-8">

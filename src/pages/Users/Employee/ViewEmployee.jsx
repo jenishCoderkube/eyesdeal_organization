@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { userService } from "../../../services/userService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -86,9 +87,7 @@ const ViewEmployees = () => {
       {
         accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => (
-          <div className="text-left  break-words">{getValue()}</div>
-        ),
+        cell: ({ getValue,table, row }) => <div className="text-left">{table?.getSortedRowModel()?.flatRows?.indexOf(row)+1}</div>,
       },
       {
         accessorKey: "name",
@@ -187,7 +186,7 @@ const ViewEmployees = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="cursor-pointer"
-                onClick={() => handleDelete(row.original.id)}
+                onClick={() => handleDelete(row.original._id)}
               >
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -218,16 +217,23 @@ const ViewEmployees = () => {
     navigate(`/employee/${employee?._id}`, { state: { user: employee } });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     alert("Are you sure you want to delete?");
     console.log(`Delete employee with id: ${id}`);
+    const response = await userService.deleteCustomer(id);
+    if(response.success){
+      fetchEmployees();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Calculate the range of displayed rows
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
+  const endRow = Math.min((pageIndex + 1) * pageSize, tableData?.length);
   const totalRows = tableData.length;
 
   return (

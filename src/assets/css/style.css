@@ -1452,3 +1452,9 @@ h6 {
   }
 }
 /* loader css end */
+
+.remove-icon {
+  position: absolute;
+  left: -25px;
+  top: -12px;
+}

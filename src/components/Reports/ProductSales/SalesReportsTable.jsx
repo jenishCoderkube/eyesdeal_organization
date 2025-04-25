@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
+import moment from "moment/moment";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -72,52 +73,66 @@ const SalesReportsTable = ({ data }) => {
       {
         accessorKey: "store",
         header: "Store Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
-        accessorKey: "orderNo",
+        accessorKey: "billNumber",
         header: "Order No",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "customerName",
+        accessorKey: "sale",
         header: "Customer Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.customerName}</div>
+        ),
       },
       {
-        accessorKey: "brand",
+        accessorKey: "lens",
         header: "Brand",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {(getValue()?.lens?.item?.brand?.name ?? "") +
+              " " +
+              (getValue()?.lens?.item?.__t ?? "")}
+          </div>
+        ),
       },
       {
-        accessorKey: "barcode",
+        accessorKey: "lens",
         header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.barcode}</div>,
       },
       {
-        accessorKey: "sku",
+        accessorKey: "lens",
         header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.sku}</div>,
       },
       {
-        accessorKey: "mrp",
+        accessorKey: "lens",
         header: "MRP",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.MRP}</div>,
       },
       {
-        accessorKey: "discount",
+        accessorKey: "lens",
         header: "Discount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.perPieceDiscount}</div>,
       },
       {
-        accessorKey: "netAmount",
+        accessorKey: "lens",
         header: "Net Amount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.perPieceAmount}</div>,
       },
     ],
     []

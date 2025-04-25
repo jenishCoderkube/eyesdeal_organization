@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
@@ -15,6 +15,7 @@ import { Country, State, City } from "country-state-city";
 import { userService } from "../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { saleService } from "../../services/saleService";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
@@ -27,17 +28,91 @@ const validationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email format"),
   pincode: Yup.string().matches(/^\d{6}$/, "Pincode must be 6 digits"),
 });
+function transformPayload(frontendPayload) {
+  const camelToPascal = {
+    asize: "aSize",
+    bsize: "bSize",
+    pdesign: "pDesign",
+    ftype: "ft",
+    type: "__t",
+    id: "pres_id"
+  };
+
+  // Convert date strings to timestamps
+  const transformDate = (date) => (typeof date === "string" ? new Date(date).getTime() : date);
+
+  // Transform each prescription
+  const transformedPrescriptions = (frontendPayload.prescriptions || []).map((prescription) => {
+    const {
+      doctorName,
+      prescribedBy,
+      type,
+      id,
+      right,
+      left,
+      ipd,
+      asize,
+      bsize,
+      dbl,
+      fth,
+      pdesign,
+      ftype,
+      de
+    } = prescription;
+
+    return {
+      name: frontendPayload.name || "",
+      relation: "",
+      gender: "",
+      doctorName,
+      prescribedBy,
+      __t: type,
+      ipd,
+      aSize: asize,
+      bSize: bsize,
+      dbl,
+      fth,
+      pDesign: pdesign,
+      ft: ftype,
+      de,
+      pres_id: id,
+      right,
+      left
+    };
+  });
+
+  return {
+    name: frontendPayload.name,
+    phone: frontendPayload.phone,
+    role: frontendPayload.role,
+    email: frontendPayload.email,
+    gender: frontendPayload.gender,
+    marketingReference: frontendPayload.marketingReference,
+    birthDate: transformDate(frontendPayload.birthDate),
+    anniversaryDate: transformDate(frontendPayload.anniversaryDate),
+    address: frontendPayload.address,
+    note: frontendPayload.note,
+    country: frontendPayload.country,
+    state: frontendPayload.state,
+    city: frontendPayload.city,
+    pincode: frontendPayload.pincode,
+    prescriptions: transformedPrescriptions
+  };
+}
 
 const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const { prescriptions } = useSelector((state) => state.specsPower);
+
   const [editModal, setEditModal] = useState({
     show: false,
     type: null,
     data: null,
   });
-  const dispatch = useDispatch();
-
+  const [referenceOptions, setReferenceOptions] = useState([]);
+  
   const handleEdit = (prescription) => {
     setEditModal({
       show: true,
@@ -48,10 +123,6 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
 
   const handleDelete = (id) => {
     dispatch(deletePrescription(id));
-  };
-
-  const handleModalClose = () => {
-    setEditModal({ show: false, type: null, data: null });
   };
 
   const initialValues = {
@@ -80,7 +151,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
         prescriptions: prescriptions,
       };
 
-      const response = await userService.addCustomer(formattedData);
+      const response = await userService.addCustomer(transformPayload(formattedData));
       if (response.success) {
         resetForm();
         toast.success(response.message);
@@ -106,10 +177,27 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     { value: "Female", label: "Female" },
   ];
 
-  const referenceOptions = [
-    { value: "Online", label: "Online" },
-    { value: "Store", label: "Store" },
-  ];
+
+  const getMarketingReferences = async () => {
+    try {
+      const response = await saleService.getMarketingReferences();
+      if (response.success) {
+        const fetchedOptions = response.data.data.map((ref) => ({
+          value: ref.name,
+          label: ref.name,
+        }));
+        setReferenceOptions(fetchedOptions);
+      } else {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching marketing references:", error);
+    }
+  };
+
+  useEffect(() => {
+    getMarketingReferences();
+  }, []);
 
   return (
     <Formik
@@ -449,7 +537,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                               {prescription.doctorName}
                             </td>
                             <td className="px-3 py-2">
-                              {prescription.prescribedBy?.label}
+                              {prescription.prescribedBy}
                             </td>
                             <td className="px-3 py-2">{prescription.type}</td>
                             <td className="px-3 py-2">
