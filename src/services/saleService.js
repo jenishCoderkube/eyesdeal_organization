@@ -5,20 +5,22 @@ const SALE_ENDPOINTS = {
     LIST_USERS: "/user/list",
     SALES: "/sales",
     MARKETINGREFERENCES: "/user/marketingReferences",
+    LIST_PRODUCT: "/products/product",
+    CHECK_INVENTORY: "/inventory/get-inventory-general",
+    GET_STORE: "/stores",
+    COUPON: "/coupon/private",
 };
 
 // sale service functions
 export const saleService = {
-  listUsers: async (search = "") => {
-    try {
-      const params = {
-        search,
-        role: "customer",
-        populate: true,
-      };
-
-      const response = await api.get(SALE_ENDPOINTS.LIST_USERS, { params });
-
+    listUsers: async (search = "") => {
+        try {
+            const params = {
+                search,
+                role: "customer",
+                populate: true,
+            };
+            const response = await api.get(SALE_ENDPOINTS.LIST_USERS, { params });
             return {
                 success: true,
                 data: response.data,
@@ -33,7 +35,7 @@ export const saleService = {
     sales: async (customerId = "") => {
         try {
             const params = {
-                customerId,        
+                customerId,
                 populate: true,
                 limit: 50,
                 page: 1
@@ -55,7 +57,7 @@ export const saleService = {
     getUser: async (_id = "") => {
         try {
             const params = {
-                _id,        
+                _id,
                 populate: true,
             };
 
@@ -75,7 +77,6 @@ export const saleService = {
     getMarketingReferences: async () => {
         try {
             const response = await api.get(SALE_ENDPOINTS.MARKETINGREFERENCES);
-
             return {
                 success: true,
                 data: response.data,
@@ -84,6 +85,102 @@ export const saleService = {
             return {
                 success: false,
                 message: error.response?.data?.message || "Error fetching user data",
+            };
+        }
+    },
+    listProducts: async (search = "") => {
+        try {
+            const params = {
+                search,
+            };
+            const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, { params });
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Error fetching product data",
+            };
+        }
+    },
+    checkInventory: async (optimizeProdId, optimizeStoreId = "") => {
+        try {
+            const params = {
+                "optimize[product]": optimizeProdId,
+                "optimize[store]": optimizeStoreId,
+                limit: 5,
+                populate: true
+            };
+            const response = await api.get(SALE_ENDPOINTS.CHECK_INVENTORY, { params });
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Error fetching product data",
+            };
+        }
+    },
+    getSalesRep: async (storeId) => {        
+        try {
+            const params = {
+                "role[$in][0]": "sales",
+                "role[$in][1]": "store_manager",
+                "role[$in][2]": "individual_store",
+                stores: storeId,
+                isActive: true
+            };
+            const response = await api.get(SALE_ENDPOINTS.LIST_USERS, { params });
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Error fetching salesRep data",
+            };
+        }
+    },
+    getLensData: async (search) => {        
+        try {
+            const params = {
+                search,
+                "__t[$in][0]": "spectacleLens",
+                "__t[$in][1]": "contactLens",
+            };
+            const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, { params });
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Error fetching lens data",
+            };
+        }
+    },
+    checkCouponCode: async (couponCode, phone="",products=[]) => {        
+        try {
+            const params = {
+                couponCode,
+                phone,
+                products
+            };
+            const response = await api.get(SALE_ENDPOINTS.COUPON, { params });
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Error at Cheking CouponCode",
             };
         }
     },

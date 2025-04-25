@@ -1,14 +1,21 @@
-import React, { useState } from "react";
-import "../../assets/css/Sale/sale_style.css";
-import "react-datepicker/dist/react-datepicker.css";
-import DatePicker from "react-datepicker";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AsyncSelect from "react-select/async";
+import DatePicker from "react-datepicker";
+import "../../assets/css/Sale/sale_style.css";
+import "react-datepicker/dist/react-datepicker.css";
+
 import { saleService } from "../../services/saleService";
 import PrescriptionModel from "../../components/Process/PrescriptionModel";
 import OrdersModel from "../../components/Process/OrdersModel";
+import { storeService } from "../../services/storeService";
+import InventoryData from "../../components/Sale/InventoryData";
+import ProductSelector from "../../components/Sale/ProductSelector";
 
 const SaleForm = () => {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+
   const [formData, setFormData] = useState({
     customerId: "",
     customerName: "",
@@ -32,8 +39,50 @@ const SaleForm = () => {
 
   const [receivedAmounts, setReceivedAmounts] = useState([]);
   const [errors, setErrors] = useState({});
+  const [salesData, setSalesData] = useState([]);
+  const [salesRepData, setSalesRepData] = useState([]);
+  const [filteredStores, setFilteredStores] = useState([]);
+  const [defaultStore, setDefaultStore] = useState(null);
+  const [showProductSelector, setShowProductSelector] = useState(true);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [selectedCust, setSelectedCust] = useState(null);
+  const [OrderModelVisible, setOrderModelVisible] = useState(false);
+  const [SalesOrderData, setSalesOrderData] = useState(null);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [InventoryPairs, setInventoryPairs] = useState([]);
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    const fetchStoresData = async () => {
+      try {
+        const allStores = await storeService.getStores();
+        const userStoreIds = user?.stores || [];
+
+        const matchedStores = allStores
+          .filter(store => userStoreIds.includes(store._id))
+          .map(store => ({
+            value: store._id,
+            label: `${store.storeNumber} / ${store.name}`,
+            data: store,
+          }));
+
+        setFilteredStores(matchedStores);
+        if (matchedStores.length === 1) {
+          const defaultStore = matchedStores[0];
+          setDefaultStore(defaultStore);
+          setFormData(prev => ({ ...prev, store: defaultStore.label }));
+        }
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+      }
+    };
+
+    fetchStoresData();
+  }, []);
+
+  const loadStoreOptions = (inputValue, callback) => {
+    const filtered = filteredStores.filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()));
+    callback(filtered);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -46,15 +95,9 @@ const SaleForm = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName) {
-      newErrors.customerName = "Customer Name is required";
-    }
-    if (!formData.customerPhone) {
-      newErrors.customerPhone = "Customer Phone is required";
-    }
-    if (!formData.salesRep) {
-      newErrors.salesRep = "Sales Rep is required";
-    }
+    if (!formData.customerName) newErrors.customerName = "Customer Name is required";
+    if (!formData.customerPhone) newErrors.customerPhone = "Customer Phone is required";
+    if (!formData.salesRep) newErrors.salesRep = "Sales Rep is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -76,16 +119,12 @@ const SaleForm = () => {
       },
     ]);
   };
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      console.log("Form submitted:", formData);
-    }
-  };
+
   const removeReceivedAmount = (index) => {
     const updatedAmounts = receivedAmounts.filter((_, i) => i !== index);
     setReceivedAmounts(updatedAmounts);
   };
+
   const handleAddCustomerClick = () => {
     navigate("/users/addCustomer");
   };
@@ -93,7 +132,6 @@ const SaleForm = () => {
   const loadCustomerOptions = async (inputValue) => {
     try {
       const response = await saleService.listUsers(inputValue);
-
       if (response.success) {
         return response.data.data.docs.map((cust) => ({
           value: cust._id,
@@ -108,11 +146,9 @@ const SaleForm = () => {
     }
   };
 
-  const [salesData, setSalesData] = useState([]);
   const loadCustomerSalesData = async (custID) => {
     try {
       const response = await saleService.sales(custID);
-
       if (response.success) {
         setSalesData(response.data.data);
       } else {
@@ -123,11 +159,37 @@ const SaleForm = () => {
     }
   };
 
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
-    useState(false);
-  const [selectedCust, setSelectedCust] = useState(null);
-  const [OrderModelVisible, setOrderModelVisible] = useState(false);
-  const [SalesOrderData, setSalesOrderData] = useState(null);
+  const fetchSalesRepData = async (storeId) => {
+    try {
+      const response = await saleService.getSalesRep(storeId);
+      if (response.success) {
+        setSalesRepData(response.data.data.docs)
+      } else {
+        console.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching stores:", error);
+    }
+  };
+
+  const checkingCouponCode = async (coupon, customerPhone, products) => {
+    try {
+      const response = await saleService.checkCouponCode(coupon, customerPhone, products);
+      if (response.success) {
+        console.log(response.data);
+      } else {
+        console.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching stores:", error);
+    }
+  };
+  
+  useEffect(() => {
+    if (defaultStore?.value) {
+      fetchSalesRepData(defaultStore?.value);
+    }
+  }, [defaultStore]);
 
   const openPrescriptionModel = (PM) => {
     setSelectedCust(PM);
@@ -149,12 +211,21 @@ const SaleForm = () => {
     setSalesOrderData(null);
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      console.log("Form submitted:", formData);
+    }
+  };
+
+  console.log(InventoryPairs)
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
       <div className="row d-flex align-items-stretch">
         {/* Left Column */}
         <div className="col-lg-9 col-md-6 col-12 p-0">
           <div className="border h-100 border-black  p-4 bg-white d-flex flex-column gap-4">
+
             {/* Customer Section */}
             <div>
               <label htmlFor="customerId" className="custom-label">
@@ -201,9 +272,8 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerName ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
+                    }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
@@ -221,9 +291,8 @@ const SaleForm = () => {
 
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerPhone ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
+                    }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
@@ -239,9 +308,8 @@ const SaleForm = () => {
                   Sales Rep
                 </label>
                 <select
-                  className={`form-select w-100 ${
-                    errors.salesRep ? "is-invalid" : ""
-                  }`}
+                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
+                    }`}
                   id="salesRep"
                   name="salesRep"
                   value={formData.salesRep}
@@ -249,11 +317,11 @@ const SaleForm = () => {
                   style={{ color: "#808080" }}
                 >
                   <option value="">Select...</option>
-                  {salesData && (
+                  {salesRepData && (
                     <>
-                      {salesData?.docs?.map((rep) => (
-                        <option key={rep.salesRep._id} value={rep.salesRep._id}>
-                          {rep.salesRep.name}
+                      {salesRepData?.map((rep) => (
+                        <option key={rep._id} value={rep._id}>
+                          {rep.name}
                         </option>
                       ))}
                     </>
@@ -265,34 +333,38 @@ const SaleForm = () => {
               </div>
             </div>
 
-            <div className="row g-4">
-              <div className="col-md-3 col-12">
-                <button
-                  type="button"
-                  className="btn border-secondary-subtle text-primary"
-                  onClick={() => openPrescriptionModel(formData.prescriptions)}
-                >
-                  View Prescriptions
-                </button>
-              </div>
-              <div className="col-md-3 col-12">
-                <button
-                  type="button"
-                  className="btn border-secondary-subtle text-primary"
-                  onClick={() => openOrderModel(salesData)}
-                >
-                  View Orders
-                </button>
-              </div>
-              <div className="col-md-3 col-12">
-                <button
-                  type="button"
-                  className="btn border-secondary-subtle text-primary"
-                  onClick={() => navigate(`/users/${formData.customerId}`)}
-                >
-                  Add Power
-                </button>
-              </div>
+            <div className="d-flex gap-2 justify-content-left w-100">
+              {formData.customerId && (
+                <>
+                  <div className="btn-container">
+                    <button
+                      type="button"
+                      className="btn border-secondary-subtle text-primary"
+                      onClick={() => openPrescriptionModel(formData.prescriptions)}
+                    >
+                      View Prescriptions
+                    </button>
+                  </div>
+                  <div className="btn-container">
+                    <button
+                      type="button"
+                      className="btn border-secondary-subtle text-primary"
+                      onClick={() => openOrderModel(salesData)}
+                    >
+                      View Orders
+                    </button>
+                  </div>
+                  <div className="btn-container">
+                    <button
+                      type="button"
+                      className="btn border-secondary-subtle text-primary"
+                      onClick={() => navigate(`/users/${formData.customerId}`)}
+                    >
+                      Add Power
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {PrescriptionModelVisible && selectedCust && (
@@ -309,127 +381,26 @@ const SaleForm = () => {
               />
             )}
 
-            <div className="d-flex gap-4 w-100">
-              <div className="w-100">
-                <label htmlFor="product" className="custom-label">
-                  Product
-                </label>
-                <select
-                  className="form-select w-100"
-                  id="product"
-                  name="product"
-                  value={formData.product}
-                  onChange={handleInputChange}
-                  style={{ color: "#808080" }}
-                >
-                  <option value="">Select...</option>
-                  <option value="prod1">Product 1</option>
-                  <option value="prod2">Product 2</option>
-                </select>
-              </div>
-            </div>
+            {!showProductSelector && (
+              <button
+                className="btn btn-sm btn-primary my-2 w-25"
+                onClick={() => setShowProductSelector(true)}
+              >
+                Add Another Pair
+              </button>
+            )}
 
-            {/* Product Table */}
-            <div
-              className="table-responsive"
-              style={{ maxHeight: "400px", overflowY: "auto" }}
-            >
-              <table className="table table-sm align-middle custom-table">
-                <thead
-                  className="text-uppercase"
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "#64748b",
-                    backgroundColor: "#f8fafc",
-                    borderTop: "1px solid #e5e7eb",
-                    borderBottom: "1px solid #e5e7eb",
-                  }}
-                >
-                  <tr>
-                    <th
-                      style={{
-                        minWidth: "80px",
-                        padding: "0.75rem 1.25rem 0.75rem 1.25rem",
-                      }}
-                      className="custom-th"
-                    >
-                      Barcode
-                    </th>
-                    <th
-                      style={{
-                        minWidth: "160px",
-                        padding: "0.75rem 0.5rem",
-                        color: "",
-                      }}
-                      className="custom-th"
-                    >
-                      SKU
-                    </th>
-                    <th
-                      style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      Photos
-                    </th>
-                    <th
-                      style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      Stock
-                    </th>
-                    <th
-                      style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      MRP
-                    </th>
-                    <th
-                      style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      SRP
-                    </th>
-                    <th
-                      style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      Tax Rate
-                    </th>
-                    <th
-                      style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      Tax Amount
-                    </th>
-                    <th
-                      style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                      className="custom-th"
-                    >
-                      Discount
-                    </th>
-                    <th
-                      style={{
-                        minWidth: "50px",
-                        padding: "0.75rem 0.5rem 0.75rem 1.25rem",
-                      }}
-                      className="custom-th"
-                    >
-                      Total Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  style={{
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <td colSpan="10" className="text-center">
-                    No products added
-                  </td>
-                </tbody>
-              </table>
-            </div>
+            {/* Product Selector */}
+            <ProductSelector
+              showProductSelector={showProductSelector}
+              defaultStore={defaultStore}
+              setInventoryData={setInventoryData}
+              setShowProductSelector={setShowProductSelector}
+              setInventoryPairs={setInventoryPairs} />
+
+            {/* Product List */}
+            <InventoryData inventoryData={inventoryData} setInventoryData={setInventoryData} setInventoryPairs={setInventoryPairs}/>
+
           </div>
         </div>
 
@@ -442,19 +413,18 @@ const SaleForm = () => {
                   Store
                 </label>
               </div>
-              <select
-                className="form-select w-100 custom-disabled custom-select"
-                id="salesRep"
-                name="salesRep"
-                value={formData.salesRep}
-                onChange={handleInputChange}
-                style={{ color: "#808080" }}
-                disabled
-              >
-                <option value="">Select...</option>
-                <option value="rep1">Rep 1</option>
-                <option value="rep2">Rep 2</option>
-              </select>
+
+              <AsyncSelect
+                cacheOptions
+                defaultOptions={filteredStores}
+                loadOptions={loadStoreOptions}
+                value={defaultStore}
+                onChange={(selected) => {
+                  setDefaultStore(selected);
+                  setFormData(prev => ({ ...prev, store: selected.label }));
+                }}
+                isDisabled={filteredStores.length === 1}
+              />
             </div>
 
             {[
@@ -480,9 +450,8 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${
-                      field.readOnly ? "custom-disabled" : ""
-                    }`}
+                    className={`form-control w-auto ${field.readOnly ? "custom-disabled" : ""
+                      }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}
@@ -704,7 +673,7 @@ const SaleForm = () => {
           </button>
         </div>
       </div>
-    </form>
+    </form >
   );
 };
 
