@@ -24,13 +24,19 @@ export const uploadImage = async (fileObje, name) => {
   const fileName = name;
 
   try {
-    const result = await uploadToMediaLibrary(
-      file,
-      location,
-      fileName,
-    );
+    const result = await uploadToMediaLibrary(file, location, fileName);
     return result?.data[0]?.key;
   } catch (error) {
     console.log('Upload failed:', error);
   }
 };
+
+export const productOptions = [
+  {value: 'eyeGlasses', label: 'Eye Glasses'},
+  {value: 'accessories', label: 'Accessories'},
+  {value: 'sunGlasses', label: 'Sunglasses'},
+  {value: 'spectacleLens', label: 'Spectacle Lens'},
+  {value: 'contactLens', label: 'Contact Lens'},
+  {value: 'readingGlasses', label: 'Reading Glasses'},
+  {value: 'contactSolutions', label: 'Contact Solutions'},
+];

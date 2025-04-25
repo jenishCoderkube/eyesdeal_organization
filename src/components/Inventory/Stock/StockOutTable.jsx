@@ -1,13 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
-import * as XLSX from "xlsx";
 import { Offcanvas } from "react-bootstrap";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
@@ -20,9 +14,16 @@ const StockOutTable = () => {
 
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
-  console.log("stockData", stockData);
+  const [showOffcanvas , setShowOffCanvas] = useState(false)
+  const [showData , setShowData] = useState([])
+
+
 
   const user = JSON.parse(localStorage.getItem("user"));
+
+  const handleCloseOffcanvas = () => { 
+    setShowOffCanvas(false)
+  }
 
   useEffect(() => {
     getCollectionData();
@@ -100,6 +101,11 @@ const StockOutTable = () => {
     }
   };
 
+  const btnClick = (item) => { 
+    setShowData(item)
+    setShowOffCanvas(true)
+  }
+
   return (
     <>
       <div className="card-body p-0">
@@ -156,7 +162,8 @@ const StockOutTable = () => {
                         <td className="d-flex align-items-center gap-2">
                           <button
                             type="button"
-                            className="btn btn-link p-0 text-primary"
+                            className="btn btn-link p-0 text-primary" 
+                            onClick={() => btnClick(item?.products)}
                           >
                             <i className="bi bi-eye"></i>
                           </button>
@@ -193,16 +200,11 @@ const StockOutTable = () => {
               </div>
             </div>
           </div>
-          {/* <ImageSliderModal
-              show={showModal}
-              onHide={closeImageModal}
-              images={modalImages}
-            /> */}
-          {/* <InventoryTable data={inventory} /> */}
+         
         </div>
       </div>
 
-      {/* <Offcanvas
+      <Offcanvas
         show={showOffcanvas}
         onHide={handleCloseOffcanvas}
         placement="end"
@@ -220,9 +222,9 @@ const StockOutTable = () => {
         </Offcanvas.Header>
         <Offcanvas.Body className="p-4">
           <div className="text-xs d-inline-flex font-medium bg-secondary-subtle text-secondary rounded-pill text-black text-center px-2 py-1 mb-4">
-            Number Of Products: {selectedProductDetails.length}
+            Number Of Products: {showData?.length}
           </div>
-          {selectedProductDetails.map((product, index) => (
+          {showData?.map((product, index) => (
             <div
               key={index}
               className="p-3 mb-2 border rounded"
@@ -230,24 +232,24 @@ const StockOutTable = () => {
             >
               <p className="my-1">
                 <span className="text-muted ">Product Name: </span>
-                {product.productName}
+                {product.productId?.displayName}
               </p>
               <p className="my-1">
                 <span className="text-muted">Product SKU: </span>
-                {product.productSku}
+                {product.productId?.productIdsku}
               </p>
               <p className="my-1">
                 <span className="text-muted">Barcode: </span>
-                {product.barcode}
+                {product.productId?.newBarcode}
               </p>
               <p className="my-1">
                 <span className="text-muted">Stock Quantity: </span>
-                {product.stockQuantity}
+                {product?.stockQuantity}
               </p>
             </div>
           ))}
         </Offcanvas.Body>
-      </Offcanvas> */}
+      </Offcanvas>
     </>
   );
 };

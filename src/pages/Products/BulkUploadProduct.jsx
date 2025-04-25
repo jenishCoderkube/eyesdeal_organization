@@ -1,7 +1,11 @@
-import React from "react";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import Select from "react-select";
+import React, {useEffect, useState} from 'react';
+import {useFormik} from 'formik';
+import * as Yup from 'yup';
+import Select from 'react-select';
+import {storeService} from '../../services/storeService';
+import {productOptions} from '../../utils/constants';
+import {uploadBulkProducts} from '../../services/bulkUpload';
+import {toast} from 'react-toastify';
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -9,13 +13,13 @@ const validationSchema = Yup.object({
 });
 
 // Dummy store options (replace with actual data if available)
-const storeOptions = [
-  { value: "eyesdeal_adajan", label: "EYESDEAL ADAJAN" },
-  { value: "eyesdeal_udhana", label: "EYESDEAL UDHANA" },
-  { value: "safent", label: "SAFENT" },
-  { value: "closed_nikol", label: "CLOSED NIKOL" },
-  { value: "elite_hospital", label: "ELITE HOSPITAL" },
-];
+// const storeOptions = [
+//   { value: "eyesdeal_adajan", label: "EYESDEAL ADAJAN" },
+//   { value: "eyesdeal_udhana", label: "EYESDEAL UDHANA" },
+//   { value: "safent", label: "SAFENT" },
+//   { value: "closed_nikol", label: "CLOSED NIKOL" },
+//   { value: "elite_hospital", label: "ELITE HOSPITAL" },
+// ];
 
 const BulkUploadProduct = () => {
   // Formik setup
@@ -25,19 +29,26 @@ const BulkUploadProduct = () => {
       bulkUploadFile: null,
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log("Bulk Upload Customers:", {
-        store: values.store,
-        file: values.bulkUploadFile,
-      });
-      formik.resetForm();
+    onSubmit: async (values) => {
+      try {
+        const response = await uploadBulkProducts(
+          values.bulkUploadFile,
+          values.store.value,
+        );
+        if (response?.success) {
+          toast.success(response.message);
+          formik.resetForm();
+        }
+      } catch (error) {
+        console.log('err', error);
+      }
     },
   });
 
   // Handle file input change
   const handleFileChange = (event) => {
     const file = event.currentTarget.files[0];
-    formik.setFieldValue("bulkUploadFile", file);
+    formik.setFieldValue('bulkUploadFile', file);
   };
 
   return (
@@ -50,23 +61,22 @@ const BulkUploadProduct = () => {
               <form
                 onSubmit={formik.handleSubmit}
                 className="d-flex flex-column"
-                style={{ gap: "1rem" }}
-              >
+                style={{gap: '1rem'}}>
                 <div className="w-100">
                   <label className="form-label font-weight-500" htmlFor="store">
                     Product Type
                   </label>
                   <Select
-                    options={storeOptions}
+                    options={productOptions}
                     value={formik.values.store}
-                    onChange={(option) => formik.setFieldValue("store", option)}
-                    onBlur={() => formik.setFieldTouched("store", true)}
+                    onChange={(option) => formik.setFieldValue('store', option)}
+                    onBlur={() => formik.setFieldTouched('store', true)}
                     placeholder="Select..."
                     classNamePrefix="react-select"
                     className={
                       formik.touched.store && formik.errors.store
-                        ? "is-invalid"
-                        : ""
+                        ? 'is-invalid'
+                        : ''
                     }
                   />
                   {formik.touched.store && formik.errors.store && (
@@ -88,8 +98,8 @@ const BulkUploadProduct = () => {
                     className={`form-control ${
                       formik.touched.bulkUploadFile &&
                       formik.errors.bulkUploadFile
-                        ? "is-invalid"
-                        : ""
+                        ? 'is-invalid'
+                        : ''
                     }`}
                     onChange={handleFileChange}
                     onBlur={formik.handleBlur}
@@ -105,8 +115,7 @@ const BulkUploadProduct = () => {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={formik.isSubmitting}
-                  >
+                    disabled={formik.isSubmitting}>
                     Submit
                   </button>
                 </div>
