@@ -20,7 +20,7 @@ export const printLogs = (msg) => {
 
 export const uploadImage = async (fileObje, name) => {
   const file = fileObje; // This should be a File object from input
-  const location = 'eyesdeal/website/stores/';
+  const location = 'eyesdeal/website/image/seo/';
   const fileName = name;
 
   try {

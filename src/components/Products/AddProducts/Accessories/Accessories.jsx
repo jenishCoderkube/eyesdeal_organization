@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "../EyeGlasses/AssetSelector";
+import { toast } from "react-toastify";
+import { productAttributeService } from "../../../../services/productAttributeService"; // Import the service
+import { uploadImage } from "../../../../utils/constants";
+import { productService } from "../../../../services/productService"; // Import the service
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -43,18 +47,59 @@ const validationSchema = Yup.object({
 });
 
 // Options for react-select
-const unitOptions = [
-  { value: "piece", label: "Piece" },
-  { value: "pair", label: "Pair" },
-];
-
-const brandOptions = [
-  { value: "brand1", label: "Brand 1" },
-  { value: "brand2", label: "Brand 2" },
-  { value: "brand3", label: "Brand 3" },
-];
 
 function Accessories({ initialData = {}, mode = "add" }) {
+  // State for loading
+  const [loading, setLoading] = useState(false);
+  const [attributeOptions, setAttributeOptions] = useState({
+    brands: [],
+    units: [],
+  });
+
+  // Fetch attribute data from API
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch brands and units
+        const brandResponse = await productAttributeService.getAttributes("brand");
+        const unitResponse = await productAttributeService.getAttributes("unit");
+
+        if (brandResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            brands: brandResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        } else {
+          console.error("Failed to fetch brand data:", brandResponse.message);
+        }
+
+        if (unitResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            units: unitResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        } else {
+          console.error("Failed to fetch unit data:", unitResponse.message);
+        }
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
+
   // Warn if model is not accessories
   if (initialData?.model && initialData.model !== "accessories") {
     console.warn(
@@ -118,15 +163,54 @@ function Accessories({ initialData = {}, mode = "add" }) {
   };
 
   // Handle form submission
-  const handleSubmit = (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    if (mode === "edit") {
-      console.log("Editing product ID:", initialData?.id);
-      // Simulate API call: axios.put(`/api/products/${initialData.id}`, values)
-    } else {
-      // Simulate API call: axios.post('/api/products', values)
+    setSubmitting(true);
+    
+    try {
+      // Handle image upload for seoImage
+      if (values.seoImage instanceof File) {
+        const res = await uploadImage(values.seoImage, values.seoImage.name);
+        values.seoImage = `eyesdeal/website/image/seo/${values.seoImage.name}`; // Set the path
+      }
+
+      // Prepare the payload
+      const payload = {
+        ...values,
+        // Ensure oldBarcode is a number or null
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        // Ensure these fields are properly formatted
+        features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
+        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+      };
+
+      if (mode === "edit") {
+        // Call the update API
+        const response = await productService.updateAccessories(initialData?.id, payload);
+        
+        if (response.success) {
+          toast.success("Product updated successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to update product");
+        }
+      } else {
+        // Call the add API
+        const response = await productService.addProduct(payload, "accessories");
+        
+        if (response.success) {
+          toast.success("Product added successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to add product");
+        }
+      }
+    } catch (error) {
+      console.error("Error in product operation:", error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -215,11 +299,11 @@ function Accessories({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="unit"
-                options={unitOptions}
+                options={attributeOptions.units}
                 onChange={(option) =>
                   setFieldValue("unit", option ? option.value : "")
                 }
-                value={unitOptions.find(
+                value={attributeOptions.units.find(
                   (option) => option.value === values.unit
                 )}
                 placeholder="Select..."
@@ -256,11 +340,11 @@ function Accessories({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="brand"
-                options={brandOptions}
+                options={attributeOptions.brands}
                 onChange={(option) =>
                   setFieldValue("brand", option ? option.value : "")
                 }
-                value={brandOptions.find(
+                value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
@@ -445,9 +529,12 @@ function Accessories({ initialData = {}, mode = "add" }) {
                     type="file"
                     name="seoImage"
                     className="form-control"
-                    onChange={(event) =>
-                      setFieldValue("seoImage", event.currentTarget.files[0])
-                    }
+                    onChange={(event) => {
+                      const file = event.currentTarget.files[0];
+                      if (file) {
+                        setFieldValue("seoImage", file); // Set the file for upload
+                      }
+                    }}
                   />
                   <ErrorMessage
                     name="seoImage"

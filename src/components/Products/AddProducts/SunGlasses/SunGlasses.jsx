@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "../EyeGlasses/AssetSelector";
+import { productAttributeService } from "../../../../services/productAttributeService";
+import { toast } from "react-toastify";
+import { productService } from "../../../../services/productService";
+import { uploadImage } from "../../../../utils/constants";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -40,9 +44,9 @@ const validationSchema = Yup.object({
   colorNumber: Yup.string(),
   lensTechnology: Yup.string(),
   lensColor: Yup.string(),
-  frameType: Yup.string(),
-  frameShape: Yup.string(),
-  frameStyle: Yup.string(),
+  frameType: Yup.string().required("Frame Type is required"),
+  frameShape: Yup.string().required("Frame Shape is required"),
+  frameStyle: Yup.string().required("Frame Style is required"),
   templeMaterial: Yup.string(),
   frameMaterial: Yup.string(),
   frameColor: Yup.string(),
@@ -59,6 +63,8 @@ const validationSchema = Yup.object({
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
   photos: Yup.string(),
+  color: Yup.string().required("Color is required"),
+  material: Yup.string().required("Material is required"),
 });
 
 // Options for react-select
@@ -104,9 +110,9 @@ const frameStyleOptions = [
 ];
 
 const materialOptions = [
-  { value: "metal", label: "Metal" },
-  { value: "plastic", label: "Plastic" },
-  { value: "acetate", label: "Acetate" },
+  { value: "1", label: "Metal" },
+  { value: "2", label: "Plastic" },
+  { value: "3", label: "Acetate" },
 ];
 
 const colorOptions = [
@@ -147,8 +153,6 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
     );
   }
   // State for toggle sections
-
-  // State for toggle sections
   const [showSections, setShowSections] = useState({
     seoDetails: false,
     productDetails: false,
@@ -164,6 +168,135 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         : initialData.photos
       : null
   );
+
+  const [attributeOptions, setAttributeOptions] = useState({
+    brands: [],
+    units: [],
+    colors: [],
+    materials: [],
+    frameTypes: [],
+    frameShapes: [],
+    frameStyles: [],
+    prescriptionTypes: [],
+  });
+
+  // State for loading
+  const [loading, setLoading] = useState(false);
+
+  // Fetch attribute data from API
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        setLoading(true);
+        const brandResponse = await productAttributeService.getAttributes("brand");
+        const unitResponse = await productAttributeService.getAttributes("unit");
+        const colorResponse = await productAttributeService.getAttributes("color");
+        const materialResponse = await productAttributeService.getAttributes("material");
+        const frameTypeResponse = await productAttributeService.getAttributes("frameType");
+        const frameShapeResponse = await productAttributeService.getAttributes("frameShape");
+        const frameStyleResponse = await productAttributeService.getAttributes("frameStyle");
+        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
+        const collectionResponse = await productAttributeService.getAttributes("collection");
+
+        if (brandResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            brands: brandResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (unitResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            units: unitResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (colorResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            colors: colorResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (materialResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            materials: materialResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (frameTypeResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            frameTypes: frameTypeResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (frameShapeResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            frameShapes: frameShapeResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (frameStyleResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            frameStyles: frameStyleResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (prescriptionTypeResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            prescriptionTypes: prescriptionTypeResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+
+        if (collectionResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            frameCollections: collectionResponse.data.map(item => ({
+              value: item._id,
+              label: item.name,
+            })),
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
 
   // Toggle section visibility
   const toggleSection = (section) => {
@@ -222,25 +355,79 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         ? initialData.photos[0]
         : initialData.photos
       : "",
+    color: initialData?.color || "",
+    material: initialData?.material || "",
   };
 
   // Handle form submission
-  const handleSubmit = (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    if (mode === "edit") {
-      console.log("Editing product ID:", initialData?.id);
-      // Simulate API call: axios.put(`/api/products/${initialData.id}`, values)
-    } else {
-      // Simulate API call: axios.post('/api/products', values)
+    setSubmitting(true);
+
+    try {
+      // Handle image upload for seoImage
+      if (values.seoImage instanceof File) {
+        const res = await uploadImage(values.seoImage, values.seoImage.name);
+        values.seoImage = res; // Set the URL in the form values
+      }
+
+      // Prepare the payload
+      const payload = {
+        ...values,
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        templeMaterial: values.templeMaterial,
+        frameMaterial: values.frameMaterial,
+        templeColor: values.templeColor,
+        frameColor: values.frameColor,
+        frameCollection: values.frameCollection,
+        features: Array.isArray(values.features) ? values.features.map(feature => feature.value) : [],
+        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+      };
+
+      if (mode === "edit") {
+        const response = await productService.updateProduct("sunglasses", initialData?.id, payload);
+        
+        if (response.success) {
+          toast.success("Product updated successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to update product");
+        }
+      } else {
+        const response = await productService.addProduct(payload, "sunglasses");
+        
+        if (response.success) {
+          toast.success("Product added successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to add product");
+        }
+      }
+    } catch (error) {
+      console.error("Error in product operation:", error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
+
+  // Display loading state while fetching options
+  if (loading && attributeOptions.brands.length === 0) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="ms-3">Loading form data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-0 mt-5  mx-auto">
       <Formik
         initialValues={initialValues}
-        validationSchema={validationSchema}
+        // validationSchema={validationSchema}
         onSubmit={handleSubmit}
         enableReinitialize={true}
       >
@@ -277,11 +464,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="brand"
-                options={brandOptions}
+                options={attributeOptions.brands}
                 onChange={(option) =>
                   setFieldValue("brand", option ? option.value : "")
                 }
-                value={brandOptions.find(
+                value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
@@ -348,11 +535,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="unit"
-                options={unitOptions}
+                options={attributeOptions.units}
                 onChange={(option) =>
                   setFieldValue("unit", option ? option.value : "")
                 }
-                value={unitOptions.find(
+                value={attributeOptions.units.find(
                   (option) => option.value === values.unit
                 )}
                 placeholder="Select..."
@@ -733,11 +920,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameType"
-                    options={frameTypeOptions}
+                    options={attributeOptions.frameTypes}
                     onChange={(option) =>
                       setFieldValue("frameType", option ? option.value : "")
                     }
-                    value={frameTypeOptions.find(
+                    value={attributeOptions.frameTypes.find(
                       (option) => option.value === values.frameType
                     )}
                     placeholder="Select..."
@@ -758,11 +945,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameShape"
-                    options={frameShapeOptions}
+                    options={attributeOptions.frameShapes}
                     onChange={(option) =>
                       setFieldValue("frameShape", option ? option.value : "")
                     }
-                    value={frameShapeOptions.find(
+                    value={attributeOptions.frameShapes.find(
                       (option) => option.value === values.frameShape
                     )}
                     placeholder="Select..."
@@ -783,11 +970,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameStyle"
-                    options={frameStyleOptions}
+                    options={attributeOptions.frameStyles}
                     onChange={(option) =>
                       setFieldValue("frameStyle", option ? option.value : "")
                     }
-                    value={frameStyleOptions.find(
+                    value={attributeOptions.frameStyles.find(
                       (option) => option.value === values.frameStyle
                     )}
                     placeholder="Select..."
@@ -808,14 +995,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeMaterial"
-                    options={materialOptions}
+                    options={attributeOptions.materials}
                     onChange={(option) =>
-                      setFieldValue(
-                        "templeMaterial",
-                        option ? option.value : ""
-                      )
+                      setFieldValue("templeMaterial", option ? option.value : "")
                     }
-                    value={materialOptions.find(
+                    value={attributeOptions.materials.find(
                       (option) => option.value === values.templeMaterial
                     )}
                     placeholder="Select..."
@@ -836,11 +1020,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameMaterial"
-                    options={materialOptions}
+                    options={attributeOptions.materials}
                     onChange={(option) =>
                       setFieldValue("frameMaterial", option ? option.value : "")
                     }
-                    value={materialOptions.find(
+                    value={attributeOptions.materials.find(
                       (option) => option.value === values.frameMaterial
                     )}
                     placeholder="Select..."
@@ -861,11 +1045,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameColor"
-                    options={colorOptions}
+                    options={attributeOptions.colors}
                     onChange={(option) =>
                       setFieldValue("frameColor", option ? option.value : "")
                     }
-                    value={colorOptions.find(
+                    value={attributeOptions.colors.find(
                       (option) => option.value === values.frameColor
                     )}
                     placeholder="Select..."
@@ -886,11 +1070,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeColor"
-                    options={colorOptions}
+                    options={attributeOptions.colors}
                     onChange={(option) =>
                       setFieldValue("templeColor", option ? option.value : "")
                     }
-                    value={colorOptions.find(
+                    value={attributeOptions.colors.find(
                       (option) => option.value === values.templeColor
                     )}
                     placeholder="Select..."
@@ -983,14 +1167,14 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="prescriptionType"
-                    options={prescriptionTypeOptions}
+                    options={attributeOptions.prescriptionTypes}
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
                         option ? option.value : ""
                       )
                     }
-                    value={prescriptionTypeOptions.find(
+                    value={attributeOptions.prescriptionTypes.find(
                       (option) => option.value === values.prescriptionType
                     )}
                     placeholder="Select..."
@@ -1011,14 +1195,14 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameCollection"
-                    options={frameCollectionOptions}
+                    options={attributeOptions.frameCollections}
                     onChange={(option) =>
                       setFieldValue(
                         "frameCollection",
                         option ? option.value : ""
                       )
                     }
-                    value={frameCollectionOptions.find(
+                    value={attributeOptions.frameCollections.find(
                       (option) => option.value === values.frameCollection
                     )}
                     placeholder="Select..."

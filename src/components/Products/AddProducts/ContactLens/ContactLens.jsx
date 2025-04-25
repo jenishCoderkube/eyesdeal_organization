@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "../EyeGlasses/AssetSelector";
+import { productAttributeService } from "../../../../services/productAttributeService";
+import { toast } from "react-toastify";
+import { productService } from "../../../../services/productService";
+import { uploadImage } from "../../../../utils/constants";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -130,6 +134,83 @@ function ContactLens({ initialData = {}, mode = "add" }) {
       : null
   );
 
+  // State for loading
+  const [loading, setLoading] = useState(false);
+
+  // State for attribute options
+  const [attributeOptions, setAttributeOptions] = useState({
+    brands: [],
+    units: [],
+    disposability: [],
+    lensTechnology: [],
+    prescriptionType: [],
+    features: [],
+  });
+
+  // Fetch attribute data from API
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        setLoading(true);
+        const brandResponse = await productAttributeService.getAttributes("brand");
+        const unitResponse = await productAttributeService.getAttributes("unit");
+        const disposabilityResponse = await productAttributeService.getAttributes("disposability");
+        const lensTechnologyResponse = await productAttributeService.getAttributes("lensTechnology");
+        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
+        const featuresResponse = await productAttributeService.getAttributes("features");
+
+        if (brandResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            brands: brandResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+
+        if (unitResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            units: unitResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+
+        if (disposabilityResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            disposability: disposabilityResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+
+        if (lensTechnologyResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            lensTechnology: lensTechnologyResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+
+        if (prescriptionTypeResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            prescriptionType: prescriptionTypeResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+
+        if (featuresResponse.success) {
+          setAttributeOptions((prev) => ({
+            ...prev,
+            features: featuresResponse.data.map(item => ({ value: item._id, label: item.name })),
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
+
   // Toggle section visibility
   const toggleSection = (section) => {
     setShowSections((prev) => ({
@@ -182,15 +263,43 @@ function ContactLens({ initialData = {}, mode = "add" }) {
   };
 
   // Handle form submission
-  const handleSubmit = (values, { setSubmitting }) => {
-    console.log(`${mode} values:`, values);
-    if (mode === "edit") {
-      console.log("Editing product ID:", initialData?.id);
-      // Simulate API call: axios.put(`/api/products/${initialData.id}`, values)
-    } else {
-      // Simulate API call: axios.post('/api/products', values)
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+    console.log("Submitting values:", values);
+    setSubmitting(true);
+
+    try {
+      // Handle image upload for seoImage
+      if (values.seoImage instanceof File) {
+        const res = await uploadImage(values.seoImage, values.seoImage.name);
+        values.seoImage = res; // Set the URL in the form values
+      }
+
+      // Prepare the payload
+      const payload = {
+        ...values,
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+      };
+
+      let response;
+      if (mode === "edit") {
+        console.log("Editing product ID:", initialData?.id);
+        response = await productService.updateContactLens(initialData?.id, payload);
+      } else {
+        response = await productService.addProduct(payload, "contactLens");
+      }
+
+      if (response.success) {
+        toast.success(`Product ${mode === "edit" ? "updated" : "added"} successfully`);
+        resetForm();
+      } else {
+        toast.error(response.message || "Failed to process your request");
+      }
+    } catch (error) {
+      console.error("Error in product operation:", error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -249,11 +358,11 @@ function ContactLens({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="brand"
-                options={brandOptions}
+                options={attributeOptions.brands}
                 onChange={(option) =>
                   setFieldValue("brand", option ? option.value : "")
                 }
-                value={brandOptions.find(
+                value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
@@ -305,11 +414,11 @@ function ContactLens({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="disposability"
-                options={disposabilityOptions}
+                options={attributeOptions.disposability}
                 onChange={(option) =>
                   setFieldValue("disposability", option ? option.value : "")
                 }
-                value={disposabilityOptions.find(
+                value={attributeOptions.disposability.find(
                   (option) => option.value === values.disposability
                 )}
                 placeholder="Select..."
@@ -346,11 +455,11 @@ function ContactLens({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="unit"
-                options={unitOptions}
+                options={attributeOptions.units}
                 onChange={(option) =>
                   setFieldValue("unit", option ? option.value : "")
                 }
-                value={unitOptions.find(
+                value={attributeOptions.units.find(
                   (option) => option.value === values.unit
                 )}
                 placeholder="Select..."
@@ -583,14 +692,14 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="lensTechnology"
-                    options={lensTechnologyOptions}
+                    options={attributeOptions.lensTechnology}
                     onChange={(option) =>
                       setFieldValue(
                         "lensTechnology",
                         option ? option.value : ""
                       )
                     }
-                    value={lensTechnologyOptions.find(
+                    value={attributeOptions.lensTechnology.find(
                       (option) => option.value === values.lensTechnology
                     )}
                     placeholder="Select..."
@@ -733,14 +842,14 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="prescriptionType"
-                    options={prescriptionTypeOptions}
+                    options={attributeOptions.prescriptionType}
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
                         option ? option.value : ""
                       )
                     }
-                    value={prescriptionTypeOptions.find(
+                    value={attributeOptions.prescriptionType.find(
                       (option) => option.value === values.prescriptionType
                     )}
                     placeholder="Select..."
@@ -752,31 +861,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     className="text-danger text-sm"
                   />
                 </div>
-                <div>
-                  <label
-                    className="form-label font-weight-600 text-sm font-medium"
-                    htmlFor="features"
-                  >
-                    Lens Features
-                  </label>
-                  <Select
-                    name="features"
-                    options={featuresOptions}
-                    onChange={(option) =>
-                      setFieldValue("features", option ? option.value : "")
-                    }
-                    value={featuresOptions.find(
-                      (option) => option.value === values.features
-                    )}
-                    placeholder="Select..."
-                    classNamePrefix="react-select"
-                  />
-                  <ErrorMessage
-                    name="features"
-                    component="div"
-                    className="text-danger text-sm"
-                  />
-                </div>
+             
                 <div>
                   <label
                     className="form-label font-weight-600 text-sm font-medium"

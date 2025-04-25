@@ -3,9 +3,11 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "./AssetSelector";
-import { productService } from "../../../../services/productService";
-import { productAttributeService } from "../../../../services/productAttributeService";
+
 import { toast } from "react-toastify";
+import { uploadImage } from "../../../../utils/constants";
+import { productAttributeService } from "../../../../services/productAttributeService";
+import { productService } from "../../../../services/productService";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -100,7 +102,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
   // State for loading
   const [loading, setLoading] = useState(false);
   
-  // State for dropdown options from API
+  // State for attribute options
   const [attributeOptions, setAttributeOptions] = useState({
     brands: [],
     units: [],
@@ -111,7 +113,9 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     colors: [],
     prescriptionTypes: [],
     collections: [],
-    features: []
+    features: [],
+    frameColors: [],
+    frameCollections: [],
   });
 
   // Fetch attribute data from API
@@ -124,7 +128,8 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         // Fetch all necessary attributes for the form
         const attributeTypes = [
           "brand", "unit", "frameType", "frameShape", "frameStyle", 
-          "material", "color", "prescriptionType", "collection", "feature"
+          "material", "color", "prescriptionType", "collection", "feature",
+          "frameColor", "frameCollection"
         ];
         
         const attributeData = {};
@@ -151,7 +156,9 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
           colors: attributeData.color || [],
           prescriptionTypes: attributeData.prescriptionType || [],
           collections: attributeData.collection || [],
-          features: attributeData.feature || []
+          features: attributeData.feature || [],
+          frameColors: attributeData.frameColor || [],
+          frameCollections: attributeData.frameCollection || [],
         });
         
       } catch (error) {
@@ -222,39 +229,41 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       : "",
   };
 
-  // Handle form submission with API call
+  // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    // if (values.prescriptionType === "") {
-    //   values.prescriptionType = null; // or omit it from the payload
-    // }
-    setLoading(true);
+    setSubmitting(true);
     
     try {
+      // Handle image upload for seoImage
+      if (values.seoImage instanceof File) {
+        const res = await uploadImage(values.seoImage, values.seoImage.name);
+        values.seoImage = res; // Set the URL in the form values
+      }
+
+      // Prepare the payload
+      const payload = {
+        ...values,
+        // Ensure these fields are properly formatted
+        features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
+        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+      };
+
       if (mode === "edit") {
         console.log("Editing product ID:", initialData?.id);
-        // Call update API
-        const response = await productService.updateEyeGlasses(initialData?.id, values);
+        // Call the update API
+        const response = await productService.updateEyeGlasses(initialData?.id, payload);
         
         if (response.success) {
           toast.success("Product updated successfully");
+          resetForm();
           console.log("Update response:", response.data);
         } else {
           toast.error(response.message || "Failed to update product");
         }
       } else {
-        // Format values for API if needed
-        const formattedValues = {
-          ...values,
-          // Ensure these fields are properly formatted
-          features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
-          photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
-        };
-        
-        console.log("Formatted API payload:", formattedValues);
-        
-        // Call add API
-        const response = await productService.addEyeGlasses(formattedValues);
+        // Call the add API
+        const response = await productService.addProduct(payload,"eyeGlasses");
         
         if (response.success) {
           toast.success("Product added successfully");
@@ -268,7 +277,6 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       console.error("Error in product operation:", error);
       toast.error("An error occurred while processing your request");
     } finally {
-      setLoading(false);
       setSubmitting(false);
     }
   };
@@ -616,11 +624,12 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     type="file"
                     name="seoImage"
                     className="form-control"
-                    onChange={(event) => {
-                      const fileName = event.currentTarget.files[0]?.name || '';
-                      // Format the path as required by the API
-                      const formattedPath = `eyesdeal/website/image/seo/${fileName}`;
-                      setFieldValue("seoImage", formattedPath);
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                          const res = await uploadImage(file, file.name); 
+                          setFieldValue("seoImage", res); 
+                      }
                     }}
                   />
                   <small className="form-text text-muted">

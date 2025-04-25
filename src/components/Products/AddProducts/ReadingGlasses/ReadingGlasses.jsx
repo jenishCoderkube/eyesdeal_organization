@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "../EyeGlasses/AssetSelector";
+import { productAttributeService } from "../../../../services/productAttributeService";
+import { toast } from "react-toastify";
+import { productService } from "../../../../services/productService";
+import { uploadImage } from "../../../../utils/constants"; // Adjust the path as necessary
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -35,7 +39,7 @@ const validationSchema = Yup.object({
   seoImage: Yup.mixed(),
   warranty: Yup.string(),
   description: Yup.string(),
-  features: Yup.string(),
+  // features: Yup.string(),
   gender: Yup.string(),
   modelNumber: Yup.string(),
   colorNumber: Yup.string(),
@@ -50,7 +54,7 @@ const validationSchema = Yup.object({
   templeColor: Yup.string(),
   prescriptionType: Yup.string(),
   frameCollection: Yup.string(),
-  frameSize: Yup.string(),
+  frameSize: Yup.string().required("Frame Size is required"),
   frameWidth: Yup.string(),
   frameDimensions: Yup.string(),
   weight: Yup.string(),
@@ -194,6 +198,198 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
       : null
   );
 
+  const [loading, setLoading] = useState(false);
+
+  // State for attribute options
+  const [attributeOptions, setAttributeOptions] = useState({
+    brands: [],
+    units: [],
+    lensTechnology: [],
+    readingPower: [],
+    frameType: [],
+    frameShape: [],
+    frameStyle: [],
+    templeMaterial: [],
+    frameMaterial: [],
+    frameColor: [],
+    templeColor: [],
+    prescriptionType: [],
+    frameCollection: [],
+    frameSize: [],
+    features: [],
+    gender: [],
+  });
+
+  // Fetch attribute data from API
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        setLoading(true);
+        const attributeData = {};
+
+        // Fetching attributes from the respective endpoints
+        const brandResponse = await productAttributeService.getAttributes("brand");
+        const unitResponse = await productAttributeService.getAttributes("unit");
+        const lensTechnologyResponse = await productAttributeService.getAttributes("lensTechnology");
+        const readingPowerResponse = await productAttributeService.getAttributes("readingPower");
+        const frameTypeResponse = await productAttributeService.getAttributes("frameType");
+        const frameShapeResponse = await productAttributeService.getAttributes("frameShape");
+        const frameStyleResponse = await productAttributeService.getAttributes("frameStyle");
+        const templeMaterialResponse = await productAttributeService.getAttributes("material"); // Using /master/material
+        const frameMaterialResponse = await productAttributeService.getAttributes("material"); // Using /master/material
+        const frameColorResponse = await productAttributeService.getAttributes("color"); // Using /master/color
+        const templeColorResponse = await productAttributeService.getAttributes("color"); // Using /master/color
+        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
+        const frameCollectionResponse = await productAttributeService.getAttributes("collection");
+        const frameSizeResponse = await productAttributeService.getAttributes("frameSize");
+        const featuresResponse = await productAttributeService.getAttributes("feature");
+        const genderResponse = await productAttributeService.getAttributes("gender");
+
+        // Mapping responses to state
+        if (brandResponse.success) {
+          attributeData.brand = brandResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (unitResponse.success) {
+          attributeData.unit = unitResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (lensTechnologyResponse.success) {
+          attributeData.lensTechnology = lensTechnologyResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (readingPowerResponse.success) {
+          attributeData.readingPower = readingPowerResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameTypeResponse.success) {
+          attributeData.frameType = frameTypeResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameShapeResponse.success) {
+          attributeData.frameShape = frameShapeResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameStyleResponse.success) {
+          attributeData.frameStyle = frameStyleResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (templeMaterialResponse.success) {
+          attributeData.templeMaterial = templeMaterialResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameMaterialResponse.success) {
+          attributeData.frameMaterial = frameMaterialResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameColorResponse.success) {
+          attributeData.frameColor = frameColorResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (templeColorResponse.success) {
+          attributeData.templeColor = templeColorResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (prescriptionTypeResponse.success) {
+          attributeData.prescriptionType = prescriptionTypeResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameCollectionResponse.success) {
+          attributeData.frameCollection = frameCollectionResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (frameSizeResponse.success) {
+          attributeData.frameSize = frameSizeResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (featuresResponse.success) {
+          attributeData.features = featuresResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+        if (genderResponse.success) {
+          attributeData.gender = genderResponse.data.map(item => ({ value: item._id, label: item.name }));
+        }
+
+        // Set attribute options
+        setAttributeOptions({
+          brands: attributeData.brand || [],
+          units: attributeData.unit || [],
+          lensTechnology: attributeData.lensTechnology || [],
+          readingPower: attributeData.readingPower || [],
+          frameType: attributeData.frameType || [],
+          frameShape: attributeData.frameShape || [],
+          frameStyle: attributeData.frameStyle || [],
+          templeMaterial: attributeData.templeMaterial || [],
+          frameMaterial: attributeData.frameMaterial || [],
+          frameColor: attributeData.frameColor || [],
+          templeColor: attributeData.templeColor || [],
+          prescriptionType: attributeData.prescriptionType || [],
+          frameCollection: attributeData.frameCollection || [],
+          frameSize: attributeData.frameSize || [],
+          features: attributeData.features || [],
+          gender: attributeData.gender || [],
+        });
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
+
+  // Function to return static options based on attribute type
+  const getStaticOptions = (type) => {
+    switch (type) {
+      case "brand":
+        return [
+          { value: "brand1", label: "Brand 1" },
+          { value: "brand2", label: "Brand 2" },
+          { value: "brand3", label: "Brand 3" },
+        ];
+      case "unit":
+        return [
+          { value: "piece", label: "Piece" },
+          { value: "pair", label: "Pair" },
+        ];
+      case "lensTechnology":
+        return [
+          { value: "polycarbonate", label: "Polycarbonate" },
+          { value: "highIndex", label: "High Index" },
+          { value: "plastic", label: "Plastic" },
+        ];
+      case "templeMaterial":
+        return [
+          { value: "metal", label: "Metal" },
+          { value: "plastic", label: "Plastic" },
+          { value: "acetate", label: "Acetate" },
+        ];
+      case "frameMaterial":
+        return [
+          { value: "metal", label: "Metal" },
+          { value: "plastic", label: "Plastic" },
+          { value: "acetate", label: "Acetate" },
+          { value: "titanium", label: "Titanium" },
+        ];
+      case "frameColor":
+        return [
+          { value: "black", label: "Black" },
+          { value: "brown", label: "Brown" },
+          { value: "blue", label: "Blue" },
+          { value: "red", label: "Red" },
+        ];
+      case "templeColor":
+        return [
+          { value: "black", label: "Black" },
+          { value: "brown", label: "Brown" },
+          { value: "blue", label: "Blue" },
+          { value: "red", label: "Red" },
+        ];
+      case "frameCollection":
+        return [
+          { value: "premium", label: "Premium" },
+          { value: "standard", label: "Standard" },
+          { value: "budget", label: "Budget" },
+        ];
+      case "frameSize":
+        return [
+          { value: "small", label: "Small" },
+          { value: "medium", label: "Medium" },
+          { value: "large", label: "Large" },
+        ];
+      // Add other cases for remaining attribute types...
+      default:
+        return [];
+    }
+  };
+
   // Toggle section visibility
   const toggleSection = (section) => {
     setShowSections((prev) => ({
@@ -254,16 +450,48 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
   };
 
   // Handle form submission
-  const handleSubmit = (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    if (mode === "edit") {
-      console.log("Editing product ID:", initialData?.id);
-      // Simulate API call: axios.put(`/api/products/${initialData.id}`, values)
-    } else {
-      // Simulate API call: axios.post('/api/products', values)
+    setSubmitting(true);
+
+    try {
+      // Handle image upload for seoImage
+      if (values.seoImage instanceof File) {
+        const res = await uploadImage(values.seoImage, values.seoImage.name);
+        values.seoImage = res; // Set the URL in the form values
+      }
+
+      // Prepare the payload
+      const payload = {
+        ...values,
+        features: Array.isArray(values.features) ? values.features : [values.features],
+        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+      };
+
+      // Call the appropriate API based on mode
+      let response;
+      if (mode === "edit") {
+        console.log("Editing product ID:", initialData?.id);
+        response = await productService.updateEyeGlasses(initialData?.id, payload);
+      } else {
+        response = await productService.addProduct(payload, "readingGlasses");
+      }
+
+      if (response.success) {
+        toast.success(`Product ${mode === "edit" ? "updated" : "added"} successfully`);
+        resetForm();
+        console.log(`${mode === "edit" ? "Update" : "Add"} response:`, response.data);
+      } else {
+        toast.error(response.message || `Failed to ${mode === "edit" ? "update" : "add"} product`);
+      }
+    } catch (error) {
+      console.error("Error in product operation:", error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
+
   return (
     <div className="p-0 mt-5 mx-auto">
       <Formik
@@ -305,11 +533,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="brand"
-                options={brandOptions}
+                options={attributeOptions.brands}
                 onChange={(option) =>
                   setFieldValue("brand", option ? option.value : "")
                 }
-                value={brandOptions.find(
+                value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
@@ -391,11 +619,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
               </label>
               <Select
                 name="unit"
-                options={unitOptions}
+                options={attributeOptions.units}
                 onChange={(option) =>
                   setFieldValue("unit", option ? option.value : "")
                 }
-                value={unitOptions.find(
+                value={attributeOptions.units.find(
                   (option) => option.value === values.unit
                 )}
                 placeholder="Select..."
@@ -643,13 +871,12 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="features"
-                    options={featuresOptions}
-                    onChange={(option) =>
-                      setFieldValue("features", option ? option.value : "")
+                    options={attributeOptions.features}
+                    isMulti
+                    onChange={(options) =>
+                      setFieldValue("features", options ? options.map(option => option.value) : [])
                     }
-                    value={featuresOptions.find(
-                      (option) => option.value === values.features
-                    )}
+                    value={attributeOptions.features.filter(option => values.features.includes(option.value))}
                     placeholder="Select..."
                     classNamePrefix="react-select"
                   />
@@ -729,14 +956,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="lensTechnology"
-                    options={lensTechnologyOptions}
+                    options={attributeOptions.lensTechnology}
                     onChange={(option) =>
                       setFieldValue(
                         "lensTechnology",
                         option ? option.value : ""
                       )
                     }
-                    value={lensTechnologyOptions.find(
+                    value={attributeOptions.lensTechnology.find(
                       (option) => option.value === values.lensTechnology
                     )}
                     placeholder="Select..."
@@ -793,11 +1020,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameType"
-                    options={frameTypeOptions}
+                    options={attributeOptions.frameType}
                     onChange={(option) =>
                       setFieldValue("frameType", option ? option.value : "")
                     }
-                    value={frameTypeOptions.find(
+                    value={attributeOptions.frameType.find(
                       (option) => option.value === values.frameType
                     )}
                     placeholder="Select..."
@@ -818,11 +1045,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameShape"
-                    options={frameShapeOptions}
+                    options={attributeOptions.frameShape}
                     onChange={(option) =>
                       setFieldValue("frameShape", option ? option.value : "")
                     }
-                    value={frameShapeOptions.find(
+                    value={attributeOptions.frameShape.find(
                       (option) => option.value === values.frameShape
                     )}
                     placeholder="Select..."
@@ -843,11 +1070,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameStyle"
-                    options={frameStyleOptions}
+                    options={attributeOptions.frameStyle}
                     onChange={(option) =>
                       setFieldValue("frameStyle", option ? option.value : "")
                     }
-                    value={frameStyleOptions.find(
+                    value={attributeOptions.frameStyle.find(
                       (option) => option.value === values.frameStyle
                     )}
                     placeholder="Select..."
@@ -868,14 +1095,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeMaterial"
-                    options={templeMaterialOptions}
+                    options={attributeOptions.templeMaterial}
                     onChange={(option) =>
                       setFieldValue(
                         "templeMaterial",
                         option ? option.value : ""
                       )
                     }
-                    value={templeMaterialOptions.find(
+                    value={attributeOptions.templeMaterial.find(
                       (option) => option.value === values.templeMaterial
                     )}
                     placeholder="Select..."
@@ -896,11 +1123,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameMaterial"
-                    options={frameMaterialOptions}
+                    options={attributeOptions.frameMaterial}
                     onChange={(option) =>
                       setFieldValue("frameMaterial", option ? option.value : "")
                     }
-                    value={frameMaterialOptions.find(
+                    value={attributeOptions.frameMaterial.find(
                       (option) => option.value === values.frameMaterial
                     )}
                     placeholder="Select..."
@@ -921,11 +1148,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameColor"
-                    options={frameColorOptions}
+                    options={attributeOptions.frameColor}
                     onChange={(option) =>
                       setFieldValue("frameColor", option ? option.value : "")
                     }
-                    value={frameColorOptions.find(
+                    value={attributeOptions.frameColor.find(
                       (option) => option.value === values.frameColor
                     )}
                     placeholder="Select..."
@@ -946,11 +1173,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="templeColor"
-                    options={templeColorOptions}
+                    options={attributeOptions.templeColor}
                     onChange={(option) =>
                       setFieldValue("templeColor", option ? option.value : "")
                     }
-                    value={templeColorOptions.find(
+                    value={attributeOptions.templeColor.find(
                       (option) => option.value === values.templeColor
                     )}
                     placeholder="Select..."
@@ -971,14 +1198,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="prescriptionType"
-                    options={prescriptionTypeOptions}
+                    options={attributeOptions.prescriptionType}
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
                         option ? option.value : ""
                       )
                     }
-                    value={prescriptionTypeOptions.find(
+                    value={attributeOptions.prescriptionType.find(
                       (option) => option.value === values.prescriptionType
                     )}
                     placeholder="Select..."
@@ -999,14 +1226,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameCollection"
-                    options={frameCollectionOptions}
+                    options={attributeOptions.frameCollection}
                     onChange={(option) =>
                       setFieldValue(
                         "frameCollection",
                         option ? option.value : ""
                       )
                     }
-                    value={frameCollectionOptions.find(
+                    value={attributeOptions.frameCollection.find(
                       (option) => option.value === values.frameCollection
                     )}
                     placeholder="Select..."
@@ -1023,7 +1250,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     className="form-label font-weight-600 text-sm font-medium"
                     htmlFor="frameSize"
                   >
-                    Frame Size
+                    Frame Size <span className="text-danger">*</span>
                   </label>
                   <Select
                     name="frameSize"
