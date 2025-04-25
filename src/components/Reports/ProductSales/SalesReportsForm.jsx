@@ -67,8 +67,8 @@ const SalesReportsForm = ({ onSubmit }) => {
     initialValues: {
       store: null,
       brand: null,
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);

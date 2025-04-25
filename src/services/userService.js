@@ -15,6 +15,15 @@ const USER_ENDPOINTS = {
   GET_OTP: "/otp",
   GET_VENDORS: "/vendors",
   ADD_VENDOR: "/vendors",
+  UPDATE_VENDOR: "/vendors",
+  GET_VENDOR_BY_ID: "/vendors",
+  DELETE_VENDOR: "/vendors",
+  GET_MARKETING_REFERENCES: "/user/marketingReferences",
+  GET_MARKETING_REFERENCE_BY_ID: "/user/marketingReferences",
+  ADD_MARKETING_REFERENCE: "/user/marketingReferences",
+  UPDATE_MARKETING_REFERENCE: "/user/marketingReferences",
+  DELETE_MARKETING_REFERENCE: "/user/marketingReferences",
+  IS_MARKETING_REFERENCE_EXISTS: "/user/marketingReferences/exists",
 };
 
 // sale service functions
@@ -141,8 +150,8 @@ export const userService = {
     try {
       const response = await api.get(USER_ENDPOINTS.GET_CUSTOMERS, {
         params: {
-            role: "customer"
-        }
+          role: "customer",
+        },
       });
       return {
         success: true,
@@ -161,7 +170,7 @@ export const userService = {
       return {
         success: true,
         data: response.data,
-        message: "Customer details updated successfully!"
+        message: "Customer details updated successfully!",
       };
     } catch (error) {
       return {
@@ -172,11 +181,13 @@ export const userService = {
   },
   deleteCustomer: async (id) => {
     try {
-      const response = await api.delete(`${USER_ENDPOINTS.DELETE_CUSTOMER}/${id}`);
+      const response = await api.delete(
+        `${USER_ENDPOINTS.DELETE_CUSTOMER}/${id}`
+      );
       return {
         success: true,
         data: response.data,
-        message: "Customer deleted successfully!"
+        message: "Customer deleted successfully!",
       };
     } catch (error) {
       return {
@@ -190,8 +201,8 @@ export const userService = {
       const response = await api.get(USER_ENDPOINTS.GET_OTP, {
         params: {
           page: page,
-          limit: 5000
-        }
+          limit: 5000,
+        },
       });
       return {
         success: true,
@@ -208,8 +219,8 @@ export const userService = {
     try {
       const response = await api.get(USER_ENDPOINTS.GET_VENDORS, {
         params: {
-          search: search
-        }
+          search: search,
+        },
       });
       return {
         success: true,
@@ -228,12 +239,153 @@ export const userService = {
       return {
         success: true,
         data: response.data,
-        message: "Vendor added successfully!"
+        message: "Vendor added successfully!",
       };
     } catch (error) {
       return {
         success: false,
         message: error?.response?.data?.message || "Error adding vendors!",
+      };
+    }
+  },
+  updateVendor: async (data) => {
+    try {
+      const response = await api.patch(USER_ENDPOINTS.UPDATE_VENDOR, data);
+      return {
+        success: true,
+        data: response.data,
+        message: "Vendor update successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error updating vendors!",
+      };
+    }
+  },
+  getVendorById: async (_id) => {
+    try {
+      const response = await api.get(USER_ENDPOINTS.GET_VENDOR_BY_ID, {
+        params: { _id },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message || "Error fetching vendor details!",
+      };
+    }
+  },
+  deleteVendor: async (id) => {
+    try {
+      const response = await api.delete(
+        `${USER_ENDPOINTS.DELETE_VENDOR}/${id}`
+      );
+      return {
+        success: true,
+        data: response.data,
+        message: "Vendor deleted successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error deleting vendor!",
+      };
+    }
+  },
+  getMarketingReferences: async () => {
+    try {
+      const response = await api.get(USER_ENDPOINTS.GET_MARKETING_REFERENCES);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error fetching vendors!",
+      };
+    }
+  },
+  addMarketingReference: async (data) => {
+    try {
+      const response = await api.post(USER_ENDPOINTS.ADD_MARKETING_REFERENCE, data);
+      return {
+        success: true,
+        data: response.data,
+        message: "Marketing reference added successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error adding marketing reference!",
+      };
+    }
+  },
+  updateMarketingReference: async (data) => {
+    try {
+      const response = await api.patch(USER_ENDPOINTS.UPDATE_MARKETING_REFERENCE, data);
+      return {
+        success: true,
+        data: response.data,
+        message: "Marketing reference update successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error updating marketing reference!",
+      };
+    }
+  },
+  getMarketingReferenceById: async (id) => {
+    try {
+      const response = await api.get(`${USER_ENDPOINTS.GET_MARKETING_REFERENCE_BY_ID}/${id}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message || "Error fetching marketing reference details!",
+      };
+    }
+  },
+  deleteMarketingReference: async (id) => {
+    try {
+      const response = await api.delete(
+        `${USER_ENDPOINTS.DELETE_MARKETING_REFERENCE}/${id}`
+      );
+      return {
+        success: true,
+        data: response.data,
+        message: "Marketing reference deleted successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error deleting marketing reference!",
+      };
+    }
+  },
+  isMarketingRefernceExists: async (name) => {
+    try {
+      const response = await api.get(
+        `${USER_ENDPOINTS.IS_MARKETING_REFERENCE_EXISTS}/${name}`
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error checking marketing reference existence!",
       };
     }
   }

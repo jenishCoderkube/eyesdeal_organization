@@ -14,7 +14,7 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { Country, State, City } from "country-state-city";
-import { IoIosAddCircle, IoIosCloseCircleOutline } from "react-icons/io";
+import { IoIosAddCircle, IoIosClose } from "react-icons/io";
 import EditVendorModal from "../../../components/Users/Vendor/EditVendorModal";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
@@ -41,11 +41,15 @@ const validationSchema = Yup.object({
   city: Yup.object().nullable().required("City is required"),
   pincode: Yup.string().trim().required("Pincode is required"),
   address: Yup.string().trim(),
-  GST: Yup.string().trim(),
-  contactNumber: Yup.array().of(Yup.object().shape({
-    name: Yup.string(),
-    phone: Yup.string(),
-  })).notRequired()
+  GSTNumber: Yup.string().trim(),
+  contactNumber: Yup.array()
+    .of(
+      Yup.object().shape({
+        name: Yup.string(),
+        phone: Yup.string(),
+      })
+    )
+    .notRequired(),
 });
 
 const AddVendors = () => {
@@ -69,17 +73,18 @@ const AddVendors = () => {
   }, []);
 
   const fetchVendors = (searchKey = "") => {
-    userService.getVendors(searchKey)
-    .then(res => {
-      setVendors(res.data?.data?.docs);
-      setDataLoaded(true);
-    })
-    .catch(e => console.log("Error fetching vendors: ", e));
-  }
+    userService
+      .getVendors(searchKey)
+      .then((res) => {
+        setVendors(res.data?.data?.docs);
+        setDataLoaded(true);
+      })
+      .catch((e) => console.log("Error fetching vendors: ", e));
+  };
 
   // Debounced filter
   useEffect(() => {
-    if(!dataLoaded) return;
+    if (!dataLoaded) return;
     const debouncedFilter = debounce((query) => {
       fetchVendors(query);
     }, 200);
@@ -96,13 +101,14 @@ const AddVendors = () => {
 
   const addVendor = async (data) => {
     const response = await userService.addVendor(data);
-    if(response.success){
+    if (response.success) {
       toast.success(response.message);
+      fetchVendors();
       setShowForm(false);
     } else {
       toast.error(response.message);
     }
-  }
+  };
 
   // Table data
   const tableData = filteredData || vendors;
@@ -194,9 +200,16 @@ const AddVendors = () => {
   };
 
   // Handle delete
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     alert("Are you sure you want to delete?");
     console.log(`Delete vendor with id: ${id}`);
+    const response = await userService.deleteVendor(id);
+    if (response.success) {
+      fetchVendors();
+      toast.success(response.message);
+    } else {
+      toast.error(response.message);
+    }
   };
 
   // Formik for create form
@@ -211,24 +224,39 @@ const AddVendors = () => {
       city: null,
       pincode: "",
       address: "",
-      GST: "",
-      contactNumber: []
+      GSTNumber: "",
+      contactNumber: [],
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Create Vendor:", values);
       const data = {
         ...values,
         country: values.country.label,
         state: values.state.label,
         city: values.city.label,
-      }
-      // addVendor(values);
+        type: values.type?.value,
+        contactPerson: values.contactNumber,
+      };
+      addVendor(data);
     },
   });
 
+  const updateVendor = async (data) => {
+    const response = await userService.updateVendor(data);
+    if (response.success) {
+      toast.success(response.message);
+      fetchVendors();
+      setShowEditModal(false);
+    } else {
+      toast.error(response.message);
+    }
+  }
+
   const handleAddPhone = () => {
-    setShowContactInput((prev) => !prev);
+    createFormik.setFieldValue("contactNumber", [
+      ...createFormik.values.contactNumber,
+      { name: "", phone: "+91" },
+    ]);
   };
 
   // Country, state, city options
@@ -282,6 +310,26 @@ const AddVendors = () => {
   const startRow = pageIndex * pageSize + 1;
   const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
   const totalRows = tableData.length;
+
+  const handleNameChange = (e, index) => {
+    const { value } = e.target;
+    let contactNumber = createFormik.values.contactNumber;
+    contactNumber[index].name = value;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handlePhoneChange = (phone, index) => {
+    let contactNumber = createFormik.values.contactNumber;
+    contactNumber[index].phone = phone;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handleRemoveContact = (contactIndex) => {
+    const contactNumber = createFormik.values.contactNumber.filter(
+      (item, index) => index !== contactIndex
+    );
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
 
   // Render form
   const renderForm = (formik) => (
@@ -371,11 +419,26 @@ const AddVendors = () => {
           <label className="form-label fw-medium" htmlFor="type">
             Contact Person
           </label>
-          <IoIosAddCircle onClick={handleAddPhone} size={24} />
-          {showcontactInput && (
-            <>
-              <div className="w-100">
-                <IoIosCloseCircleOutline size={25} color="red" className="position-absolute" />
+          <br />
+          {/* <IoIosAddCircle onClick={handleAddPhone} size={24} /> */}
+          <button
+            className="btn btn-outline-primary"
+            onClick={(e) => {
+              e.preventDefault();
+              handleAddPhone();
+            }}
+          >
+            Add Phone
+          </button>
+          {createFormik.values.contactNumber.map((contact, index) => (
+            <div className="ms-3 mt-3">
+              <div className="w-100 position-relative">
+                <IoIosClose
+                  size={25}
+                  color="red"
+                  className="remove-icon"
+                  onClick={() => handleRemoveContact(index)}
+                />
                 <label className="form-label fw-medium" htmlFor="companyName">
                   Name
                 </label>
@@ -384,6 +447,8 @@ const AddVendors = () => {
                   className="w-full form-control"
                   name="name"
                   placeholder="Enter name"
+                  value={contact?.name}
+                  onChange={(e) => handleNameChange(e, index)}
                 />
               </div>
               <div className="w-100 mt-3">
@@ -394,12 +459,14 @@ const AddVendors = () => {
                   country={"in"}
                   inputClass={`form-control "is-invalid`}
                   containerClass="w-100"
+                  value={contact?.phone}
+                  onChange={(phone) => handlePhoneChange(phone, index)}
                   inputStyle={{ width: "100%" }}
                   placeholder="1 (702) 123-4567"
                 />
               </div>
-            </>
-          )}
+            </div>
+          ))}
         </div>
         <div className="w-100">
           <label className="form-label fw-medium" htmlFor="country">
@@ -487,22 +554,22 @@ const AddVendors = () => {
           />
         </div>
         <div className="w-100">
-          <label className="form-label fw-medium" htmlFor="GST">
+          <label className="form-label fw-medium" htmlFor="GSTNumber">
             GST Number
           </label>
           <input
             type="text"
-            name="GST"
+            name="GSTNumber"
             className={`form-control ${
-              formik.touched.GST && formik.errors.GST ? "is-invalid" : ""
+              formik.touched.GSTNumber && formik.errors.GSTNumber ? "is-invalid" : ""
             }`}
-            value={formik.values.GST}
+            value={formik.values.GSTNumber}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             placeholder="Enter GST number"
           />
-          {formik.touched.GST && formik.errors.GST && (
-            <div className="invalid-feedback">{formik.errors.GST}</div>
+          {formik.touched.GSTNumber && formik.errors.GSTNumber && (
+            <div className="invalid-feedback">{formik.errors.GSTNumber}</div>
           )}
         </div>
         <div>
@@ -621,6 +688,7 @@ const AddVendors = () => {
       <EditVendorModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
+        onSubmit={updateVendor}
         editVendor={editVendor}
       />
     </div>

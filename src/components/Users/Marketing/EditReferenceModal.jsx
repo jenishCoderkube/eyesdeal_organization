@@ -1,27 +1,47 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { Modal, Button, Form } from "react-bootstrap";
+import { userService } from "../../../services/userService";
 
 // Validation schema
 const validationSchema = Yup.object({
   name: Yup.string().trim().required("Reference Name is required"),
 });
 
-const EditReferenceModal = ({ show, onHide, editReference }) => {
+const EditReferenceModal = ({ show, onHide, onSubmit, editReference }) => {
   // Formik setup
   const formik = useFormik({
     initialValues: {
-      id: editReference?.id || "",
-      name: editReference?.name || "",
+      id: "",
+      name: "",
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Edit Reference:", values);
-      onHide();
+      const data = {
+        id: values._id || values.id,
+        name: values.name
+      }
+      onSubmit && onSubmit(data);
     },
     enableReinitialize: true,
   });
+
+  useEffect(() => {
+    if(show){
+      fetchReferenceDetails();
+    } else {
+      formik.resetForm();
+    }
+  }, [show]);
+
+  const fetchReferenceDetails = () => {
+    userService.getMarketingReferenceById(editReference?._id)
+    .then(res => {
+      formik.setValues(res.data?.data)
+    })
+    .catch(e => console.log("Failed to fetch reference details: ", e));
+  }
 
   return (
     <Modal
@@ -61,7 +81,7 @@ const EditReferenceModal = ({ show, onHide, editReference }) => {
             <Form.Control
               type="text"
               name="id"
-              value={formik.values.id}
+              value={formik.values._id}
               disabled
               readOnly
             />
