@@ -1,130 +1,97 @@
-import React, { useState, useMemo } from "react";
-import Select from "react-select";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import "bootstrap/dist/css/bootstrap.min.css";
+import React, {useState, useMemo, useCallback, useEffect} from 'react';
+import Select from 'react-select';
 
-// Custom styles for react-select to match Bootstrap
-const selectStyles = {
-  control: (provided) => ({
-    ...provided,
-    borderRadius: "0.25rem",
-    borderColor: "#ced4da",
-    boxShadow: "none",
-    "&:hover": {
-      borderColor: "#adb5bd",
-    },
-  }),
-  menu: (provided) => ({
-    ...provided,
-    zIndex: 1050, // Ensure dropdown appears above Bootstrap components
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected
-      ? "#007bff"
-      : state.isFocused
-      ? "#f8f9fa"
-      : null,
-    color: state.isSelected ? "#fff" : "#212529",
-    "&:hover": {
-      backgroundColor: "#f8f9fa",
-    },
-  }),
-  singleValue: (provided) => ({
-    ...provided,
-    color: "#212529",
-  }),
-  placeholder: (provided) => ({
-    ...provided,
-    color: "#6c757d",
-  }),
-};
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { debounce } from "lodash";
+import { inventoryService } from '../../../services/inventoryService';
 
 const AddStockTransferCom = () => {
   // State for form fields
   const [from, setFrom] = useState({
-    value: "27",
-    label: "ELITE HOSPITAL / 27",
+    value: '27',
+    label: 'ELITE HOSPITAL / 27',
   });
   const [to, setTo] = useState(null);
   const [product, setProduct] = useState(null);
+  const [items, setItems] = useState([]);
+  const [productData, setProductData] = useState([]);
 
-  // Dummy data for dropdowns
-  const storeOptions = [
-    { value: "1", label: "ED HO / 1" },
-    { value: "28", label: "CITY OPTICS / 28" },
-  ];
+  const [storeData, setStoreData] = useState([]);
 
-  const productOptions = [
-    { value: "1", label: "I-gog Frames" },
-    { value: "2", label: "Fizan Frames" },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [showData, setShowData] = useState([]);
 
-  // Dummy data for table
-  const tableData = useMemo(
-    () => [
-      {
-        id: 1,
-        barcode: "6246",
-        stock: 10,
-        quantity: 2,
-        sku: "IG-FR-KIDS-FLX-1253-C9",
-      },
-      {
-        id: 2,
-        barcode: "6100",
-        stock: 15,
-        quantity: 1,
-        sku: "FZ-FR-ADULT-2000-C1",
-      },
-    ],
-    []
-  );
 
-  // Table columns
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "barcode",
-        header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "stock",
-        header: "Stock",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "quantity",
-        header: "Quantity",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "sku",
-        header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-    ],
-    []
-  );
-
-  // Tanstack table setup
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({ from, to, product, tableData });
+    console.log({from, to, product, tableData});
     // Add API call or further logic here
   };
+
+  const handleProductChange = (selectedOption) => {
+    setItems(selectedOption);
+  };
+
+  const getProduct = async (search) => {
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.universalSearch(search);
+      if (response.success) {
+        setProductData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error('error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const debouncedGetProduct = useCallback(
+    debounce((value) => {
+      if (value?.trim()) {
+        getProduct(value);
+      }
+    }, 1000),
+    [], // empty dependency to persist across re-renders
+  );
+
+
+  useEffect(() => { 
+    getStores()
+  },[])
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+
+  const productOptions = productData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.oldBarcode} ${vendor.sku}`,
+  }));
 
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
@@ -144,9 +111,9 @@ const AddStockTransferCom = () => {
                     id="from"
                     value={from}
                     onChange={setFrom}
-                    options={[{ value: "27", label: "ELITE HOSPITAL / 27" }]}
+                    options={[{value: '27', label: 'ELITE HOSPITAL / 27'}]}
                     isDisabled={true}
-                    styles={selectStyles}
+              
                     className="w-100"
                   />
                 </div>
@@ -162,7 +129,7 @@ const AddStockTransferCom = () => {
                     onChange={setTo}
                     options={storeOptions}
                     placeholder="Select..."
-                    styles={selectStyles}
+       
                     className="w-100"
                   />
                 </div>
@@ -171,18 +138,25 @@ const AddStockTransferCom = () => {
                 <div className="">
                   <label
                     htmlFor="product"
-                    className="form-label font-weight-500"
-                  >
+                    className="form-label font-weight-500">
                     Product
                   </label>
                   <Select
-                    id="product"
-                    value={product}
-                    onChange={setProduct}
                     options={productOptions}
+                    value={items}
+                    onChange={(option) => handleProductChange(option)}
                     placeholder="Select..."
-                    styles={selectStyles}
-                    className="w-100"
+                    className="basic-select"
+                    classNamePrefix="select"
+                   
+                    onInputChange={(value) => {
+                      debouncedGetProduct(value);
+                    }}
+                    isLoading={loading} // ✅ shows spinner while loading
+                    loadingMessage={() => 'Loading...'} // ✅ custom loading message
+                    noOptionsMessage={({inputValue}) =>
+                      inputValue ? 'No products found' : 'Type to search'
+                    }
                   />
                 </div>
               </div>
@@ -190,37 +164,40 @@ const AddStockTransferCom = () => {
                 <div className="table-responsive">
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <tr key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <th
-                              key={header.id}
-                              className="p-3 text-left custom-perchase-th"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
+                      <tr>
+                        <th>barcode</th>
+                        <th>stock</th>
+                        <th>quantity</th>
+                        <th>sku</th>
+                      </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="p-3">
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
+                      {showData?.docs?.length > 0 ? (
+                        showData.docs.map((item, index) => (
+                          <tr key={item.id || index}>
+                            <td>{index + 1}</td>
+                            <td>
+                              {moment(item.createdAt).format('YYYY-MM-DD')}
                             </td>
-                          ))}
+
+                            <td>
+                              {item.from.storeNumber}/{item.from.name}
+                            </td>
+
+                            <td>
+                              {item.to.storeNumber}/{item.to.name}
+                            </td>
+                            
+                          
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="8" className="text-center py-3">
+                            No data available
+                          </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>

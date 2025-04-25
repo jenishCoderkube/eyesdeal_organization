@@ -19,6 +19,7 @@ const INVENTORY_ENDPOINTS = {
   UNIVERSALSEARCH: (params) => `/products/product?search=${params}`,
   UNIVERSALSEARCHGET: (params) => `/inventory/store?${params}`,
   STOCKTRANSFER: (params) => `/stockTransfer?populate=true&${params}`,
+  SALEINOUT : (params) => `/stockSale?populate=true&${params}`
 };
 
 const buildInventoryParams = (
@@ -479,6 +480,23 @@ export const inventoryService = {
         data: response.data,
       };
     } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  stockReceive: async (params) => {
+    try {
+      const response = await api.get(INVENTORY_ENDPOINTS.SALEINOUT(params));
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.log("error",error)
       return {
         success: false,
         message: error.response?.data?.message || "Error",
