@@ -110,7 +110,7 @@ const StockAdjustmentReportsForm = ({ onSubmit, data }) => {
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            // disabled={formik.isSubmitting}
           >
             Submit
           </button>
