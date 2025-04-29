@@ -85,10 +85,15 @@ function ShopProcess() {
   const lastSalesCallParams = useRef(null);
   const lastCountsCallParams = useRef(null);
 
+  // Calculate default dates: today and one month ago
+  const today = new Date();
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(today.getMonth() - 1);
+
   const formik = useFormik({
     initialValues: {
-      startDate: null,
-      endDate: null,
+      startDate: oneMonthAgo, // Default to one month ago
+      endDate: today, // Default to today
       stores: [],
       search: "",
     },
@@ -165,13 +170,12 @@ function ShopProcess() {
       });
 
       if (!forceRefresh && lastSalesCallParams.current === callKey) {
-        console.log("Skipping sales API call due to identical parameters");
+        // console.log("Skipping sales API call due to identical parameters");
         return;
       }
 
       setLoading(true);
       lastSalesCallParams.current = callKey;
-      console.log("Fetching sales data with filters:", filters);
 
       try {
         const params = {
@@ -186,12 +190,11 @@ function ShopProcess() {
           populate: isInitialLoad.current ? true : undefined,
         };
         if (!isInitialLoad.current) {
-          params.stores = filters.stores.length ? filters.stores : users.stores;
+          params.stores = filters.stores.length ? filters.stores : null;
         }
 
         const response = await shopProcessService.getSales(params);
         if (response.success) {
-          console.log("Sales API response:", response);
           const sales = response.data.data.docs;
           setTableData(
             sales.map((sale) => ({
@@ -245,8 +248,6 @@ function ShopProcess() {
           setProductTableData([]);
         }
       } catch (error) {
-        toast.error("Error fetching sales data");
-        console.error("Sales API error:", error);
         setTableData([]);
         setProductTableData([]);
       } finally {
@@ -311,12 +312,6 @@ function ShopProcess() {
 
   const fetchSalesAndCounts = useCallback(
     debounce((filters, forceRefresh = false) => {
-      console.log(
-        "fetchSalesAndCounts called with filters:",
-        filters,
-        "forceRefresh:",
-        forceRefresh
-      );
       setTabLoading(true);
       Promise.all([
         fetchSalesData(filters, forceRefresh),
@@ -336,10 +331,14 @@ function ShopProcess() {
       getStores();
     }
 
+    // Use formik.values for dates, which have defaults set
     const filters = {
       ...currentFilters.current,
+      startDate: formik.values.startDate,
+      endDate: formik.values.endDate,
       status: getStatusForTab(activeStatus),
     };
+    currentFilters.current = filters;
     fetchSalesAndCounts(filters);
 
     if (isInitialLoad.current) {
@@ -349,14 +348,9 @@ function ShopProcess() {
 
   const refreshSalesData = useCallback(async () => {
     try {
-      console.log(
-        "refreshSalesData called with currentFilters:",
-        currentFilters.current
-      );
       lastSalesCallParams.current = null;
       await fetchSalesAndCounts(currentFilters.current, true);
     } catch (error) {
-      console.error("Error in refreshSalesData:", error);
       toast.error("Failed to refresh sales data");
     }
   }, [fetchSalesAndCounts]);
@@ -558,13 +552,14 @@ function ShopProcess() {
       fetchSalesAndCounts(currentFilters.current);
     }
   };
+
   const handleDeleteSale = async (saleId) => {
     setLoading(true);
     try {
       const response = await shopProcessService.deleteSale(saleId);
       if (response.success) {
         toast.success("Sale deleted successfully");
-        await refreshSalesData(); // Refresh sales data
+        await refreshSalesData();
       } else {
         toast.error(response.message);
       }
@@ -575,11 +570,14 @@ function ShopProcess() {
       setLoading(false);
     }
   };
+
   const hasSelectedProducts = productTableData.some((row) => row.selected);
+
   const openBillInNewTab = (row) => {
     const pdfUrl = generateInvoicePDF(row.fullSale);
     window.open(pdfUrl, "_blank");
   };
+
   return (
     <div className="mt-4 px-3">
       <form onSubmit={formik.handleSubmit}>
@@ -594,7 +592,6 @@ function ShopProcess() {
                 onChange={(date) => formik.setFieldValue("startDate", date)}
                 className="form-control"
                 dateFormat="yyyy-MM-dd"
-                isClearable
                 autoComplete="off"
               />
             </div>
@@ -607,7 +604,6 @@ function ShopProcess() {
                 onChange={(date) => formik.setFieldValue("endDate", date)}
                 className="form-control"
                 dateFormat="yyyy-MM-dd"
-                isClearable
                 autoComplete="off"
               />
             </div>
@@ -983,7 +979,7 @@ function ShopProcess() {
                                   <>
                                     <th className="py-3 px-2">Select</th>
                                     <th className="py-3 px-2">Product Sku</th>
-                                    <th className="py-3 px-2">Lens Sku</th>``
+                                    <th className="py-3 px-2">Lens Sku</th>
                                     <th className="py-3 px-2">Status</th>
                                   </>
                                 ) : (
@@ -1086,7 +1082,7 @@ function ShopProcess() {
         <AssignPowerModel
           closeAPModal={closeAPModal}
           selectedAP={selectedAP}
-          refreshSalesData={refreshSalesData} // Added refreshSalesData prop
+          refreshSalesData={refreshSalesData}
         />
       )}
       {showCustomerModal && selectedRow && (

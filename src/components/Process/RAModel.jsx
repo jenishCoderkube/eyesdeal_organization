@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Select from "react-select";
@@ -6,15 +6,24 @@ import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
 
 function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
-  console.log("selectedRA<<<<<", selectedRA);
   const [payments, setPayments] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useRef(null); // Ref to track the modal content
 
-  const methodOptions = [
-    { value: "cash", label: "Cash" },
-    { value: "card", label: "Card" },
-    { value: "upi", label: "UPI" },
-  ];
+  // Handle outside click
+  const handleOutsideClick = (e) => {
+    if (modalRef.current && !modalRef.current.contains(e.target)) {
+      closeRAModal(); // Close modal if click is outside modal content
+    }
+  };
+
+  // Add event listener for outside clicks
+  useEffect(() => {
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick); // Cleanup on unmount
+    };
+  }, []);
 
   useEffect(() => {
     if (
@@ -43,6 +52,12 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
     }
   }, [selectedRA]);
 
+  const methodOptions = [
+    { value: "cash", label: "Cash" },
+    { value: "card", label: "Card" },
+    { value: "upi", label: "UPI" },
+  ];
+
   const handleAddPayment = () => {
     setPayments([
       ...payments,
@@ -62,7 +77,6 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
   };
 
   const handleSubmit = async () => {
-    // Validate payments
     const isValid = payments.every(
       (payment) =>
         payment.method &&
@@ -77,7 +91,6 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
     }
 
     setIsSubmitting(true);
-    // Format payments for API
     const formattedPayments = payments.map((payment) => ({
       method: payment.method.value,
       amount: parseFloat(payment.amount),
@@ -85,13 +98,11 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
       reference: payment.reference || "",
     }));
 
-    // Calculate total received amount
     const totalReceived = formattedPayments.reduce(
       (sum, payment) => sum + payment.amount,
       0
     );
 
-    // Prepare payload for API
     const payload = {
       billNumber: selectedRA.billNumber,
       receivedAmount: formattedPayments,
@@ -100,17 +111,14 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
     };
 
     try {
-      console.log("Submitting updateSale with payload:", payload);
       const response = await shopProcessService.updateSale(
         selectedRA._id,
         payload
       );
-      console.log("updateSale response:", response);
       if (response.success) {
         toast.success("Payments updated successfully");
         if (refreshSalesData) {
-          console.log("Calling refreshSalesData");
-          await refreshSalesData(); // Await to ensure refresh completes
+          await refreshSalesData();
         }
         closeRAModal();
       } else {
@@ -145,8 +153,9 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
       }}
     >
       <div
-        className="modal-dialog overflow-auto"
+        className="modal-dialog overflow-y-auto"
         role="document"
+        ref={modalRef} // Attach ref to modal content
         style={{
           width: "100%",
           maxWidth: "650px",
@@ -159,10 +168,11 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
         }}
       >
         <div className="modal-content border-0">
-          <div className="modal-header border-bottom pb-2">
+          <div className="modal-header border-none p-0">
             <button
               type="button"
-              className="btn-close small"
+              className="btn-close"
+              style={{ width: "40px", height: "40px" }}
               onClick={closeRAModal}
               aria-label="Close"
             ></button>

@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { toast } from "react-toastify";
 
-const AddDamagedModal = ({ show, onHide, selectedRows, onSubmit }) => {
+const AddDamagedModal = ({ show, onHide, selectedRows, onSubmit, error }) => {
   const [rightDamaged, setRightDamaged] = useState(false);
   const [leftDamaged, setLeftDamaged] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!rightDamaged && !leftDamaged) {
+      toast.warning("Please select at least one side (Left or Right)");
+      return;
+    }
+
     onSubmit({
       rightDamaged,
       leftDamaged,
       selectedRows,
     });
-    onHide();
   };
 
   return (
@@ -41,6 +45,11 @@ const AddDamagedModal = ({ show, onHide, selectedRows, onSubmit }) => {
       </Modal.Header>
       <Modal.Body className="p-4">
         <Form onSubmit={handleSubmit}>
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
           <p className="mb-4">Previous Damage 0</p>
           <div className="row mb-2 align-items-center">
             <div className="col-auto">

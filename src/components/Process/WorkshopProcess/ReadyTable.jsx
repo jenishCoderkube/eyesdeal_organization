@@ -5,63 +5,55 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Button, Form } from "react-bootstrap";
+import { toast } from "react-toastify";
 import CustomerNameModal from "../Vendor/CustomerNameModal";
 import AddDamagedModal from "./AddDamagedModal";
+import { workshopService } from "../../../services/Process/workshopService";
 
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const ReadyTable = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+const ReadyTable = ({ orders, loading, refreshSalesData }) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [showDamagedModal, setShowDamagedModal] = useState(false); // Renamed for clarity
   const [selectedRow, setSelectedRow] = useState(null);
-  const [pageSize, setPageSize] = useState(10);
-  const [tableData, setTableData] = useState([
-    {
-      id: 1,
+  const [pageSize] = useState(100);
+
+  // Derive tableData and productTableData from orders
+  const { tableData, productTableData } = useMemo(() => {
+    const tableData = orders.map((order) => ({
+      id: order._id,
+      date: new Date(order.createdAt).toISOString().split("T")[0],
+      billNumber: order.billNumber,
+      customerName: order.sale?.customerName || "N/A",
+      store: order.store?.name || "N/A",
+      notes: order.sale?.note || "",
+      fullOrder: order,
+    }));
+
+    const productTableData = orders.map((order, index) => ({
+      id: `${order._id}-${index + 1}`,
+      saleId: order._id,
       selected: false,
-      date: "24/04/2025",
-      billNumber: "1955099",
-      customerName: "SUJAL PATEL",
-      store: "EYESDEAL BARDOLI",
-      productsku: "I-GOG-FR-800",
-      lenssku: "SV-BLUE-CUT UV 400 1.56 -6.00/-4.00",
-      vendor: {
-        right: "EYESDEAL STOCK",
-        left: "EYESDEAL STOCK",
-      },
-      notes: "",
-    },
-    {
-      id: 2,
-      selected: false,
-      date: "23/04/2025",
-      billNumber: "255098",
-      customerName: "BRAVISH DESAI",
-      store: "EYESDEAL BHATAR",
-      productsku: "EB-FR-57014K-C8",
-      lenssku: "SEE LENS SAFE DRIVE SUN-MATIC 1.56 6.00/200",
-      vendor: {
-        right: "PRINCE LENSES",
-        left: "PRINCE LENSES",
-      },
-      notes: "MOST URGENT KAL DENA HE",
-    },
-  ]);
+      productSku: order.product?.sku || "N/A",
+      lensSku: order.lens?.sku || "N/A",
+      status: order.status || "N/A",
+      vendor: order.sale?.vendor || "", // Adjust if vendor is stored elsewhere
+      orderId: order._id,
+    }));
+
+    return { tableData, productTableData };
+  }, [orders]);
+
+  const [localProductTableData, setLocalProductTableData] =
+    useState(productTableData);
+
+  // Sync localProductTableData when productTableData changes
+  useEffect(() => {
+    setLocalProductTableData(productTableData);
+  }, [productTableData]);
 
   const hasSelectedRows = selectedRows.length > 0;
-
-  // Debounced filter
-  const [filteredData, setFilteredData] = useState(tableData);
 
   // Handle checkbox selection
   const handleCheckboxChange = (rowId) => {
@@ -69,6 +61,11 @@ const ReadyTable = () => {
       prev.includes(rowId)
         ? prev.filter((id) => id !== rowId)
         : [...prev, rowId]
+    );
+    setLocalProductTableData((prev) =>
+      prev.map((row) =>
+        row.id === rowId ? { ...row, selected: !row.selected } : row
+      )
     );
   };
 
@@ -78,22 +75,74 @@ const ReadyTable = () => {
     setShowCustomerModal(true);
   };
 
-  // Handle Process Order click
-  const handleProcessOrder = () => {
-    setShowVendorModal(true);
+  // Handle Deliver
+  const handleDeliver = async () => {
+    const selectedOrders = localProductTableData
+      .filter((row) => row.selected)
+      .map((row) => ({ id: row.id, orderId: row.orderId }));
+
+    if (selectedOrders.length === 0) {
+      toast.warning("No orders selected");
+      return;
+    }
+
+    let successCount = 0;
+    for (const order of selectedOrders) {
+      const response = await workshopService.updateOrderStatus(
+        order.orderId,
+        "delivered"
+      );
+      if (response.success) {
+        successCount++;
+        setLocalProductTableData((prev) =>
+          prev.map((row) =>
+            row.id === order.id
+              ? { ...row, status: "delivered", selected: false }
+              : row
+          )
+        );
+      } else {
+        toast.error(`Failed to deliver order ${order.id}: ${response.message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} order(s) delivered successfully`);
+      setSelectedRows([]);
+      refreshSalesData();
+    }
   };
 
-  // Handle Download Photo click
-  const handleDownloadPhoto = (row) => {
-    console.log("Downloading photo for row:", row);
-    // Implement actual download logic here (e.g., API call)
+  // Handle Add Damaged click
+  const handleAddDamaged = () => {
+    setShowDamagedModal(true);
   };
 
-  // Handle SelectVendorModal submit
-  const handleVendorSubmit = (data) => {
-    console.log("Vendor data submitted:", data);
-    // Update tableData or perform API call as needed
-    setShowVendorModal(false);
+  // Handle AddDamagedModal submit
+  const handleDamagedSubmit = async (data) => {
+    console.log("Damaged data submitted:", data);
+    setShowDamagedModal(false);
+    // Implement damaged item logic (e.g., API call to mark as damaged)
+    // Example:
+    /*
+    const selectedOrders = localProductTableData
+      .filter((row) => row.selected)
+      .map((row) => row.orderId);
+    try {
+      const response = await workshopService.markOrderAsDamaged({
+        orderIds: selectedOrders,
+        ...data, // Include damaged details
+      });
+      if (response.success) {
+        toast.success("Order(s) marked as damaged successfully");
+        refreshSalesData();
+      } else {
+        toast.error(`Failed to mark as damaged: ${response.message}`);
+      }
+    } catch (error) {
+      toast.error("Error marking order(s) as damaged");
+    }
+    */
   };
 
   // Table columns
@@ -102,14 +151,19 @@ const ReadyTable = () => {
       {
         accessorKey: "id",
         header: "Select",
-        cell: ({ row }) => (
-          <Form.Check
-            type="checkbox"
-            checked={selectedRows.includes(row.original.id)}
-            onChange={() => handleCheckboxChange(row.original.id)}
-            className="form-check-input-lg fs-5"
-          />
-        ),
+        cell: ({ row }) => {
+          const productRow = localProductTableData.find(
+            (p) => p.saleId === row.original.id
+          );
+          return (
+            <Form.Check
+              type="checkbox"
+              checked={productRow?.selected || false}
+              onChange={() => handleCheckboxChange(productRow?.id)}
+              className="form-check-input-lg fs-5"
+            />
+          );
+        },
       },
       {
         accessorKey: "date",
@@ -150,17 +204,20 @@ const ReadyTable = () => {
         ),
       },
       {
-        accessorKey: "productsku",
+        accessorKey: "productSku",
         header: "Product SKU",
         cell: ({ getValue }) => (
           <div className="table-vendor-data-size">{getValue()}</div>
         ),
       },
       {
-        accessorKey: "lenssku",
+        accessorKey: "lensSku",
         header: "Lens SKU",
         cell: ({ getValue }) => (
-          <div className="max-w-[150px] table-vendor-data-size">
+          <div
+            className="max-w-[150px] table-vendor-data-size"
+            style={{ maxWidth: "200px" }}
+          >
             {getValue()}
           </div>
         ),
@@ -168,33 +225,76 @@ const ReadyTable = () => {
       {
         accessorKey: "vendor",
         header: "Vendor",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">
-            <div className="d-flex flex-column">
-              <span className="" style={{ color: "#198754" }}>
-                Right: {getValue().right}
-              </span>
-              <span className="" style={{ color: "#198754" }}>
-                Left: {getValue().left}
-              </span>
+        cell: ({ row }) => {
+          const order = row.original.fullOrder;
+          const leftVendor = order.currentLeftJobWork?.vendor?.companyName;
+          const rightVendor = order.currentRightJobWork?.vendor?.companyName;
+          const Leftcolor = order.currentRightJobWork?.status;
+          const Rightcolor = order.currentLeftJobWork?.status;
+
+          return (
+            <div
+              className="table-vendor-data-size text-success"
+              style={{ maxWidth: "170px" }}
+            >
+              {leftVendor && (
+                <p
+                  className="p-0 m-0"
+                  style={{
+                    color: `${Leftcolor === "pending" ? "#ef4444" : "#22c55e"}`,
+                  }}
+                >
+                  left:{leftVendor}
+                </p>
+              )}
+              {rightVendor && (
+                <p
+                  className="p-0 m-0"
+                  style={{
+                    color: `${
+                      Rightcolor === "pending" ? "#ef4444" : "#22c55e"
+                    }`,
+                  }}
+                >
+                  right:{rightVendor}
+                </p>
+              )}
             </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         accessorKey: "notes",
         header: "Note",
         cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+          <div className="table-vendor-data-size" style={{ maxWidth: "200px" }}>
+            {getValue()}
+          </div>
         ),
       },
     ],
-    [selectedRows]
+    [localProductTableData]
   );
+
+  // Combine tableData and productTableData for display
+  const combinedData = useMemo(() => {
+    return tableData.map((order) => ({
+      ...order,
+      productSku:
+        localProductTableData.find((p) => p.saleId === order.id)?.productSku ||
+        "N/A",
+      lensSku:
+        localProductTableData.find((p) => p.saleId === order.id)?.lensSku ||
+        "N/A",
+      vendor:
+        localProductTableData.find((p) => p.saleId === order.id)?.vendor ||
+        "N/A",
+    }));
+  }, [tableData, localProductTableData]);
 
   // Table setup
   const table = useReactTable({
-    data: filteredData,
+    data: combinedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -204,110 +304,132 @@ const ReadyTable = () => {
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, combinedData.length);
+  const totalRows = combinedData.length;
 
   return (
     <div className="card-body p-0">
-      <div className="mb-4 col-12 ">
+      {/* <div className="mb-4 col-12 px-3">
         {hasSelectedRows && (
           <div className="d-flex justify-content-between flex-wrap gap-3 mt-2">
-            {/* <div>
-              <button
-                className="btn btn-outline-primary border-light-subtle"
-                type="button"
-              >
-                Ready
-              </button>
-              <button
-                className="btn ms-3 btn-outline-primary border-light-subtle"
-                type="button"
-                onClick={handleProcessOrder}
-              >
-                Add Damaged
-              </button>
-            </div>
             <div>
               <button
                 className="btn btn-outline-primary border-light-subtle"
                 type="button"
+                onClick={handleDeliver}
+                disabled={loading}
               >
-                Revert Order
+                {loading ? "Processing..." : "Deliver"}
               </button>
-            </div> */}
+            
+            </div>
           </div>
         )}
-      </div>
+      </div> */}
       <div className="table-responsive">
-        <table className="table table-sm">
-          <thead className="table-light border text-xs text-uppercase">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="py-3 text-left custom-perchase-th"
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
-        <div className="text-sm text-muted mb-3 mb-sm-0">
-          Showing <span className="fw-medium">{startRow}</span> to{" "}
-          <span className="fw-medium">{endRow}</span> of{" "}
-          <span className="fw-medium">{totalRows}</span> results
-        </div>
-        <div className="btn-group">
-          <Button
-            variant="outline-primary"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+        {loading ? (
+          <div
+            style={{
+              width: "100%",
+              height: "300px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            Previous
-          </Button>
-          <Button
-            variant="outline-primary"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            <div className="spinner-border m-5" role="status">
+              <span className="sr-only"></span>
+            </div>
+          </div>
+        ) : combinedData.length === 0 ? (
+          <div
+            style={{
+              width: "100%",
+              height: "300px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            Next
-          </Button>
-        </div>
+            <p>No data available for Ready status.</p>
+          </div>
+        ) : (
+          <table className="table table-sm">
+            <thead className="table-light border text-xs text-uppercase">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="py-3 text-left custom-perchase-th"
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
+      {combinedData.length !== 0 && (
+        <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
+          <div className="text-sm text-muted mb-3 mb-sm-0">
+            Showing <span className="fw-medium">{startRow}</span> to{" "}
+            <span className="fw-medium">{endRow}</span> of{" "}
+            <span className="fw-medium">{totalRows}</span> results
+          </div>
+          <div className="btn-group">
+            <Button
+              variant="outline-primary"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       {showCustomerModal && selectedRow && (
         <CustomerNameModal
           show={showCustomerModal}
           onHide={() => setShowCustomerModal(false)}
-          selectedRow={selectedRow}
+          selectedRow={selectedRow?.fullOrder}
         />
       )}
-      {showVendorModal && (
+      {showDamagedModal && (
         <AddDamagedModal
-          show={showVendorModal}
-          onHide={() => setShowVendorModal(false)}
-          selectedRows={tableData.filter((row) =>
+          show={showDamagedModal}
+          onHide={() => setShowDamagedModal(false)}
+          selectedRows={localProductTableData.filter((row) =>
             selectedRows.includes(row.id)
           )}
-          onSubmit={handleVendorSubmit}
+          onSubmit={handleDamagedSubmit}
         />
       )}
     </div>

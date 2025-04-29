@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
-import * as XLSX from "xlsx";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,6 +9,8 @@ import {
 import { Button, Form } from "react-bootstrap";
 import VendorNoteModal from "./VendorNoteModal";
 import CustomerNameModal from "./CustomerNameModal";
+import { vendorshopService } from "../../../services/Process/vendorshopService"; // Updated import
+import { toast } from "react-toastify";
 
 const debounce = (func, wait) => {
   let timeout;
@@ -19,27 +20,67 @@ const debounce = (func, wait) => {
   };
 };
 
-const VendorListTable = ({ data }) => {
+const VendorListTable = ({ data, loading }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
   const [selectedRows, setSelectedRows] = useState([]);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-
   const [selectedRow, setSelectedRow] = useState(null);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(100);
 
+  // Filter function
   // Filter function
   const filterGlobally = useMemo(
     () => (data, query) => {
       if (!query) return data;
       const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        Object.values(item).some(
-          (field) =>
-            field && field.toString().toLowerCase().includes(lowerQuery)
-        )
-      );
+      return data.filter((item) => {
+        const processDate = new Date(item.sale.createdAt)
+          .toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+          .toLowerCase();
+        const store = (item.store.name || "").toLowerCase();
+        const billNumber = (item.order.billNumber || "").toLowerCase();
+        const customerName = (item.sale.customerName || "").toLowerCase();
+        const vendorNote = (item.order.vendorNote || "").toLowerCase();
+        const lensSku = (item.lens.sku || "").toLowerCase();
+        const side = (item.side || "").toLowerCase();
+        const vendor = (item.vendor.companyName || "").toLowerCase();
+
+        // Power fields (SPH, CYL, Axis, ADD for both Distance and Near)
+        const powerSpecs = item.powerAtTime?.specs || {};
+        const rightDistance = powerSpecs.right?.distance || {};
+        const rightNear = powerSpecs.right?.near || {};
+        const powerValues = [
+          rightDistance.sph,
+          rightDistance.cyl,
+          rightDistance.axis,
+          rightDistance.add,
+          rightNear.sph,
+          rightNear.cyl,
+          rightNear.axis,
+          rightNear.add,
+        ]
+          .filter(Boolean)
+          .map((val) => val.toString().toLowerCase())
+          .join(" ");
+
+        return (
+          processDate.includes(lowerQuery) ||
+          store.includes(lowerQuery) ||
+          billNumber.includes(lowerQuery) ||
+          customerName.includes(lowerQuery) ||
+          vendorNote.includes(lowerQuery) ||
+          lensSku.includes(lowerQuery) ||
+          side.includes(lowerQuery) ||
+          powerValues.includes(lowerQuery) ||
+          vendor.includes(lowerQuery)
+        );
+      });
     },
     []
   );
@@ -53,6 +94,11 @@ const VendorListTable = ({ data }) => {
     return () => clearTimeout(debouncedFilter.timeout);
   }, [searchQuery, data, filterGlobally]);
 
+  // Sync filteredData with prop data
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
+
   // Handle checkbox selection
   const handleCheckboxChange = (rowId) => {
     setSelectedRows((prev) =>
@@ -63,9 +109,69 @@ const VendorListTable = ({ data }) => {
   };
 
   // Handle Receive All
-  const handleReceiveAll = () => {
-    console.log("Receiving all selected rows:", selectedRows);
-    setSelectedRows([]);
+  // Handle Receive All
+  const handleReceiveAll = async () => {
+    try {
+      const updates = selectedRows.map(async (rowId) => {
+        const row = filteredData.find((item) => item._id === rowId);
+        const jobWorkId = row._id;
+        const side = row.side;
+
+        // Determine which API to call based on the 'side' property
+        if (side === "left") {
+          return vendorshopService.updateJobWorkStatus(jobWorkId, "received"); // Example: Update left job work
+        } else if (side === "right") {
+          return vendorshopService.updateJobWorkStatus(jobWorkId, "received"); // Example: Update right job work
+        } else if (side === "both") {
+          // For 'both', you might need to update two job works (left and right)
+          const leftJobWorkId = row.order.currentLeftJobWork;
+          const rightJobWorkId = row.order.currentRightJobWork;
+          const leftUpdate = vendorshopService.updateJobWorkStatus(
+            leftJobWorkId,
+            "received"
+          );
+          const rightUpdate = vendorshopService.updateJobWorkStatus(
+            rightJobWorkId,
+            "received"
+          );
+          return Promise.all([leftUpdate, rightUpdate]); // Wait for both updates
+        }
+        return Promise.resolve({ success: false, message: "Invalid side" });
+      });
+
+      const results = await Promise.all(updates);
+
+      // Flatten results (since 'both' returns an array of results)
+      const flattenedResults = results.flat();
+      const failed = flattenedResults.filter((result) => !result.success);
+
+      if (failed.length > 0) {
+        failed.forEach((fail) => console.error(fail.message));
+        toast.error("Some updates failed. Check console for details.");
+      } else {
+        toast.success("All job works updated successfully!");
+        setSelectedRows([]); // Clear selected rows
+      }
+
+      // Finally, call getJobWorks API with default filters to refresh the table
+      const filters = {
+        page: 1,
+        limit: pageSize,
+        populate: true,
+        status: "pending",
+      };
+      const response = await vendorshopService.getJobWorks(filters);
+
+      if (response.success && response.data.data.docs) {
+        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+      } else {
+        console.error("Failed to fetch updated job works:", response.message);
+        toast.error("Failed to refresh table data.");
+      }
+    } catch (error) {
+      console.error("Error during receive all:", error);
+      toast.error("An error occurred during receive all.");
+    }
   };
 
   // Handle Vendor Note click
@@ -78,16 +184,132 @@ const VendorListTable = ({ data }) => {
     setShowCustomerModal(true);
   };
   // Handle Vendor Note submit
-  const handleVendorNoteSubmit = (updatedRow) => {
-    setFilteredData((prev) =>
-      prev.map((row) =>
-        row._id === updatedRow._id
-          ? { ...row, vendorNote: updatedRow.vendorNote }
-          : row
-      )
-    );
+  const handleVendorNoteSubmit = async (updatedRow) => {
+    try {
+      // Fetch updated job works data
+      const filters = {
+        page: 1,
+        limit: pageSize,
+        populate: true,
+        status: "pending",
+      };
+      const response = await vendorshopService.getJobWorks(filters);
+
+      if (response.success && response.data.data.docs) {
+        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+      } else {
+        console.error("Failed to fetch updated job works:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching updated job works:", error);
+    } finally {
+      setShowVendorModal(false);
+    }
+  };
+  // Transform job works data to required format
+  // Transform job works data to required format
+  const transformJobWorksData = (jobWorks) => {
+    const jobWorkData = [];
+    jobWorks.forEach((jobWork) => {
+      const order = jobWork.order;
+      const sale = jobWork.sale;
+      const powerSpecs = jobWork.powerAtTime?.specs?.right?.distance || {}; // Safely handle undefined
+      const lensName =
+        jobWork.lens?.item?.productName || jobWork.lens?.sku || "";
+
+      jobWorkData.push({
+        billNumber: order.billNumber || "",
+        orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+        store: jobWork.store.name || "",
+        side: jobWork.side || "",
+        vendorNote: order.vendorNote || "",
+        productName: lensName,
+        sph: powerSpecs.sph || "",
+        cyl: powerSpecs.cyl || "",
+        axis: powerSpecs.axis || "",
+        add: powerSpecs.add || "",
+      });
+
+      // Add left side if available
+      const leftPowerSpecs = jobWork.powerAtTime?.specs?.left?.distance || {};
+      if (leftPowerSpecs && jobWork.side === "both") {
+        jobWorkData.push({
+          billNumber: order.billNumber || "",
+          orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }),
+          store: jobWork.store.name || "",
+          side: "left",
+          vendorNote: order.vendorNote || "",
+          productName: lensName,
+          sph: leftPowerSpecs.sph || "",
+          cyl: leftPowerSpecs.cyl || "",
+          axis: leftPowerSpecs.axis || "",
+          add: leftPowerSpecs.add || "",
+        });
+      }
+    });
+    return { jobWorkData };
   };
 
+  // Handle PDF Download
+  const handleDownloadPDF = async () => {
+    try {
+      // Fetch job works with limit=300
+      const filters = {
+        page: 1,
+        limit: 300,
+        populate: true,
+        status: "pending",
+      };
+      const response = await vendorshopService.getJobWorks(filters);
+      if (response.success && response.data.data.docs) {
+        const transformedData = transformJobWorksData(response.data.data.docs);
+        const pdfResponse = await vendorshopService.downloadJobWorksPDF(
+          transformedData
+        );
+        if (pdfResponse.success) {
+          const url = window.URL.createObjectURL(new Blob([pdfResponse.data]));
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", "JobWorks.pdf");
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+        }
+      }
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+    }
+  };
+
+  const handleReveive = async (row) => {
+    const response = await vendorshopService.updateJobWorkStatus(
+      row.original._id,
+      "received"
+    );
+    if (response?.success) {
+      toast.success("Job work Updated");
+      const filters = {
+        page: 1,
+        limit: pageSize,
+        populate: true,
+        status: "pending",
+      };
+      const response = await vendorshopService.getJobWorks(filters);
+
+      if (response.success && response.data.data.docs) {
+        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+      }
+    }
+  };
   // Table columns
   const columns = useMemo(
     () => [
@@ -100,34 +322,45 @@ const VendorListTable = ({ data }) => {
             checked={selectedRows.includes(row.original._id)}
             onChange={() => handleCheckboxChange(row.original._id)}
             className="form-check-input-lg"
+            disabled={loading}
           />
         ),
       },
       {
-        accessorKey: "date",
+        accessorKey: "sale.createdAt",
         header: "Process Date",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        cell: ({ row }) => (
+          <div className="table-vendor-data-size">
+            {new Date(row.original.sale.createdAt).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}
+          </div>
         ),
       },
       {
-        accessorKey: "store",
+        accessorKey: "store.name",
         header: "Store",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        cell: ({ row }) => (
+          <div className="table-vendor-data-size">
+            {row.original.store.name}
+          </div>
         ),
       },
       {
-        accessorKey: "billNo",
+        accessorKey: "order.billNumber",
         header: "Bill Number",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        cell: ({ row }) => (
+          <div className="table-vendor-data-size">
+            {row.original.order.billNumber}
+          </div>
         ),
       },
       {
-        accessorKey: "customerName",
+        accessorKey: "sale.customerName",
         header: "Customer Name",
-        cell: ({ getValue, row }) => (
+        cell: ({ row }) => (
           <div
             className="table-vendor-data-size"
             style={{
@@ -137,7 +370,7 @@ const VendorListTable = ({ data }) => {
             }}
             onClick={() => handleCustomerNoteClick(row.original)}
           >
-            {getValue()}
+            {row.original.sale.customerName}
           </div>
         ),
       },
@@ -154,87 +387,102 @@ const VendorListTable = ({ data }) => {
             }}
             onClick={() => handleVendorNoteClick(row.original)}
           >
-            {row.original.vendorNote || "Add Note"}
+            {row.original.order.vendorNote || "Add Note"}
           </div>
         ),
       },
       {
-        accessorKey: "lensSKU",
+        accessorKey: "lens.sku",
         header: "Lens SKU",
-        cell: ({ getValue }) => (
+        cell: ({ row }) => (
           <div className="max-w-[150px] table-vendor-data-size">
-            {getValue()}
+            {row.original.lens.sku}
           </div>
         ),
       },
       {
         accessorKey: "side",
         header: "Side",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
-        ),
-      },
-      {
-        accessorKey: "power",
-        header: "Power",
         cell: ({ row }) => (
-          <div className="text-xs">
-            <div
-              className="d-grid gap-0"
-              style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
-            >
-              {["Specs", "SPH", "CYL", "Axis", "ADD"].map((label, idx) => (
-                <div
-                  key={idx}
-                  className="border border-dark p-1 fw-bold table-vendor-data-size"
-                >
-                  {label}
-                </div>
-              ))}
-              <div className="border border-dark p-1 fw-bold">Dist</div>
-              {["-2.25", "-0.75", "5", ""].map((value, idx) => (
-                <div
-                  key={idx}
-                  className="border border-dark p-1 table-vendor-data-size"
-                >
-                  {value}
-                </div>
-              ))}
-              <div className="border border-dark p-1 fw-bold">Near</div>
-              {["-2.25", "-0.75", "5", ""].map((value, idx) => (
-                <div
-                  key={idx}
-                  className="border border-dark p-1 table-vendor-data-size"
-                >
-                  {value}
-                </div>
-              ))}
-            </div>
-          </div>
+          <div className="table-vendor-data-size">{row.original.side}</div>
         ),
       },
       {
-        accessorKey: "vendor",
+        accessorKey: "powerAtTime.specs",
+        header: "Power",
+        cell: ({ row }) => {
+          const specs = row.original.powerAtTime.specs;
+          return (
+            <div className="text-xs">
+              <div
+                className="d-grid gap-0"
+                style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
+              >
+                {["Specs", "SPH", "CYL", "Axis", "ADD"].map((label, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-dark p-1 fw-bold table-vendor-data-size"
+                  >
+                    {label}
+                  </div>
+                ))}
+                <div className="border border-dark p-1 fw-bold">Dist</div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.distance.sph || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.distance.cyl || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.distance.axis || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.distance.add || ""}
+                </div>
+                <div className="border border-dark p-1 fw-bold">Near</div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.near.sph || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.near.cyl || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.near.axis || ""}
+                </div>
+                <div className="border border-dark p-1 table-vendor-data-size">
+                  {specs?.right.near.add || ""}
+                </div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "vendor.companyName",
         header: "Vendor",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        cell: ({ row }) => (
+          <div className="table-vendor-data-size">
+            {row.original.vendor.companyName}
+          </div>
         ),
       },
       {
         accessorKey: "action",
         header: "Action",
-        cell: () => (
+        cell: ({ row }) => (
           <Button
             variant="primary"
             className="table-vendor-data-size"
             size="sm"
+            onClick={() => handleReveive(row)}
+            disabled={loading}
           >
-            Receive
+            {loading ? "Processing..." : "Receive"}
           </Button>
         ),
       },
     ],
-    [selectedRows]
+    [selectedRows, loading]
   );
 
   // Table setup
@@ -246,14 +494,6 @@ const VendorListTable = ({ data }) => {
     initialState: { pagination: { pageIndex: 0, pageSize } },
   });
 
-  // Export to Excel
-  const exportToExcel = (data, filename) => {
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "VendorList");
-    XLSX.writeFile(workbook, `${filename}.xlsx`);
-  };
-
   const pageIndex = table.getState().pagination.pageIndex;
   const startRow = pageIndex * pageSize + 1;
   const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
@@ -263,90 +503,132 @@ const VendorListTable = ({ data }) => {
     <div className="card-body p-0">
       <div className="d-flex flex-column flex-md-row gap-3 mb-3 px-3">
         <div className="ms-md-auto">
-          <Button onClick={() => exportToExcel(filteredData, "VendorList")}>
+          <Button onClick={handleDownloadPDF} disabled={loading}>
             Download
           </Button>
         </div>
       </div>
-      <div className="mb-4 col-md-4">
-        <div className="input-group">
-          <span className="input-group-text bg-white border-end-0">
-            <FaSearch
-              className="text-muted custom-search-icon"
-              style={{ color: "#94a3b8" }}
+
+      {filteredData.length !== 0 && (
+        <div className="mb-4 col-md-4">
+          <div className="input-group">
+            <span className="input-group-text bg-white border-end-0">
+              <FaSearch
+                className="text-muted custom-search-icon"
+                style={{ color: "#94a3b8" }}
+              />
+            </span>
+            <input
+              type="search"
+              className="form-control border-start-0 py-2q"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={loading}
             />
-          </span>
-          <input
-            type="search"
-            className="form-control border-start-0 py-2q"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
+          </div>
+          <div className="d-flex gap-2 mt-2">
+            {selectedRows.length > 0 && (
+              <Button
+                variant="primary"
+                onClick={handleReceiveAll}
+                disabled={loading}
+              >
+                Receive All
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="d-flex gap-2 mt-2">
-          {selectedRows.length > 0 && (
-            <Button variant="primary" onClick={handleReceiveAll}>
-              Receive All
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
+
       <div className="table-responsive">
-        <table className="table table-sm ">
-          <thead className="table-light border text-xs text-uppercase">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="py-3 text-left custom-perchase-th"
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
-        <div className="text-sm text-muted mb-3 mb-sm-0">
-          Showing <span className="fw-medium">{startRow}</span> to{" "}
-          <span className="fw-medium">{endRow}</span> of{" "}
-          <span className="fw-medium">{totalRows}</span> results
-        </div>
-        <div className="btn-group">
-          <Button
-            variant="outline-primary"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+        {loading ? (
+          <div
+            style={{
+              width: "100%",
+              height: "300px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            Previous
-          </Button>
-          <Button
-            variant="outline-primary"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            <div className="spinner-border m-5" role="status">
+              <span className="sr-only"></span>
+            </div>
+          </div>
+        ) : filteredData.length === 0 ? (
+          <div
+            style={{
+              width: "100%",
+              height: "300px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            Next
-          </Button>
-        </div>
+            <p>No data available.</p>
+          </div>
+        ) : (
+          <table className="table table-sm">
+            <thead className="table-light border text-xs text-uppercase">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="py-3 text-left custom-perchase-th"
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
+      {filteredData.length !== 0 && (
+        <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
+          <div className="text-sm text-muted mb-3 mb-sm-0">
+            Showing <span className="fw-medium">{startRow}</span> to{" "}
+            <span className="fw-medium">{endRow}</span> of{" "}
+            <span className="fw-medium">{totalRows}</span> results
+          </div>
+          <div className="btn-group">
+            <Button
+              variant="outline-primary"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage() || loading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage() || loading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
       <VendorNoteModal
         show={showVendorModal}
         onHide={() => setShowVendorModal(false)}
@@ -357,7 +639,6 @@ const VendorListTable = ({ data }) => {
         show={showCustomerModal}
         onHide={() => setShowCustomerModal(false)}
         selectedRow={selectedRow}
-        // onSubmit={handleVendorNoteSubmit}
       />
     </div>
   );

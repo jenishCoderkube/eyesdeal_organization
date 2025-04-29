@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 function BillModel({ selectedBill, closeBillModal }) {
+  const modalRef = useRef(null); // Ref to track the modal content
+
   // Calculate financial details
   const receivedAmount = selectedBill.receivedAmount?.length
     ? selectedBill.receivedAmount.reduce(
@@ -9,6 +11,21 @@ function BillModel({ selectedBill, closeBillModal }) {
       )
     : 0;
   const amountDue = selectedBill.netAmount - receivedAmount;
+
+  // Handle outside click
+  const handleOutsideClick = (e) => {
+    if (modalRef.current && !modalRef.current.contains(e.target)) {
+      closeBillModal(); // Close modal if click is outside modal content
+    }
+  };
+
+  // Add event listener for outside clicks
+  useEffect(() => {
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick); // Cleanup on unmount
+    };
+  }, []);
 
   return (
     <section
@@ -32,6 +49,7 @@ function BillModel({ selectedBill, closeBillModal }) {
       <div
         className="modal-dialog"
         role="document"
+        ref={modalRef} // Attach ref to modal content
         style={{
           width: "100%",
           maxWidth: "700px",
@@ -49,16 +67,11 @@ function BillModel({ selectedBill, closeBillModal }) {
             border: "none",
           }}
         >
-          <div
-            className="modal-header border-bottom"
-            style={{
-              paddingBottom: "10px",
-              paddingTop: "10px",
-            }}
-          >
+          <div className="modal-header border-0 p-0 m-0">
             <button
               type="button"
-              className="btn-close small"
+              className="btn-close"
+              style={{ width: "40px", height: "40px" }}
               onClick={closeBillModal}
               aria-label="Close"
             ></button>
@@ -76,7 +89,7 @@ function BillModel({ selectedBill, closeBillModal }) {
             <div className="d-flex flex-wrap justify-content-between small">
               {selectedBill.orders?.map((order, index) => (
                 <React.Fragment key={order._id || index}>
-                  <div className="me-4  mb-2" style={{ maxWidth: "180px" }}>
+                  <div className="me-4 mb-2" style={{ maxWidth: "180px" }}>
                     <p>
                       <strong>Product</strong>
                     </p>

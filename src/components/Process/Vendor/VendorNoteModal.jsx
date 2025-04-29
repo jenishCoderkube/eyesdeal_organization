@@ -1,14 +1,40 @@
-import React, { useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Modal, Button, Form, Alert } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
+import { toast } from "react-toastify";
+import { vendorshopService } from "../../../services/Process/vendorshopService";
 
 const VendorNoteModal = ({ show, onHide, selectedRow, onSubmit }) => {
-  const [vendorNote, setVendorNote] = useState(selectedRow?.vendorNote || "");
+  const [vendorNote, setVendorNote] = useState("");
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  // Update vendorNote state when selectedRow changes
+  useEffect(() => {
+    setVendorNote(selectedRow?.order?.vendorNote || "");
+  }, [selectedRow]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({ ...selectedRow, vendorNote });
-    onHide();
+    setError(null);
+
+    const saleId = selectedRow?.sale?._id;
+    if (!saleId) {
+      setError("Sale ID not found.");
+      return;
+    }
+
+    const response = await vendorshopService.updateOrderNote(
+      saleId,
+      vendorNote
+    );
+
+    if (response.success) {
+      toast.success("Vendor note updated successfully!");
+      onSubmit({ ...selectedRow, order: { ...selectedRow.order, vendorNote } });
+      onHide();
+    } else {
+      setError(response.message);
+    }
   };
 
   return (
@@ -28,6 +54,7 @@ const VendorNoteModal = ({ show, onHide, selectedRow, onSubmit }) => {
         </Button>
       </Modal.Header>
       <Modal.Body>
+        {error && <Alert variant="danger">{error}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
             <Form.Label>System Id</Form.Label>

@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
 
 function NotesModel({ closeNotesModal, selectedNotes, refreshSalesData }) {
   const [notes, setNotes] = useState(selectedNotes?.notes || "");
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useRef(null); // Ref to track the modal content
+
+  // Handle outside click
+  const handleOutsideClick = (e) => {
+    if (modalRef.current && !modalRef.current.contains(e.target)) {
+      closeNotesModal(); // Close modal if click is outside modal content
+    }
+  };
+
+  // Add event listener for outside clicks
+  useEffect(() => {
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick); // Cleanup on unmount
+    };
+  }, []);
 
   const handleSubmit = async () => {
     if (!notes.trim()) {
@@ -18,20 +34,15 @@ function NotesModel({ closeNotesModal, selectedNotes, refreshSalesData }) {
     };
 
     try {
-      console.log("Submitting updateSale with payload:", {
-        _id: selectedNotes._id,
-        ...payload,
-      });
       const response = await shopProcessService.updateSale(
         selectedNotes._id,
         payload
       );
-      console.log("updateSale response:", response);
+
       if (response.success) {
         toast.success("Notes updated successfully");
         if (refreshSalesData) {
-          console.log("Calling refreshSalesData");
-          await refreshSalesData(); // Await to ensure refresh completes
+          await refreshSalesData();
         }
         closeNotesModal();
       } else {
@@ -66,8 +77,9 @@ function NotesModel({ closeNotesModal, selectedNotes, refreshSalesData }) {
       }}
     >
       <div
-        className="modal-dialog overflow-auto"
+        className="modal-dialog overflow-y-auto"
         role="document"
+        ref={modalRef} // Attach ref to modal content
         style={{
           width: "100%",
           maxWidth: "650px",
@@ -80,10 +92,11 @@ function NotesModel({ closeNotesModal, selectedNotes, refreshSalesData }) {
         }}
       >
         <div className="modal-content border-0">
-          <div className="modal-header border-bottom pb-2">
+          <div className="modal-header border-0 p-0">
             <button
               type="button"
-              className="btn-close small"
+              className="btn-close "
+              style={{ width: "40px", height: "40px" }}
               onClick={closeNotesModal}
               aria-label="Close"
             ></button>

@@ -33,7 +33,6 @@ function ShopProcessEdit() {
       setLoading(true);
       try {
         const response = await shopProcessService.getSaleById(id);
-        console.log("getSaleById response:", response);
         if (response.success && response.data.data.docs.length > 0) {
           const sale = response.data.data.docs[0];
           setSaleData(sale);
@@ -151,7 +150,6 @@ function ShopProcessEdit() {
 
     try {
       const response = await shopProcessService.updateSale(id, payload);
-      console.log("updateSale response:", response);
       if (response.success) {
         toast.success("Sale updated successfully");
         // Update saleData with response data or payload

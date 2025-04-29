@@ -3,8 +3,6 @@ import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
 
 function AssignPowerModel({ closeAPModal, selectedAP, refreshSalesData }) {
-  console.log("selectedAP:", selectedAP);
-
   const [activeCustStatus, setActiveCustStatus] = useState("Specs");
   const [prescriptions, setPrescriptions] = useState({
     specs: [],
@@ -69,20 +67,14 @@ function AssignPowerModel({ closeAPModal, selectedAP, refreshSalesData }) {
     };
 
     try {
-      console.log("Submitting updateSale with payload:", {
-        _id: selectedAP._id,
-        ...payload,
-      });
       const response = await shopProcessService.updateSale(
         selectedAP._id,
         payload
       );
-      console.log("updateSale response:", response);
 
       if (response.success) {
         toast.success("Power assigned successfully");
         if (refreshSalesData) {
-          console.log("Calling refreshSalesData");
           await refreshSalesData(); // Await to ensure refresh completes
         }
         closeAPModal();

@@ -110,6 +110,7 @@ export const shopProcessService = {
   getOrderCount: async (filters) => {
     try {
       const params = buildCountParams(filters.stores, filters.search);
+      console.log("get count is<<<<", params);
       const response = await api.get(`${AUTH_ENDPOINTS.ORDER_COUNT}?${params}`);
       return {
         success: true,

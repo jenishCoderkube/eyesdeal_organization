@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import Select from "react-select";
 import { FaTimes } from "react-icons/fa";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { toast } from "react-toastify";
+import { workshopService } from "../../../services/Process/workshopService";
 
 const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [rightSelected, setRightSelected] = useState(false);
@@ -10,23 +11,198 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [rightVendor, setRightVendor] = useState(null);
   const [leftVendor, setLeftVendor] = useState(null);
   const [vendorNote, setVendorNote] = useState("");
+  const [vendorOptions, setVendorOptions] = useState([]);
+  const [loadingVendors, setLoadingVendors] = useState(false);
 
-  // Mock vendor options (replace with actual data)
-  const vendorOptions = [
-    { value: "66b467f43058c5bb910af75b", label: "NAWAZ KAACH RX" },
-    { value: "vendor2", label: "Vendor 2" },
-    { value: "vendor3", label: "Vendor 3" },
-  ];
+  console.log("selectedRows<<<<", selectedRows);
 
-  const handleSubmit = (e) => {
+  // Fetch vendors when the modal opens
+  useEffect(() => {
+    if (show) {
+      const fetchVendors = async () => {
+        setLoadingVendors(true);
+        try {
+          const response = await workshopService.getVendors();
+
+          if (response.success) {
+            const vendors = response?.data?.data?.docs?.map((vendor) => ({
+              value: vendor._id,
+              label: vendor.companyName,
+            }));
+            setVendorOptions(vendors);
+          } else {
+            toast.error(response.message);
+            setVendorOptions([]);
+          }
+        } catch (error) {
+          // toast.error("Failed to fetch vendors");
+          setVendorOptions([]);
+        } finally {
+          setLoadingVendors(false);
+        }
+      };
+      fetchVendors();
+    }
+  }, [show]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({
-      rightVendor: rightSelected ? rightVendor : null,
-      leftVendor: leftSelected ? leftVendor : null,
-      vendorNote,
-      selectedRows,
-    });
-    onHide();
+
+    if (!rightSelected && !leftSelected) {
+      toast.warning("Please select at least one side (Right or Left).");
+      return;
+    }
+
+    let successCount = 0;
+
+    for (const row of selectedRows) {
+      const { _id: orderId, product, lens, sale, store, powerAtTime } = row;
+
+      // Validate required fields
+      if (
+        !orderId ||
+        !product?.item?._id ||
+        !product?.barcode ||
+        !product?.sku ||
+        !product?.mrp ||
+        !product?.srp ||
+        !lens?.item?._id ||
+        !lens?.barcode ||
+        !lens?.sku ||
+        !lens?.mrp ||
+        !lens?.srp ||
+        !sale?._id ||
+        !store?._id ||
+        !powerAtTime?.specs?._id
+      ) {
+        toast.error(
+          `Missing required fields for order ${orderId || "unknown"}`
+        );
+        continue;
+      }
+
+      // Prepare common payload data
+      const basePayload = {
+        product: {
+          item: product.item._id,
+          barcode: product.barcode,
+          sku: product.sku,
+          mrp: product.mrp,
+          srp: product.srp,
+        },
+        lens: {
+          item: lens.item._id,
+          barcode: lens.barcode,
+          sku: lens.sku,
+          mrp: lens.mrp,
+          srp: lens.srp,
+        },
+        sale: sale._id,
+        order: orderId,
+        store: store._id,
+        powerAtTime: {
+          specs: powerAtTime.specs._id,
+        },
+      };
+
+      try {
+        // Handle Left Side
+        if (leftSelected && leftVendor) {
+          const leftPayload = {
+            ...basePayload,
+            side: "left",
+            vendor: leftVendor.value,
+          };
+
+          // Create job work for left side
+          const jobWorkResponse = await workshopService.createJobWork(
+            leftPayload
+          );
+          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
+            const jobWorkId = jobWorkResponse.data.data.id;
+
+            // Update order with left job work
+            const orderPayload = {
+              _id: orderId,
+              currentLeftJobWork: jobWorkId,
+              status: "inLab",
+              vendorNote: vendorNote || null,
+            };
+            const orderResponse = await workshopService.updateOrderJobWork(
+              orderId,
+              orderPayload
+            );
+            if (orderResponse.success) {
+              successCount++;
+            } else {
+              // toast.error(
+              //   `Failed to update order ${orderId} for left side: ${orderResponse.message}`
+              // );
+            }
+          } else {
+            // toast.error(
+            //   `Failed to create job work for left side of order ${orderId}: ${jobWorkResponse.message}`
+            // );
+          }
+        }
+
+        // Handle Right Side
+        if (rightSelected && rightVendor) {
+          const rightPayload = {
+            ...basePayload,
+            side: "right",
+            vendor: rightVendor.value,
+          };
+
+          // Create job work for right side
+          const jobWorkResponse = await workshopService.createJobWork(
+            rightPayload
+          );
+
+          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
+            const jobWorkId = jobWorkResponse.data.data.id;
+
+            // Update order with right job work
+            const orderPayload = {
+              _id: orderId,
+              currentRightJobWork: jobWorkId,
+              status: "inLab",
+              vendorNote: vendorNote || null,
+            };
+            const orderResponse = await workshopService.updateOrderJobWork(
+              orderId,
+              orderPayload
+            );
+            if (orderResponse.success) {
+              successCount++;
+            } else {
+              // toast.error(
+              //   `Failed to update order ${orderId} for right side: ${orderResponse.message}`
+              // );
+            }
+          } else {
+            // toast.error(
+            //   `Failed to create job work for right side of order ${orderId}: ${jobWorkResponse.message}`
+            // );
+          }
+        }
+      } catch (error) {
+        // toast.error(`Error processing order ${orderId}: ${error.message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} order(s) processed successfully`);
+      onSubmit({
+        rightVendor: rightSelected ? rightVendor : null,
+        leftVendor: leftSelected ? leftVendor : null,
+        vendorNote: vendorNote || null,
+        selectedRows,
+      });
+      onHide();
+    } else {
+      toast.error("No orders were processed successfully.");
+    }
   };
 
   return (
@@ -79,7 +255,8 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
                 options={vendorOptions}
                 value={rightVendor}
                 onChange={setRightVendor}
-                isDisabled={!rightSelected}
+                isDisabled={!rightSelected || loadingVendors}
+                isLoading={loadingVendors}
                 classNamePrefix="react-select"
                 instanceId="right-vendor-select"
                 className="w-100"
@@ -109,7 +286,8 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
                 options={vendorOptions}
                 value={leftVendor}
                 onChange={setLeftVendor}
-                isDisabled={!leftSelected}
+                isDisabled={!leftSelected || loadingVendors}
+                isLoading={loadingVendors}
                 classNamePrefix="react-select"
                 instanceId="left-vendor-select"
                 className="w-100"
@@ -137,6 +315,7 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
               type="submit"
               variant="primary"
               className="bg-primary hover-bg-primary-dark text-white"
+              disabled={loadingVendors}
             >
               Submit
             </Button>
