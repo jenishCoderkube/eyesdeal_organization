@@ -71,11 +71,10 @@ function PrescriptionModel({
                     key={status}
                     onClick={() => setActiveCustStatus(status)}
                     className={`bg-transparent border-0 pb-2 px-1 fw-medium 
-                                    ${
-                                      activeCustStatus === status
-                                        ? "text-primary border-bottom border-primary"
-                                        : "text-secondary"
-                                    } 
+                                    ${activeCustStatus === status
+                        ? "text-primary border-bottom border-primary"
+                        : "text-secondary"
+                      } 
                                     hover:text-dark focus:outline-none`}
                     style={{ boxShadow: "none", outline: "none" }}
                   >

@@ -11,6 +11,7 @@ import OrdersModel from "../../components/Process/OrdersModel";
 import { storeService } from "../../services/storeService";
 import InventoryData from "../../components/Sale/InventoryData";
 import ProductSelector from "../../components/Sale/ProductSelector";
+import { toast } from "react-toastify";
 
 const SaleForm = () => {
   const navigate = useNavigate();
@@ -172,19 +173,36 @@ const SaleForm = () => {
     }
   };
 
-  const checkingCouponCode = async (coupon, customerPhone, products) => {
+  // transform function
+  const transformInventoryPairs = (inventoryPairs) => {
+    const productObject = {};
+
+    inventoryPairs.forEach((pair, index) => {
+      productObject[index] = {
+        product: pair.product,
+        lens_package: pair.lens,
+      };
+    });
+
+    return { products: productObject };
+  };
+
+  const checkingCouponCode = async (coupon, customerPhone, inventoryPairs) => {
     try {
-      const response = await saleService.checkCouponCode(coupon, customerPhone, products);
+      const products = transformInventoryPairs(inventoryPairs);
+      console.log("response", coupon, customerPhone, products);
+
+      const response = await saleService.checkCouponCode({ couponCode: coupon, phone: customerPhone, products });
       if (response.success) {
         console.log(response.data);
       } else {
-        console.error(response.data.message);
+        toast.error(response.message);
       }
     } catch (error) {
       console.error("Error fetching stores:", error);
     }
   };
-  
+
   useEffect(() => {
     if (defaultStore?.value) {
       fetchSalesRepData(defaultStore?.value);
@@ -218,7 +236,42 @@ const SaleForm = () => {
     }
   };
 
-  console.log(InventoryPairs)
+  const calculateTotals = () => {
+    let totalQuantity = 0;
+    let totalAmount = 0;
+    let taxAmount = 0;
+    let totalDiscount = 0;
+    let flatDiscount = Number(formData.flatDiscount) || 0;
+    let couponDiscount = Number(formData.couponDiscount) || 0;
+    let otherCharges = Number(formData.otherCharges) || 0;
+
+    inventoryData.forEach(pair => {
+      console.log(pair);
+      if (pair.data) {
+        totalQuantity += 1 || 0;
+        totalAmount += (pair.totalAmount || 0);
+        taxAmount += (pair.taxAmount || 0);
+        totalDiscount += (pair.discount || 0)
+      }
+    });
+
+    totalDiscount += flatDiscount + couponDiscount;
+    const netAmount = totalAmount - flatDiscount + otherCharges - couponDiscount;
+
+    setFormData(prev => ({
+      ...prev,
+      totalQuantity,
+      totalAmount,
+      totalTax: taxAmount,
+      netDiscount: totalDiscount,
+      netAmount
+    }));
+  };
+
+  useEffect(() => {
+    calculateTotals();
+  }, [inventoryData, formData.flatDiscount, formData.otherCharges, formData.couponDiscount])
+
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
       <div className="row d-flex align-items-stretch">
@@ -399,7 +452,7 @@ const SaleForm = () => {
               setInventoryPairs={setInventoryPairs} />
 
             {/* Product List */}
-            <InventoryData inventoryData={inventoryData} setInventoryData={setInventoryData} setInventoryPairs={setInventoryPairs}/>
+            <InventoryData inventoryData={inventoryData} setInventoryData={setInventoryData} setInventoryPairs={setInventoryPairs} />
 
           </div>
         </div>
@@ -492,6 +545,7 @@ const SaleForm = () => {
                     e.target.style.backgroundColor = "#4f46e5";
                     e.target.style.borderColor = "#4f46e5";
                   }}
+                  onClick={() => checkingCouponCode(formData.coupon, formData.customerPhone, InventoryPairs)}
                 >
                   Add
                 </button>
@@ -535,7 +589,7 @@ const SaleForm = () => {
         <div className="col-12 p-0">
           <div className="border border-black p-3  bg-white">
             <div className="d-flex justify-content-end ">
-              <span>Due Amount: {formData.dueAmount}</span>
+              <span>Due Amount: {formData.netAmount}</span>
             </div>
 
             <div className="d-flex align-items-center gap-3 ">

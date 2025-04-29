@@ -13,8 +13,8 @@ const menuItems = [
     icon: "bi bi-upload",
 
     submenu: [
-      { label: "New Sale", link: "/sale/new" },
-      { label: "Sale List", link: "/sale/list" },
+      { label: "Sale", link: "/sale/new" },
+      { label: "Sale Return", link: "/sale/list" },
     ],
   },
   {
