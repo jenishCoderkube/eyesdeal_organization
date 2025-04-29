@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Select from "react-select";
 import {
   flexRender,
@@ -6,124 +6,153 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
-
-// Custom styles for react-select to match Bootstrap
-const selectStyles = {
-  control: (provided) => ({
-    ...provided,
-    borderRadius: "0.25rem",
-    borderColor: "#ced4da",
-    boxShadow: "none",
-    "&:hover": {
-      borderColor: "#adb5bd",
-    },
-  }),
-  menu: (provided) => ({
-    ...provided,
-    zIndex: 1050, // Ensure dropdown appears above Bootstrap components
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected
-      ? "#007bff"
-      : state.isFocused
-      ? "#f8f9fa"
-      : null,
-    color: state.isSelected ? "#fff" : "#212529",
-    "&:hover": {
-      backgroundColor: "#f8f9fa",
-    },
-  }),
-  singleValue: (provided) => ({
-    ...provided,
-    color: "#212529",
-  }),
-  placeholder: (provided) => ({
-    ...provided,
-    color: "#6c757d",
-  }),
-};
+import debounce from "lodash/debounce";
+import { inventoryService } from "../../../services/inventoryService";
+import { toast } from "react-toastify";
 
 const StockAdjustmentCom = () => {
-  // State for form fields
-  const [from, setFrom] = useState({
-    value: "27",
-    label: "ELITE HOSPITAL / 27",
-  });
   const [to, setTo] = useState(null);
+
   const [product, setProduct] = useState(null);
 
-  // Dummy data for dropdowns
-  const storeOptions = [
-    { value: "1", label: "ED HO / 1" },
-    { value: "28", label: "CITY OPTICS / 28" },
-  ];
-
-  const productOptions = [
-    { value: "1", label: "I-gog Frames" },
-    { value: "2", label: "Fizan Frames" },
-  ];
-
-  // Dummy data for table
-  const tableData = useMemo(
-    () => [
-      {
-        id: 1,
-        barcode: "6246",
-        stock: 10,
-        quantity: 2,
-        sku: "IG-FR-KIDS-FLX-1253-C9",
-      },
-      {
-        id: 2,
-        barcode: "6100",
-        stock: 15,
-        quantity: 1,
-        sku: "FZ-FR-ADULT-2000-C1",
-      },
-    ],
-    []
-  );
-
-  // Table columns
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "barcode",
-        header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "stock",
-        header: "Stock",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "quantity",
-        header: "Quantity",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "sku",
-        header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-    ],
-    []
-  );
-
-  // Tanstack table setup
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const [productData, setProductData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [storeData, setStoreData] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  console.log("inventory", inventory);
 
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log({ from, to, product, tableData });
     // Add API call or further logic here
+  };
+
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  const getProduct = async (search) => {
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.universalSearch(search);
+      if (response.success) {
+        setProductData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const debouncedGetProduct = useCallback(
+    debounce((value) => {
+      if (value?.trim()) {
+        getProduct(value);
+      }
+    }, 1000),
+    [] // empty dependency to persist across re-renders
+  );
+
+  const productOptions = productData?.docs?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.oldBarcode} ${vendor.sku}`,
+  }));
+
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    if (to || product) {
+      getInventoryData();
+    }
+  }, [to, product]);
+
+  const getInventoryData = async () => {
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getStockAdjustment(
+        product?.value,
+        to?.value
+      );
+      if (response.success) {
+        setInventory(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reasonOptions = [
+    { value: "Damaged", label: "Damaged" },
+    { value: "Lost", label: "Lost" },
+    { value: "Returned", label: "Returned" },
+  ];
+
+  useEffect(() => {
+    if (inventory?.length > 0) {
+      const updatedProducts = inventory.map((item) => ({
+        ...item,
+        quantityToUpdate: 0,
+        reason: null,
+      }));
+      setProducts(updatedProducts);
+    } else {
+      setProducts([]);
+    }
+  }, [inventory]);
+
+  const [products, setProducts] = useState(
+    inventory?.docs?.map((item) => ({
+      ...item,
+      quantityToUpdate: 0,
+      reason: null,
+    }))
+  );
+
+  console.log("products", products);
+
+  const handleQuantityChange = (index, value) => {
+    const updatedProducts = [...products];
+    updatedProducts[index].quantityToUpdate = parseInt(value, 10) || 0;
+    setProducts(updatedProducts);
+  };
+
+  const handleReasonChange = (index, selectedOption) => {
+    const updatedProducts = [...products];
+    updatedProducts[index].reason = selectedOption;
+    setProducts(updatedProducts);
+  };
+
+  const handleRemoveProduct = (index) => {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -146,7 +175,6 @@ const StockAdjustmentCom = () => {
                     onChange={setTo}
                     options={storeOptions}
                     placeholder="Select..."
-                    styles={selectStyles}
                     className="w-100"
                   />
                 </div>
@@ -165,8 +193,15 @@ const StockAdjustmentCom = () => {
                     onChange={setProduct}
                     options={productOptions}
                     placeholder="Select..."
-                    styles={selectStyles}
                     className="w-100"
+                    onInputChange={(value) => {
+                      debouncedGetProduct(value);
+                    }}
+                    isLoading={loading}
+                    loadingMessage={() => "Loading..."}
+                    noOptionsMessage={({ inputValue }) =>
+                      inputValue ? "No products found" : "Type to search"
+                    }
                   />
                 </div>
               </div>
@@ -174,39 +209,99 @@ const StockAdjustmentCom = () => {
                 <div className="table-responsive">
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <tr key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <th
-                              key={header.id}
-                              className="p-3 text-left custom-perchase-th"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
+                      <tr>
+                        <th>barcode</th>
+                        <th>Stock</th>
+                        <th>quantity</th>
+                        <th>reason</th>
+                        <th>sku</th>
+                        <th>Action</th>
+                      </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="p-3">
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
+                      {products?.length > 0 ? (
+                        products.map((item, index) => (
+                          <tr key={item.product?._id || index}>
+                            <td className="">
+                              {item.product?.oldBarcode || "-"}
                             </td>
-                          ))}
+                            <td className="">{item.quantity}</td>
+                            <td className="">
+                              <input
+                                type="number"
+                                value={item.quantityToUpdate}
+                                onChange={(e) =>
+                                  setProducts((prev) =>
+                                    prev.map((p, i) =>
+                                      i === index
+                                        ? {
+                                            ...p,
+                                            quantityToUpdate:
+                                              parseInt(e.target.value) || 0,
+                                          }
+                                        : p
+                                    )
+                                  )
+                                }
+                                className="form-control"
+                              />
+                            </td>
+                            <td className="">
+                              <Select
+                                options={reasonOptions}
+                                value={item.reason}
+                                onChange={(selected) =>
+                                  setProducts((prev) =>
+                                    prev.map((p, i) =>
+                                      i === index
+                                        ? { ...p, reason: selected }
+                                        : p
+                                    )
+                                  )
+                                }
+                                placeholder="Select..."
+                                className="w-100"
+                              />
+                            </td>
+                            <td className="">{item.product?.sku || "-"}</td>
+                            <td className=" align-middle text-center">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleRemoveProduct(index)}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="text-center p-4 text-gray-500"
+                          >
+                            No Data Found
+                          </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
+                </div>
+                <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+                  <div className="text-sm text-muted mb-3 mb-sm-0">
+                    Showing <span className="fw-medium">1</span> to{" "}
+                    <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+                    of{" "}
+                    <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+                    results
+                  </div>
+                  <div className="btn-group">
+                    <button className="btn btn-outline-primary">
+                      Previous
+                    </button>
+                    <button className="btn btn-outline-primary">Next</button>
+                  </div>
                 </div>
               </div>
               <div className="col-12">

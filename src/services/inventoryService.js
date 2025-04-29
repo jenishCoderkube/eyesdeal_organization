@@ -19,7 +19,9 @@ const INVENTORY_ENDPOINTS = {
   UNIVERSALSEARCH: (params) => `/products/product?search=${params}`,
   UNIVERSALSEARCHGET: (params) => `/inventory/store?${params}`,
   STOCKTRANSFER: (params) => `/stockTransfer?populate=true&${params}`,
-  SALEINOUT : (params) => `/stockSale?populate=true&${params}`
+  SALEINOUT: (params) => `/stockSale?populate=true&${params}`,
+  ADJUSTMENT: (params) => `/stockAdjustment?populate=true&${params}`,
+  STOCKADJUSTMENT: (params) => `/inventory?${params}`,
 };
 
 const buildInventoryParams = (
@@ -157,6 +159,49 @@ const buildProductStoreParams = (productIds, page, limit) => {
   productIds.forEach((productIds, index) => {
     params.append(`product._id[$in][${index}]`, productIds);
   });
+
+  return params.toString();
+};
+
+const buildAdjustmentParams = (productId, storeIds, page, search, limit) => {
+  const params = new URLSearchParams();
+
+  if (page) params.append("page", page);
+
+  if (search) {
+    params.append("search[search]", search);
+  }
+  if (limit) {
+    params.append("limit", limit);
+  }
+
+  // productId.forEach((productId, index) => {
+
+  if (productId) {
+    params.append(`optimize[product][$in][0]`, productId);
+  }
+  // });
+
+  // Store IDs
+  storeIds.forEach((storeId, index) => {
+    params.append(`optimize[store][$in][${index}]`, storeId);
+  });
+
+  return params.toString();
+};
+
+const buildStockAdjustmentParams = (productId, storeIds) => {
+  const params = new URLSearchParams();
+
+  if (productId) {
+    params.append(`product._id`, productId);
+  }
+  // });
+
+  // Store IDs
+  if (storeIds) {
+    params.append(`storesArr[0]`, storeIds);
+  }
 
   return params.toString();
 };
@@ -496,7 +541,51 @@ export const inventoryService = {
         data: response.data,
       };
     } catch (error) {
-      console.log("error",error)
+      console.log("error", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  getAdjustment: async (productIds, storeIds = [], page, search, limit) => {
+    try {
+      let params = buildAdjustmentParams(
+        productIds,
+        storeIds,
+        page,
+        search,
+        limit
+      );
+      console.log("params", params);
+      const response = await api.get(INVENTORY_ENDPOINTS.ADJUSTMENT(params));
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  getStockAdjustment: async (productIds, storeIds) => {
+    try {
+      let params = buildStockAdjustmentParams(productIds, storeIds);
+
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.STOCKADJUSTMENT(params)
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
       return {
         success: false,
         message: error.response?.data?.message || "Error",
