@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { saleService } from '../../services/saleService';
 import AsyncSelect from "react-select/async";
-
 export default function InventoryData({ inventoryData, setInventoryData, setInventoryPairs }) {
 
     const fetchLensData = async (inputValue) => {
@@ -52,6 +51,7 @@ export default function InventoryData({ inventoryData, setInventoryData, setInve
             };
         });
         setInventoryData(updatedData);
+        
     }, [inventoryData.length]);
 
     return (
@@ -165,6 +165,8 @@ export default function InventoryData({ inventoryData, setInventoryData, setInve
                                                 loadOptions={fetchLensData}
                                                 placeholder="Select lens"
                                                 onChange={(selectedLens) => {
+                                                    const selectedPairId = inventoryData[index]?.pairId;
+
                                                     const mrp = parseFloat(selectedLens?.data?.MRP) || 0;
                                                     const srp = parseFloat(selectedLens?.data?.sellPrice) || 0;
                                                     const taxRate = parseFloat(selectedLens?.data?.tax) || 0;
@@ -181,7 +183,9 @@ export default function InventoryData({ inventoryData, setInventoryData, setInve
                                                         quantity: 1,
                                                         taxAmount,
                                                         discount,
-                                                        totalAmount
+                                                        totalAmount,
+                                                        pairId: selectedPairId,  // <==== IMPORTANT!! preserve pairId
+
                                                     };
 
                                                     setInventoryData((prev) => {
@@ -189,15 +193,39 @@ export default function InventoryData({ inventoryData, setInventoryData, setInve
                                                         updated[index] = lensItem;
                                                         return updated;
                                                     });
-                                                    setInventoryPairs((prev) => {
-                                                        const updated = [...prev];
-                                                        
-                                                        updated[index] = {
-                                                          ...updated[index],
-                                                          lens: lensItem,
-                                                        };
+                                                    // setInventoryPairs((prev) => {
+                                                    //     const updated = [...prev];
+                                                    //     console.log("updated", updated);
+                                                    //     console.log("index", index);
+
+                                                    //     // updated[index] = {
+                                                    //     //   ...updated[index],
+                                                    //     //   lens: lensItem.data,
+                                                    //     // };
+
+                                                    //     const targetIndex = updated.findIndex(pair => pair.lens === null);
+
+                                                    //     if (targetIndex !== -1) {
+                                                    //         updated[targetIndex] = {
+                                                    //             ...updated[targetIndex],
+                                                    //             lens: lensItem.data,
+                                                    //         };
+                                                    //     } else {
+                                                    //         console.error("No matching product found to pair lens with!");
+                                                    //     }
+                                                    //     return updated;
+                                                    // });
+                                             
+
+                                                    setInventoryPairs(prev => {
+                                                        const updated = prev.map(pair => {
+                                                            if (pair.pairId === selectedPairId) {
+                                                                return { ...pair, lens: selectedLens.data };
+                                                            }
+                                                            return pair;
+                                                        });
                                                         return updated;
-                                                      });
+                                                    });
 
                                                 }}
                                             />

@@ -165,14 +165,14 @@ export const saleService = {
             };
         }
     },
-    checkCouponCode: async (couponCode, phone="",products=[]) => {        
+    checkCouponCode: async (coupon, customerPhone, products) => {        
         try {
             const params = {
-                couponCode,
-                phone,
-                products
-            };
-            const response = await api.get(SALE_ENDPOINTS.COUPON, { params });
+                couponCode: coupon,
+                phone: customerPhone,
+                products: products,
+              };
+            const response = await api.post(SALE_ENDPOINTS.COUPON, { params });
             return {
                 success: true,
                 data: response.data,

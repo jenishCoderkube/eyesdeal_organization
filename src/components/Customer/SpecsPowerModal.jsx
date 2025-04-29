@@ -35,7 +35,6 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
 
   useEffect(() => {
     if (editData) {
-      console.log(editData);
       setFormData(editData);
     } else {
       setFormData({

@@ -1,6 +1,7 @@
 import React from 'react'
 import AsyncSelect from "react-select/async";
 import { saleService } from '../../services/saleService';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ProductSelector({
     showProductSelector,
@@ -51,13 +52,16 @@ export default function ProductSelector({
     const handleAddProduct = async (selectedProduct) => {
         const productDetails = await fetchInventoryDetails(selectedProduct?.value, defaultStore.value);
         if (productDetails) {
+            const pairId = uuidv4(); // generate unique ID
+
             setInventoryData(prev => [
                 ...prev,
-                { type: "product", data: productDetails },
-                { type: "lensDropdown" }
+                { type: "product", data: productDetails, pairId },
+                { type: "lensDropdown", pairId }
             ]);
 
             const newPair = {
+                pairId,
                 product: productDetails,
                 lens: null,
             };
