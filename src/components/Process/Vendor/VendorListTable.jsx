@@ -26,6 +26,7 @@ const VendorListTable = ({ data, loading }) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [pageSize, setPageSize] = useState(100);
 
@@ -261,7 +262,7 @@ const VendorListTable = ({ data, loading }) => {
   // Handle PDF Download
   const handleDownloadPDF = async () => {
     try {
-      // Fetch job works with limit=300
+      setIsDownloading(true); // Set downloading state to true
       const filters = {
         page: 1,
         limit: 300,
@@ -287,6 +288,9 @@ const VendorListTable = ({ data, loading }) => {
       }
     } catch (error) {
       console.error("Error downloading PDF:", error);
+      toast.error("Failed to download PDF.");
+    } finally {
+      setIsDownloading(false); // Reset downloading state
     }
   };
 
@@ -503,8 +507,11 @@ const VendorListTable = ({ data, loading }) => {
     <div className="card-body p-0">
       <div className="d-flex flex-column flex-md-row gap-3 mb-3 px-3">
         <div className="ms-md-auto">
-          <Button onClick={handleDownloadPDF} disabled={loading}>
-            Download
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={loading || isDownloading}
+          >
+            {isDownloading ? "Downloading..." : "Download"}
           </Button>
         </div>
       </div>
