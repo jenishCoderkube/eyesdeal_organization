@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
 import moment from "moment/moment";
+import { reportService } from "../../../services/reportService";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -19,60 +20,75 @@ const debounce = (func, wait) => {
   };
 };
 
-const SalesReportsTable = ({ data }) => {
+const SalesReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.store,
-          item.date,
-          item.orderNo,
-          item.customerName,
-          item.brand,
-          item.barcode,
-          item.sku,
-          String(item.mrp),
-          String(item.discount),
-          String(item.netAmount),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
+  // // Custom global filter function
+  // const filterGlobally = useMemo(
+  //   () => (data, query) => {
+  //     if (!query) return data;
+  //     const lowerQuery = query.toLowerCase();
+  //     return data.filter((item) =>
+  //       [
+  //         item.store,
+  //         item.date,
+  //         item.orderNo,
+  //         item.customerName,
+  //         item.brand,
+  //         item.barcode,
+  //         item.sku,
+  //         String(item.mrp),
+  //         String(item.discount),
+  //         String(item.netAmount),
+  //       ].some((field) => field.toLowerCase().includes(lowerQuery))
+  //     );
+  //   },
+  //   []
+  // );
 
-  // Debounced filter logic in useEffect
-  useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+  // // Debounced filter logic in useEffect
+  // useEffect(() => {
+  //   const debouncedFilter = debounce((query) => {
+  //     setFilteredData(filterGlobally(data, query));
+  //   }, 200);
 
-    debouncedFilter(searchQuery);
+  //   debouncedFilter(searchQuery);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+  //   return () => clearTimeout(debouncedFilter.timeout);
+  // }, [searchQuery, data, filterGlobally]);
 
   // Handle search input change
-  const handleSearch = (value) => {
+  const handleSearch = async (value) => {
     setSearchQuery(value);
+
+    try {
+      const response = await reportService.getOrdersBySearch(value);
+
+      if (response.success) {
+          console.log(response.data)
+      } else {
+        console.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching searched data:", error);
+    }
+
   };
 
   // Table columns
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>
+        ),
       },
       {
         accessorKey: "store",
         header: "Store Name",
+        size: 270,
         cell: ({ getValue }) => (
           <div className="text-left">{getValue()?.name}</div>
         ),
@@ -94,45 +110,57 @@ const SalesReportsTable = ({ data }) => {
       {
         accessorKey: "sale",
         header: "Customer Name",
+        size: 220,
         cell: ({ getValue }) => (
           <div className="text-left">{getValue()?.customerName}</div>
         ),
       },
       {
-        accessorKey: "lens",
+        id: "product",
+        accessorKey: "product",
         header: "Brand",
+        size: 210,
         cell: ({ getValue }) => (
           <div className="text-left">
-            {(getValue()?.lens?.item?.brand?.name ?? "") +
+            {(getValue()?.item?.brand?.name ?? "") +
               " " +
-              (getValue()?.lens?.item?.__t ?? "")}
+              (getValue()?.item?.__t ?? "")}
           </div>
         ),
       },
       {
-        accessorKey: "lens",
+        id: "productBarcode",
+        accessorKey: "product",
         header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.barcode}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.barcode}</div>,
       },
       {
-        accessorKey: "lens",
+        id: "productSKU",
+        accessorKey: "product",
         header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.sku}</div>,
+        size: 300,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
       },
       {
-        accessorKey: "lens",
+        id: "productMRP",
+        accessorKey: "product",
         header: "MRP",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.MRP}</div>,
+        size: 80,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.mrp}</div>,
       },
       {
-        accessorKey: "lens",
+        id: "productDiscount",
+        accessorKey: "product",
         header: "Discount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.perPieceDiscount}</div>,
+        size: 100,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceDiscount}</div>,
       },
       {
-        accessorKey: "lens",
+        id: "productNetAmount",
+        accessorKey: "product",
         header: "Net Amount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item?.perPieceAmount}</div>,
+        size: 120,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceAmount}</div>,
       },
     ],
     []
@@ -196,7 +224,7 @@ const SalesReportsTable = ({ data }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
+        <p className="mb-0 fw-normal text-black">Total Amount: {amountData}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -235,13 +263,14 @@ const SalesReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>
