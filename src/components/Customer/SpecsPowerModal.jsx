@@ -3,7 +3,7 @@ import Select from "react-select";
 import { useDispatch } from "react-redux";
 import { addPrescription } from "../../store/Power/specsPowerSlice";
 
-const SpecsPowerModal = ({ show, onHide, editData }) => {  
+const SpecsPowerModal = ({ show, onHide, editData }) => {
   const [formData, setFormData] = useState({
     doctorName: "",
     prescribedBy: "",
@@ -82,7 +82,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
       value: formattedValue,
       label: value >= 0 ? `+${formattedValue}` : formattedValue,
     };
-  });  
+  });
 
   const cylOptions = Array.from({ length: 65 }, (_, i) => {
     const value = (i - 32) * 0.25; // -8.00 to +8.00 with 0.25 interval
@@ -222,7 +222,10 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     <>
       {show && (
         <>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1040 }}
+          ></div>
           <div
             className="modal fade show d-block"
             tabIndex="-1"
@@ -329,10 +332,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.label === formData?.right?.distance?.sph
+                                  (opt) =>
+                                    opt.label === formData?.right?.distance?.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.label, "right.distance")
+                                  handleInputChange(
+                                    "sph",
+                                    option.label,
+                                    "right.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -341,10 +349,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.label === formData?.right?.distance?.cyl
+                                  (opt) =>
+                                    opt.label === formData?.right?.distance?.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.label, "right.distance")
+                                  handleInputChange(
+                                    "cyl",
+                                    option.label,
+                                    "right.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -353,10 +366,16 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={axisOptions}
                                 value={axisOptions.find(
-                                  (opt) => opt.value === formData?.right?.distance?.axis
+                                  (opt) =>
+                                    opt.value ===
+                                    formData?.right?.distance?.axis
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("axis", option.value, "right.distance")
+                                  handleInputChange(
+                                    "axis",
+                                    option.value,
+                                    "right.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -365,10 +384,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={distanceVisionOptions}
                                 value={distanceVisionOptions.find(
-                                  (opt) => opt.value === formData?.right?.distance?.vs
+                                  (opt) =>
+                                    opt.value === formData?.right?.distance?.vs
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option.value, "right.distance")
+                                  handleInputChange(
+                                    "vs",
+                                    option.value,
+                                    "right.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -377,10 +401,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={addOptions}
                                 value={addOptions.find(
-                                  (opt) => opt.label === formData?.right?.distance?.add
+                                  (opt) =>
+                                    opt.label === formData?.right?.distance?.add
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("add", option.label, "right.distance")
+                                  handleInputChange(
+                                    "add",
+                                    option.label,
+                                    "right.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -390,7 +419,8 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.label === formData?.left?.distance?.sph
+                                  (opt) =>
+                                    opt.label === formData?.left?.distance?.sph
                                 )}
                                 onChange={(option) =>
                                   handleInputChange(
@@ -406,7 +436,8 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.label === formData?.left?.distance?.cyl
+                                  (opt) =>
+                                    opt.label === formData?.left?.distance?.cyl
                                 )}
                                 onChange={(option) =>
                                   handleInputChange(
@@ -422,7 +453,8 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={axisOptions}
                                 value={axisOptions.find(
-                                  (opt) => opt.value === formData?.left?.distance?.axis
+                                  (opt) =>
+                                    opt.value === formData?.left?.distance?.axis
                                 )}
                                 onChange={(option) =>
                                   handleInputChange(
@@ -438,10 +470,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={distanceVisionOptions}
                                 value={distanceVisionOptions.find(
-                                  (opt) => opt.value === formData?.left?.distance?.vs
+                                  (opt) =>
+                                    opt.value === formData?.left?.distance?.vs
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option.value, "left.distance")
+                                  handleInputChange(
+                                    "vs",
+                                    option.value,
+                                    "left.distance"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -450,7 +487,8 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={addOptions}
                                 value={addOptions.find(
-                                  (opt) => opt.label === formData?.left?.distance?.add
+                                  (opt) =>
+                                    opt.label === formData?.left?.distance?.add
                                 )}
                                 onChange={(option) =>
                                   handleInputChange(
@@ -469,10 +507,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.label === formData?.right?.near?.sph
+                                  (opt) =>
+                                    opt.label === formData?.right?.near?.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.label, "right.near")
+                                  handleInputChange(
+                                    "sph",
+                                    option.label,
+                                    "right.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -481,10 +524,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.label === formData?.right?.near?.cyl
+                                  (opt) =>
+                                    opt.label === formData?.right?.near?.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.label, "right.near")
+                                  handleInputChange(
+                                    "cyl",
+                                    option.label,
+                                    "right.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -493,10 +541,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={axisOptions}
                                 value={axisOptions.find(
-                                  (opt) => opt.value === formData?.right?.near?.axis
+                                  (opt) =>
+                                    opt.value === formData?.right?.near?.axis
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("axis", option.value, "right.near")
+                                  handleInputChange(
+                                    "axis",
+                                    option.value,
+                                    "right.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -505,10 +558,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={nearVisionOptions}
                                 value={nearVisionOptions.find(
-                                  (opt) => opt.value === formData?.right?.near?.vs
+                                  (opt) =>
+                                    opt.value === formData?.right?.near?.vs
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option.value, "right.near")
+                                  handleInputChange(
+                                    "vs",
+                                    option.value,
+                                    "right.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -519,10 +577,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={powerOptions}
                                 value={powerOptions.find(
-                                  (opt) => opt.label === formData?.left?.near?.sph
+                                  (opt) =>
+                                    opt.label === formData?.left?.near?.sph
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("sph", option.label, "left.near")
+                                  handleInputChange(
+                                    "sph",
+                                    option.label,
+                                    "left.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -531,10 +594,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={cylOptions}
                                 value={cylOptions.find(
-                                  (opt) => opt.label === formData?.left?.near?.cyl
+                                  (opt) =>
+                                    opt.label === formData?.left?.near?.cyl
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("cyl", option.label, "left.near")
+                                  handleInputChange(
+                                    "cyl",
+                                    option.label,
+                                    "left.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -543,10 +611,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={axisOptions}
                                 value={axisOptions.find(
-                                  (opt) => opt.value === formData?.left?.near?.axis
+                                  (opt) =>
+                                    opt.value === formData?.left?.near?.axis
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("axis", option.value, "left.near")
+                                  handleInputChange(
+                                    "axis",
+                                    option.value,
+                                    "left.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -555,10 +628,15 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                               <Select
                                 options={nearVisionOptions}
                                 value={nearVisionOptions.find(
-                                  (opt) => opt.value === formData?.left?.near?.vs
+                                  (opt) =>
+                                    opt.value === formData?.left?.near?.vs
                                 )}
                                 onChange={(option) =>
-                                  handleInputChange("vs", option.value, "left.near")
+                                  handleInputChange(
+                                    "vs",
+                                    option.value,
+                                    "left.near"
+                                  )
                                 }
                                 placeholder="Select..."
                               />
@@ -586,8 +664,8 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                             value={
                               field.includes(".")
                                 ? formData[field.split(".")[0]][
-                                field.split(".")[1]
-                                ]
+                                    field.split(".")[1]
+                                  ]
                                 : formData[field] || ""
                             }
                             onChange={(e) =>
@@ -629,11 +707,17 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                       ))}
                     </div>
                     {editData ? (
-                      <button type="submit" className="btn btn-primary mt-4">
+                      <button
+                        type="submit"
+                        className="btn custom-button-bgcolor mt-4"
+                      >
                         OK
                       </button>
                     ) : (
-                      <button type="submit" className="btn btn-primary mt-4">
+                      <button
+                        type="submit"
+                        className="btn custom-button-bgcolor mt-4"
+                      >
                         Add
                       </button>
                     )}

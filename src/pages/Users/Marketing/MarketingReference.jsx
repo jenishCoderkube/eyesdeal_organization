@@ -53,10 +53,11 @@ const ViewReferences = () => {
   }, []);
 
   const fetchMarketingReferences = () => {
-    userService.getMarketingReferences()
-    .then(res => setReferences(res.data?.data))
-    .catch(e => console.log("Failed to fetch marketing references: ", e))
-  }
+    userService
+      .getMarketingReferences()
+      .then((res) => setReferences(res.data?.data))
+      .catch((e) => console.log("Failed to fetch marketing references: ", e));
+  };
 
   // Debounced filter logic
   useEffect(() => {
@@ -185,25 +186,25 @@ const ViewReferences = () => {
 
   const addMarketingReference = async (data) => {
     const response = await userService.addMarketingReference(data);
-    if(response.success){
+    if (response.success) {
       toast.success(response.message);
       formik.resetForm();
       fetchMarketingReferences();
     } else {
       toast.error(response.message);
     }
-  }
+  };
 
   const updateMarketingReference = async (data) => {
     const response = await userService.updateMarketingReference(data);
-    if(response.success){
+    if (response.success) {
       toast.success(response.message);
       setShowEditModal(false);
       fetchMarketingReferences();
     } else {
       toast.error(response.message);
     }
-  }
+  };
 
   // Calculate the range of displayed rows
   const pageIndex = table.getState().pagination.pageIndex;
@@ -238,18 +239,27 @@ const ViewReferences = () => {
                     value={formik.values.name}
                     onChange={formik.handleChange}
                     onBlur={() => {
-                      if(formik.values.name){
-                        userService.isMarketingRefernceExists(formik.values.name)
-                      .then(res => {
-                        if(res.data?.data?._id){
-                          formik.setFieldError("name", "Marketing Reference with this name already exists");
-                        } else {
-                          formik.setFieldError("name", "");
-                        }
-                      })
-                      .catch(e => console.log("Failed to check if reference exists: ", e))
+                      if (formik.values.name) {
+                        userService
+                          .isMarketingRefernceExists(formik.values.name)
+                          .then((res) => {
+                            if (res.data?.data?._id) {
+                              formik.setFieldError(
+                                "name",
+                                "Marketing Reference with this name already exists"
+                              );
+                            } else {
+                              formik.setFieldError("name", "");
+                            }
+                          })
+                          .catch((e) =>
+                            console.log(
+                              "Failed to check if reference exists: ",
+                              e
+                            )
+                          );
                       }
-                      formik.handleBlur()
+                      formik.handleBlur();
                     }}
                     placeholder="Enter reference name"
                   />
@@ -259,7 +269,7 @@ const ViewReferences = () => {
                 </div>
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="btn custom-button-bgcolor"
                   disabled={formik.isSubmitting}
                 >
                   Submit
@@ -273,25 +283,25 @@ const ViewReferences = () => {
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">All References</h6>
-            <div className="card-body px-0 py-3">
+            <div className="card-body px-2 py-3">
               <div className="mb-4 col-md-5">
                 <div className="input-group">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch
-                      className="text-muted"
+                      className="text-muted custom-search-icon"
                       style={{ color: "#94a3b8" }}
                     />
                   </span>
                   <input
                     type="search"
-                    className="form-control border-start-0"
+                    className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="table-responsive">
+              <div className="table-responsive px-2">
                 <table className="table table-sm">
                   <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
                     {table.getHeaderGroups().map((headerGroup) => (

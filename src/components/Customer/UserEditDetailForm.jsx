@@ -16,6 +16,7 @@ import { saleService } from "../../services/saleService";
 import { userService } from "../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { MdAdd } from "react-icons/md";
 
 const UserEditDetailForm = ({
   onAddSpecs,
@@ -192,8 +193,8 @@ const UserEditDetailForm = ({
                 (state) => state.label.toLowerCase() === initialData?.state
               );
               const cityOptions = City.getCitiesOfState(
-                country.value,
-                state.value
+                country?.value,
+                state?.value
               ).map((city) => ({
                 value: city.name,
                 label: city.name,
@@ -453,44 +454,18 @@ const UserEditDetailForm = ({
                   <div className="d-flex flex-column flex-sm-row">
                     <button
                       type="button"
-                      className="btn btn-primary mb-2 mb-sm-0 me-sm-2"
+                      className="btn custom-button-bgcolor mb-2 mb-sm-0 me-sm-2"
                       onClick={onAddSpecs}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
+                      <MdAdd />
                       <span className="ms-2">Add Specs Power</span>
                     </button>
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="btn custom-button-bgcolor"
                       onClick={onAddContacts}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
+                      <MdAdd />
                       <span className="ms-2">Add Contacts Power</span>
                     </button>
                   </div>
@@ -498,7 +473,7 @@ const UserEditDetailForm = ({
               </div>
               <div className="row mt-3">
                 <div className="col-12">
-                  <div className="table-responsive">
+                  <div className="table-responsive px-2">
                     <table className="table table-bordered table-hover table-sm custom-table-grid">
                       <thead>
                         <tr className="text-center">
@@ -555,7 +530,7 @@ const UserEditDetailForm = ({
               </div>
               <div className="row mt-3 pb-5">
                 <div>
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn custom-button-bgcolor">
                     Update
                   </button>
                 </div>

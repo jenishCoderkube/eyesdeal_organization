@@ -332,7 +332,7 @@ const ViewProductTable = () => {
             />
           </div>
         </div>
-        <div className="table-responsive">
+        <div className="table-responsive px-2">
           <table className="table table-sm ">
             <thead className="text-xs text-uppercase text-muted bg-light border">
               {table.getHeaderGroups().map((headerGroup) => (

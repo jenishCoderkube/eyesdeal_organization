@@ -108,7 +108,7 @@ function AssignPowerModel({ closeAPModal, selectedAP, refreshSalesData }) {
     }
 
     return (
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         <table className="table table-bordered text-center table-sm align-middle">
           <thead>
             <tr style={{ backgroundColor: "#f2f7fc", color: "#64748b" }}>
@@ -228,10 +228,11 @@ function AssignPowerModel({ closeAPModal, selectedAP, refreshSalesData }) {
         }}
       >
         <div className="modal-content border-0">
-          <div className="modal-header border-bottom pb-2">
+          <div className="modal-header border-bottom p-0">
             <button
               type="button"
-              className="btn-close small"
+              className="btn-close "
+              style={{ width: "50px", height: "50px" }}
               onClick={closeAPModal}
               aria-label="Close"
             ></button>

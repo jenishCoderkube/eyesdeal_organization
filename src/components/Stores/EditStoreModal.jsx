@@ -8,7 +8,6 @@ import { toast } from "react-toastify";
 import { uploadImage } from "../../utils/constants";
 
 const EditStoreModal = ({ show, onHide, storeData }) => {
-
   const [formData, setFormData] = useState({
     SystemId: "",
     storeNumber: "",
@@ -466,7 +465,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <h5 className="h6 mb-0 fw-medium">Emails</h5>
                           <button
                             type="button"
-                            className="btn btn-primary"
+                            className="btn custom-button-bgcolor"
                             onClick={handleAddEmail}
                           >
                             Add
@@ -498,7 +497,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <h3 className="h6 mb-0 fw-medium">Phones</h3>
                           <button
                             type="button"
-                            className="btn btn-primary"
+                            className="btn custom-button-bgcolor"
                             onClick={handleAddPhone}
                           >
                             Add
@@ -527,7 +526,7 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           <h3 className="h6 mb-0 fw-medium">Photos</h3>
                           <button
                             type="button"
-                            className="btn btn-primary"
+                            className="btn custom-button-bgcolor"
                             onClick={handleAddPhoto}
                           >
                             Add
@@ -588,7 +587,10 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                         </div>
                       </div>
                       <div className="col-12 mt-3">
-                        <button type="submit" className="btn btn-primary">
+                        <button
+                          type="submit"
+                          className="btn custom-button-bgcolor"
+                        >
                           Update
                         </button>
                       </div>

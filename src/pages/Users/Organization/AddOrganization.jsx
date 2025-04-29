@@ -334,17 +334,11 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <div className="row mt-3 pb-5">
             <div>
-              {/* <button type="submit" className="btn btn-primary" onClick={(e) => {
-                e.preventDefault();
-                console.log("formik values: ", formik.isValid, formik.values);
-              }}>
-                Submit
-              </button> */}
               <CommonButton
                 loading={loading}
                 buttonText="Submit"
                 type="submit"
-                className="btn btn-primary"
+                className="btn w-auto px-4"
               />
             </div>
           </div>

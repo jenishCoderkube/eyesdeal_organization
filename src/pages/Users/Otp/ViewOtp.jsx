@@ -29,10 +29,11 @@ const ViewOtp = () => {
   }, []);
 
   const fetchOTP = async () => {
-    userService.getOTP(currentPage)
-    .then(res => setOtps(res.data?.data?.docs))
-    .catch(e => console.log("Failed to fetch OTP: ", e));
-  }
+    userService
+      .getOTP(currentPage)
+      .then((res) => setOtps(res.data?.data?.docs))
+      .catch((e) => console.log("Failed to fetch OTP: ", e));
+  };
 
   // Custom global filter function
   const filterGlobally = useMemo(
@@ -81,7 +82,9 @@ const ViewOtp = () => {
         accessorKey: "createdAt",
         header: "Date",
         cell: ({ getValue }) => (
-          <div className="text-left break-words">{moment(getValue()).format("DD/MM/YYYY hh:mm:ss a")}</div>
+          <div className="text-left break-words">
+            {moment(getValue()).format("DD/MM/YYYY hh:mm:ss a")}
+          </div>
         ),
       },
       {
@@ -130,7 +133,7 @@ const ViewOtp = () => {
           <div>
             <h1 className="h2 text-dark fw-bold">View Otp</h1>
           </div>
-          <div className="card shadow-sm mt-5 border">
+          <div className="card shadow-sm px-2 mt-5 border">
             <h6 className="fw-bold px-3 pt-3">Otp</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
@@ -143,7 +146,7 @@ const ViewOtp = () => {
                   </span>
                   <input
                     type="search"
-                    className="form-control border-start-0"
+                    className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}

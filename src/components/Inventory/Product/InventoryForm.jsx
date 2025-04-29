@@ -599,7 +599,7 @@ const InventoryForm = () => {
         <div className="mt-4">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn custom-button-bgcolor"
             // disabled={formik.isSubmitting}
           >
             Submit
@@ -607,7 +607,7 @@ const InventoryForm = () => {
         </div>
       </form>
 
-      <div className="card p-0  mt-5">
+      <div className="card p-0 shadow-none border mt-5">
         <h6 className="fw-bold px-3 pt-3">Inventory</h6>
         <div className="card-body p-0">
           <div className="d-flex flex-column px-3  flex-md-row gap-3 mb-4">
@@ -619,20 +619,20 @@ const InventoryForm = () => {
             </p>
 
             <button
-              className="btn btn-primary ms-md-auto"
+              className="btn custom-button-bgcolor ms-md-auto"
               onClick={(e) => exportProduct(e)}
             >
               Export Product
             </button>
             <button
               onClick={(e) => exportProductCp(e)}
-              className="btn btn-primary"
+              className="btn custom-button-bgcolor"
             >
               Export Product CP
             </button>
           </div>
           <div className="mb-4  col-md-5">
-            <div className="input-group px-3">
+            <div className="input-group px-2">
               <span className="input-group-text bg-white border-end-0">
                 <FaSearch
                   className="text-muted custom-search-icon"
@@ -641,23 +641,23 @@ const InventoryForm = () => {
               </span>
               <input
                 type="search"
-                className="form-control border-start-0"
+                className="form-control py-2 border-start-0"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          <div className="table-responsive">
+          <div className="table-responsive px-2">
             <table className="table table-sm">
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
-                  <th>Barcode</th>
-                  <th>Photo</th>
-                  <th>SKU</th>
-                  <th>MRP</th>
-                  <th>Stock</th>
-                  <th>Sold</th>
+                  <th className="custom-perchase-th">Barcode</th>
+                  <th className="custom-perchase-th">Photo</th>
+                  <th className="custom-perchase-th">SKU</th>
+                  <th className="custom-perchase-th">MRP</th>
+                  <th className="custom-perchase-th">Stock</th>
+                  <th className="custom-perchase-th">Sold</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -681,7 +681,10 @@ const InventoryForm = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center py-3">
+                    <td
+                      colSpan="6"
+                      className="text-center add_power_title py-3"
+                    >
                       No data available
                     </td>
                   </tr>

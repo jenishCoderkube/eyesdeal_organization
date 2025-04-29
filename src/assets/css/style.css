@@ -1443,6 +1443,38 @@ h6 {
   animation: spin 1s linear infinite;
 }
 
+.common-text-color{ 
+  color: #6366f1 !important;
+}
+.common-tab-border-color{ 
+  border-color: #6366f1 !important;
+}
+.custom-button-bgcolor {
+  color: white;
+  background-color: #6366f1 !important;
+  transition: border-color 0.3s ease; /* Smooth transition for hover */
+}
+.custom-button-bgcolor:hover {
+  color: white;
+  background-color: #494bf0 !important;
+  transition: border-color 0.3s ease; /* Smooth transition for hover */
+}
+.custom-hover-border {
+  color: #6366f1 !important;
+  border: 1px solid #dee2e6;
+  transition: border-color 0.3s ease; /* Smooth transition for hover */
+}
+
+.custom-hover-border:hover {
+  border-color: #020202; /* Darker border color on hover (Bootstrap's dark gray) */
+}
+
+.custom-hover-border:disabled {
+  border-color: #dee2e6; /* Ensure disabled state doesn't show dark border */
+}
+.common-tabledata-minwidth{
+  min-width: 100px !important;
+}
 @keyframes spin {
   0% {
     transform: rotate(0deg);

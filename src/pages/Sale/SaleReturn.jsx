@@ -39,7 +39,8 @@ const SaleReturn = () => {
 
   const [selectedDate, setSelectedDate] = useState(new Date()); // State for the date
   const [SalesOrderData, setSalesOrderData] = useState(null);
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
+    useState(false);
   const [OrderModelVisible, setOrderModelVisible] = useState(false);
 
   const [selectedCust, setSelectedCust] = useState(null);
@@ -56,8 +57,8 @@ const SaleReturn = () => {
         const userStoreIds = user?.stores || [];
 
         const matchedStores = allStores
-          .filter(store => userStoreIds.includes(store._id))
-          .map(store => ({
+          .filter((store) => userStoreIds.includes(store._id))
+          .map((store) => ({
             value: store._id,
             label: `${store.storeNumber} / ${store.name}`,
             data: store,
@@ -68,7 +69,7 @@ const SaleReturn = () => {
         if (matchedStores.length === 1) {
           const defaultStore = matchedStores[0];
           setDefaultStore(defaultStore);
-          setFormData(prev => ({ ...prev, store: defaultStore.data }));
+          setFormData((prev) => ({ ...prev, store: defaultStore.data }));
         }
       } catch (error) {
         console.error("Error fetching stores:", error);
@@ -78,7 +79,9 @@ const SaleReturn = () => {
   }, []);
 
   const loadStoreOptions = (inputValue, callback) => {
-    const filtered = filteredStores.filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()));
+    const filtered = filteredStores.filter((option) =>
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
     callback(filtered);
   };
 
@@ -146,7 +149,7 @@ const SaleReturn = () => {
     try {
       const response = await saleService.getSalesRep(storeId);
       if (response.success) {
-        setSalesRepData(response.data.data.docs)
+        setSalesRepData(response.data.data.docs);
       } else {
         console.error(response.data.message);
       }
@@ -165,15 +168,16 @@ const SaleReturn = () => {
     try {
       const response = await saleService.sales(id);
       if (response.success) {
-        setSalesData(response.data.data)
-        setSalesId(response.data.data?.docs?.[0]._id)
+        setSalesData(response.data.data);
+        setSalesId(response.data.data?.docs?.[0]._id);
 
-        const filteredOrders = response.data.data?.docs?.[0].orders
-          .map((order) => ({
+        const filteredOrders = response.data.data?.docs?.[0].orders.map(
+          (order) => ({
             value: order._id,
             label: order.billNumber,
             data: order,
-          }));
+          })
+        );
         setOrdersData(filteredOrders);
       } else {
         console.error(response.data.message);
@@ -191,7 +195,7 @@ const SaleReturn = () => {
         options.push({
           label: data.lens.displayName,
           value: data.lens.barcode,
-          data: data.lens
+          data: data.lens,
         });
       }
 
@@ -199,7 +203,7 @@ const SaleReturn = () => {
         options.push({
           label: data.product.displayName,
           value: data.product.barcode,
-          data: data.product
+          data: data.product,
         });
       }
       setProductOptions(options);
@@ -221,11 +225,13 @@ const SaleReturn = () => {
   };
 
   const handleAddProduct = async (selectedProduct) => {
-    const isProductExists = inventoryData.some(product => product.value === selectedProduct.value);
+    const isProductExists = inventoryData.some(
+      (product) => product.value === selectedProduct.value
+    );
     if (isProductExists) {
-      alert('Product is already in the list');
+      alert("Product is already in the list");
     } else {
-      setInventoryData(prev => [...prev, selectedProduct]);
+      setInventoryData((prev) => [...prev, selectedProduct]);
     }
   };
 
@@ -270,17 +276,17 @@ const SaleReturn = () => {
                 placeholder="Search or select customer..."
                 onChange={async (selectedOption) => {
                   if (selectedOption) {
-                    setFormData(prev => ({
+                    setFormData((prev) => ({
                       ...prev,
                       customer: selectedOption.data,
                     }));
                   } else {
-                    setFormData(prev => ({
+                    setFormData((prev) => ({
                       ...prev,
                       customer: null,
                     }));
                   }
-                  fetchOrderData(selectedOption?.data._id)
+                  fetchOrderData(selectedOption?.data._id);
                 }}
               />
               <input
@@ -301,8 +307,9 @@ const SaleReturn = () => {
                   <input
                     type="text"
                     name="customerName"
-                    className={`form-control custom-disabled ${errors.customerName ? "is-invalid" : ""
-                      }`}
+                    className={`form-control custom-disabled ${
+                      errors.customerName ? "is-invalid" : ""
+                    }`}
                     value={formData.customer?.name}
                     disabled
                   />
@@ -322,8 +329,9 @@ const SaleReturn = () => {
                   <input
                     type="text"
                     name="customerPhone"
-                    className={`form-control custom-disabled ${errors.customerPhone ? "is-invalid" : ""
-                      }`}
+                    className={`form-control custom-disabled ${
+                      errors.customerPhone ? "is-invalid" : ""
+                    }`}
                     value={formData.customer?.phone}
                     disabled
                   />
@@ -341,14 +349,20 @@ const SaleReturn = () => {
                     Sales Rep
                   </label>
                   <select
-                    className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
-                      }`}
+                    className={`form-select w-100 ${
+                      errors.salesRep ? "is-invalid" : ""
+                    }`}
                     id="salesRep"
                     name="salesRep"
-                    value={formData.salesRep?._id?.toString() || ""}   // <<< FORCE string
+                    value={formData.salesRep?._id?.toString() || ""} // <<< FORCE string
                     onChange={(e) => {
-                      const selectedRep = salesRepData.find(rep => rep._id === e.target.value);
-                      setFormData(prev => ({ ...prev, salesRep: selectedRep || null }));
+                      const selectedRep = salesRepData.find(
+                        (rep) => rep._id === e.target.value
+                      );
+                      setFormData((prev) => ({
+                        ...prev,
+                        salesRep: selectedRep || null,
+                      }));
                     }}
                     style={{ color: "#808080" }}
                   >
@@ -356,7 +370,9 @@ const SaleReturn = () => {
                     {salesRepData && (
                       <>
                         {salesRepData?.map((rep) => (
-                          <option key={rep._id} value={rep._id?.toString()}>{rep.name}</option>
+                          <option key={rep._id} value={rep._id?.toString()}>
+                            {rep.name}
+                          </option>
                         ))}
                       </>
                     )}
@@ -386,7 +402,10 @@ const SaleReturn = () => {
                     value={defaultStore}
                     onChange={(selected) => {
                       setDefaultStore(selected);
-                      setFormData(prev => ({ ...prev, store: selected?.data || null }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        store: selected?.data || null,
+                      }));
                     }}
                     isDisabled={filteredStores.length === 1}
                   />
@@ -405,7 +424,7 @@ const SaleReturn = () => {
                     <Select
                       options={ordersData}
                       onChange={(selectedOption) => {
-                        fetchProductData(selectedOption?.data)
+                        fetchProductData(selectedOption?.data);
                       }}
                     />
                   </div>
@@ -432,7 +451,11 @@ const SaleReturn = () => {
                         <button
                           type="button"
                           className="btn border-secondary-subtle text-primary"
-                          onClick={() => openPrescriptionModel(formData.customer?.prescriptions)}
+                          onClick={() =>
+                            openPrescriptionModel(
+                              formData.customer?.prescriptions
+                            )
+                          }
                         >
                           View Prescriptions
                         </button>
@@ -450,7 +473,9 @@ const SaleReturn = () => {
                         <button
                           type="button"
                           className="btn border-secondary-subtle text-primary"
-                          onClick={() => navigate(`/users/${formData?.customer?._id}`)}
+                          onClick={() =>
+                            navigate(`/users/${formData?.customer?._id}`)
+                          }
                         >
                           Add Power
                         </button>
@@ -469,7 +494,6 @@ const SaleReturn = () => {
                         SalesOrderData={SalesOrderData}
                       />
                     )}
-
                   </div>
                 )}
               </div>
@@ -477,7 +501,7 @@ const SaleReturn = () => {
 
             <div className="col-12 mt-4">
               <label className="form-label mb-2">Products</label>
-              <div className="table-responsive">
+              <div className="table-responsive px-2">
                 <table className="table table-auto w-full border-top border-slate-200">
                   <thead className="font-semibold uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
@@ -503,18 +527,20 @@ const SaleReturn = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="text-sm divide-y divide-slate-200"
+                  <tbody
+                    className="text-sm divide-y divide-slate-200"
                     style={{
                       fontSize: "0.875rem",
                     }}
                   >
                     {inventoryData.length === 0 ? (
                       <tr>
-                        <td colSpan="10" className="text-center">No products added</td>
+                        <td colSpan="10" className="text-center">
+                          No products added
+                        </td>
                       </tr>
                     ) : (
                       inventoryData.map((item, index) => (
-
                         <tr key={index}>
                           <td>{item?.data?.barcode}</td>
                           <td>
@@ -536,7 +562,6 @@ const SaleReturn = () => {
                         </tr>
                       ))
                     )}
-
                   </tbody>
                 </table>
               </div>

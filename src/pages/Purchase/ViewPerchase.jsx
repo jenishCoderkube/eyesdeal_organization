@@ -269,7 +269,7 @@ function ViewPurchase() {
             <h4 className="h6 mb-0 p-3 fw-bold">Purchases</h4>
           </div>
           <div className="">
-            <div className="mb-3">
+            <div className="mb-3 mx-2">
               <div className="input-group w-25">
                 <span className="input-group-text bg-white border-end-0">
                   <FaSearch
@@ -279,14 +279,14 @@ function ViewPurchase() {
                 </span>
                 <input
                   type="search"
-                  className="form-control border-start-0 py-2q"
+                  className="form-control border-start-0 py-2"
                   placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
             </div>
-            <div className="table-responsive">
+            <div className="table-responsive px-2">
               <table className="table border-top table-hover">
                 <thead className="table-light">
                   <tr>
@@ -343,7 +343,10 @@ function ViewPurchase() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="px-4 py-3 text-center">
+                      <td
+                        colSpan="8"
+                        className="px-4 py-3 text-center custom-perchase-th"
+                      >
                         No data found
                       </td>
                     </tr>

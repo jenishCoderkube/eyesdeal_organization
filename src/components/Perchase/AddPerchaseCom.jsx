@@ -440,7 +440,10 @@ const AddPerchaseCom = () => {
               </div>
             </div>
           </div>
-          <button type="submit" className="btn btn-primary w-auto text-white">
+          <button
+            type="submit"
+            className="btn mt-2 mb-5 px-4 py-2 custom-button-bgcolor w-auto"
+          >
             Submit
           </button>
         </div>

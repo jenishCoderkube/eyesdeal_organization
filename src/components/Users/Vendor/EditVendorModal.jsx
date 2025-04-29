@@ -434,6 +434,7 @@ const EditVendorModal = ({ show, onHide, onSubmit, editVendor }) => {
             <Button
               variant="primary"
               type="submit"
+              className="custom-button-bgcolor px-3"
               disabled={formik.isSubmitting}
             >
               Save

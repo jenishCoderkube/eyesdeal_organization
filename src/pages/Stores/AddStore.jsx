@@ -333,7 +333,7 @@ const AddStore = () => {
                   <h5 className="h6 mb-0 font-weight-500">Emails</h5>
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn custom-button-bgcolor"
                     onClick={handleAddEmail}
                   >
                     Add
@@ -365,7 +365,7 @@ const AddStore = () => {
                   <h3 className="h6 mb-0 font-weight-500">Phones</h3>
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn custom-button-bgcolor"
                     onClick={handleAddPhone}
                   >
                     Add
@@ -394,7 +394,7 @@ const AddStore = () => {
                   <h3 className="h6 mb-0 font-weight-500">Photos</h3>
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn custom-button-bgcolor"
                     onClick={handleAddPhoto}
                   >
                     Add
@@ -444,7 +444,7 @@ const AddStore = () => {
                 </div>
               </div>
               <div className="col-12">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn custom-button-bgcolor">
                   Create
                 </button>
               </div>

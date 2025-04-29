@@ -7,24 +7,19 @@ import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
 
-
-
 const StockInTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
-  const [showOffcanvas , setShowOffCanvas] = useState(false)
-  const [showData , setShowData] = useState([])
-
-
-
+  const [showOffcanvas, setShowOffCanvas] = useState(false);
+  const [showData, setShowData] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const handleCloseOffcanvas = () => { 
-    setShowOffCanvas(false)
-  }
+  const handleCloseOffcanvas = () => {
+    setShowOffCanvas(false);
+  };
 
   useEffect(() => {
     getCollectionData();
@@ -102,157 +97,158 @@ const StockInTable = () => {
     }
   };
 
-  const btnClick = (item) => { 
-    setShowData(item)
-    setShowOffCanvas(true)
-  }
-
+  const btnClick = (item) => {
+    setShowData(item);
+    setShowOffCanvas(true);
+  };
 
   return (
     <>
-    <div className="card-body p-0">
-      <div className="mb-4 col-md-6">
-        <div className="input-group mt-2">
-          <span className="input-group-text bg-white border-end-0">
-            <FaSearch className="text-muted" style={{ color: "#94a3b8" }} />
-          </span>
-          <input
-            type="search"
-            className="form-control border-start-0"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
+      <div className="card-body p-0">
+        <div className="mb-4 col-md-5">
+          <div className="input-group mx-2 mt-2">
+            <span className="input-group-text bg-white border-end-0">
+              <FaSearch className="text-muted" style={{ color: "#94a3b8" }} />
+            </span>
+            <input
+              type="search"
+              className="form-control border-start-0 py-2"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="card p-0  mt-5">
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-sm">
-              <thead className="text-xs text-uppercase text-muted bg-light border">
-                <tr>
-                  <th>Srno</th>
+        <div className="card p-0 shadow-none">
+          <div className="card-body p-0">
+            <div className="table-responsive px-2">
+              <table className="table table-sm">
+                <thead className="text-xs text-uppercase text-muted bg-light border">
+                  <tr>
+                    <th className="custom-perchase-th">Srno</th>
 
-                  <th>Date</th>
-                  <th>from</th>
-                  <th>to</th>
-                  <th>number of products</th>
-                  <th>Stock quantity</th>
-                  <th>status</th>
+                    <th className="custom-perchase-th">Date</th>
+                    <th className="custom-perchase-th">from</th>
+                    <th className="custom-perchase-th">to</th>
+                    <th className="custom-perchase-th">number of products</th>
+                    <th className="custom-perchase-th">Stock quantity</th>
+                    <th className="custom-perchase-th">status</th>
 
-                  <th>action</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {stockData?.docs?.length > 0 ? (
-                  stockData.docs.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td>{index + 1}</td>
-                      <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
+                    <th className="custom-perchase-th">action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {stockData?.docs?.length > 0 ? (
+                    stockData.docs.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td>{index + 1}</td>
+                        <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
 
-                      <td>
-                        {item.from.storeNumber}/{item.from.name}
-                      </td>
+                        <td>
+                          {item.from.storeNumber}/{item.from.name}
+                        </td>
 
-                      <td>
-                        {item.to.storeNumber}/{item.to.name}
-                      </td>
-                      <td>{item.products?.length}</td>
-                      <td>{item.products?.length}</td>
-                      <td>{item.status}</td>
-                      <td className="d-flex align-items-center gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-link p-0 text-primary" 
-                          onClick={() => btnClick(item?.products)}
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          onClick={() => exportProduct(item?.products)}
-                        >
-                          Download
-                        </button>
+                        <td>
+                          {item.to.storeNumber}/{item.to.name}
+                        </td>
+                        <td>{item.products?.length}</td>
+                        <td>{item.products?.length}</td>
+                        <td>{item.status}</td>
+                        <td className="d-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-link p-0 text-primary"
+                            onClick={() => btnClick(item?.products)}
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn custom-button-bgcolor btn-sm"
+                            onClick={() => exportProduct(item?.products)}
+                          >
+                            Download
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="8"
+                        className="text-center add_power_title py-3"
+                      >
+                        No data available
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="text-center py-3">
-                      No data available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
-            <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{stockData?.docs?.length}</span> of{" "}
-              <span className="fw-medium">{stockData?.docs?.length}</span>{" "}
-              results
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div className="btn-group">
-              <button className="btn btn-outline-primary">Previous</button>
-              <button className="btn btn-outline-primary">Next</button>
+            <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+              <div className="text-sm text-muted mb-3 mb-sm-0">
+                Showing <span className="fw-medium">1</span> to{" "}
+                <span className="fw-medium">{stockData?.docs?.length}</span> of{" "}
+                <span className="fw-medium">{stockData?.docs?.length}</span>{" "}
+                results
+              </div>
+              <div className="btn-group">
+                <button className="btn btn-outline-primary">Previous</button>
+                <button className="btn btn-outline-primary">Next</button>
+              </div>
             </div>
           </div>
         </div>
-       
       </div>
-    </div>
 
-    <Offcanvas
-      show={showOffcanvas}
-      onHide={handleCloseOffcanvas}
-      placement="end"
-      style={{ width: "420px" }}
-    >
-      <Offcanvas.Header className="bg-light border-bottom">
-        <Offcanvas.Title className="text-dark font-semibold">
-          Products
-        </Offcanvas.Title>
-        <button
-          type="button"
-          className="btn-close text-reset"
-          onClick={handleCloseOffcanvas}
-        />
-      </Offcanvas.Header>
-      <Offcanvas.Body className="p-4">
-        <div className="text-xs d-inline-flex font-medium bg-secondary-subtle text-secondary rounded-pill text-black text-center px-2 py-1 mb-4">
-          Number Of Products: {showData?.length}
-        </div>
-        {showData?.map((product, index) => (
-          <div
-            key={index}
-            className="p-3 mb-2 border rounded"
-            style={{ borderColor: "rgb(214, 199, 199)" }}
-          >
-            <p className="my-1">
-              <span className="text-muted ">Product Name: </span>
-              {product.productId?.displayName}
-            </p>
-            <p className="my-1">
-              <span className="text-muted">Product SKU: </span>
-              {product.productId?.productIdsku}
-            </p>
-            <p className="my-1">
-              <span className="text-muted">Barcode: </span>
-              {product.productId?.newBarcode}
-            </p>
-            <p className="my-1">
-              <span className="text-muted">Stock Quantity: </span>
-              {product?.stockQuantity}
-            </p>
+      <Offcanvas
+        show={showOffcanvas}
+        onHide={handleCloseOffcanvas}
+        placement="end"
+        style={{ width: "420px" }}
+      >
+        <Offcanvas.Header className="bg-light border-bottom">
+          <Offcanvas.Title className="text-dark font-semibold">
+            Products
+          </Offcanvas.Title>
+          <button
+            type="button"
+            className="btn-close text-reset"
+            onClick={handleCloseOffcanvas}
+          />
+        </Offcanvas.Header>
+        <Offcanvas.Body className="p-4">
+          <div className="text-xs d-inline-flex font-medium bg-secondary-subtle text-secondary rounded-pill text-black text-center px-2 py-1 mb-4">
+            Number Of Products: {showData?.length}
           </div>
-        ))}
-      </Offcanvas.Body>
-    </Offcanvas>
-  </>
+          {showData?.map((product, index) => (
+            <div
+              key={index}
+              className="p-3 mb-2 border rounded"
+              style={{ borderColor: "rgb(214, 199, 199)" }}
+            >
+              <p className="my-1">
+                <span className="text-muted ">Product Name: </span>
+                {product.productId?.displayName}
+              </p>
+              <p className="my-1">
+                <span className="text-muted">Product SKU: </span>
+                {product.productId?.productIdsku}
+              </p>
+              <p className="my-1">
+                <span className="text-muted">Barcode: </span>
+                {product.productId?.newBarcode}
+              </p>
+              <p className="my-1">
+                <span className="text-muted">Stock Quantity: </span>
+                {product?.stockQuantity}
+              </p>
+            </div>
+          ))}
+        </Offcanvas.Body>
+      </Offcanvas>
+    </>
   );
 };
 

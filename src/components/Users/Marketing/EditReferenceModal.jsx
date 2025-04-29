@@ -3,6 +3,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { Modal, Button, Form } from "react-bootstrap";
 import { userService } from "../../../services/userService";
+import { FaTimes } from "react-icons/fa";
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -20,15 +21,15 @@ const EditReferenceModal = ({ show, onHide, onSubmit, editReference }) => {
     onSubmit: (values) => {
       const data = {
         id: values._id || values.id,
-        name: values.name
-      }
+        name: values.name,
+      };
       onSubmit && onSubmit(data);
     },
     enableReinitialize: true,
   });
 
   useEffect(() => {
-    if(show){
+    if (show) {
       fetchReferenceDetails();
     } else {
       formik.resetForm();
@@ -36,12 +37,13 @@ const EditReferenceModal = ({ show, onHide, onSubmit, editReference }) => {
   }, [show]);
 
   const fetchReferenceDetails = () => {
-    userService.getMarketingReferenceById(editReference?._id)
-    .then(res => {
-      formik.setValues(res.data?.data)
-    })
-    .catch(e => console.log("Failed to fetch reference details: ", e));
-  }
+    userService
+      .getMarketingReferenceById(editReference?._id)
+      .then((res) => {
+        formik.setValues(res.data?.data);
+      })
+      .catch((e) => console.log("Failed to fetch reference details: ", e));
+  };
 
   return (
     <Modal
@@ -49,11 +51,25 @@ const EditReferenceModal = ({ show, onHide, onSubmit, editReference }) => {
       onHide={onHide}
       centered
       size="lg"
-      backdrop="static"
+      // backdrop="static"
       keyboard={false}
     >
-      <Modal.Header closeButton>
+      <Modal.Header className="d-flex justify-content-between align-items-center">
         <Modal.Title>Edit Reference</Modal.Title>
+        <Button
+          variant="link"
+          onClick={onHide}
+          style={{
+            fontSize: "1.5rem", // Larger icon size
+            color: "#000", // Black color, adjust as needed
+            textDecoration: "none",
+            padding: "0",
+            lineHeight: "1",
+          }}
+          aria-label="Close"
+        >
+          <FaTimes className=" opacity-75" />
+        </Button>
       </Modal.Header>
       <Modal.Body className="p-4">
         <Form onSubmit={formik.handleSubmit}>
@@ -90,7 +106,7 @@ const EditReferenceModal = ({ show, onHide, onSubmit, editReference }) => {
             <Button
               variant="primary"
               type="submit"
-              className="me-2"
+              className="me-2 custom-button-bgcolor"
               disabled={formik.isSubmitting}
             >
               Submit

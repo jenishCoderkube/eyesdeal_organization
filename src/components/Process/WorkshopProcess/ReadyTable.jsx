@@ -189,6 +189,7 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
               cursor: "pointer",
               textDecoration: "underline",
               color: "#6366f1",
+              maxWidth: "180px",
             }}
             onClick={() => handleCustomerNoteClick(row.original)}
           >
@@ -326,7 +327,7 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
           </div>
         )}
       </div> */}
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         {loading ? (
           <div
             style={{

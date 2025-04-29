@@ -117,14 +117,17 @@ function BarcodeGenerate() {
   );
 
   return (
-    <div className="container-fluid p-md-5 ">
+    <div className="max-width-90 mx-auto p-md-5 ">
       <h1 className="h2 text-dark fw-bold">Generate Barcodes</h1>
-      <form onSubmit={handleSubmit} className="px-md-5 px-2 ">
-        <div className="card shadow-none border py-3 mb-4">
-          <div className="card-body ">
+      <form onSubmit={handleSubmit} className="px-md-5 mt-5 px-2 ">
+        <div className="card shadow-none border pt-3 ">
+          <div className="card-body">
             {items.map((item, index) => (
-              <div key={index} className="card mb-3">
-                <div className="card-body p-4">
+              <div
+                key={index}
+                className="card m-0 border py-3 mt-3 shadow-none"
+              >
+                <div className="card-body ">
                   <div className="row g-3 align-items-end">
                     <div className="col-md-4">
                       <label
@@ -173,7 +176,7 @@ function BarcodeGenerate() {
                     <div className="col-md-2">
                       <button
                         type="button"
-                        className="btn btn-danger btn-sm w-auto p-2"
+                        className="btn btn-danger px-3 btn-sm w-auto p-2"
                         onClick={() => handleRemove(index)}
                       >
                         Remove
@@ -183,7 +186,7 @@ function BarcodeGenerate() {
                 </div>
               </div>
             ))}
-            <div className="d-flex gap-3 ">
+            <div className={`d-flex gap-3 ${items?.length !== 0 && "mt-3"} `}>
               <button
                 type="button"
                 className="btn btn-primary p-2"

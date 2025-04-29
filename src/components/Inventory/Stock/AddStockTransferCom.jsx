@@ -1,15 +1,15 @@
-import React, {useState, useMemo, useCallback, useEffect} from 'react';
-import Select from 'react-select';
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import Select from "react-select";
 
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap/dist/css/bootstrap.min.css";
 import { debounce } from "lodash";
-import { inventoryService } from '../../../services/inventoryService';
+import { inventoryService } from "../../../services/inventoryService";
 
 const AddStockTransferCom = () => {
   // State for form fields
   const [from, setFrom] = useState({
-    value: '27',
-    label: 'ELITE HOSPITAL / 27',
+    value: "27",
+    label: "ELITE HOSPITAL / 27",
   });
   const [to, setTo] = useState(null);
   const [product, setProduct] = useState(null);
@@ -21,12 +21,10 @@ const AddStockTransferCom = () => {
   const [loading, setLoading] = useState(false);
   const [showData, setShowData] = useState([]);
 
-
-
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({from, to, product, tableData});
+    console.log({ from, to, product, tableData });
     // Add API call or further logic here
   };
 
@@ -45,7 +43,7 @@ const AddStockTransferCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error('error:', error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -57,13 +55,12 @@ const AddStockTransferCom = () => {
         getProduct(value);
       }
     }, 1000),
-    [], // empty dependency to persist across re-renders
+    [] // empty dependency to persist across re-renders
   );
 
-
-  useEffect(() => { 
-    getStores()
-  },[])
+  useEffect(() => {
+    getStores();
+  }, []);
 
   const getStores = async () => {
     setLoading(true);
@@ -81,12 +78,10 @@ const AddStockTransferCom = () => {
     }
   };
 
-
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
   }));
-
 
   const productOptions = productData?.docs?.map((vendor) => ({
     value: vendor._id,
@@ -111,9 +106,8 @@ const AddStockTransferCom = () => {
                     id="from"
                     value={from}
                     onChange={setFrom}
-                    options={[{value: '27', label: 'ELITE HOSPITAL / 27'}]}
+                    options={[{ value: "27", label: "ELITE HOSPITAL / 27" }]}
                     isDisabled={true}
-              
                     className="w-100"
                   />
                 </div>
@@ -129,7 +123,6 @@ const AddStockTransferCom = () => {
                     onChange={setTo}
                     options={storeOptions}
                     placeholder="Select..."
-       
                     className="w-100"
                   />
                 </div>
@@ -138,7 +131,8 @@ const AddStockTransferCom = () => {
                 <div className="">
                   <label
                     htmlFor="product"
-                    className="form-label font-weight-500">
+                    className="form-label font-weight-500"
+                  >
                     Product
                   </label>
                   <Select
@@ -148,27 +142,26 @@ const AddStockTransferCom = () => {
                     placeholder="Select..."
                     className="basic-select"
                     classNamePrefix="select"
-                   
                     onInputChange={(value) => {
                       debouncedGetProduct(value);
                     }}
                     isLoading={loading} // ✅ shows spinner while loading
-                    loadingMessage={() => 'Loading...'} // ✅ custom loading message
-                    noOptionsMessage={({inputValue}) =>
-                      inputValue ? 'No products found' : 'Type to search'
+                    loadingMessage={() => "Loading..."} // ✅ custom loading message
+                    noOptionsMessage={({ inputValue }) =>
+                      inputValue ? "No products found" : "Type to search"
                     }
                   />
                 </div>
               </div>
-              <div className="col-12">
-                <div className="table-responsive">
+              <div className="col-12 ">
+                <div className="table-responsive mt-3">
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
                       <tr>
-                        <th>barcode</th>
-                        <th>stock</th>
-                        <th>quantity</th>
-                        <th>sku</th>
+                        <th className="custom-perchase-th">barcode</th>
+                        <th className="custom-perchase-th">stock</th>
+                        <th className="custom-perchase-th">quantity</th>
+                        <th className="custom-perchase-th">sku</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -177,7 +170,7 @@ const AddStockTransferCom = () => {
                           <tr key={item.id || index}>
                             <td>{index + 1}</td>
                             <td>
-                              {moment(item.createdAt).format('YYYY-MM-DD')}
+                              {moment(item.createdAt).format("YYYY-MM-DD")}
                             </td>
 
                             <td>
@@ -187,13 +180,14 @@ const AddStockTransferCom = () => {
                             <td>
                               {item.to.storeNumber}/{item.to.name}
                             </td>
-                            
-                          
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="8" className="text-center py-3">
+                          <td
+                            colSpan="8"
+                            className="text-center add_power_title py-3"
+                          >
                             No data available
                           </td>
                         </tr>
@@ -203,7 +197,7 @@ const AddStockTransferCom = () => {
                 </div>
               </div>
               <div className="col-12">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn custom-button-bgcolor">
                   Submit
                 </button>
               </div>

@@ -210,12 +210,12 @@ const StockAdjustmentCom = () => {
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
                       <tr>
-                        <th>barcode</th>
-                        <th>Stock</th>
-                        <th>quantity</th>
-                        <th>reason</th>
-                        <th>sku</th>
-                        <th>Action</th>
+                        <th className="custom-perchase-th">barcode</th>
+                        <th className="custom-perchase-th">Stock</th>
+                        <th className="custom-perchase-th">quantity</th>
+                        <th className="custom-perchase-th">reason</th>
+                        <th className="custom-perchase-th">sku</th>
+                        <th className="custom-perchase-th">Action</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -279,7 +279,7 @@ const StockAdjustmentCom = () => {
                         <tr>
                           <td
                             colSpan="6"
-                            className="text-center p-4 text-gray-500"
+                            className="text-center add_power_title p-4 text-gray-500"
                           >
                             No Data Found
                           </td>
@@ -305,7 +305,7 @@ const StockAdjustmentCom = () => {
                 </div>
               </div>
               <div className="col-12">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn custom-button-bgcolor ">
                   Submit
                 </button>
               </div>

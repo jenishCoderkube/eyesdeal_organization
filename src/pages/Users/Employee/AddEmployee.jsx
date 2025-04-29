@@ -447,7 +447,7 @@ function AddEmployee() {
             {/* Submit Button */}
             <div>
               <button
-                className="btn btn-primary bg-indigo-500 hover:bg-indigo-600 text-white"
+                className="btn custom-button-bgcolor "
                 type="submit"
                 disabled={formik.isSubmitting}
               >

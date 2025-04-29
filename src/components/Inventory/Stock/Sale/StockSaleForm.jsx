@@ -131,7 +131,7 @@ const StockSaleForm = () => {
 
             {/* Product Table */}
             <div
-              className="table-responsive"
+              className="table-responsive px-2"
               style={{ maxHeight: "400px", overflowY: "auto" }}
             >
               <table className="table table-sm align-middle custom-table">

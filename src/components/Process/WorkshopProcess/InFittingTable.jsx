@@ -506,12 +506,12 @@ const InFittingTable = ({ orders, loading, refreshSalesData }) => {
 
   return (
     <div className="card-body p-0">
-      <div className="mb-4 col-12 px-3">
+      <div className="mb-4 col-12">
         {hasSelectedRows && (
           <div className="d-flex justify-content-between flex-wrap gap-3 mt-2">
             <div>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn  custom-hover-border"
                 type="button"
                 onClick={handleMarkAsReady}
                 disabled={loading}
@@ -520,7 +520,7 @@ const InFittingTable = ({ orders, loading, refreshSalesData }) => {
               </button>
               {isSingleRowSelected && (
                 <button
-                  className="btn ms-3 btn-outline-primary border-light-subtle"
+                  className="btn ms-2  custom-hover-border"
                   type="button"
                   onClick={handleAddDamaged}
                   disabled={loading}
@@ -531,7 +531,7 @@ const InFittingTable = ({ orders, loading, refreshSalesData }) => {
             </div>
             <div>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn  custom-hover-border"
                 type="button"
                 onClick={handleRevertOrder}
                 disabled={loading}
@@ -542,7 +542,7 @@ const InFittingTable = ({ orders, loading, refreshSalesData }) => {
           </div>
         )}
       </div>
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         {loading ? (
           <div
             style={{

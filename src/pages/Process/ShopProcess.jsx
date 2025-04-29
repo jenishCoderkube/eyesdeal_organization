@@ -654,7 +654,7 @@ function ShopProcess() {
               onClick={() => setActiveStatus(status.name)}
               className={`bg-transparent border-0 pb-2 px-1 fw-medium ${
                 activeStatus === status.name
-                  ? "text-primary border-bottom border-primary"
+                  ? "common-text-color border-bottom common-tab-border-color"
                   : "text-secondary"
               } hover:text-dark focus:outline-none`}
               style={{ boxShadow: "none", outline: "none" }}
@@ -676,7 +676,7 @@ function ShopProcess() {
           <div className="mb-3">
             {activeStatus === "Pending" && (
               <button
-                className="btn btn-outline-primary me-2"
+                className="btn  me-2 custom-hover-border"
                 onClick={handleSendToWorkshop}
                 disabled={loading}
               >
@@ -684,7 +684,7 @@ function ShopProcess() {
               </button>
             )}
             <button
-              className="btn btn-outline-success mx-3"
+              className="btn custom-hover-border mx-2"
               onClick={handleDeliver}
               disabled={loading}
             >
@@ -692,7 +692,7 @@ function ShopProcess() {
             </button>
             {activeStatus === "Ready" && (
               <button
-                className="btn btn-outline-primary me-2"
+                className="btn custom-hover-border me-2"
                 onClick={handleSendToReady}
                 disabled={loading}
               >
@@ -790,9 +790,10 @@ function ShopProcess() {
                           style={{
                             minWidth: "110px",
                             cursor: "pointer",
-                            color: "#0d6efd",
+
                             textDecoration: "underline",
                           }}
+                          className="common-text-color"
                           onClick={() => openBillModal(row)}
                         >
                           {row.billNumber}
@@ -801,9 +802,10 @@ function ShopProcess() {
                           style={{
                             minWidth: "160px",
                             cursor: "pointer",
-                            color: "#0d6efd",
+
                             textDecoration: "underline",
                           }}
+                          className="common-text-color"
                           onClick={() => openCustomerNameModal(row)}
                         >
                           {row.customerName}
@@ -830,35 +832,41 @@ function ShopProcess() {
                           style={{
                             minWidth: "150px",
                             cursor: "pointer",
-                            color: "#0d6efd",
+
                             textDecoration: "underline",
                           }}
+                          className="common-text-color"
                           onClick={() => openRAModal(row)}
                         >
                           {row.receivedAmount}
                         </td>
                         <td
                           style={{
-                            minWidth: "165px",
+                            minWidth: "100px",
                             paddingTop: "12px",
                             paddingBottom: "12px",
+                            color:
+                              Number(row.remainingAmount) === 0
+                                ? "black"
+                                : "red",
                           }}
                         >
                           {row.remainingAmount}
                         </td>
                         <td
                           style={{
-                            minWidth: "250px",
-                            maxWidth: "250px",
+                            minWidth: "150px",
+                            maxWidth: "150px",
                             cursor: "pointer",
-                            color: "#0d6efd",
+
                             textDecoration: "underline",
                             whiteSpace: "normal",
                             wordWrap: "break-word",
                           }}
+                          className="common-text-color"
                           onClick={() => openNotesModal(row)}
                         >
-                          {row.notes}
+                          {row.notes === "N/A" ? "--------" : row.notes}
                         </td>
                       </>
                     )}
@@ -917,8 +925,8 @@ function ShopProcess() {
                               {loading ? "Deleting..." : "Delete"}
                             </button>
                             <button
-                              className="btn btn-sm border px-2 py-2 mb-2"
-                              style={{ minWidth: "80px", width: "100px" }}
+                              className="btn btn-sm border  py-2 mb-2"
+                              style={{ minWidth: "80px" }}
                               onClick={() => openAPModal(row)}
                             >
                               Assign Power
@@ -1002,6 +1010,10 @@ function ShopProcess() {
                                         <td>
                                           <input
                                             type="checkbox"
+                                            style={{
+                                              width: "20px",
+                                              height: "20px",
+                                            }}
                                             checked={prodRow.selected}
                                             onChange={() =>
                                               handleSelect(prodRow.id)

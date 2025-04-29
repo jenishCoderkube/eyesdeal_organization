@@ -427,7 +427,7 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
               <div>
                 {!isSendForFittingDisabled && (
                   <button
-                    className="btn btn-outline-primary border-light-subtle"
+                    className="btn custom-hover-border"
                     type="button"
                     onClick={handleSendForFitting}
                     disabled={loading || isSendForFittingDisabled}
@@ -436,7 +436,9 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
                   </button>
                 )}
                 <button
-                  className="btn ms-2 btn-outline-primary border-light-subtle"
+                  className={`btn ${
+                    !isSendForFittingDisabled && "ms-2"
+                  }  custom-hover-border`}
                   type="button"
                   onClick={handleEditVendor}
                   disabled={loading}
@@ -446,7 +448,7 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
               </div>
               <div>
                 <button
-                  className="btn btn-outline-primary border-light-subtle"
+                  className="btn custom-hover-border"
                   type="button"
                   onClick={handleRevertOrder}
                   disabled={loading}
@@ -458,7 +460,7 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
           )}
         </div>
       </div>
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         {loading ? (
           <div
             style={{

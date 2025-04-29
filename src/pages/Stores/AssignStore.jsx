@@ -92,9 +92,8 @@ const AssignStore = () => {
                 <div>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn custom-button-bgcolor"
                     style={{
-                      backgroundColor: "#6366F1",
                       borderColor: "#6366F1",
                     }}
                     onMouseOver={(e) =>

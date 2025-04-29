@@ -353,12 +353,12 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
 
   return (
     <div className="card-body p-0">
-      <div className="mb-4 col-12 px-3">
+      <div className="mb-4 col-12">
         {hasSelectedRows && (
           <div className="d-flex justify-content-between flex-wrap gap-3 mt-2">
             <div>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn custom-hover-border"
                 type="button"
                 onClick={handleProcessOrder}
                 disabled={loading}
@@ -366,7 +366,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
                 {loading ? "Processing..." : "Process Order"}
               </button>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn custom-hover-border ms-2"
                 type="button"
                 onClick={handleSendForFitting}
                 disabled={loading}
@@ -376,7 +376,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
             </div>
             <div>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn custom-hover-border me-2"
                 type="button"
                 onClick={handleRevertOrder}
                 disabled={loading}
@@ -384,7 +384,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
                 Revert Order
               </button>
               <button
-                className="btn btn-outline-primary border-light-subtle"
+                className="btn custom-hover-border"
                 type="button"
                 disabled={loading}
               >
@@ -394,7 +394,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
           </div>
         )}
       </div>
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         {loading ? (
           <div
             style={{

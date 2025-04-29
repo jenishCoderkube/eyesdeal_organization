@@ -51,7 +51,11 @@ const VendorListForm = ({ onSubmit, stores, vendors, loading }) => {
           />
         </div>
         <div className="col-12 d-flex gap-2 mt-3">
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button
+            className="btn custom-button-bgcolor"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Loading..." : "Submit"}
           </button>
         </div>

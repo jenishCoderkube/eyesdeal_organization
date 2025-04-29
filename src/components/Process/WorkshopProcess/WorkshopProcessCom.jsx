@@ -334,7 +334,7 @@ function WorkshopProcessCom() {
               onClick={() => setActiveStatus(status.name)}
               className={`bg-transparent border-0 pb-2 px-1 fw-medium ${
                 activeStatus === status.name
-                  ? "text-primary border-bottom border-primary"
+                  ? "common-text-color border-bottom common-tab-border-color"
                   : "text-secondary"
               } hover:text-dark focus:outline-none`}
               style={{ boxShadow: "none", outline: "none" }}

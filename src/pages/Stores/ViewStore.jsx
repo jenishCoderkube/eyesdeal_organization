@@ -81,25 +81,25 @@ const ViewStore = () => {
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">Stores</h6>
-            <div className="card-body px-0 py-3">
+            <div className="card-body px-2 py-3">
               <div className="mb-4 col-md-5">
-                <div className="input-group px-3">
+                <div className="input-group ">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch
-                      className="text-muted"
+                      className="text-muted custom-search-icon"
                       style={{ color: "#94a3b8" }}
                     />
                   </span>
                   <input
                     type="search"
-                    className="form-control border-start-0"
+                    className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="table-responsive">
+              <div className="table-responsive ">
                 <table className="table table-striped table-sm">
                   <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
                     <tr>

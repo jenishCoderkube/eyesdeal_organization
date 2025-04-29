@@ -250,7 +250,7 @@ const AddVendors = () => {
     } else {
       toast.error(response.message);
     }
-  }
+  };
 
   const handleAddPhone = () => {
     createFormik.setFieldValue("contactNumber", [
@@ -561,7 +561,9 @@ const AddVendors = () => {
             type="text"
             name="GSTNumber"
             className={`form-control ${
-              formik.touched.GSTNumber && formik.errors.GSTNumber ? "is-invalid" : ""
+              formik.touched.GSTNumber && formik.errors.GSTNumber
+                ? "is-invalid"
+                : ""
             }`}
             value={formik.values.GSTNumber}
             onChange={formik.handleChange}
@@ -573,7 +575,7 @@ const AddVendors = () => {
           )}
         </div>
         <div>
-          <button className="btn bg-primary text-white" type="submit">
+          <button className="btn custom-button-bgcolor" type="submit">
             Submit
           </button>
         </div>
@@ -591,7 +593,7 @@ const AddVendors = () => {
 
           <div className="mt-5">
             <a
-              className="text-secondary text-black"
+              className="text-secondary text-decoration-underline text-black"
               href="#"
               onClick={() => setShowForm((prev) => !prev)}
             >
@@ -600,20 +602,20 @@ const AddVendors = () => {
           </div>
           {showForm && renderForm(createFormik)}
 
-          <div className="card shadow-sm mt-3 border">
+          <div className="card shadow-sm mt-3 border px-2">
             <h6 className="fw-bold px-3 pt-3">Vendors</h6>
             <div className="card-body px-0 py-3">
               <div className="mb-4 col-md-5">
                 <div className="input-group">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch
-                      className="text-muted"
+                      className="text-muted custom-search-icon"
                       style={{ color: "#94a3b8" }}
                     />
                   </span>
                   <input
                     type="search"
-                    className="form-control border-start-0"
+                    className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}

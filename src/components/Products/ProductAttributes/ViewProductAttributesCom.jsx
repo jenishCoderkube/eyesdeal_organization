@@ -568,7 +568,7 @@ function ViewProductAttributesCom() {
                 </div>
               </div>
               {/* Table */}
-              <div className="table-responsive">
+              <div className="table-responsive px-2">
                 {loading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">

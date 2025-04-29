@@ -501,10 +501,7 @@ function EditEmployee() {
 
             {/* Submit Button */}
             <div>
-              <button
-                className="btn btn-primary bg-indigo-500 hover:bg-indigo-600 text-white"
-                type="submit"
-              >
+              <button className="btn custom-button-bgcolor" type="submit">
                 Submit
               </button>
             </div>

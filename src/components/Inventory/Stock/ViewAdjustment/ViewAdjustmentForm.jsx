@@ -172,10 +172,10 @@ const ViewAdjustmentForm = () => {
               )}
             </div>
           </div>
-          <div className="mt-4">
+          <div className="my-4">
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn custom-button-bgcolor"
               // disabled={formik.isSubmitting}
             >
               Submit
@@ -184,17 +184,17 @@ const ViewAdjustmentForm = () => {
         </form>
       </div>
 
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         <table className="table table-sm">
           <thead className="text-xs text-uppercase text-muted bg-light border">
             <tr>
-              <th>Adjustment ID</th>
-              <th>Store</th>
-              <th>Barcode</th>
-              <th>Sku</th>
-              <th>Old Stock</th>
-              <th>New Stock</th>
-              <th>Reason</th>
+              <th className="custom-perchase-th">Adjustment ID</th>
+              <th className="custom-perchase-th">Store</th>
+              <th className="custom-perchase-th">Barcode</th>
+              <th className="custom-perchase-th">Sku</th>
+              <th className="custom-perchase-th">Old Stock</th>
+              <th className="custom-perchase-th">New Stock</th>
+              <th className="custom-perchase-th">Reason</th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -215,7 +215,7 @@ const ViewAdjustmentForm = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="text-center py-3">
+                <td colSpan="8" className="text-center add_power_title py-3">
                   No data available
                 </td>
               </tr>

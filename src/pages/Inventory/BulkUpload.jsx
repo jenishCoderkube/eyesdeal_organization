@@ -125,7 +125,7 @@ const BulkUploadInventory = () => {
                 <div>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn  custom-button-bgcolor"
                     disabled={formik.isSubmitting}
                   >
                     Submit

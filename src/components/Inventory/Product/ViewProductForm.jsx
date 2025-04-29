@@ -119,29 +119,29 @@ const ViewProductForm = () => {
           </div>
         </div>
         <div className="mt-4">
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn custom-button-bgcolor ">
             Submit
           </button>
         </div>
       </form>
 
-      <div className="card p-0  mt-5">
+      <div className="card p-0 shadow-none border mt-5">
         <div className="card-body p-0">
-          <div className="table-responsive">
+          <div className="table-responsive mt-3 px-2">
             <table className="table table-sm">
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
-                  <th>Barcode</th>
+                  <th className="custom-perchase-th">Barcode</th>
 
-                  <th>Date</th>
-                  <th>Photo</th>
-                  <th>Store</th>
-                  <th>Sku</th>
-                  <th>Brand</th>
-                  <th>Mrp</th>
+                  <th className="custom-perchase-th">Date</th>
+                  <th className="custom-perchase-th">Photo</th>
+                  <th className="custom-perchase-th">Store</th>
+                  <th className="custom-perchase-th">Sku</th>
+                  <th className="custom-perchase-th">Brand</th>
+                  <th className="custom-perchase-th">Mrp</th>
 
-                  <th>Stock</th>
-                  <th>Sold</th>
+                  <th className="custom-perchase-th">Stock</th>
+                  <th className="custom-perchase-th">Sold</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -168,7 +168,10 @@ const ViewProductForm = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="9" className="text-center py-3">
+                    <td
+                      colSpan="9"
+                      className="text-center add_power_title py-3"
+                    >
                       No data available
                     </td>
                   </tr>

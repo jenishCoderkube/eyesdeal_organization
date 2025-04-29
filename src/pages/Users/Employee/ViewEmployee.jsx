@@ -87,7 +87,11 @@ const ViewEmployees = () => {
       {
         accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue,table, row }) => <div className="text-left">{table?.getSortedRowModel()?.flatRows?.indexOf(row)+1}</div>,
+        cell: ({ getValue, table, row }) => (
+          <div className="text-left">
+            {table?.getSortedRowModel()?.flatRows?.indexOf(row) + 1}
+          </div>
+        ),
       },
       {
         accessorKey: "name",
@@ -221,7 +225,7 @@ const ViewEmployees = () => {
     alert("Are you sure you want to delete?");
     console.log(`Delete employee with id: ${id}`);
     const response = await userService.deleteCustomer(id);
-    if(response.success){
+    if (response.success) {
       fetchEmployees();
       toast.success(response.message);
     } else {
@@ -244,7 +248,7 @@ const ViewEmployees = () => {
             <h1 className="h2 text-dark fw-bold">View Employees</h1>
           </div>
           <div
-            className="card shadow-sm mt-5"
+            className="card shadow-sm px-2 mt-5"
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">Employees</h6>
@@ -259,14 +263,14 @@ const ViewEmployees = () => {
                   </span>
                   <input
                     type="search"
-                    className="form-control border-start-0"
+                    className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="table-responsive">
+              <div className="table-responsive ">
                 <table className="table table-sm">
                   <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
                     {table.getHeaderGroups().map((headerGroup) => (

@@ -16,7 +16,7 @@ import { userService } from "../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { saleService } from "../../services/saleService";
-
+import { MdAdd } from "react-icons/md";
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
   phone: Yup.string().required("Phone number is required"),
@@ -35,51 +35,54 @@ function transformPayload(frontendPayload) {
     pdesign: "pDesign",
     ftype: "ft",
     type: "__t",
-    id: "pres_id"
+    id: "pres_id",
   };
 
   // Convert date strings to timestamps
-  const transformDate = (date) => (typeof date === "string" ? new Date(date).getTime() : date);
+  const transformDate = (date) =>
+    typeof date === "string" ? new Date(date).getTime() : date;
 
   // Transform each prescription
-  const transformedPrescriptions = (frontendPayload.prescriptions || []).map((prescription) => {
-    const {
-      doctorName,
-      prescribedBy,
-      type,
-      id,
-      right,
-      left,
-      ipd,
-      asize,
-      bsize,
-      dbl,
-      fth,
-      pdesign,
-      ftype,
-      de
-    } = prescription;
+  const transformedPrescriptions = (frontendPayload.prescriptions || []).map(
+    (prescription) => {
+      const {
+        doctorName,
+        prescribedBy,
+        type,
+        id,
+        right,
+        left,
+        ipd,
+        asize,
+        bsize,
+        dbl,
+        fth,
+        pdesign,
+        ftype,
+        de,
+      } = prescription;
 
-    return {
-      name: frontendPayload.name || "",
-      relation: "",
-      gender: "",
-      doctorName,
-      prescribedBy,
-      __t: type,
-      ipd,
-      aSize: asize,
-      bSize: bsize,
-      dbl,
-      fth,
-      pDesign: pdesign,
-      ft: ftype,
-      de,
-      pres_id: id,
-      right,
-      left
-    };
-  });
+      return {
+        name: frontendPayload.name || "",
+        relation: "",
+        gender: "",
+        doctorName,
+        prescribedBy,
+        __t: type,
+        ipd,
+        aSize: asize,
+        bSize: bsize,
+        dbl,
+        fth,
+        pDesign: pdesign,
+        ft: ftype,
+        de,
+        pres_id: id,
+        right,
+        left,
+      };
+    }
+  );
 
   return {
     name: frontendPayload.name,
@@ -96,7 +99,7 @@ function transformPayload(frontendPayload) {
     state: frontendPayload.state,
     city: frontendPayload.city,
     pincode: frontendPayload.pincode,
-    prescriptions: transformedPrescriptions
+    prescriptions: transformedPrescriptions,
   };
 }
 
@@ -112,7 +115,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     data: null,
   });
   const [referenceOptions, setReferenceOptions] = useState([]);
-  
+
   const handleEdit = (prescription) => {
     setEditModal({
       show: true,
@@ -151,7 +154,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
         prescriptions: prescriptions,
       };
 
-      const response = await userService.addCustomer(transformPayload(formattedData));
+      const response = await userService.addCustomer(
+        transformPayload(formattedData)
+      );
       if (response.success) {
         resetForm();
         toast.success(response.message);
@@ -176,7 +181,6 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
     { value: "Male", label: "Male" },
     { value: "Female", label: "Female" },
   ];
-
 
   const getMarketingReferences = async () => {
     try {
@@ -464,47 +468,21 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   <div className="d-flex flex-column flex-sm-row">
                     <button
                       type="button"
-                      className="btn btn-primary mb-2 mb-sm-0 me-sm-2"
+                      className="btn custom-button-bgcolor mb-2 mb-sm-0 me-sm-2"
                       onClick={onAddSpecs}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
+                      <MdAdd />
                       <span className="ms-2">Add Specs Power</span>
                     </button>
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="btn custom-button-bgcolor"
                       onClick={onAddContacts}
                       data-bs-toggle="modal"
                       data-bs-target="#exampleModal"
                       data-bs-whatever="@mdo"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
+                      <MdAdd />
                       <span className="ms-2">Add Contacts Power</span>
                     </button>
                   </div>
@@ -512,7 +490,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
               </div>
               <div className="row mt-3">
                 <div className="col-12">
-                  <div className="table-responsive">
+                  <div className="table-responsive px-2">
                     <table className="table table-bordered table-hover table-sm custom-table-grid">
                       <thead>
                         <tr className="text-center">
@@ -565,7 +543,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                 <div>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn custom-button-bgcolor"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "Submitting..." : "Submit"}

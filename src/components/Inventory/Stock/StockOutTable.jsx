@@ -14,16 +14,14 @@ const StockOutTable = () => {
 
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
-  const [showOffcanvas , setShowOffCanvas] = useState(false)
-  const [showData , setShowData] = useState([])
-
-
+  const [showOffcanvas, setShowOffCanvas] = useState(false);
+  const [showData, setShowData] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const handleCloseOffcanvas = () => { 
-    setShowOffCanvas(false)
-  }
+  const handleCloseOffcanvas = () => {
+    setShowOffCanvas(false);
+  };
 
   useEffect(() => {
     getCollectionData();
@@ -101,22 +99,22 @@ const StockOutTable = () => {
     }
   };
 
-  const btnClick = (item) => { 
-    setShowData(item)
-    setShowOffCanvas(true)
-  }
+  const btnClick = (item) => {
+    setShowData(item);
+    setShowOffCanvas(true);
+  };
 
   return (
     <>
       <div className="card-body p-0">
         <div className="mb-4 col-md-6">
-          <div className="input-group mt-2">
+          <div className="input-group px-2 mt-2">
             <span className="input-group-text bg-white border-end-0">
               <FaSearch className="text-muted" style={{ color: "#94a3b8" }} />
             </span>
             <input
               type="search"
-              className="form-control border-start-0"
+              className="form-control border-start-0 py-2"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
@@ -124,22 +122,22 @@ const StockOutTable = () => {
           </div>
         </div>
 
-        <div className="card p-0  mt-5">
-          <div className="card-body p-0">
-            <div className="table-responsive">
+        <div className="card p-0 shadow-none mt-3">
+          <div className="card-body  p-0">
+            <div className="table-responsive px-2">
               <table className="table table-sm">
                 <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <th>Srno</th>
+                    <th className="custom-perchase-th">Srno</th>
 
-                    <th>Date</th>
-                    <th>from</th>
-                    <th>to</th>
-                    <th>number of products</th>
-                    <th>Stock quantity</th>
-                    <th>status</th>
+                    <th className="custom-perchase-th">Date</th>
+                    <th className="custom-perchase-th">from</th>
+                    <th className="custom-perchase-th">to</th>
+                    <th className="custom-perchase-th">number of products</th>
+                    <th className="custom-perchase-th">Stock quantity</th>
+                    <th className="custom-perchase-th">status</th>
 
-                    <th>action</th>
+                    <th className="custom-perchase-th">action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -162,14 +160,14 @@ const StockOutTable = () => {
                         <td className="d-flex align-items-center gap-2">
                           <button
                             type="button"
-                            className="btn btn-link p-0 text-primary" 
+                            className="btn btn-link p-0 text-primary"
                             onClick={() => btnClick(item?.products)}
                           >
                             <i className="bi bi-eye"></i>
                           </button>
                           <button
                             type="button"
-                            className="btn btn-primary btn-sm"
+                            className="btn custom-button-bgcolor btn-sm"
                             onClick={() => exportProduct(item?.products)}
                           >
                             Download
@@ -200,7 +198,6 @@ const StockOutTable = () => {
               </div>
             </div>
           </div>
-         
         </div>
       </div>
 

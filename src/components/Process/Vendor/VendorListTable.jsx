@@ -321,12 +321,12 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "_id",
         header: "Select",
         cell: ({ row }) => (
-          <Form.Check
+          <input
             type="checkbox"
             checked={selectedRows.includes(row.original._id)}
             onChange={() => handleCheckboxChange(row.original._id)}
-            className="form-check-input-lg"
             disabled={loading}
+            style={{ width: "20px", height: "20px" }}
           />
         ),
       },
@@ -334,7 +334,7 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "sale.createdAt",
         header: "Process Date",
         cell: ({ row }) => (
-          <div className="table-vendor-data-size">
+          <div className="table-vendor-data-size common-tabledata-minwidth ">
             {new Date(row.original.sale.createdAt).toLocaleDateString("en-GB", {
               day: "2-digit",
               month: "2-digit",
@@ -347,7 +347,7 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "store.name",
         header: "Store",
         cell: ({ row }) => (
-          <div className="table-vendor-data-size">
+          <div className="table-vendor-data-size common-tabledata-minwidth">
             {row.original.store.name}
           </div>
         ),
@@ -356,7 +356,7 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "order.billNumber",
         header: "Bill Number",
         cell: ({ row }) => (
-          <div className="table-vendor-data-size">
+          <div className="table-vendor-data-size common-tabledata-minwidth">
             {row.original.order.billNumber}
           </div>
         ),
@@ -366,11 +366,10 @@ const VendorListTable = ({ data, loading }) => {
         header: "Customer Name",
         cell: ({ row }) => (
           <div
-            className="table-vendor-data-size"
+            className="table-vendor-data-size common-tabledata-minwidth common-text-color"
             style={{
               cursor: "pointer",
               textDecoration: "underline",
-              color: "#6366f1",
             }}
             onClick={() => handleCustomerNoteClick(row.original)}
           >
@@ -383,11 +382,10 @@ const VendorListTable = ({ data, loading }) => {
         header: "Vendor Note",
         cell: ({ row }) => (
           <div
-            className="table-vendor-data-size"
+            className="table-vendor-data-size common-tabledata-minwidth common-text-color"
             style={{
               cursor: "pointer",
               textDecoration: "underline",
-              color: "#6366f1",
             }}
             onClick={() => handleVendorNoteClick(row.original)}
           >
@@ -399,7 +397,7 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "lens.sku",
         header: "Lens SKU",
         cell: ({ row }) => (
-          <div className="max-w-[150px] table-vendor-data-size">
+          <div className="max-w-[150px] table-vendor-data-size common-tabledata-minwidth">
             {row.original.lens.sku}
           </div>
         ),
@@ -408,7 +406,9 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "side",
         header: "Side",
         cell: ({ row }) => (
-          <div className="table-vendor-data-size">{row.original.side}</div>
+          <div className="table-vendor-data-size common-tabledata-minwidth">
+            {row.original.side}
+          </div>
         ),
       },
       {
@@ -425,7 +425,7 @@ const VendorListTable = ({ data, loading }) => {
                 {["Specs", "SPH", "CYL", "Axis", "ADD"].map((label, idx) => (
                   <div
                     key={idx}
-                    className="border border-dark p-1 fw-bold table-vendor-data-size"
+                    className="border border-dark p-1 fw-bold table-vendor-data-size "
                   >
                     {label}
                   </div>
@@ -476,7 +476,7 @@ const VendorListTable = ({ data, loading }) => {
         cell: ({ row }) => (
           <Button
             variant="primary"
-            className="table-vendor-data-size"
+            className="table-vendor-data-size px-4 py-2 custom-button-bgcolor"
             size="sm"
             onClick={() => handleReveive(row)}
             disabled={loading}
@@ -510,6 +510,7 @@ const VendorListTable = ({ data, loading }) => {
           <Button
             onClick={handleDownloadPDF}
             disabled={loading || isDownloading}
+            className="custom-button-bgcolor"
           >
             {isDownloading ? "Downloading..." : "Download"}
           </Button>
@@ -517,7 +518,7 @@ const VendorListTable = ({ data, loading }) => {
       </div>
 
       {filteredData.length !== 0 && (
-        <div className="mb-4 col-md-4">
+        <div className="mb-2 col-md-4 px-2">
           <div className="input-group">
             <span className="input-group-text bg-white border-end-0">
               <FaSearch
@@ -527,19 +528,20 @@ const VendorListTable = ({ data, loading }) => {
             </span>
             <input
               type="search"
-              className="form-control border-start-0 py-2q"
+              className="form-control border-start-0 py-2"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={loading}
             />
           </div>
-          <div className="d-flex gap-2 mt-2">
+          <div className="d-flex gap-2 mt-4">
             {selectedRows.length > 0 && (
               <Button
                 variant="primary"
                 onClick={handleReceiveAll}
                 disabled={loading}
+                className="custom-button-bgcolor"
               >
                 Receive All
               </Button>
@@ -548,7 +550,7 @@ const VendorListTable = ({ data, loading }) => {
         </div>
       )}
 
-      <div className="table-responsive">
+      <div className="table-responsive px-2">
         {loading ? (
           <div
             style={{

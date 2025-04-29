@@ -12,7 +12,7 @@ const CommonButton = ({
   return (
     <div className="col-12">
       <button
-        className={`btn btn-primary w-100 ${className}`}
+        className={`btn custom-button-bgcolor w-100 ${className}`}
         type="submit"
         {...rest}
         // disabled={isSubmitting || !isValid}
