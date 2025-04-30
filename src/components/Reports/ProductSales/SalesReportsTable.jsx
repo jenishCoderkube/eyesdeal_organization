@@ -11,69 +11,42 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import moment from "moment/moment";
 import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
 const SalesReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // // Custom global filter function
-  // const filterGlobally = useMemo(
-  //   () => (data, query) => {
-  //     if (!query) return data;
-  //     const lowerQuery = query.toLowerCase();
-  //     return data.filter((item) =>
-  //       [
-  //         item.store,
-  //         item.date,
-  //         item.orderNo,
-  //         item.customerName,
-  //         item.brand,
-  //         item.barcode,
-  //         item.sku,
-  //         String(item.mrp),
-  //         String(item.discount),
-  //         String(item.netAmount),
-  //       ].some((field) => field.toLowerCase().includes(lowerQuery))
-  //     );
-  //   },
-  //   []
-  // );
-
-  // // Debounced filter logic in useEffect
-  // useEffect(() => {
-  //   const debouncedFilter = debounce((query) => {
-  //     setFilteredData(filterGlobally(data, query));
-  //   }, 200);
-
-  //   debouncedFilter(searchQuery);
-
-  //   return () => clearTimeout(debouncedFilter.timeout);
-  // }, [searchQuery, data, filterGlobally]);
-
-  // Handle search input change
-  const handleSearch = async (value) => {
+  const handleSearch = (value) => {
     setSearchQuery(value);
+  };
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500); // Adjust delay here
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchSearchOrderData(debouncedQuery);
+    }
+  }, [debouncedQuery]);
+
+  const fetchSearchOrderData = async (value) => {
     try {
       const response = await reportService.getOrdersBySearch(value);
 
       if (response.success) {
-          console.log(response.data)
+        console.log(response.data);
+        setFilteredData(response.data.data.docs)
       } else {
-        console.error(response.data.message);
+        console.error(response.message);
       }
     } catch (error) {
       console.error("Error fetching searched data:", error);
     }
-
   };
 
   // Table columns

@@ -1,75 +1,68 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import PurchaseReportsForm from "./SalesReportsForm";
 import PurchaseReportsTable from "./SalesReportsTable";
+import { reportService } from "../../../services/reportService";
 
 const PurchaseReportCom = () => {
-  // Dummy data (5 entries)
-  const initialData = useMemo(
-    () => [
-      {
-        id: 1,
-        store: "EYESDEAL BARDOLI",
-        vendor: "Vision Suppliers",
-        date: "22/04/2025",
-        billNo: "BILL001",
-        amount: 5000,
-        totalPiece: 50,
-      },
-      {
-        id: 2,
-        store: "EYESDEAL BARDOLI",
-        vendor: "Optic Distributors",
-        date: "22/04/2025",
-        billNo: "BILL002",
-        amount: 3000,
-        totalPiece: 30,
-      },
-      {
-        id: 3,
-        store: "CITY OPTICS",
-        vendor: "Lens Crafters",
-        date: "23/04/2025",
-        billNo: "BILL003",
-        amount: 4500,
-        totalPiece: 45,
-      },
-      {
-        id: 4,
-        store: "ELITE HOSPITAL",
-        vendor: "Vision Suppliers",
-        date: "21/04/2025",
-        billNo: "BILL004",
-        amount: 6000,
-        totalPiece: 60,
-      },
-      {
-        id: 5,
-        store: "EYESDEAL BARDOLI",
-        vendor: "Optic Distributors",
-        date: "22/04/2025",
-        billNo: "BILL005",
-        amount: 3500,
-        totalPiece: 35,
-      },
-    ],
-    []
-  );
 
-  const [filteredData, setFilteredData] = useState(initialData);
+  const [filteredData, setFilteredData] = useState([]);
+  const [amountData, setAmountData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    // Get yesterday's date
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    fetchPurchaseLog(yesterday.getTime(), today.getTime());
+    fetchAmount(yesterday.getTime(), today.getTime());
+  }, []);
+
+  const fetchPurchaseLog = (dateFrom, dateTo) => {
+    reportService.getPurchaseLog(dateFrom, dateTo)
+      .then(res => {
+        console.log(res)
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = (dateFrom, dateTo) => {
+    reportService.getAmount(dateFrom, dateTo)
+      .then(res => {
+        console.log(res)
+        setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
 
   const handleFormSubmit = (values) => {
-    const filtered = initialData.filter((item) => {
-      const itemDate = new Date(item.date.split("/").reverse().join("-"));
-      const fromDate = values.from;
-      const toDate = values.to;
-      return (
-        (!values.store || item.store === values.store.value) &&
-        (!values.vendor || item.vendor === values.vendor.value) &&
-        (!fromDate || itemDate >= fromDate) &&
-        (!toDate || itemDate <= toDate)
-      );
-    });
-    setFilteredData(filtered);
+    // console.log(values)
+    // const filtered = initialData.filter((item) => {
+    //   const itemDate = new Date(item.date.split("/").reverse().join("-"));
+    //   const fromDate = values.from;
+    //   const toDate = values.to;
+    //   return (
+    //     (!values.store || item.store === values.store.value) &&
+    //     (!values.vendor || item.vendor === values.vendor.value) &&
+    //     (!fromDate || itemDate >= fromDate) &&
+    //     (!toDate || itemDate <= toDate)
+    //   );
+    // });
+    // setFilteredData(filtered);
+    if (values) {
+      console.log(values);
+      
+      const { from, to, page = 1 } = values;
+
+      const fromTimestamp = new Date(from).getTime();
+      const toTimestamp = new Date(to).getTime();
+
+      fetchPurchaseLog(fromTimestamp, toTimestamp);
+      fetchAmount(fromTimestamp, toTimestamp);
+      setCurrentPage(page);
+    }
   };
 
   return (
@@ -84,7 +77,7 @@ const PurchaseReportCom = () => {
           </div>
           <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Purchase Report</h6>
-            <PurchaseReportsTable data={filteredData} />
+            <PurchaseReportsTable data={filteredData} amountData={amountData[0]?.totalAmount} />
           </div>
         </div>
       </div>

@@ -7,97 +7,116 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment/moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const PurchaseReportsTable = ({ data }) => {
+const PurchaseReportsTable = ({ data, amountData }) => {
+  console.log(data)
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [newamountData, setNewAmountData] = useState(amountData);
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.store,
-          item.vendor,
-          item.date,
-          item.billNo,
-          String(item.amount),
-          String(item.totalPiece),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
 
-  // Debounced filter logic in useEffect
+  // Sync filteredData with incoming data prop
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500); // Adjust delay here
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (debouncedQuery.trim()) {
+      fetchPurchaseLog(debouncedQuery);
+      fetchAmount(yesterday.getTime(), today.getTime(),debouncedQuery);
+    }
+  }, [debouncedQuery]);
+
 
   // Handle search input change
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
+  const fetchPurchaseLog = (search) => {
+    reportService.getPurchaseLogBySearch(search)
+      .then(res => {
+        console.log(res)
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = (dateFrom, dateTo, search) => {
+    reportService.getAmountBySearch(dateFrom, dateTo, search)
+      .then(res => {
+        console.log(res)
+        // setNewAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
   // Table columns
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "store",
         header: "Store Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 230,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
         accessorKey: "vendor",
         header: "Vendor Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 230,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.companyName}</div>,
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
-        accessorKey: "billNo",
+        accessorKey: "invoiceNumber",
         header: "Bill No",
+        size: 180,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "amount",
+        accessorKey: "netAmount",
         header: "Amount",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "totalPiece",
+        accessorKey: "totalQuantity",
         header: "Total Piece",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
-
+  console.log(filteredData)
   // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
@@ -146,7 +165,7 @@ const PurchaseReportsTable = ({ data }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
+        <p className="mb-0 fw-normal text-black">Total Amount: {newamountData}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -179,13 +198,15 @@ const PurchaseReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
+
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

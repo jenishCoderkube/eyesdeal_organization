@@ -6,6 +6,7 @@ const REPORTS_ENDPOINTS = {
   CATEGORY: `/expenseCategory`,
   ORDERS: `/orders`,
   GET_AMOUNT: `/report/get-amount`,
+  PURCHASELOG: `/inventory/purchase/purchaseLog`,
 };
 
 // Auth service functions
@@ -64,8 +65,8 @@ export const reportService = {
     try {
       const response = await api.get(REPORTS_ENDPOINTS.ORDERS, {
         params: {
-          populate: true,
-          search
+          search,
+          populate: true
         },
       });
       return {
@@ -96,6 +97,64 @@ export const reportService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getAmountBySearch: async (fromDate, toDate, search) => {
+    try {
+      const response = await api.get(REPORTS_ENDPOINTS.GET_AMOUNT, {
+        params: {
+          populate: true,
+          search,
+          "createdAt[$gte]": fromDate ?? "",
+          "createdAt[$lte]": toDate ?? "",
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getPurchaseLog: async (fromDate, toDate) => {
+    try {
+      const response = await api.get(REPORTS_ENDPOINTS.PURCHASELOG, {
+        params: {
+          "createdAt[$gte]": fromDate ?? "",
+          "createdAt[$lte]": toDate ?? "",
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error At Purchase Log",
+      };
+    }
+  },
+  getPurchaseLogBySearch: async (search) => {
+    try {
+      const response = await api.get(REPORTS_ENDPOINTS.PURCHASELOG, {
+        params: {
+          search
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error At Purchase Log",
       };
     }
   },

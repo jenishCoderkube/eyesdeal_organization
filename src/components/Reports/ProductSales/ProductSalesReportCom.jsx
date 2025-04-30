@@ -20,8 +20,6 @@ const ProductSalesReportCom = () => {
   }, []);
 
   const fetchOrders = (page, dateFrom, dateTo) => {
-    console.log("=====fromdate", dateFrom)
-    console.log("======todate", dateTo)
     reportService.getOrders(page, dateFrom, dateTo)
       .then(res => {
         setFilteredData(res.data?.data?.docs);
@@ -39,7 +37,6 @@ const ProductSalesReportCom = () => {
 
   const handleFormSubmit = (values) => {
     if (values) {
-      console.log(values)
       const { from, to, page = 1 } = values;
 
       const fromTimestamp = new Date(from).getTime();
