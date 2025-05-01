@@ -435,7 +435,13 @@ function ProductTable({ filters }) {
           </div>
         ) : (
           <>
-            {loading && <div>Loading products...</div>}
+            {loading && (
+              <div className="w-full d-flex  justify-content-center align-items-center">
+                <div class="spinner-border" role="status">
+                  <span class="sr-only"></span>
+                </div>
+              </div>
+            )}
             {error && <div className="alert alert-danger">{error}</div>}
             {!loading && !error && (
               <div className="table-responsive px-2">
