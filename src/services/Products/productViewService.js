@@ -13,6 +13,7 @@ const ENDPOINTS = {
   PRODUCTBYID: (model, productId) => `/master/${model}?_id=${productId}`,
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
+  MEDIA_LIBRARY: "/mediaLibrary",
 };
 
 const productViewService = {
@@ -96,10 +97,10 @@ const productViewService = {
       };
     }
   },
-  fetchAndUpdateProductPhotos: async (productId, oldBarcode) => {
+  fetchAndUpdateProductPhotos: async (productId, ObservationId) => {
     try {
       const searchResponse = await api.get(
-        `/mediaLibrary/search?search=${oldBarcode}`
+        `/mediaLibrary/search?search=${ObservationId}`
       );
       if (!searchResponse.data.success) {
         return {
@@ -211,13 +212,106 @@ const productViewService = {
       const response = await api.post(ENDPOINTS.EXPORT_CSV, payload);
       return {
         success: true,
-        data: response.data, // Assuming response.data is the CSV content
+        data: response.data,
         message: response.data.message || "CSV exported successfully",
       };
     } catch (error) {
       return {
         success: false,
         message: error.response?.data?.message || "Error exporting CSV",
+      };
+    }
+  },
+  updateEyeGlasses: async (productId, payload, model) => {
+    try {
+      const response = await api.patch(ENDPOINTS.PRODUCTS(model), payload);
+      return {
+        success: response.data.acknowledged && response.data.modifiedCount > 0,
+        data: response.data,
+        message: response.data.message || "Product updated successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating product",
+      };
+    }
+  },
+  updateAccessories: async (productId, payload, model) => {
+    try {
+      const response = await api.patch(ENDPOINTS.PRODUCTS(model), payload);
+      return {
+        success: response.data.acknowledged && response.data.modifiedCount > 0,
+        data: response.data,
+        message: response.data.message || "Product updated successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating product",
+      };
+    }
+  },
+  updateSunGlasses: async (productId, payload, model) => {
+    try {
+      const response = await api.patch(ENDPOINTS.PRODUCTS(model), payload);
+      return {
+        success: response.data.acknowledged && response.data.modifiedCount > 0,
+        data: response.data,
+        message: response.data.message || "Product updated successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating product",
+      };
+    }
+  },
+  updateSpectacleLens: async (productId, payload, model) => {
+    try {
+      const response = await api.patch(ENDPOINTS.PRODUCTS(model), payload);
+      return {
+        success: response.data.acknowledged && response.data.modifiedCount > 0,
+        data: response.data,
+        message: response.data.message || "Product updated successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating product",
+      };
+    }
+  },
+  updateProductData: async (productId, payload, model) => {
+    try {
+      const response = await api.patch(ENDPOINTS.PRODUCTS(model), payload);
+      return {
+        success: response.data.acknowledged && response.data.modifiedCount > 0,
+        data: response.data,
+        message: response.data.message || "Product updated successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating product",
+      };
+    }
+  },
+  getMediaLibrary: async (currentFolder = "/") => {
+    try {
+      const response = await api.get(ENDPOINTS.MEDIA_LIBRARY, {
+        params: { currentFolder },
+      });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message || "Media library fetched successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error fetching media library",
       };
     }
   },

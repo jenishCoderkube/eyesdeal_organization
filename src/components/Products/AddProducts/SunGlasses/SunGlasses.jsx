@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
 import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -333,55 +334,55 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
 
   // Initial form values
   const initialValues = {
-    model: initialData?.model || "sunGlasses",
-    tax: initialData?.tax || "",
-    brand: initialData?.brand || "",
-    sku: initialData?.sku || "",
-    displayName: initialData?.displayName || "",
-    HSNCode: initialData?.HSNCode || "",
-    unit: initialData?.unit || "",
-    costPrice: initialData?.costPrice || "",
-    resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
-    discount: initialData?.discount || "",
-    sellPrice: initialData?.sellPrice || "",
-    incentiveAmount: initialData?.incentiveAmount || 0,
-    oldBarcode: initialData?.barcode || "",
-    seoTitle: initialData?.seoTitle || "",
-    seoDescription: initialData?.seoDescription || "",
-    seoImage: initialData?.seoImage || null,
-    description: initialData?.description || "",
-    warranty: initialData?.warranty || "",
-    gender: initialData?.gender || "",
-    modelNumber: initialData?.modelNumber || "",
-    colorNumber: initialData?.colorNumber || "",
-    lensTechnology: initialData?.lensTechnology || "",
-    lensColor: initialData?.lensColor || "",
-    frameType: initialData?.frameType || "",
-    frameShape: initialData?.frameShape || "",
-    frameStyle: initialData?.frameStyle || "",
-    templeMaterial: initialData?.templeMaterial || "",
-    frameMaterial: initialData?.frameMaterial || "",
-    frameColor: initialData?.frameColor || "",
-    templeColor: initialData?.templeColor || "",
-    frameSize: initialData?.frameSize || "",
-    frameWidth: initialData?.frameWidth || "",
-    frameDimensions: initialData?.frameDimensions || "",
-    prescriptionType: initialData?.prescriptionType || "",
-    frameCollection: initialData?.frameCollection || "",
-    features: initialData?.features || "",
-    weight: initialData?.weight || "",
+    model: initialData?.model ?? "sunGlasses",
+    tax: initialData?.tax ?? "",
+    brand: initialData?.brand ?? "",
+    sku: initialData?.sku ?? "",
+    displayName: initialData?.displayName ?? "",
+    HSNCode: initialData?.HSNCode ?? "",
+    unit: initialData?.unit ?? "",
+    costPrice: initialData?.costPrice ?? "",
+    resellerPrice: initialData?.resellerPrice ?? "",
+    MRP: initialData?.MRP ? String(initialData.MRP) : "",
+    discount: initialData?.discount ?? "",
+    sellPrice: initialData?.sellPrice ?? "",
+    incentiveAmount: initialData?.incentiveAmount ?? 0,
+    oldBarcode: initialData?.oldBarcode ?? "", // Directly using oldBarcode key
+    seoTitle: initialData?.seoTitle ?? "",
+    seoDescription: initialData?.seoDescription ?? "",
+    seoImage: initialData?.seoImage ?? null,
+    description: initialData?.description ?? "",
+    warranty: initialData?.warranty ?? "",
+    gender: initialData?.gender ?? "",
+    modelNumber: initialData?.modelNumber ?? "",
+    colorNumber: initialData?.colorNumber ?? "",
+    lensTechnology: initialData?.lensTechnology ?? "",
+    lensColor: initialData?.lensColor ?? "",
+    frameType: initialData?.frameType ?? "",
+    frameShape: initialData?.frameShape ?? "",
+    frameStyle: initialData?.frameStyle ?? "",
+    templeMaterial: initialData?.templeMaterial ?? "",
+    frameMaterial: initialData?.frameMaterial ?? "",
+    frameColor: initialData?.frameColor ?? "",
+    templeColor: initialData?.templeColor ?? "",
+    frameSize: initialData?.frameSize ?? "",
+    frameWidth: initialData?.frameWidth ?? "",
+    frameDimensions: initialData?.frameDimensions ?? "",
+    prescriptionType: initialData?.prescriptionType ?? "",
+    frameCollection: initialData?.frameCollection ?? "",
+    features: Array.isArray(initialData?.features) ? initialData.features : "",
+    weight: initialData?.weight ?? "",
     manageStock: initialData?.manageStock ?? true,
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos.length > 0
         ? initialData.photos[0]
-        : initialData.photos
-      : "",
-    color: initialData?.color || "",
-    material: initialData?.material || "",
+        : ""
+      : initialData?.photos ?? "",
+    color: initialData?.color ?? "",
+    material: initialData?.material ?? "",
   };
 
   // Handle form submission
@@ -398,26 +399,67 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
 
       // Prepare the payload
       const payload = {
-        ...values,
-        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
-        templeMaterial: values.templeMaterial,
-        frameMaterial: values.frameMaterial,
-        templeColor: values.templeColor,
-        frameColor: values.frameColor,
-        frameCollection: values.frameCollection,
+        _id: initialData?._id,
+        model: values.model || "sunGlasses",
+        modelNumber: values.modelNumber || "",
+        colorNumber: values.colorNumber || "",
+        frameType: values.frameType || null,
+        frameShape: values.frameShape || null,
+        frameStyle: values.frameStyle || null,
+        templeMaterial: values.templeMaterial || null,
+        frameMaterial: values.frameMaterial || null,
+        templeColor: values.templeColor || null,
+        frameColor: values.frameColor || null,
+        gender: values.gender || "",
+        frameSize: values.frameSize || "",
+        frameWidth: values.frameWidth || "",
+        frameDimensions: values.frameDimensions || "",
+        weight: values.weight || "",
+        prescriptionType: values.prescriptionType || null,
+        frameCollection: values.frameCollection || null,
         features: Array.isArray(values.features)
-          ? values.features.map((feature) => feature.value)
+          ? values.features
+          : values.features
+          ? [values.features]
           : [],
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        HSNCode: values.HSNCode || "",
+        brand: values.brand || "",
+        unit: values.unit || "",
+        warranty: values.warranty || "",
+        tax: parseFloat(values.tax) || 0,
+        description: values.description || "",
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: parseFloat(values.MRP) || 0,
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        manageStock: values.manageStock ?? true,
+        inclusiveTax: values.inclusiveTax ?? true,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
         photos: Array.isArray(values.photos)
           ? values.photos
-          : [values.photos].filter(Boolean),
+          : values.photos
+          ? [values.photos]
+          : [],
+        lensColor: values.lensColor || "",
+        lensTechnology: values.lensTechnology || null,
+        activeInERP: values.activeInERP ?? true,
+        activeInWebsite: values.activeInWebsite ?? false,
+        __t: "sunGlasses",
+        storeFront: initialData?.storeFront || [],
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        seoTitle: values.seoTitle || "",
       };
 
       if (mode === "edit") {
-        const response = await productService.updateProduct(
-          "sunglasses",
+        const response = await productViewService.updateSunGlasses(
           initialData?._id,
-          payload
+          payload,
+          "sunGlasses"
         );
 
         if (response.success) {
@@ -427,7 +469,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
           toast.error(response.message || "Failed to update product");
         }
       } else {
-        const response = await productService.addProduct(payload, "sunglasses");
+        const response = await productService.addProduct(payload, "sunGlasses");
 
         if (response.success) {
           toast.success("Product added successfully");
@@ -437,8 +479,14 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         }
       }
     } catch (error) {
-      console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      if (
+        error.response?.data?.error?.includes("code: 11000") &&
+        error.response?.data?.error?.includes("sku")
+      ) {
+        toast.error("SKU already exists. Please use a unique SKU.");
+      } else {
+        toast.error("An error occurred while processing your request");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1341,15 +1389,17 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
 
             {/* Select Photos */}
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div>
                 {selectedImage && selectedImage.length > 0 ? (
                   <div className="row mt-4 g-3">
@@ -1379,9 +1429,11 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>

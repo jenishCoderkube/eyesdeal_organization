@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import ProductDetailsModal from "./ProductDetailsModal";
@@ -24,14 +22,21 @@ const debounce = (func, wait) => {
 
 function ProductTable({ filters }) {
   const navigate = useNavigate();
-  const [filteredData, setFilteredData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]); // Store product docs
+  const [paginationMeta, setPaginationMeta] = useState({
+    totalDocs: 0,
+    limit: 100,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+  const [page, setPage] = useState(1); // Manage page state directly
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
   const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
   const [photoFetchProgress, setPhotoFetchProgress] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
@@ -41,26 +46,60 @@ function ProductTable({ filters }) {
     () =>
       debounce(async (model, filters, page) => {
         setLoading(true);
-        const response = await productViewService.getProducts(
-          model,
-          filters,
-          page
-        );
-        if (response.success) {
-          setFilteredData(response.data);
-          setError(null);
-        } else {
-          setError(response.message);
+        try {
+          console.log("Fetching products with payload:", {
+            model,
+            filters,
+            page,
+          });
+          const response = await productViewService.getProducts(
+            model,
+            filters,
+            page
+          );
+          console.log("API response:", response);
+          if (response.success && response.other) {
+            setFilteredData(response.other.docs || []);
+            setPaginationMeta({
+              totalDocs: response.other.totalDocs || 0,
+              limit: response.other.limit || 100,
+              totalPages: response.other.totalPages || 1,
+              hasPrevPage: response.other.hasPrevPage || false,
+              hasNextPage: response.other.hasNextPage || false,
+            });
+            setError(null);
+          } else {
+            setError(response.message || "Failed to fetch products");
+            setFilteredData([]);
+            setPaginationMeta({
+              totalDocs: 0,
+              limit: 100,
+              totalPages: 1,
+              hasPrevPage: false,
+              hasNextPage: false,
+            });
+          }
+        } catch (err) {
+          console.error("Error fetching products:", err);
+          setError("An error occurred while fetching products");
           setFilteredData([]);
+          setPaginationMeta({
+            totalDocs: 0,
+            limit: 100,
+            totalPages: 1,
+            hasPrevPage: false,
+            hasNextPage: false,
+          });
         }
         setLoading(false);
       }, 200),
     []
   );
 
-  // Initial fetch and filter changes
+  // Fetch products when filters or page changes
   useEffect(() => {
     const model = filters.model || "eyeGlasses";
+    console.log("useEffect triggered with page:", page);
     fetchProducts(model, filters, page);
     return () => clearTimeout(fetchProducts.timeout);
   }, [filters, page, fetchProducts]);
@@ -71,22 +110,25 @@ function ProductTable({ filters }) {
     setPhotoFetchProgress(0);
     setCompletedCount(0);
 
-    const response = await productViewService.fetchAndUpdateProductPhotos(
-      product._id,
-      product.oldBarcode
-    );
-
-    if (response.success) {
-      toast.success("Photo fetched and Updated.");
-      setFilteredData((prev) =>
-        prev.map((item) =>
-          item._id === product._id
-            ? { ...item, photos: response.data.photos }
-            : item
-        )
+    try {
+      const response = await productViewService.fetchAndUpdateProductPhotos(
+        product._id,
+        product.oldBarcode
       );
-    } else {
-      setError(response.message);
+      if (response.success) {
+        toast.success("Photo fetched and updated.");
+        setFilteredData((prev) =>
+          prev.map((item) =>
+            item._id === product._id
+              ? { ...item, photos: response.data.photos }
+              : item
+          )
+        );
+      } else {
+        setError(response.message || "Failed to fetch photos");
+      }
+    } catch (err) {
+      setError("An error occurred while fetching photos");
     }
 
     setIsFetchingPhotos(false);
@@ -106,19 +148,22 @@ function ProductTable({ filters }) {
     let completed = 0;
 
     for (const product of filteredData) {
-      const response = await productViewService.fetchAndUpdateProductPhotos(
-        product._id,
-        product.oldBarcode
-      );
-
-      if (response.success) {
-        setFilteredData((prev) =>
-          prev.map((item) =>
-            item._id === product._id
-              ? { ...item, photos: response.data.photos }
-              : item
-          )
+      try {
+        const response = await productViewService.fetchAndUpdateProductPhotos(
+          product._id,
+          product.oldBarcode
         );
+        if (response.success) {
+          setFilteredData((prev) =>
+            prev.map((item) =>
+              item._id === product._id
+                ? { ...item, photos: response.data.photos }
+                : item
+            )
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching photos for product:", product._id, err);
       }
 
       completed += 1;
@@ -127,12 +172,13 @@ function ProductTable({ filters }) {
     }
 
     setIsFetchingPhotos(false);
-    toast.success("Photos fetched and Updated.");
+    toast.success("Photos fetched and updated.");
     const model = filters.model || "eyeGlasses";
     fetchProducts(model, filters, page);
   };
+
+  // Handle delete
   const handleDelete = async (productId) => {
-    // Show confirmation dialog
     const confirmDelete = window.confirm(
       `Are you sure you want to delete this product (ID: ${productId})?`
     );
@@ -145,7 +191,6 @@ function ProductTable({ filters }) {
         );
         const model = filters.model || "eyeGlasses";
         fetchProducts(model, filters, page);
-
         if (response) {
           toast.success(response?.message || "Product deleted successfully");
         }
@@ -154,6 +199,7 @@ function ProductTable({ filters }) {
       }
     }
   };
+
   // Handle View More click
   const handleViewMoreImages = (photos) => {
     const fullImageUrls = photos.map(
@@ -310,14 +356,30 @@ function ProductTable({ filters }) {
     data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 100,
-      },
-    },
   });
+
+  // Handle Next and Previous clicks
+  const handleNextPage = () => {
+    console.log("Next clicked, current page:", page);
+    if (paginationMeta.hasNextPage) {
+      setPage((prev) => {
+        const newPage = prev + 1;
+        console.log("Setting new page:", newPage);
+        return newPage;
+      });
+    }
+  };
+
+  const handlePreviousPage = () => {
+    console.log("Previous clicked, current page:", page);
+    if (paginationMeta.hasPrevPage) {
+      setPage((prev) => {
+        const newPage = prev - 1;
+        console.log("Setting new page:", newPage);
+        return newPage;
+      });
+    }
+  };
 
   // Export to Excel
   const exportToExcel = () => {
@@ -325,11 +387,12 @@ function ProductTable({ filters }) {
   };
 
   // Pagination info
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const startRow = (page - 1) * paginationMeta.limit + 1;
+  const endRow = Math.min(
+    page * paginationMeta.limit,
+    paginationMeta.totalDocs
+  );
+  const totalRows = paginationMeta.totalDocs;
 
   return (
     <div className="card shadow-none border">
@@ -422,21 +485,15 @@ function ProductTable({ filters }) {
               <div className="btn-group">
                 <button
                   className="btn btn-outline-primary"
-                  onClick={() => {
-                    table.previousPage();
-                    setPage((prev) => Math.max(prev - 1, 1));
-                  }}
-                  disabled={!table.getCanPreviousPage() || isFetchingPhotos}
+                  onClick={handlePreviousPage}
+                  disabled={!paginationMeta.hasPrevPage || isFetchingPhotos}
                 >
                   Previous
                 </button>
                 <button
                   className="btn btn-outline-primary"
-                  onClick={() => {
-                    table.nextPage();
-                    setPage((prev) => prev + 1);
-                  }}
-                  disabled={!table.getCanNextPage() || isFetchingPhotos}
+                  onClick={handleNextPage}
+                  disabled={!paginationMeta.hasNextPage || isFetchingPhotos}
                 >
                   Next
                 </button>

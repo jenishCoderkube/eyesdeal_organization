@@ -10,6 +10,8 @@ import { productService } from "../../../../services/productService";
 import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { toast } from "react-toastify";
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
+
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -17,7 +19,7 @@ const validationSchema = Yup.object({
   brand: Yup.string().required("Brand is required"),
   sku: Yup.string().required("SKU is required"),
   displayName: Yup.string().required("Display Name is required"),
-  HSNCode: Yup.string().required("HSN Code is required"),
+  HSNCode: Yup.string().nullable(),
   material: Yup.string().required("Material is required"),
   manufactureDate: Yup.date()
     .required("Manufacture Date is required")
@@ -35,7 +37,7 @@ const validationSchema = Yup.object({
       }
     ),
   unit: Yup.string().required("Unit is required"),
-  warranty: Yup.string(),
+  warranty: Yup.string().nullable(),
   description: Yup.string().required("Description is required"),
   tax: Yup.number()
     .required("Tax is required")
@@ -46,22 +48,26 @@ const validationSchema = Yup.object({
   resellerPrice: Yup.number()
     .required("Reseller Price is required")
     .min(0, "Reseller Price cannot be negative"),
-  MRP: Yup.string().required("MRP is required"),
-  discount: Yup.string().required("Discount is required"),
+  MRP: Yup.number()
+    .required("MRP is required")
+    .min(0, "MRP cannot be negative"),
+  discount: Yup.number()
+    .required("Discount is required")
+    .min(0, "Discount cannot be negative"),
   sellPrice: Yup.number()
     .required("Sell Price is required")
     .min(0, "Sell Price cannot be negative"),
   incentiveAmount: Yup.number()
     .required("Incentive Amount is required")
     .min(0, "Incentive Amount cannot be negative"),
-  seoTitle: Yup.string(),
-  seoDescription: Yup.string(),
-  seoImage: Yup.mixed(),
+  seoTitle: Yup.string().nullable(),
+  seoDescription: Yup.string().nullable(),
+  seoImage: Yup.mixed().nullable(),
   manageStock: Yup.boolean(),
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
-  photos: Yup.string(),
+  photos: Yup.array().of(Yup.string()).nullable(),
 });
 
 // Options for react-select
@@ -88,33 +94,34 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
   const [showSections, setShowSections] = useState({
     seoDetails: false,
   });
+
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState([]);
   useEffect(() => {
-    if (mode !== "add") {
+    if (mode !== "add" && initialData?.photos) {
       setSelectedImage(
-        initialData?.photos
-          ? Array.isArray(initialData.photos)
-            ? initialData.photos
-            : initialData.photos
-          : null
+        Array.isArray(initialData.photos)
+          ? initialData.photos
+          : [initialData.photos]
       );
     } else {
       setSelectedImage([]);
     }
-  }, [mode]);
+  }, [mode, initialData]);
 
   // State for dynamic options
   const [attributeOptions, setAttributeOptions] = useState({
-    brands: [],
-    units: [],
+    brands: brandOptions,
+    units: unitOptions,
   });
 
   // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
+        const attributeData = {};
+
         const brandResponse = await productAttributeService.getAttributes(
           "brand"
         );
@@ -123,26 +130,25 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
         );
 
         if (brandResponse.success) {
-          setAttributeOptions((prev) => ({
-            ...prev,
-            brands: brandResponse.data.map((item) => ({
-              value: item._id,
-              label: item.name,
-            })),
+          attributeData.brands = brandResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
+        }
+        if (unitResponse.success) {
+          attributeData.units = unitResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
           }));
         }
 
-        if (unitResponse.success) {
-          setAttributeOptions((prev) => ({
-            ...prev,
-            units: unitResponse.data.map((item) => ({
-              value: item._id,
-              label: item.name,
-            })),
-          }));
-        }
+        setAttributeOptions({
+          brands: attributeData.brands || brandOptions,
+          units: attributeData.units || unitOptions,
+        });
       } catch (error) {
         console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
       }
     };
 
@@ -160,7 +166,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
   // Initial form values
   const initialValues = {
     model: initialData?.model || "contactSolutions",
-    oldBarcode: initialData?.barcode || "",
+    oldBarcode: initialData?.oldBarcode || "",
     brand: initialData?.brand || "",
     sku: initialData?.sku || "",
     displayName: initialData?.displayName || "",
@@ -178,7 +184,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
     tax: initialData?.tax || "",
     costPrice: initialData?.costPrice || "",
     resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
+    MRP: initialData?.MRP ? String(initialData.MRP) : "",
     discount: initialData?.discount || "",
     sellPrice: initialData?.sellPrice || "",
     incentiveAmount: initialData?.incentiveAmount || 0,
@@ -189,67 +195,110 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : "",
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos
+      : initialData?.photos
+      ? [initialData.photos]
+      : [],
   };
 
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+    console.log("Form submission triggered with values:", values);
     setSubmitting(true);
-    console.log("Form values before submission:", values); // Log the form values
 
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
+        console.log("Uploading seoImage:", values.seoImage.name);
         const res = await uploadImage(values.seoImage, values.seoImage.name);
-        values.seoImage = `eyesdeal/website/image/seo/${values.seoImage.name}`; // Set the path
+        values.seoImage = `eyesdeal/website/image/seo/${values.seoImage.name}`;
+        console.log("seoImage uploaded, path:", values.seoImage);
       }
 
       // Prepare the payload
       const payload = {
-        ...values,
+        _id: initialData?._id,
+        model: values.model || "contactSolutions",
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        brand: values.brand || null,
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        HSNCode: values.HSNCode || "",
+        material: values.material || "",
         manufactureDate: values.manufactureDate
           ? values.manufactureDate.toISOString()
-          : null, // Ensure date is in ISO format
-        expiryDate: values.expiryDate ? values.expiryDate.toISOString() : null, // Ensure date is in ISO format
-        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+          : null,
+        expiryDate: values.expiryDate ? values.expiryDate.toISOString() : null,
+        unit: values.unit || null,
+        warranty: values.warranty || "",
+        description: values.description || "",
+        tax: parseFloat(values.tax) || 0,
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: parseFloat(values.MRP) || 0,
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
+        seoTitle: values.seoTitle || "",
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        manageStock: values.manageStock ?? true,
+        inclusiveTax: values.inclusiveTax ?? true,
+        activeInERP: values.activeInERP ?? true,
+        activeInWebsite: values.activeInWebsite ?? false,
         photos: Array.isArray(values.photos)
           ? values.photos
-          : [values.photos].filter(Boolean),
+          : values.photos
+          ? [values.photos]
+          : [],
+        __t: "contactSolutions",
+        storeFront: initialData?.storeFront || [],
       };
 
-      console.log("Payload being sent:", payload); // Log the payload
+      console.log("Prepared payload:", payload);
 
-      let response;
       if (mode === "edit") {
-        response = await productService.updateProduct(
-          "contactSolutions",
-          initialData?.id,
-          payload
+        const response = await productViewService.updateProductData(
+          initialData?._id,
+          payload,
+          "contactSolutions"
         );
+
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
         } else {
-          console.error("Update failed:", response); // Log the response for debugging
           toast.error(response.message || "Failed to update product");
         }
       } else {
-        response = await productService.addProduct(payload, "contactSolutions");
+        const response = await productService.addProduct(
+          payload,
+          "contactSolutions"
+        );
+
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
         } else {
-          console.error("Add failed:", response); // Log the response for debugging
           toast.error(response.message || "Failed to add product");
         }
       }
     } catch (error) {
-      console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      if (
+        error.response?.data?.error?.includes("code: 11000") &&
+        error.response?.data?.error?.includes("sku")
+      ) {
+        toast.error("SKU already exists. Please use a unique SKU.");
+      } else if (
+        error.response?.data?.message?.includes("Cast to ObjectId failed")
+      ) {
+        toast.error(
+          "Invalid selection for Brand or Unit. Please select valid options."
+        );
+      } else {
+        toast.error("An error occurred while processing your request");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -263,7 +312,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
         onSubmit={handleSubmit}
         enableReinitialize={true}
       >
-        {({ setFieldValue, values }) => (
+        {({ setFieldValue, values, isSubmitting }) => (
           <Form className="d-flex flex-column gap-4">
             {/* Common Fields */}
             <div>
@@ -313,7 +362,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 name="brand"
                 options={attributeOptions.brands}
                 onChange={(option) =>
-                  setFieldValue("brand", option ? option.value : "")
+                  setFieldValue("brand", option ? option.value : null)
                 }
                 value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
@@ -363,7 +412,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 className="form-label font-weight-600 text-sm font-medium"
                 htmlFor="HSNCode"
               >
-                HSN Code <span className="text-danger">*</span>
+                HSN Code
               </label>
               <Field type="text" name="HSNCode" className="form-control" />
               <ErrorMessage
@@ -443,7 +492,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 name="unit"
                 options={attributeOptions.units}
                 onChange={(option) =>
-                  setFieldValue("unit", option ? option.value : "")
+                  setFieldValue("unit", option ? option.value : null)
                 }
                 value={attributeOptions.units.find(
                   (option) => option.value === values.unit
@@ -552,7 +601,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 >
                   MRP <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="MRP" className="form-control" />
+                <Field type="number" name="MRP" className="form-control" />
                 <ErrorMessage
                   name="MRP"
                   component="div"
@@ -566,7 +615,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 >
                   Discount <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="discount" className="form-control" />
+                <Field type="number" name="discount" className="form-control" />
                 <ErrorMessage
                   name="discount"
                   component="div"
@@ -669,6 +718,13 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                       setFieldValue("seoImage", event.currentTarget.files[0])
                     }
                   />
+                  {values.seoImage && typeof values.seoImage === "string" && (
+                    <img
+                      src={`${defalutImageBasePath}${values.seoImage}`}
+                      alt="SEO Image"
+                      style={{ maxHeight: "100px", marginTop: "10px" }}
+                    />
+                  )}
                   <ErrorMessage
                     name="seoImage"
                     component="div"
@@ -724,15 +780,17 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
 
             {/* Select Photos */}
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div>
                 {selectedImage && selectedImage.length > 0 ? (
                   <div className="row mt-4 g-3">
@@ -748,11 +806,13 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                           <button
                             className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
                             style={{ cursor: "pointer" }}
-                            onClick={() =>
-                              setSelectedImage(
-                                selectedImage.filter((_, i) => i !== index)
-                              )
-                            }
+                            onClick={() => {
+                              const newImages = selectedImage.filter(
+                                (_, i) => i !== index
+                              );
+                              setSelectedImage(newImages);
+                              setFieldValue("photos", newImages);
+                            }}
                             aria-label="Remove image"
                           >
                             <IoClose size={16} className="text-dark" />
@@ -762,9 +822,11 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -779,8 +841,16 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
 
             {/* Submit Button */}
             <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Submitting..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>

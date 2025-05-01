@@ -1,62 +1,101 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { FaFolder, FaArrowLeft } from "react-icons/fa";
-import image1 from "../../../../../public/eyesdeal_baloon.png"; // Adjust paths as needed
-import image2 from "../../../../../public/eyesdeal_baloon.png";
-import image3 from "../../../../../public/eyesdeal_baloon.png";
-import image4 from "../../../../../public/eyesdeal_baloon.png";
-
-const assetStructure = {
-  eyesDealErp: {
-    subfolder: {
-      images: [
-        { name: "image1.jpg", src: image1 },
-        { name: "image2.jpg", src: image2 },
-      ],
-    },
-  },
-  eyesdeal: {
-    images: [{ name: "image3.jpg", src: image3 }],
-  },
-  formats: {
-    images: [{ name: "image4.jpg", src: image4 }],
-  },
-};
+import { toast } from "react-toastify";
+import productViewService from "../../../../services/Products/productViewService";
 
 function AssetSelector({ show, onHide, onSelectImage }) {
   const [currentPath, setCurrentPath] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [folders, setFolders] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [allImages, setAllImages] = useState([]);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [baseUrl, setBaseUrl] = useState(""); // Store baseUrl from API
 
-  // Get current folder content
-  const getCurrentContent = () => {
-    let current = assetStructure;
-    for (const folder of currentPath) {
-      current = current[folder];
-    }
-    return current;
+  // Construct currentFolder from currentPath
+  const currentFolder = useMemo(() => {
+    return currentPath.length === 0 ? "/" : `${currentPath.join("/")}/`;
+  }, [currentPath]);
+
+  // Helper function to check if a file is an image
+  const isImageFile = (filename) => {
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp"];
+    return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
   };
 
-  // Get all images for search
-  const getAllImages = () => {
-    const images = [];
-    const traverse = (obj, path = []) => {
-      if (obj.images) {
-        obj.images.forEach((img) => {
-          images.push({ ...img, path: [...path] });
-        });
-      }
-      Object.keys(obj).forEach((key) => {
-        if (key !== "images") {
-          traverse(obj[key], [...path, key]);
+  // Fetch media library data
+  useEffect(() => {
+    if (!show) return; // Skip if modal is not open
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await productViewService.getMediaLibrary(
+          currentFolder
+        );
+        if (response.success) {
+          const { resp, baseUrl: apiBaseUrl } = response.data;
+
+          // Store baseUrl for stripping later
+          setBaseUrl(apiBaseUrl);
+
+          // Extract folders from CommonPrefixes
+          const fetchedFolders = resp.CommonPrefixes
+            ? resp.CommonPrefixes.map((prefix) => {
+                const folderName = prefix.Prefix.replace(
+                  currentFolder,
+                  ""
+                ).replace("/", "");
+                return folderName;
+              }).filter(Boolean)
+            : [];
+
+          // Extract files from Contents
+          const fetchedFiles = resp.Contents
+            ? resp.Contents.map((item) => ({
+                name: item.Key.split("/").pop(),
+                src: `${apiBaseUrl}${item.Key}`,
+                path: `/${item.Key}`, // Store path for selection
+              }))
+            : [];
+
+          setFolders(fetchedFolders);
+          setFiles(fetchedFiles);
+
+          // Update allImages for search
+          setAllImages((prev) => {
+            const newImages = fetchedFiles.map((file) => ({
+              name: file.name,
+              src: file.src,
+              path: file.path,
+              pathArray: currentPath,
+            }));
+            const uniqueImages = [...prev, ...newImages].reduce((acc, img) => {
+              if (!acc.some((existing) => existing.src === img.src)) {
+                acc.push(img);
+              }
+              return acc;
+            }, []);
+            return uniqueImages;
+          });
+        } else {
+          throw new Error(response.message || "Failed to fetch media library");
         }
-      });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Failed to load assets. Please try again.");
+        toast.error("Failed to load assets. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     };
-    traverse(assetStructure);
-    return images;
-  };
 
-  const currentContent = getCurrentContent();
-  const allImages = getAllImages();
+    fetchData();
+  }, [show, currentFolder]);
 
   // Filter images based on search query
   const filteredImages = useMemo(() => {
@@ -64,7 +103,7 @@ function AssetSelector({ show, onHide, onSelectImage }) {
     return allImages.filter((img) =>
       img.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, allImages]);
 
   // Handle folder click
   const handleFolderClick = (folder) => {
@@ -78,16 +117,37 @@ function AssetSelector({ show, onHide, onSelectImage }) {
 
   // Handle image selection
   const handleImageSelect = (image) => {
-    onSelectImage(image.src);
+    if (!isImageFile(image.name)) return; // Ignore non-image files
+    setSelectedImages((prev) => {
+      if (prev.includes(image.src)) {
+        return prev.filter((src) => src !== image.src);
+      } else {
+        return [...prev, image.src];
+      }
+    });
+  };
+
+  // Handle confirm selection
+  const handleConfirmSelection = () => {
+    // Strip baseUrl from selected images, keep only the path
+    const paths = selectedImages.map((src) => {
+      const path = src.replace(baseUrl, "");
+      return path.startsWith("/") ? path : `${path}`;
+    });
+    onSelectImage(paths);
+    setSelectedImages([]); // Reset selection
     onHide();
   };
 
   return (
     <Modal
       show={show}
-      onHide={onHide}
+      onHide={() => {
+        setSelectedImages([]); // Reset selection on close
+        onHide();
+      }}
       centered
-      size="lg"
+      size="xl"
       dialogClassName="max-w-2xl"
     >
       <Modal.Header className="border-bottom px-4 py-3">
@@ -97,7 +157,10 @@ function AssetSelector({ show, onHide, onSelectImage }) {
         <Button
           variant="link"
           className="text-muted p-0"
-          onClick={onHide}
+          onClick={() => {
+            setSelectedImages([]); // Reset selection on close
+            onHide();
+          }}
           aria-label="Close"
         >
           <svg
@@ -111,102 +174,129 @@ function AssetSelector({ show, onHide, onSelectImage }) {
         </Button>
       </Modal.Header>
       <Modal.Body className="p-4">
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={handleConfirmSelection}
+            disabled={selectedImages.length === 0}
+          >
+            Select ({selectedImages.length})
+          </Button>
+        </Modal.Footer>
         <Form.Control
           type="text"
-          placeholder="search..."
+          placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="mb-4"
         />
-        {searchQuery && filteredImages.length > 0 && (
-          <div className="mb-4">
-            <h6>Search Results</h6>
-            <div className="row row-cols-4 g-4">
-              {filteredImages.map((img, index) => (
-                <div
-                  key={index}
-                  className="col pointer"
-                  onClick={() => handleImageSelect(img)}
-                >
-                  <img
-                    src={img.src}
-                    alt={img.name}
-                    className="img-fluid rounded"
-                    style={{ height: "70px", objectFit: "cover" }}
-                  />
-                  <p className="text-center text-truncate mt-2">{img.name}</p>
+        {loading && <div className="text-center">Loading...</div>}
+        {error && <div className="text-danger text-center">{error}</div>}
+        {!loading && !error && (
+          <>
+            {searchQuery && filteredImages.length > 0 && (
+              <div className="mb-4">
+                <h6>Search Results</h6>
+                <div className="row row-cols-4 g-4">
+                  {filteredImages.map((img, index) => (
+                    <div
+                      key={index}
+                      className={`col ${
+                        isImageFile(img.name) ? "pointer" : ""
+                      }`}
+                      onClick={() => handleImageSelect(img)}
+                      style={{
+                        cursor: isImageFile(img.name) ? "pointer" : "default",
+                        position: "relative",
+                      }}
+                    >
+                      <img
+                        src={img.src}
+                        alt={img.name}
+                        className="img-fluid rounded"
+                        style={{
+                          height: "70px",
+                          objectFit: "cover",
+                          border: selectedImages.includes(img.src)
+                            ? "3px solid #007bff"
+                            : "none",
+                        }}
+                      />
+                      <p className="text-center text-truncate mt-2">
+                        {img.name}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="d-flex flex-column gap-4">
-          <div>
-            <h6>Folders</h6>
-            <div className="row row-cols-4 g-4 mt-3">
-              {currentPath.length > 0 && (
-                <div className="col d-flex align-items-center">
-                  <Button
-                    variant="primary"
-                    className="w-100"
-                    onClick={handleBack}
-                  >
-                    <FaArrowLeft className="me-2" /> Back
-                  </Button>
+              </div>
+            )}
+            <div className="d-flex flex-column gap-4">
+              <div>
+                <h6>Folders</h6>
+                <div className="row row-cols-4 g-4 mt-3">
+                  {currentPath.length > 0 && (
+                    <div className="col d-flex align-items-center">
+                      <Button
+                        variant="primary"
+                        className="w-100"
+                        onClick={handleBack}
+                      >
+                        <FaArrowLeft className="me-2" /> Back
+                      </Button>
+                    </div>
+                  )}
+                  {folders.map((folder) => (
+                    <div
+                      key={folder}
+                      className="col d-flex flex-column align-items-center pointer"
+                      onClick={() => handleFolderClick(folder)}
+                    >
+                      <FaFolder size={70} color="#4b5eaa" />
+                      <p className="text-center text-truncate mt-2">{folder}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {files.length > 0 && (
+                <div>
+                  <h6>Assets</h6>
+                  <div className="row row-cols-4 g-4 mt-3">
+                    {files.map((img, index) => (
+                      <div
+                        key={index}
+                        className={`col ${
+                          isImageFile(img.name) ? "pointer" : ""
+                        }`}
+                        onClick={() => handleImageSelect(img)}
+                        style={{
+                          cursor: isImageFile(img.name) ? "pointer" : "default",
+                          position: "relative",
+                        }}
+                      >
+                        <img
+                          src={img.src}
+                          alt={img.name}
+                          className="img-fluid rounded"
+                          style={{
+                            height: "70px",
+                            objectFit: "cover",
+                            border: selectedImages.includes(img.src)
+                              ? "3px solid #007bff"
+                              : "none",
+                          }}
+                        />
+                        <p className="text-center text-truncate mt-2">
+                          {img.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {Object.keys(currentContent)
-                .filter((key) => key !== "images")
-                .map((folder) => (
-                  <div
-                    key={folder}
-                    className="col d-flex flex-column align-items-center pointer"
-                    onClick={() => handleFolderClick(folder)}
-                  >
-                    <FaFolder size={70} color="#4b5e aa" />
-                    <p className="text-center text-truncate mt-2">{folder}</p>
-                  </div>
-                ))}
             </div>
-          </div>
-          {currentContent.images && currentContent.images.length > 0 && (
-            <div>
-              <h6>Assets</h6>
-              <div className="row row-cols-4 g-4 mt-3">
-                {currentContent.images.map((img, index) => (
-                  <div
-                    key={index}
-                    className="col d-flex flex-column align-items-center pointer"
-                    onClick={() => handleImageSelect(img)}
-                  >
-                    <img
-                      src={img.src}
-                      alt={img.name}
-                      className="img-fluid rounded"
-                      style={{ height: "70px", objectFit: "cover" }}
-                    />
-                    <p className="text-center text-truncate mt-2">{img.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </Modal.Body>
-      <Modal.Footer>
-        <Button
-          variant="primary"
-          onClick={() => {
-            const selectedImg = currentContent.images?.[0];
-            if (selectedImg) handleImageSelect(selectedImg);
-          }}
-          disabled={
-            !currentContent.images || currentContent.images.length === 0
-          }
-        >
-          Select
-        </Button>
-      </Modal.Footer>
     </Modal>
   );
 }

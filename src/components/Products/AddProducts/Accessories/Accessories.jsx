@@ -8,6 +8,7 @@ import { productAttributeService } from "../../../../services/productAttributeSe
 import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { productService } from "../../../../services/productService"; // Import the service
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -37,7 +38,7 @@ const validationSchema = Yup.object({
   oldBarcode: Yup.string().nullable(),
   seoTitle: Yup.string(),
   seoDescription: Yup.string(),
-  seoImage: Yup.mixed(),
+  seoImage: Yup.mixed().nullable(), // Allow null or file
   warranty: Yup.string(),
   description: Yup.string(),
   manageStock: Yup.boolean(),
@@ -144,37 +145,42 @@ function Accessories({ initialData = {}, mode = "add" }) {
 
   // Initial form values
   const initialValues = {
-    model: initialData?.model || "accessories",
-    tax: initialData?.tax || "",
-    brand: initialData?.brand || "",
-    sku: initialData?.sku || "",
-    displayName: initialData?.displayName || "",
-    HSNCode: initialData?.HSNCode || "",
-    unit: initialData?.unit || "",
-    costPrice: initialData?.costPrice || "",
-    resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
-    discount: initialData?.discount || "",
-    sellPrice: initialData?.sellPrice || "",
-    incentiveAmount: initialData?.incentiveAmount || 0,
-    oldBarcode: initialData?.barcode || "",
-    seoTitle: initialData?.seoTitle || "",
-    seoDescription: initialData?.seoDescription || "",
-    seoImage: initialData?.seoImage || null,
-    warranty: initialData?.warranty || "",
-    description: initialData?.description || "",
-    manageStock: initialData?.manageStock ?? true,
-    inclusiveTax: initialData?.inclusiveTax ?? true,
-    activeInERP: initialData?.activeInERP ?? true,
-    activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
+    model: initialData?.model ?? "accessories",
+    tax: initialData?.tax ?? "",
+    brand: initialData?.brand ?? "",
+    sku: initialData?.sku ?? "",
+    displayName: initialData?.displayName ?? "",
+    HSNCode: initialData?.HSNCode ?? "",
+    unit: initialData?.unit ?? "",
+    costPrice: initialData?.costPrice ?? "",
+    resellerPrice: initialData?.resellerPrice ?? "",
+    MRP: initialData?.MRP !== undefined ? String(initialData.MRP) : "",
+    discount: initialData?.discount ?? "",
+    sellPrice: initialData?.sellPrice ?? "",
+    incentiveAmount: initialData?.incentiveAmount ?? 0,
+    oldBarcode: initialData?.oldBarcode ?? initialData?.oldBarcode ?? "",
+    seoTitle: initialData?.seoTitle ?? "",
+    seoDescription: initialData?.seoDescription ?? "",
+    seoImage: initialData?.seoImage ?? null,
+    warranty: initialData?.warranty ?? "",
+    description: initialData?.description ?? "",
+    manageStock:
+      initialData?.manageStock !== undefined ? initialData.manageStock : true,
+    inclusiveTax:
+      initialData?.inclusiveTax !== undefined ? initialData.inclusiveTax : true,
+    activeInERP:
+      initialData?.activeInERP !== undefined ? initialData.activeInERP : true,
+    activeInWebsite:
+      initialData?.activeInWebsite !== undefined
+        ? initialData.activeInWebsite
+        : false,
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos.length > 0
         ? initialData.photos[0]
-        : initialData.photos
-      : "",
+        : ""
+      : initialData?.photos ?? "",
   };
 
-  // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
     setSubmitting(true);
@@ -188,33 +194,55 @@ function Accessories({ initialData = {}, mode = "add" }) {
 
       // Prepare the payload
       const payload = {
-        ...values,
-        // Ensure oldBarcode is a number or null
+        _id: initialData?._id,
+        model: values.model || "accessories",
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        HSNCode: values.HSNCode || "",
+        brand: values.brand || "",
+        unit: values.unit || "",
+        warranty: values.warranty || "",
+        tax: parseFloat(values.tax) || 0,
+        description: values.description || "",
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: parseFloat(values.MRP) || 0,
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        manageStock: values.manageStock ?? true,
+        inclusiveTax: values.inclusiveTax ?? true,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
         oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
-        // Ensure these fields are properly formatted
-        features: Array.isArray(values.features)
-          ? values.features
-          : [values.features].filter(Boolean),
         photos: Array.isArray(values.photos)
           ? values.photos
-          : [values.photos].filter(Boolean),
+          : values.photos
+          ? [values.photos]
+          : [],
+        activeInWebsite: values.activeInWebsite ?? false,
+        activeInERP: values.activeInERP ?? true,
+        __t: "accessories",
+        storeFront: initialData?.storeFront || [],
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        seoTitle: values.seoTitle || "",
       };
 
       if (mode === "edit") {
         // Call the update API
-        const response = await productService.updateAccessories(
-          initialData?.id,
-          payload
+        const response = await productViewService.updateAccessories(
+          initialData?._id,
+          payload,
+          "accessories"
         );
 
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
+          console.log("Update response:", response.data);
         } else {
           toast.error(response.message || "Failed to update product");
         }
       } else {
-        // Call the add API
         const response = await productService.addProduct(
           payload,
           "accessories"
@@ -223,13 +251,21 @@ function Accessories({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
+          console.log("Add response:", response.data);
         } else {
           toast.error(response.message || "Failed to add product");
         }
       }
     } catch (error) {
       console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      if (
+        error.response?.data?.error?.includes("code: 11000") &&
+        error.response?.data?.error?.includes("sku")
+      ) {
+        toast.error("SKU already exists. Please use a unique SKU.");
+      } else {
+        toast.error("An error occurred while processing your request");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -657,15 +693,17 @@ function Accessories({ initialData = {}, mode = "add" }) {
 
             {/* Select Photos */}
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div>
                 {selectedImage && selectedImage.length > 0 ? (
                   <div className="row mt-4 g-3">
@@ -695,9 +733,11 @@ function Accessories({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>

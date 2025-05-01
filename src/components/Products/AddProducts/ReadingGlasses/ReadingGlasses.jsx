@@ -6,8 +6,10 @@ import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
-import { defalutImageBasePath, uploadImage } from "../../../../utils/constants"; // Adjust the path as necessary
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
+
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -25,8 +27,12 @@ const validationSchema = Yup.object({
   resellerPrice: Yup.number()
     .required("Reseller Price is required")
     .min(0, "Reseller Price cannot be negative"),
-  MRP: Yup.string().required("MRP is required"),
-  discount: Yup.string().required("Discount is required"),
+  MRP: Yup.number()
+    .required("MRP is required")
+    .min(0, "MRP cannot be negative"),
+  discount: Yup.number()
+    .required("Discount is required")
+    .min(0, "Discount cannot be negative"),
   sellPrice: Yup.number()
     .required("Sell Price is required")
     .min(0, "Sell Price cannot be negative"),
@@ -34,35 +40,35 @@ const validationSchema = Yup.object({
     .required("Incentive Amount is required")
     .min(0, "Incentive Amount cannot be negative"),
   oldBarcode: Yup.string().nullable(),
-  seoTitle: Yup.string(),
-  seoDescription: Yup.string(),
-  seoImage: Yup.mixed(),
-  warranty: Yup.string(),
-  description: Yup.string(),
-  // features: Yup.string(),
-  gender: Yup.string(),
-  modelNumber: Yup.string(),
-  colorNumber: Yup.string(),
-  lensTechnology: Yup.string(),
-  readingPower: Yup.string(),
-  frameType: Yup.string(),
-  frameShape: Yup.string(),
-  frameStyle: Yup.string(),
-  templeMaterial: Yup.string(),
-  frameMaterial: Yup.string(),
-  frameColor: Yup.string(),
-  templeColor: Yup.string(),
-  prescriptionType: Yup.string(),
-  frameCollection: Yup.string(),
+  seoTitle: Yup.string().nullable(),
+  seoDescription: Yup.string().nullable(),
+  seoImage: Yup.mixed().nullable(),
+  warranty: Yup.string().nullable(),
+  description: Yup.string().nullable(),
+  features: Yup.array().of(Yup.string()).nullable(),
+  gender: Yup.string().nullable(),
+  modelNumber: Yup.string().nullable(),
+  colorNumber: Yup.string().nullable(),
+  lensTechnology: Yup.string().nullable(),
+  readingPower: Yup.string().nullable(),
+  frameType: Yup.string().nullable(),
+  frameShape: Yup.string().nullable(),
+  frameStyle: Yup.string().nullable(),
+  templeMaterial: Yup.string().nullable(),
+  frameMaterial: Yup.string().nullable(),
+  frameColor: Yup.string().nullable(),
+  templeColor: Yup.string().nullable(),
+  prescriptionType: Yup.string().nullable(),
+  frameCollection: Yup.string().nullable(),
   frameSize: Yup.string().required("Frame Size is required"),
-  frameWidth: Yup.string(),
-  frameDimensions: Yup.string(),
-  weight: Yup.string(),
+  frameWidth: Yup.string().nullable(),
+  frameDimensions: Yup.string().nullable(),
+  weight: Yup.string().nullable(),
   manageStock: Yup.boolean(),
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
-  photos: Yup.string(),
+  photos: Yup.array().of(Yup.string()).nullable(),
 });
 
 // Options for react-select
@@ -188,43 +194,42 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
     productDetails: false,
     frameDetails: false,
   });
+
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState([]);
   useEffect(() => {
-    if (mode !== "add") {
+    if (mode !== "add" && initialData?.photos) {
       setSelectedImage(
-        initialData?.photos
-          ? Array.isArray(initialData.photos)
-            ? initialData.photos
-            : initialData.photos
-          : null
+        Array.isArray(initialData.photos)
+          ? initialData.photos
+          : [initialData.photos]
       );
     } else {
       setSelectedImage([]);
     }
-  }, [mode]);
+  }, [mode, initialData]);
 
   const [loading, setLoading] = useState(false);
 
   // State for attribute options
   const [attributeOptions, setAttributeOptions] = useState({
-    brands: [],
-    units: [],
-    lensTechnology: [],
-    readingPower: [],
-    frameType: [],
-    frameShape: [],
-    frameStyle: [],
-    templeMaterial: [],
-    frameMaterial: [],
-    frameColor: [],
-    templeColor: [],
-    prescriptionType: [],
-    frameCollection: [],
-    frameSize: [],
-    features: [],
-    gender: [],
+    brands: brandOptions,
+    units: unitOptions,
+    lensTechnology: lensTechnologyOptions,
+    readingPower: readingPowerOptions,
+    frameType: frameTypeOptions,
+    frameShape: frameShapeOptions,
+    frameStyle: frameStyleOptions,
+    templeMaterial: templeMaterialOptions,
+    frameMaterial: frameMaterialOptions,
+    frameColor: frameColorOptions,
+    templeColor: templeColorOptions,
+    prescriptionType: prescriptionTypeOptions,
+    frameCollection: frameCollectionOptions,
+    frameSize: frameSizeOptions,
+    features: featuresOptions,
+    gender: genderOptions,
   });
 
   // Fetch attribute data from API
@@ -234,7 +239,6 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         setLoading(true);
         const attributeData = {};
 
-        // Fetching attributes from the respective endpoints
         const brandResponse = await productAttributeService.getAttributes(
           "brand"
         );
@@ -255,15 +259,15 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
           "frameStyle"
         );
         const templeMaterialResponse =
-          await productAttributeService.getAttributes("material"); // Using /master/material
+          await productAttributeService.getAttributes("material");
         const frameMaterialResponse =
-          await productAttributeService.getAttributes("material"); // Using /master/material
+          await productAttributeService.getAttributes("material");
         const frameColorResponse = await productAttributeService.getAttributes(
           "color"
-        ); // Using /master/color
+        );
         const templeColorResponse = await productAttributeService.getAttributes(
           "color"
-        ); // Using /master/color
+        );
         const prescriptionTypeResponse =
           await productAttributeService.getAttributes("prescriptionType");
         const frameCollectionResponse =
@@ -278,7 +282,6 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
           "gender"
         );
 
-        // Mapping responses to state
         if (brandResponse.success) {
           attributeData.brand = brandResponse.data.map((item) => ({
             value: item._id,
@@ -293,12 +296,18 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         }
         if (lensTechnologyResponse.success) {
           attributeData.lensTechnology = lensTechnologyResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (readingPowerResponse.success) {
           attributeData.readingPower = readingPowerResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (frameTypeResponse.success) {
@@ -321,12 +330,18 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         }
         if (templeMaterialResponse.success) {
           attributeData.templeMaterial = templeMaterialResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (frameMaterialResponse.success) {
           attributeData.frameMaterial = frameMaterialResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (frameColorResponse.success) {
@@ -343,12 +358,18 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         }
         if (prescriptionTypeResponse.success) {
           attributeData.prescriptionType = prescriptionTypeResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (frameCollectionResponse.success) {
           attributeData.frameCollection = frameCollectionResponse.data.map(
-            (item) => ({ value: item._id, label: item.name })
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
           );
         }
         if (frameSizeResponse.success) {
@@ -370,24 +391,25 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
           }));
         }
 
-        // Set attribute options
         setAttributeOptions({
-          brands: attributeData.brand || [],
-          units: attributeData.unit || [],
-          lensTechnology: attributeData.lensTechnology || [],
-          readingPower: attributeData.readingPower || [],
-          frameType: attributeData.frameType || [],
-          frameShape: attributeData.frameShape || [],
-          frameStyle: attributeData.frameStyle || [],
-          templeMaterial: attributeData.templeMaterial || [],
-          frameMaterial: attributeData.frameMaterial || [],
-          frameColor: attributeData.frameColor || [],
-          templeColor: attributeData.templeColor || [],
-          prescriptionType: attributeData.prescriptionType || [],
-          frameCollection: attributeData.frameCollection || [],
-          frameSize: attributeData.frameSize || [],
-          features: attributeData.features || [],
-          gender: attributeData.gender || [],
+          brands: attributeData.brand || brandOptions,
+          units: attributeData.unit || unitOptions,
+          lensTechnology: attributeData.lensTechnology || lensTechnologyOptions,
+          readingPower: attributeData.readingPower || readingPowerOptions,
+          frameType: attributeData.frameType || frameTypeOptions,
+          frameShape: attributeData.frameShape || frameShapeOptions,
+          frameStyle: attributeData.frameStyle || frameStyleOptions,
+          templeMaterial: attributeData.templeMaterial || templeMaterialOptions,
+          frameMaterial: attributeData.frameMaterial || frameMaterialOptions,
+          frameColor: attributeData.frameColor || frameColorOptions,
+          templeColor: attributeData.templeColor || templeColorOptions,
+          prescriptionType:
+            attributeData.prescriptionType || prescriptionTypeOptions,
+          frameCollection:
+            attributeData.frameCollection || frameCollectionOptions,
+          frameSize: attributeData.frameSize || frameSizeOptions,
+          features: attributeData.features || featuresOptions,
+          gender: attributeData.gender || genderOptions,
         });
       } catch (error) {
         console.error("Error fetching attributes:", error);
@@ -404,62 +426,37 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
   const getStaticOptions = (type) => {
     switch (type) {
       case "brand":
-        return [
-          { value: "brand1", label: "Brand 1" },
-          { value: "brand2", label: "Brand 2" },
-          { value: "brand3", label: "Brand 3" },
-        ];
+        return brandOptions;
       case "unit":
-        return [
-          { value: "piece", label: "Piece" },
-          { value: "pair", label: "Pair" },
-        ];
+        return unitOptions;
       case "lensTechnology":
-        return [
-          { value: "polycarbonate", label: "Polycarbonate" },
-          { value: "highIndex", label: "High Index" },
-          { value: "plastic", label: "Plastic" },
-        ];
+        return lensTechnologyOptions;
+      case "readingPower":
+        return readingPowerOptions;
+      case "frameType":
+        return frameTypeOptions;
+      case "frameShape":
+        return frameShapeOptions;
+      case "frameStyle":
+        return frameStyleOptions;
       case "templeMaterial":
-        return [
-          { value: "metal", label: "Metal" },
-          { value: "plastic", label: "Plastic" },
-          { value: "acetate", label: "Acetate" },
-        ];
+        return templeMaterialOptions;
       case "frameMaterial":
-        return [
-          { value: "metal", label: "Metal" },
-          { value: "plastic", label: "Plastic" },
-          { value: "acetate", label: "Acetate" },
-          { value: "titanium", label: "Titanium" },
-        ];
+        return frameMaterialOptions;
       case "frameColor":
-        return [
-          { value: "black", label: "Black" },
-          { value: "brown", label: "Brown" },
-          { value: "blue", label: "Blue" },
-          { value: "red", label: "Red" },
-        ];
+        return frameColorOptions;
       case "templeColor":
-        return [
-          { value: "black", label: "Black" },
-          { value: "brown", label: "Brown" },
-          { value: "blue", label: "Blue" },
-          { value: "red", label: "Red" },
-        ];
+        return templeColorOptions;
+      case "prescriptionType":
+        return prescriptionTypeOptions;
       case "frameCollection":
-        return [
-          { value: "premium", label: "Premium" },
-          { value: "standard", label: "Standard" },
-          { value: "budget", label: "Budget" },
-        ];
+        return frameCollectionOptions;
       case "frameSize":
-        return [
-          { value: "small", label: "Small" },
-          { value: "medium", label: "Medium" },
-          { value: "large", label: "Large" },
-        ];
-      // Add other cases for remaining attribute types...
+        return frameSizeOptions;
+      case "features":
+        return featuresOptions;
+      case "gender":
+        return genderOptions;
       default:
         return [];
     }
@@ -484,17 +481,17 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
     unit: initialData?.unit || "",
     costPrice: initialData?.costPrice || "",
     resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
+    MRP: initialData?.MRP ? String(initialData.MRP) : "",
     discount: initialData?.discount || "",
     sellPrice: initialData?.sellPrice || "",
     incentiveAmount: initialData?.incentiveAmount || 0,
-    oldBarcode: initialData?.barcode || "",
+    oldBarcode: initialData?.oldBarcode || "",
     seoTitle: initialData?.seoTitle || "",
     seoDescription: initialData?.seoDescription || "",
     seoImage: initialData?.seoImage || null,
     warranty: initialData?.warranty || "",
     description: initialData?.description || "",
-    features: initialData?.features || "",
+    features: initialData?.features || [],
     gender: initialData?.gender || "",
     modelNumber: initialData?.modelNumber || "",
     colorNumber: initialData?.colorNumber || "",
@@ -517,68 +514,131 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : "",
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos
+      : initialData?.photos
+      ? [initialData.photos]
+      : [],
   };
 
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-    console.log(`${mode} values:`, values);
+    console.log("Form submission triggered with values:", values);
     setSubmitting(true);
 
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
+        console.log("Uploading seoImage:", values.seoImage.name);
         const res = await uploadImage(values.seoImage, values.seoImage.name);
-        values.seoImage = res; // Set the URL in the form values
+        values.seoImage = `eyesdeal/website/image/seo/${values.seoImage.name}`;
+        console.log("seoImage uploaded, path:", values.seoImage);
       }
 
       // Prepare the payload
       const payload = {
-        ...values,
+        _id: initialData?._id,
+        model: values.model || "readingGlasses",
+        HSNCode: values.HSNCode || "",
+        brand: values.brand || null,
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        tax: parseFloat(values.tax) || 0,
+        unit: values.unit || null,
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: parseFloat(values.MRP) || 0,
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
+        oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        seoTitle: values.seoTitle || "",
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        warranty: values.warranty || "",
+        description: values.description || "",
         features: Array.isArray(values.features)
           ? values.features
-          : [values.features],
+          : values.features
+          ? [values.features]
+          : [],
+        gender: values.gender || null,
+        modelNumber: values.modelNumber || "",
+        colorNumber: values.colorNumber || "",
+        lensTechnology: values.lensTechnology || null,
+        readingPower: values.readingPower || null,
+        frameType: values.frameType || null,
+        frameShape: values.frameShape || null,
+        frameStyle: values.frameStyle || null,
+        templeMaterial: values.templeMaterial || null,
+        frameMaterial: values.frameMaterial || null,
+        frameColor: values.frameColor || null,
+        templeColor: values.templeColor || null,
+        prescriptionType: values.prescriptionType || null,
+        frameCollection: values.frameCollection || null,
+        frameSize: values.frameSize || null,
+        frameWidth: values.frameWidth || "",
+        frameDimensions: values.frameDimensions || "",
+        weight: values.weight || "",
+        manageStock: values.manageStock ?? true,
+        inclusiveTax: values.inclusiveTax ?? true,
+        activeInERP: values.activeInERP ?? true,
+        activeInWebsite: values.activeInWebsite ?? false,
         photos: Array.isArray(values.photos)
           ? values.photos
-          : [values.photos].filter(Boolean),
+          : values.photos
+          ? [values.photos]
+          : [],
+        __t: "readingGlasses",
+        storeFront: initialData?.storeFront || [],
       };
 
-      // Call the appropriate API based on mode
-      let response;
-      if (mode === "edit") {
-        console.log("Editing product ID:", initialData?.id);
-        response = await productService.updateEyeGlasses(
-          initialData?.id,
-          payload
-        );
-      } else {
-        response = await productService.addProduct(payload, "readingGlasses");
-      }
+      console.log("Prepared payload:", payload);
 
-      if (response.success) {
-        toast.success(
-          `Product ${mode === "edit" ? "updated" : "added"} successfully`
+      if (mode === "edit") {
+        const response = await productViewService.updateProductData(
+          initialData?._id,
+          payload,
+          "readingGlasses"
         );
-        resetForm();
-        console.log(
-          `${mode === "edit" ? "Update" : "Add"} response:`,
-          response.data
-        );
+
+        if (response.success) {
+          toast.success("Product updated successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to update product");
+        }
       } else {
-        toast.error(
-          response.message ||
-            `Failed to ${mode === "edit" ? "update" : "add"} product`
+        const response = await productService.addProduct(
+          payload,
+          "readingGlasses"
         );
+
+        if (response.success) {
+          toast.success("Product added successfully");
+          resetForm();
+        } else {
+          toast.error(response.message || "Failed to add product");
+        }
       }
     } catch (error) {
-      console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      if (
+        error.response?.data?.error?.includes("code: 11000") &&
+        error.response?.data?.error?.includes("sku")
+      ) {
+        toast.error("SKU already exists. Please use a unique SKU.");
+      } else if (
+        error.response?.data?.message?.includes("Cast to ObjectId failed")
+      ) {
+        toast.error(
+          "Invalid selection for one or more fields (e.g., Brand, Unit, Lens Technology, Frame Type, Frame Size). Please select valid options."
+        );
+      } else {
+        toast.error("An error occurred while processing your request");
+      }
     } finally {
       setSubmitting(false);
+      console.log("Submission completed, isSubmitting:", false);
     }
   };
 
@@ -590,7 +650,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         onSubmit={handleSubmit}
         enableReinitialize={true}
       >
-        {({ setFieldValue, values }) => (
+        {({ setFieldValue, values, isSubmitting }) => (
           <Form className="d-flex flex-column gap-4">
             {/* Common Fields */}
             <div>
@@ -625,7 +685,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                 name="brand"
                 options={attributeOptions.brands}
                 onChange={(option) =>
-                  setFieldValue("brand", option ? option.value : "")
+                  setFieldValue("brand", option ? option.value : null)
                 }
                 value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
@@ -675,7 +735,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                 className="form-label font-weight-600 text-sm font-medium"
                 htmlFor="HSNCode"
               >
-                HSN Code <span className="text-danger">*</span>
+                HSN Code
               </label>
               <Field type="text" name="HSNCode" className="form-control" />
               <ErrorMessage
@@ -711,7 +771,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                 name="unit"
                 options={attributeOptions.units}
                 onChange={(option) =>
-                  setFieldValue("unit", option ? option.value : "")
+                  setFieldValue("unit", option ? option.value : null)
                 }
                 value={attributeOptions.units.find(
                   (option) => option.value === values.unit
@@ -770,7 +830,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                 >
                   MRP <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="MRP" className="form-control" />
+                <Field type="number" name="MRP" className="form-control" />
                 <ErrorMessage
                   name="MRP"
                   component="div"
@@ -784,7 +844,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                 >
                   Discount <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="discount" className="form-control" />
+                <Field type="number" name="discount" className="form-control" />
                 <ErrorMessage
                   name="discount"
                   component="div"
@@ -902,6 +962,13 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                       setFieldValue("seoImage", event.currentTarget.files[0])
                     }
                   />
+                  {values.seoImage && typeof values.seoImage === "string" && (
+                    <img
+                      src={`${defalutImageBasePath}${values.seoImage}`}
+                      alt="SEO Image"
+                      style={{ maxHeight: "100px", marginTop: "10px" }}
+                    />
+                  )}
                   <ErrorMessage
                     name="seoImage"
                     component="div"
@@ -990,11 +1057,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="gender"
-                    options={genderOptions}
+                    options={attributeOptions.gender}
                     onChange={(option) =>
-                      setFieldValue("gender", option ? option.value : "")
+                      setFieldValue("gender", option ? option.value : null)
                     }
-                    value={genderOptions.find(
+                    value={attributeOptions.gender.find(
                       (option) => option.value === values.gender
                     )}
                     placeholder="Select..."
@@ -1055,7 +1122,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "lensTechnology",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.lensTechnology.find(
@@ -1079,11 +1146,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="readingPower"
-                    options={readingPowerOptions}
+                    options={attributeOptions.readingPower}
                     onChange={(option) =>
-                      setFieldValue("readingPower", option ? option.value : "")
+                      setFieldValue(
+                        "readingPower",
+                        option ? option.value : null
+                      )
                     }
-                    value={readingPowerOptions.find(
+                    value={attributeOptions.readingPower.find(
                       (option) => option.value === values.readingPower
                     )}
                     placeholder="Select..."
@@ -1117,7 +1187,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="frameType"
                     options={attributeOptions.frameType}
                     onChange={(option) =>
-                      setFieldValue("frameType", option ? option.value : "")
+                      setFieldValue("frameType", option ? option.value : null)
                     }
                     value={attributeOptions.frameType.find(
                       (option) => option.value === values.frameType
@@ -1142,7 +1212,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="frameShape"
                     options={attributeOptions.frameShape}
                     onChange={(option) =>
-                      setFieldValue("frameShape", option ? option.value : "")
+                      setFieldValue("frameShape", option ? option.value : null)
                     }
                     value={attributeOptions.frameShape.find(
                       (option) => option.value === values.frameShape
@@ -1167,7 +1237,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="frameStyle"
                     options={attributeOptions.frameStyle}
                     onChange={(option) =>
-                      setFieldValue("frameStyle", option ? option.value : "")
+                      setFieldValue("frameStyle", option ? option.value : null)
                     }
                     value={attributeOptions.frameStyle.find(
                       (option) => option.value === values.frameStyle
@@ -1194,7 +1264,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "templeMaterial",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.templeMaterial.find(
@@ -1220,7 +1290,10 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="frameMaterial"
                     options={attributeOptions.frameMaterial}
                     onChange={(option) =>
-                      setFieldValue("frameMaterial", option ? option.value : "")
+                      setFieldValue(
+                        "frameMaterial",
+                        option ? option.value : null
+                      )
                     }
                     value={attributeOptions.frameMaterial.find(
                       (option) => option.value === values.frameMaterial
@@ -1245,7 +1318,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="frameColor"
                     options={attributeOptions.frameColor}
                     onChange={(option) =>
-                      setFieldValue("frameColor", option ? option.value : "")
+                      setFieldValue("frameColor", option ? option.value : null)
                     }
                     value={attributeOptions.frameColor.find(
                       (option) => option.value === values.frameColor
@@ -1270,7 +1343,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     name="templeColor"
                     options={attributeOptions.templeColor}
                     onChange={(option) =>
-                      setFieldValue("templeColor", option ? option.value : "")
+                      setFieldValue("templeColor", option ? option.value : null)
                     }
                     value={attributeOptions.templeColor.find(
                       (option) => option.value === values.templeColor
@@ -1297,7 +1370,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.prescriptionType.find(
@@ -1325,7 +1398,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "frameCollection",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.frameCollection.find(
@@ -1349,11 +1422,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   </label>
                   <Select
                     name="frameSize"
-                    options={frameSizeOptions}
+                    options={attributeOptions.frameSize}
                     onChange={(option) =>
-                      setFieldValue("frameSize", option ? option.value : "")
+                      setFieldValue("frameSize", option ? option.value : null)
                     }
-                    value={frameSizeOptions.find(
+                    value={attributeOptions.frameSize.find(
                       (option) => option.value === values.frameSize
                     )}
                     placeholder="Select..."
@@ -1464,15 +1537,17 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
 
             {/* Select Photos */}
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div>
                 {selectedImage && selectedImage.length > 0 ? (
                   <div className="row mt-4 g-3">
@@ -1488,11 +1563,13 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                           <button
                             className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
                             style={{ cursor: "pointer" }}
-                            onClick={() =>
-                              setSelectedImage(
-                                selectedImage.filter((_, i) => i !== index)
-                              )
-                            }
+                            onClick={() => {
+                              const newImages = selectedImage.filter(
+                                (_, i) => i !== index
+                              );
+                              setSelectedImage(newImages);
+                              setFieldValue("photos", newImages);
+                            }}
                             aria-label="Remove image"
                           >
                             <IoClose size={16} className="text-dark" />
@@ -1502,9 +1579,11 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -1519,8 +1598,16 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
 
             {/* Submit Button */}
             <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Submitting..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>

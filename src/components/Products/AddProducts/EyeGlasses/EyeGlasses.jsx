@@ -3,12 +3,12 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import AssetSelector from "./AssetSelector";
-
 import { toast } from "react-toastify";
-import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants"; // Fixed typo
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { productService } from "../../../../services/productService";
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -39,13 +39,13 @@ const validationSchema = Yup.object({
   oldBarcode: Yup.string(),
   seoTitle: Yup.string(),
   seoDescription: Yup.string(),
-  seoImage: Yup.string(),
+  seoImage: Yup.mixed().nullable(),
   gender: Yup.string(),
   description: Yup.string(),
   modelNumber: Yup.string(),
   colorNumber: Yup.string(),
   frameCollection: Yup.string(),
-  features: Yup.string(),
+  features: Yup.mixed().nullable(),
   frameType: Yup.string(),
   frameShape: Yup.string(),
   frameStyle: Yup.string(),
@@ -62,17 +62,17 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
-  photos: Yup.string(),
+  photos: Yup.array().of(Yup.string()).nullable(), // Updated to array
 });
 
-// Gender options don't come from API, so keep this one
+// Gender options
 const genderOptions = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
   { value: "unisex", label: "Unisex" },
 ];
 
-// Frame size options don't come from API, so keep this one
+// Frame size options
 const frameSizeOptions = [
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
@@ -80,7 +80,7 @@ const frameSizeOptions = [
 ];
 
 function EyeGlasses({ initialData = {}, mode = "add" }) {
-  console.log("initialData<<<", mode, initialData);
+  console.log("Initial Data:", { mode, initialData });
 
   // State for toggle sections
   const [showSections, setShowSections] = useState({
@@ -92,21 +92,20 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
 
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState([]);
 
+  // Initialize selectedImage based on mode
   useEffect(() => {
-    if (mode !== "add") {
+    if (mode !== "add" && initialData?.photos) {
       setSelectedImage(
-        initialData?.photos
-          ? Array.isArray(initialData.photos)
-            ? initialData.photos
-            : initialData.photos
-          : null
+        Array.isArray(initialData.photos)
+          ? initialData.photos
+          : [initialData.photos]
       );
     } else {
       setSelectedImage([]);
     }
-  }, [mode]);
+  }, [mode, initialData]);
 
   // State for loading
   const [loading, setLoading] = useState(false);
@@ -131,10 +130,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        // Show loading indicator
         setLoading(true);
-
-        // Fetch all necessary attributes for the form
         const attributeTypes = [
           "brand",
           "unit",
@@ -151,7 +147,6 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         ];
 
         const attributeData = {};
-
         for (const type of attributeTypes) {
           const response = await productAttributeService.getAttributes(type);
           if (response.success && response.data) {
@@ -161,6 +156,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
             }));
           } else {
             console.error(`Failed to fetch ${type} data:`, response.message);
+            // toast.error(`Failed to fetch ${type} data`);
           }
         }
 
@@ -197,109 +193,171 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     }));
   };
 
-  // Initial form values with optional chaining
+  // Initial form values
   const initialValues = {
-    model: initialData?.model || "eyeGlasses",
-    tax: initialData?.tax || "",
-    brand: initialData?.brand || "",
-    sku: initialData?.sku || "",
-    displayName: initialData?.displayName || "",
-    HSNCode: initialData?.HSNCode || "9003",
-    unit: initialData?.unit || "",
-    costPrice: initialData?.costPrice || "",
-    resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
-    discount: initialData?.discount || "",
-    sellPrice: initialData?.sellPrice || "",
-    incentiveAmount: initialData?.incentiveAmount || 0,
-    warranty: initialData?.warranty || "",
-    oldBarcode: initialData?.barcode || "",
-    seoTitle: initialData?.seoTitle || "",
-    seoDescription: initialData?.seoDescription || "",
-    seoImage: initialData?.seoImage || null,
-    gender: initialData?.gender || "",
-    description: initialData?.description || "",
-    modelNumber: initialData?.modelNumber || "",
-    colorNumber: initialData?.colorNumber || "",
-    frameCollection: initialData?.frameCollection || "",
-    features: initialData?.features || "",
-    frameType: initialData?.frameType || "",
-    frameShape: initialData?.frameShape || "",
-    frameStyle: initialData?.frameStyle || "",
-    templeMaterial: initialData?.templeMaterial || "",
-    frameMaterial: initialData?.frameMaterial || "",
-    frameColor: initialData?.frameColor || "",
-    templeColor: initialData?.templeColor || "",
-    prescriptionType: initialData?.prescriptionType || "",
-    frameSize: initialData?.frameSize || "",
-    frameWidth: initialData?.frameWidth || "",
-    frameDimensions: initialData?.frameDimensions || "",
-    weight: initialData?.weight || "",
+    model: initialData?.model ?? "eyeGlasses",
+    tax: initialData?.tax ?? "",
+    brand: initialData?.brand ?? "",
+    sku: initialData?.sku ?? "",
+    displayName: initialData?.displayName ?? "",
+    HSNCode: initialData?.HSNCode ?? "9003",
+    unit: initialData?.unit ?? "",
+    costPrice: initialData?.costPrice ?? "",
+    resellerPrice: initialData?.resellerPrice ?? "",
+    MRP: initialData?.MRP !== undefined ? String(initialData.MRP) : "",
+    discount: initialData?.discount ?? "",
+    sellPrice: initialData?.sellPrice ?? "",
+    incentiveAmount: initialData?.incentiveAmount ?? 0,
+    warranty: initialData?.warranty ?? "",
+    oldBarcode: initialData?.oldBarcode ?? initialData?.barcode ?? "",
+    seoTitle: initialData?.seoTitle ?? "",
+    seoDescription: initialData?.seoDescription ?? "",
+    seoImage: initialData?.seoImage ?? null,
+    gender: initialData?.gender ?? "",
+    description: initialData?.description ?? "",
+    modelNumber: initialData?.modelNumber ?? "",
+    colorNumber: initialData?.colorNumber ?? "",
+    frameCollection: initialData?.frameCollection ?? "",
+    features: initialData?.features ?? [],
+    frameType: initialData?.frameType ?? "",
+    frameShape: initialData?.frameShape ?? "",
+    frameStyle: initialData?.frameStyle ?? "",
+    templeMaterial: initialData?.templeMaterial ?? "",
+    frameMaterial: initialData?.frameMaterial ?? "",
+    frameColor: initialData?.frameColor ?? "",
+    templeColor: initialData?.templeColor ?? "",
+    prescriptionType: initialData?.prescriptionType ?? "",
+    frameSize: initialData?.frameSize ?? "",
+    frameWidth: initialData?.frameWidth ?? "",
+    frameDimensions: initialData?.frameDimensions ?? "",
+    weight: initialData?.weight ?? "",
     manageStock: initialData?.manageStock ?? true,
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : "",
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos
+      : initialData?.photos
+      ? [initialData.photos]
+      : [],
   };
 
   // Handle form submission
-  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+  const handleSubmit = async (
+    values,
+    { setSubmitting, resetForm, setErrors }
+  ) => {
     console.log(`${mode} values:`, values);
     setSubmitting(true);
 
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
-        const res = await uploadImage(values.seoImage, values.seoImage.name);
-        values.seoImage = res; // Set the URL in the form values
+        console.log("Uploading SEO image:", values.seoImage.name);
+        try {
+          const res = await uploadImage(values.seoImage, values.seoImage.name);
+          values.seoImage = res;
+          console.log("SEO image uploaded:", res);
+        } catch (error) {
+          console.error("SEO image upload failed:", error);
+          toast.error("Failed to upload SEO image");
+          setSubmitting(false);
+          return;
+        }
       }
 
       // Prepare the payload
       const payload = {
-        ...values,
-        // Ensure these fields are properly formatted
+        _id: initialData?._id,
+        modelNumber: values.modelNumber || "",
+        colorNumber: values.colorNumber || "",
+        frameType: values.frameType || null,
+        frameShape: values.frameShape || null,
+        frameStyle: values.frameStyle || null,
+        templeMaterial: values.templeMaterial || null,
+        frameMaterial: values.frameMaterial || null,
+        templeColor: values.templeColor || null,
+        frameColor: values.frameColor || null,
+        gender: values.gender || "",
+        frameSize: values.frameSize || "",
+        frameWidth: values.frameWidth || "",
+        frameDimensions: values.frameDimensions || "",
+        weight: values.weight || "",
+        prescriptionType: values.prescriptionType || null,
+        frameCollection: values.frameCollection || null,
         features: Array.isArray(values.features)
           ? values.features
-          : [values.features].filter(Boolean),
+          : values.features
+          ? [values.features]
+          : [],
+        oldBarcode: values.oldBarcode || "",
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        HSNCode: values.HSNCode || "9003",
+        brand: values.brand || "",
+        unit: values.unit || "",
+        warranty: values.warranty || "",
+        tax: parseFloat(values.tax) || 0,
+        description: values.description || "",
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: values.MRP || "",
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        manageStock: values.manageStock ?? true,
+        inclusiveTax: values.inclusiveTax ?? true,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
         photos: Array.isArray(values.photos)
           ? values.photos
-          : [values.photos].filter(Boolean),
+          : values.photos
+          ? [values.photos]
+          : [],
+        __t: "eyeGlasses",
+        activeInERP: values.activeInERP ?? true,
+        activeInWebsite: values.activeInWebsite ?? false,
+        storeFront: initialData?.storeFront || [],
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        seoTitle: values.seoTitle || "",
+        model: values.model || "eyeGlasses",
       };
 
+      console.log("Payload:", payload);
+
       if (mode === "edit") {
-        console.log("Editing product ID:", initialData?.id);
-        // Call the update API
-        const response = await productService.updateEyeGlasses(
-          initialData?.id,
-          payload
+        console.log("Updating product with ID:", initialData?._id);
+        const response = await productViewService.updateEyeGlasses(
+          initialData?._id,
+          payload,
+          "eyeGlasses"
         );
+        console.log("Update response:", response);
 
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
-          console.log("Update response:", response.data);
         } else {
           toast.error(response.message || "Failed to update product");
+          setErrors({ submit: response.message || "Failed to update product" });
         }
       } else {
-        // Call the add API
+        console.log("Adding new product");
         const response = await productService.addProduct(payload, "eyeGlasses");
+        console.log("Add response:", response);
 
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
-          console.log("Add response:", response.data);
+          setSelectedImage([]); // Reset images
         } else {
           toast.error(response.message || "Failed to add product");
+          setErrors({ submit: response.message || "Failed to add product" });
         }
       }
     } catch (error) {
-      console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      console.error("Submit error:", error);
+      toast.error(`Error: ${error.message || "Failed to process request"}`);
+      setErrors({ submit: error.message || "Failed to process request" });
     } finally {
       setSubmitting(false);
     }
@@ -328,8 +386,12 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         onSubmit={handleSubmit}
         enableReinitialize={true}
       >
-        {({ setFieldValue, values }) => (
+        {({ setFieldValue, values, errors }) => (
           <Form className="d-flex flex-column gap-4">
+            {errors.submit && (
+              <div className="alert alert-danger">{errors.submit}</div>
+            )}
+
             {/* Common Fields */}
             <div>
               <label
@@ -603,7 +665,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               className="text-decoration-underline pointer mb-0"
               onClick={() => toggleSection("seoDetails")}
             >
-              Add Seo Details
+              Add SEO Details
             </p>
             {showSections.seoDetails && (
               <div className="d-flex flex-column gap-4">
@@ -654,8 +716,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     onChange={async (e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        const res = await uploadImage(file, file.name);
-                        setFieldValue("seoImage", res);
+                        setFieldValue("seoImage", file);
                       }
                     }}
                   />
@@ -798,11 +859,15 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                   <Select
                     name="features"
                     options={attributeOptions.features}
-                    onChange={(option) =>
-                      setFieldValue("features", option ? option.value : "")
+                    isMulti
+                    onChange={(options) =>
+                      setFieldValue(
+                        "features",
+                        options ? options.map((opt) => opt.value) : []
+                      )
                     }
-                    value={attributeOptions.features.find(
-                      (option) => option.value === values.features
+                    value={attributeOptions.features.filter((option) =>
+                      values.features.includes(option.value)
                     )}
                     placeholder="Select..."
                     classNamePrefix="react-select"
@@ -1118,16 +1183,19 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                 </div>
               </div>
             )}
+
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div className="col-10">
                 <div className="form-group">
                   <label
@@ -1141,11 +1209,12 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     id="photoInput"
                     name="photos"
                     className="form-control"
-                    placeholder="e.g. EyesO_1.png"
+                    placeholder="e.g. /eyesdeal/EyesO_1.png"
+                    disabled
                   />
                   <small className="form-text text-muted">
-                    Enter photo filename exactly as shown in the working
-                    example: "EyesO_1.png"
+                    Use the Select Photos button to choose images from the media
+                    library.
                   </small>
                 </div>
               </div>
@@ -1165,11 +1234,13 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                           <button
                             className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
                             style={{ cursor: "pointer" }}
-                            onClick={() =>
-                              setSelectedImage(
-                                selectedImage.filter((_, i) => i !== index)
-                              )
-                            }
+                            onClick={() => {
+                              const newImages = selectedImage.filter(
+                                (_, i) => i !== index
+                              );
+                              setSelectedImage(newImages);
+                              setFieldValue("photos", newImages);
+                            }}
                             aria-label="Remove image"
                           >
                             <IoClose size={16} className="text-dark" />
@@ -1179,12 +1250,15 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>
+
             <AssetSelector
               show={showModal}
               onHide={() => setShowModal(false)}
@@ -1193,6 +1267,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                 setFieldValue("photos", imageSrc);
               }}
             />
+
             {/* Checkboxes */}
             <div className="d-flex flex-column flex-wrap gap-3">
               <div className="form-check">

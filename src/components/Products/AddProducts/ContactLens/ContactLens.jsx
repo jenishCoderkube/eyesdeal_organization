@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
 import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { IoClose } from "react-icons/io5";
+import productViewService from "../../../../services/Products/productViewService";
+
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -35,30 +37,30 @@ const validationSchema = Yup.object({
     .required("Incentive Amount is required")
     .min(0, "Incentive Amount cannot be negative"),
   oldBarcode: Yup.string().nullable(),
-  seoTitle: Yup.string(),
-  seoDescription: Yup.string(),
-  seoImage: Yup.mixed(),
-  productName: Yup.string(),
-  lensTechnology: Yup.string(),
-  lensMaterial: Yup.string(),
-  baseCurve: Yup.string(),
-  dia: Yup.string(),
-  waterContent: Yup.string(),
-  expiry: Yup.string().nullable(),
-  lensFeatures: Yup.array().of(Yup.string()),
-  prescriptionType: Yup.string(),
-  features: Yup.string(),
-  gender: Yup.string(),
-  warranty: Yup.string(),
-  description: Yup.string(),
+  seoTitle: Yup.string().nullable(),
+  seoDescription: Yup.string().nullable(),
+  seoImage: Yup.mixed().nullable(),
+  productName: Yup.string().nullable(),
+  lensTechnology: Yup.string().nullable(),
+  lensMaterial: Yup.string().nullable(),
+  baseCurve: Yup.string().nullable(),
+  dia: Yup.string().nullable(),
+  waterContent: Yup.string().nullable(),
+  expiry: Yup.number().nullable(), // Changed to number to match form input
+  lensFeatures: Yup.array().of(Yup.string()).nullable(),
+  prescriptionType: Yup.string().nullable(),
+  features: Yup.array().of(Yup.string()).nullable(), // Changed to array to match payload
+  gender: Yup.string().nullable(),
+  warranty: Yup.string().nullable(),
+  description: Yup.string().nullable(),
   manageStock: Yup.boolean(),
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
-  photos: Yup.string(),
+  photos: Yup.array().of(Yup.string()).nullable(), // Changed to array to match payload
 });
 
-// Options for react-select
+// Options for react-select (fallback options)
 const unitOptions = [
   { value: "piece", label: "Piece" },
   { value: "pair", label: "Pair" },
@@ -126,32 +128,30 @@ function ContactLens({ initialData = {}, mode = "add" }) {
 
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState([]);
   useEffect(() => {
-    if (mode !== "add") {
+    if (mode !== "add" && initialData?.photos) {
       setSelectedImage(
-        initialData?.photos
-          ? Array.isArray(initialData.photos)
-            ? initialData.photos
-            : initialData.photos
-          : null
+        Array.isArray(initialData.photos)
+          ? initialData.photos
+          : [initialData.photos]
       );
     } else {
       setSelectedImage([]);
     }
-  }, [mode]);
+  }, [mode, initialData]);
 
   // State for loading
   const [loading, setLoading] = useState(false);
 
   // State for attribute options
   const [attributeOptions, setAttributeOptions] = useState({
-    brands: [],
-    units: [],
-    disposability: [],
-    lensTechnology: [],
-    prescriptionType: [],
-    features: [],
+    brands: brandOptions,
+    units: unitOptions,
+    disposability: disposabilityOptions,
+    lensTechnology: lensTechnologyOptions,
+    prescriptionType: prescriptionTypeOptions,
+    features: featuresOptions,
   });
 
   // Fetch attribute data from API
@@ -264,11 +264,11 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     unit: initialData?.unit || "",
     costPrice: initialData?.costPrice || "",
     resellerPrice: initialData?.resellerPrice || "",
-    MRP: initialData?.mrp ? String(initialData.mrp) : "",
+    MRP: initialData?.MRP ? String(initialData.MRP) : "",
     discount: initialData?.discount || "",
     sellPrice: initialData?.sellPrice || "",
     incentiveAmount: initialData?.incentiveAmount || 0,
-    oldBarcode: initialData?.barcode || "",
+    oldBarcode: initialData?.oldBarcode || "",
     seoTitle: initialData?.seoTitle || "",
     seoDescription: initialData?.seoDescription || "",
     seoImage: initialData?.seoImage || null,
@@ -278,10 +278,10 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     baseCurve: initialData?.baseCurve || "",
     dia: initialData?.dia || "",
     waterContent: initialData?.waterContent || "",
-    expiry: initialData?.expiry || "",
+    expiry: initialData?.expiry || null,
     lensFeatures: initialData?.lensFeatures || [],
     prescriptionType: initialData?.prescriptionType || "",
-    features: initialData?.features || "",
+    features: initialData?.features || [],
     gender: initialData?.gender || "",
     warranty: initialData?.warranty || "",
     description: initialData?.description || "",
@@ -289,55 +289,134 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
-    photos: initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : "",
+    photos: Array.isArray(initialData?.photos)
+      ? initialData.photos
+      : initialData?.photos
+      ? [initialData.photos]
+      : [],
   };
 
-  // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-    console.log("Submitting values:", values);
+    console.log("Form submission triggered with values:", values); // Debug log
     setSubmitting(true);
 
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
+        console.log("Uploading seoImage:", values.seoImage.name);
         const res = await uploadImage(values.seoImage, values.seoImage.name);
-        values.seoImage = res; // Set the URL in the form values
+        values.seoImage = `eyesdeal/website/image/seo/${values.seoImage.name}`; // Set the path
+        console.log("seoImage uploaded, path:", values.seoImage);
       }
 
       // Prepare the payload
       const payload = {
-        ...values,
+        _id: initialData?._id,
+        model: values.model || "contactLens",
+        HSNCode: values.HSNCode || "",
+        brand: values.brand || null, // Set to null for ObjectId
+        sku: values.sku || "",
+        displayName: values.displayName || "",
+        disposability: values.disposability || null, // Set to null for ObjectId
+        tax: parseFloat(values.tax) || 0,
+        unit: values.unit || null, // Set to null for ObjectId
+        costPrice: parseFloat(values.costPrice) || 0,
+        resellerPrice: parseFloat(values.resellerPrice) || 0,
+        MRP: parseFloat(values.MRP) || 0,
+        discount: parseFloat(values.discount) || 0,
+        sellPrice: parseFloat(values.sellPrice) || 0,
+        incentiveAmount: parseFloat(values.incentiveAmount) || 0,
         oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
+        seoTitle: values.seoTitle || "",
+        seoDescription: values.seoDescription || "",
+        seoImage: values.seoImage || "",
+        productName: values.productName || "",
+        lensTechnology: values.lensTechnology || null, // Set to null for ObjectId
+        lensMaterial: values.lensMaterial || "",
+        baseCurve: values.baseCurve || "",
+        dia: values.dia || "",
+        waterContent: values.waterContent || "",
+        expiry: values.expiry ? Number(values.expiry) : null,
+        lensFeatures: Array.isArray(values.lensFeatures)
+          ? values.lensFeatures
+          : values.lensFeatures
+          ? [values.lensFeatures]
+          : [],
+        prescriptionType: values.prescriptionType || null, // Set to null for ObjectId
+        features: Array.isArray(values.features)
+          ? values.features
+          : values.features
+          ? [values.features]
+          : [],
+        gender: values.gender || "",
+        warranty: values.warranty || "",
+        description: values.description || "",
+        manageStock: values.manageStock ?? false,
+        inclusiveTax: values.inclusiveTax ?? true,
+        activeInERP: values.activeInERP ?? true,
+        activeInWebsite: values.activeInWebsite ?? false,
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : values.photos
+          ? [values.photos]
+          : [],
+        __t: "contactLens",
+        storeFront: initialData?.storeFront || [],
       };
 
-      let response;
-      if (mode === "edit") {
-        console.log("Editing product ID:", initialData?.id);
-        response = await productService.updateContactLens(
-          initialData?.id,
-          payload
-        );
-      } else {
-        response = await productService.addProduct(payload, "contactLens");
-      }
+      console.log("Prepared payload:", payload); // Debug log
 
-      if (response.success) {
-        toast.success(
-          `Product ${mode === "edit" ? "updated" : "added"} successfully`
+      if (mode === "edit") {
+        console.log("Editing product ID:", initialData?._id);
+
+        const response = await productViewService.updateProductData(
+          initialData?._id,
+          payload,
+          "contactLens"
         );
-        resetForm();
+
+        if (response.success) {
+          console.log("Update successful:", response.data);
+          toast.success("Product updated successfully");
+          resetForm();
+        } else {
+          console.log("Update failed:", response.message);
+          toast.error(response.message || "Failed to update product");
+        }
       } else {
-        toast.error(response.message || "Failed to process your request");
+        const response = await productService.addProduct(
+          payload,
+          "contactLens"
+        );
+
+        if (response.success) {
+          console.log("Add successful:", response.data);
+          toast.success("Product added successfully");
+          resetForm();
+        } else {
+          console.log("Add failed:", response.message);
+          toast.error(response.message || "Failed to add product");
+        }
       }
     } catch (error) {
       console.error("Error in product operation:", error);
-      toast.error("An error occurred while processing your request");
+      if (
+        error.response?.data?.error?.includes("code: 11000") &&
+        error.response?.data?.error?.includes("sku")
+      ) {
+        toast.error("SKU already exists. Please use a unique SKU.");
+      } else if (
+        error.response?.data?.message?.includes("Cast to ObjectId failed")
+      ) {
+        toast.error(
+          "Invalid selection for one or more fields (e.g., Brand, Unit, Disposability, Lens Technology, Prescription Type). Please select valid options."
+        );
+      } else {
+        toast.error("An error occurred while processing your request");
+      }
     } finally {
       setSubmitting(false);
+      console.log("Submission completed, isSubmitting:", false);
     }
   };
 
@@ -349,7 +428,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
         onSubmit={handleSubmit}
         enableReinitialize={true}
       >
-        {({ setFieldValue, values }) => (
+        {({ setFieldValue, values, isSubmitting }) => (
           <Form className="d-flex flex-column gap-4">
             {/* Common Fields */}
             <div>
@@ -399,7 +478,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 name="brand"
                 options={attributeOptions.brands}
                 onChange={(option) =>
-                  setFieldValue("brand", option ? option.value : "")
+                  setFieldValue("brand", option ? option.value : null)
                 }
                 value={attributeOptions.brands.find(
                   (option) => option.value === values.brand
@@ -455,7 +534,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 name="disposability"
                 options={attributeOptions.disposability}
                 onChange={(option) =>
-                  setFieldValue("disposability", option ? option.value : "")
+                  setFieldValue("disposability", option ? option.value : null)
                 }
                 value={attributeOptions.disposability.find(
                   (option) => option.value === values.disposability
@@ -496,7 +575,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 name="unit"
                 options={attributeOptions.units}
                 onChange={(option) =>
-                  setFieldValue("unit", option ? option.value : "")
+                  setFieldValue("unit", option ? option.value : null)
                 }
                 value={attributeOptions.units.find(
                   (option) => option.value === values.unit
@@ -555,7 +634,8 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 >
                   MRP <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="MRP" className="form-control" />
+                <Field type="number" name="MRP" className="form-control" />{" "}
+                {/* Changed to number */}
                 <ErrorMessage
                   name="MRP"
                   component="div"
@@ -569,7 +649,8 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 >
                   Discount <span className="text-danger">*</span>
                 </label>
-                <Field type="text" name="discount" className="form-control" />
+                <Field type="number" name="discount" className="form-control" />{" "}
+                {/* Changed to number */}
                 <ErrorMessage
                   name="discount"
                   component="div"
@@ -687,6 +768,13 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                       setFieldValue("seoImage", event.currentTarget.files[0])
                     }
                   />
+                  {values.seoImage && typeof values.seoImage === "string" && (
+                    <img
+                      src={`${defalutImageBasePath}${values.seoImage}`}
+                      alt="SEO Image"
+                      style={{ maxHeight: "100px", marginTop: "10px" }}
+                    />
+                  )}
                   <ErrorMessage
                     name="seoImage"
                     component="div"
@@ -735,7 +823,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "lensTechnology",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.lensTechnology.find(
@@ -885,7 +973,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     onChange={(option) =>
                       setFieldValue(
                         "prescriptionType",
-                        option ? option.value : ""
+                        option ? option.value : null
                       )
                     }
                     value={attributeOptions.prescriptionType.find(
@@ -900,7 +988,35 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     className="text-danger text-sm"
                   />
                 </div>
-
+                <div>
+                  <label
+                    className="form-label font-weight-600 text-sm font-medium"
+                    htmlFor="features"
+                  >
+                    Features
+                  </label>
+                  <Select
+                    name="features"
+                    isMulti
+                    options={attributeOptions.features}
+                    onChange={(options) =>
+                      setFieldValue(
+                        "features",
+                        options ? options.map((opt) => opt.value) : []
+                      )
+                    }
+                    value={attributeOptions.features.filter((option) =>
+                      values.features.includes(option.value)
+                    )}
+                    placeholder="Select..."
+                    classNamePrefix="react-select"
+                  />
+                  <ErrorMessage
+                    name="features"
+                    component="div"
+                    className="text-danger text-sm"
+                  />
+                </div>
                 <div>
                   <label
                     className="form-label font-weight-600 text-sm font-medium"
@@ -912,7 +1028,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     name="gender"
                     options={genderOptions}
                     onChange={(option) =>
-                      setFieldValue("gender", option ? option.value : "")
+                      setFieldValue("gender", option ? option.value : null)
                     }
                     value={genderOptions.find(
                       (option) => option.value === values.gender
@@ -1008,15 +1124,17 @@ function ContactLens({ initialData = {}, mode = "add" }) {
 
             {/* Select Photos */}
             <div className="row">
-              <div className="col-2">
-                <button
-                  type="button"
-                  className="btn btn-primary py-2 px-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Select Photos
-                </button>
-              </div>
+              {mode === "add" && (
+                <div className="col-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary py-2 px-3"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Select Photos
+                  </button>
+                </div>
+              )}
               <div>
                 {selectedImage && selectedImage.length > 0 ? (
                   <div className="row mt-4 g-3">
@@ -1032,11 +1150,13 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                           <button
                             className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
                             style={{ cursor: "pointer" }}
-                            onClick={() =>
-                              setSelectedImage(
-                                selectedImage.filter((_, i) => i !== index)
-                              )
-                            }
+                            onClick={() => {
+                              const newImages = selectedImage.filter(
+                                (_, i) => i !== index
+                              );
+                              setSelectedImage(newImages);
+                              setFieldValue("photos", newImages);
+                            }}
                             aria-label="Remove image"
                           >
                             <IoClose size={16} className="text-dark" />
@@ -1046,9 +1166,11 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted">
-                    No images available.
-                  </div>
+                  mode === "edit" && (
+                    <div className="text-center text-muted">
+                      No images available.
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -1063,8 +1185,16 @@ function ContactLens({ initialData = {}, mode = "add" }) {
 
             {/* Submit Button */}
             <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Submitting..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>
