@@ -12,21 +12,21 @@ const SalesReportsForm = ({ onSubmit }) => {
 
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [categoryData, setCategoryData] = useState([]);
+  const [brandData, setBrandData] = useState([]);
 
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
   }));
 
-  const brandOptions = categoryData?.map((vendor) => ({
+  const brandOptions = brandData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
   }));
 
   useEffect(() => {
     getStores();
-    getCategoryData();
+    getBrandData();
   }, []);
 
   const getStores = async () => {
@@ -45,13 +45,12 @@ const SalesReportsForm = ({ onSubmit }) => {
     }
   };
 
-  const getCategoryData = async () => {
+  const getBrandData = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getCategory();
+      const response = await reportService.getBrands();
       if (response.success) {
-        console.log("res", response?.data?.data?.docs);
-        setCategoryData(response?.data?.data?.docs);
+        setBrandData(response?.data?.data);
       } else {
         toast.error(response.message);
       }
@@ -61,6 +60,23 @@ const SalesReportsForm = ({ onSubmit }) => {
       setLoading(false);
     }
   };
+
+  // const getCategoryData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await reportService.getCategory();
+  //     if (response.success) {
+  //       console.log("res", response?.data?.data?.docs);
+  //       setCategoryData(response?.data?.data?.docs);
+  //     } else {
+  //       toast.error(response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Login error:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Formik setup without validation
   const formik = useFormik({
@@ -84,6 +100,7 @@ const SalesReportsForm = ({ onSubmit }) => {
             Select Store
           </label>
           <Select
+            isMulti
             options={storeOptions}
             value={formik.values.store}
             onChange={(option) => formik.setFieldValue("store", option)}
@@ -100,6 +117,7 @@ const SalesReportsForm = ({ onSubmit }) => {
             Select Brand
           </label>
           <Select
+            isMulti
             options={brandOptions}
             value={formik.values.brand}
             onChange={(option) => formik.setFieldValue("brand", option)}

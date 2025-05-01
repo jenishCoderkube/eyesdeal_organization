@@ -16,11 +16,19 @@ const PurchaseReportCom = () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     fetchPurchaseLog(yesterday.getTime(), today.getTime());
-    fetchAmount(yesterday.getTime(), today.getTime());
+    fetchAmount({ fromDate: yesterday.getTime(), toDate: today.getTime() });
   }, []);
 
   const fetchPurchaseLog = (dateFrom, dateTo) => {
     reportService.getPurchaseLog(dateFrom, dateTo)
+      .then(res => {
+        console.log(res)
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+  const fetchPurchaseLogsWithFilter = ({ fromDate, toDate, vendors, brands }) => {
+    reportService.getPurchaseLog({ fromDate, toDate, brands, vendors })
       .then(res => {
         console.log(res)
         setFilteredData(res.data?.data?.docs);
@@ -38,26 +46,31 @@ const PurchaseReportCom = () => {
   }
 
   const handleFormSubmit = (values) => {
-    // console.log(values)
-    // const filtered = initialData.filter((item) => {
-    //   const itemDate = new Date(item.date.split("/").reverse().join("-"));
-    //   const fromDate = values.from;
-    //   const toDate = values.to;
-    //   return (
-    //     (!values.store || item.store === values.store.value) &&
-    //     (!values.vendor || item.vendor === values.vendor.value) &&
-    //     (!fromDate || itemDate >= fromDate) &&
-    //     (!toDate || itemDate <= toDate)
-    //   );
-    // });
-    // setFilteredData(filtered);
     if (values) {
       console.log(values);
-      
-      const { from, to, page = 1 } = values;
+
+      const { from, to, page = 1, vendor = [], store = [] } = values;
 
       const fromTimestamp = new Date(from).getTime();
       const toTimestamp = new Date(to).getTime();
+
+      const vendorIds = vendor.map(v => v.value);
+      const storeIds = store.map(s => s.value);
+
+      if (vendorIds.length || storeIds.length) {
+        fetchPurchaseLogsWithFilter({
+          fromDate: fromTimestamp,
+          toDate: toTimestamp,
+          vendors: vendorIds,
+          stores: storeIds,
+        });
+        // fetchAmountWithFilter({
+        //   fromDate: fromTimestamp,
+        //   toDate: toTimestamp,
+        //   brands: brandIds,
+        //   stores: storeIds,
+        // });
+      }
 
       fetchPurchaseLog(fromTimestamp, toTimestamp);
       fetchAmount(fromTimestamp, toTimestamp);

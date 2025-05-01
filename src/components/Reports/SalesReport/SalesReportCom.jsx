@@ -1,132 +1,57 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import SalesReportsForm from "./SalesReportsForm";
 import SalesReportsTable from "./SalesReportsTable";
+import { reportService } from "../../../services/reportService";
 
 const SalesReportCom = () => {
-  // Dummy data (10 entries from HTML)
-  const initialData = useMemo(
-    () => [
-      {
-        id: 1,
-        store: "EYESDEAL VARACCHA",
-        customerName: "BHARAT BHAI SORATHIYA",
-        salesmanName: "VIJAY SHIYANI",
-        date: "22/04/2025",
-        billNo: "854940",
-        totalAmount: 1200,
-        pendingAmount: 200,
-      },
-      {
-        id: 2,
-        store: "EYESDEAL NAVSARI",
-        customerName: "RIKEN",
-        salesmanName: "DIVYESH AHIR",
-        date: "22/04/2025",
-        billNo: "354939",
-        totalAmount: 7500,
-        pendingAmount: 0,
-      },
-      {
-        id: 3,
-        store: "EYESDEAL KAMREJ",
-        customerName: "BHAVNABEN PANCHAL",
-        salesmanName: "MOHIT SHAH",
-        date: "22/04/2025",
-        billNo: "1554938",
-        totalAmount: 300,
-        pendingAmount: 300,
-      },
-      {
-        id: 4,
-        store: "EYESDEAL PALANPUR",
-        customerName: "RUDRA SINGH THAKUR",
-        salesmanName: "ASIF SAIYED",
-        date: "22/04/2025",
-        billNo: "1654937",
-        totalAmount: 1100,
-        pendingAmount: 0,
-      },
-      {
-        id: 5,
-        store: "EYESDEAL KATARGAM",
-        customerName: "UMANG PATEL",
-        salesmanName: "ABDUL BARI",
-        date: "22/04/2025",
-        billNo: "454936",
-        totalAmount: 800,
-        pendingAmount: 0,
-      },
-      {
-        id: 6,
-        store: "EYESDEAL PANCHBATTI BHARUCH",
-        customerName: "PANKAJ MAKVANA",
-        salesmanName: "ARAFAT LAKHA",
-        date: "22/04/2025",
-        billNo: "1454935",
-        totalAmount: 1050,
-        pendingAmount: 0,
-      },
-      {
-        id: 7,
-        store: "EYESDEAL KATARGAM",
-        customerName: "RAJESH PANDIYA",
-        salesmanName: "ABDUL BARI",
-        date: "22/04/2025",
-        billNo: "454934",
-        totalAmount: 500,
-        pendingAmount: 0,
-      },
-      {
-        id: 8,
-        store: "EYESDEAL BARDOLI",
-        customerName: "LATIKABEN KANJANI",
-        salesmanName: "MONALI LAGDHIR",
-        date: "22/04/2025",
-        billNo: "1954933",
-        totalAmount: 600,
-        pendingAmount: 600,
-      },
-      {
-        id: 9,
-        store: "EYESDEAL BARDOLI",
-        customerName: "SANYAM JHURANI",
-        salesmanName: "MONALI LAGDHIR",
-        date: "22/04/2025",
-        billNo: "1954932",
-        totalAmount: 400,
-        pendingAmount: 0,
-      },
-      {
-        id: 10,
-        store: "EYESDEAL BARDOLI",
-        customerName: "TEJAS CHAUDHARY",
-        salesmanName: "BHARAT LAGDHIR",
-        date: "22/04/2025",
-        billNo: "1954931",
-        totalAmount: 700,
-        pendingAmount: 0,
-      },
-    ],
-    []
-  );
 
-  const [filteredData, setFilteredData] = useState(initialData);
+  const [filteredData, setFilteredData] = useState([]);
+  const [amountData, setAmountData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const handleFormSubmit = (values) => {
-    const filtered = initialData.filter((item) => {
-      const itemDate = new Date(item.date.split("/").reverse().join("-"));
-      const fromDate = values.from;
-      const toDate = values.to;
-      return (
-        (!values.store ||
-          values.store.length === 0 ||
-          values.store.some((s) => s.value === item.store)) &&
-        (!fromDate || itemDate >= fromDate) &&
-        (!toDate || itemDate <= toDate)
-      );
-    });
-    setFilteredData(filtered);
-  };
+   useEffect(() => {
+     // Get yesterday's date
+     const today = new Date();
+     const yesterday = new Date(today);
+     yesterday.setDate(yesterday.getDate() - 1);
+ 
+     fetchPurchaseLog(yesterday.getTime(), today.getTime());
+     fetchAmount(yesterday.getTime(), today.getTime());
+   }, []);
+ 
+   const fetchPurchaseLog = (dateFrom, dateTo) => {
+     reportService.getPurchaseLog(dateFrom, dateTo)
+       .then(res => {
+         console.log(res)
+         setFilteredData(res.data?.data?.docs);
+       })
+       .catch(e => console.log("Failed to get pruchaselog: ", e))
+   }
+ 
+   const fetchAmount = (dateFrom, dateTo) => {
+     reportService.getAmount(dateFrom, dateTo)
+       .then(res => {
+         console.log(res)
+         setAmountData(res.data?.data?.docs);
+       })
+       .catch(e => console.log("Failed to get amount: ", e))
+   }
+ 
+   const handleFormSubmit = (values) => {
+     if (values) {
+       console.log(values);
+       
+       const { from, to, page = 1 } = values;
+ 
+       const fromTimestamp = new Date(from).getTime();
+       const toTimestamp = new Date(to).getTime();
+ 
+       fetchPurchaseLog(fromTimestamp, toTimestamp);
+       fetchAmount(fromTimestamp, toTimestamp);
+       setCurrentPage(page);
+     }
+   };
+ 
 
   return (
     <div className="max-width-95 mx-auto px-4 py-5">
@@ -140,7 +65,7 @@ const SalesReportCom = () => {
           </div>
           <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Sales Report</h6>
-            <SalesReportsTable data={filteredData} />
+            <SalesReportsTable data={filteredData} amountData={amountData[0]?.totalAmount} />
           </div>
         </div>
       </div>

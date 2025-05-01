@@ -24,7 +24,7 @@ const PurchaseReportsForm = ({ onSubmit }) => {
 
   useEffect(() => {
     getStores();
-    getVendors();
+    getVendorsByType();
   }, []);
 
   const getStores = async () => {
@@ -43,10 +43,10 @@ const PurchaseReportsForm = ({ onSubmit }) => {
     }
   };
 
-  const getVendors = async () => {
+  const getVendorsByType = async () => {
     setLoading(true);
     try {
-      const response = await purchaseService.getVendors();
+      const response = await purchaseService.getVendorsByType();
       if (response.success) {
         console.log(response)
         setVendorData(response?.data?.docs);
@@ -82,6 +82,7 @@ const PurchaseReportsForm = ({ onSubmit }) => {
             Select Store
           </label>
           <Select
+          isMulti
             options={storeOptions}
             value={formik.values.store}
             onChange={(option) => formik.setFieldValue("store", option)}
@@ -98,6 +99,7 @@ const PurchaseReportsForm = ({ onSubmit }) => {
             Vendor
           </label>
           <Select
+          isMulti
             options={vendorOptions}
             value={formik.values.vendor}
             onChange={(option) => formik.setFieldValue("vendor", option)}

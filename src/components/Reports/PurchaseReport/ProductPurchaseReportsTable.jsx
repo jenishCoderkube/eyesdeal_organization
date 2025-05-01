@@ -7,116 +7,173 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { reportService } from "../../../services/reportService";
+import moment from "moment";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const ProductPurchaseReportsTable = ({ data }) => {
+const ProductPurchaseReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [newamountData, setNewAmountData] = useState(amountData);
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.date,
-          item.store,
-          item.vendor,
-          item.barcode,
-          item.billNo,
-          item.sku,
-          String(item.quantity),
-          String(item.purchaseRate),
-          String(item.tax),
-          String(item.totalAmount),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+     setNewAmountData(amountData)
+  },[amountData])
 
-    debouncedFilter(searchQuery);
+  // Sync filteredData with incoming data prop
+  useEffect(() => {
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+  // useEffect(() => {
+  //   const handler = setTimeout(() => {
+  //     setDebouncedQuery(searchQuery);
+  //   }, 500); // Adjust delay here
+
+  //   return () => clearTimeout(handler);
+  // }, [searchQuery]);
+
+  // useEffect(() => {
+  //   const today = new Date();
+  //   const yesterday = new Date(today);
+  //   yesterday.setDate(yesterday.getDate() - 1);
+
+  //   if (debouncedQuery.trim()) {
+  //     fetchPurchaseLog(debouncedQuery);
+  //     fetchAmount(yesterday.getTime(), today.getTime(), debouncedQuery);
+  //   }
+  // }, [debouncedQuery]);
 
   // Handle search input change
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      if (query) {
+        const filtered = data.filter((item) => {
+          console.log(item)
+          // Replace these fields with what you want to search
+          return (
+            item?.vendor?.companyName?.toLowerCase().includes(query) ||
+            item?.store?.name?.toLowerCase().includes(query) ||
+            item?.invoiceNumber?.toLowerCase().includes(query) ||
+            item?.products[0]?.product.sku.toLowerCase().includes(query) ||
+            String(item?.products[0]?.product.newBarcode).includes(query) ||
+            String(item?.products[0]?.tax).includes(query) ||
+            String(item?.products[0]?.totalAmount).includes(query) ||
+            String(item?.products[0]?.quantity).includes(query) ||
+            String(item?.products[0]?.purchaseRate).includes(query)
+          );
+        });
+        setFilteredData(filtered);
+      } else {
+        setFilteredData(data); // Reset when query is empty
+      }
+    }, 300); // debounce delay
+  
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+  
+
+  const fetchPurchaseLog = (search) => {
+    reportService.getPurchaseLogBySearch(search)
+      .then(res => {
+        console.log(res)
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = (dateFrom, dateTo, search) => {
+    reportService.getAmountBySearch(dateFrom, dateTo, search)
+      .then(res => {
+        console.log(res)
+        // setNewAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
+
   // Table columns
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
         accessorKey: "store",
-        header: "Store",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        header: "Store Name",
+        size: 200,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
         accessorKey: "vendor",
-        header: "Vendor",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        header: "Vendor Name",
+        size: 200,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.companyName}</div>,
       },
       {
-        accessorKey: "barcode",
+        id: "productnewBarcode",
+        accessorKey: "products",
         header: "Barcode",
+        size: 80,
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].product.newBarcode}</div>,
+      },
+      {
+        accessorKey: "invoiceNumber",
+        header: "Bill No",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "billNo",
-        header: "Bill Number",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "sku",
+        id: "productsku",
+        accessorKey: "products",
         header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 200,
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].product.sku}</div>,
       },
       {
-        accessorKey: "quantity",
-        header: "Quantity",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        id: "productquantity",
+        accessorKey: "products",
+        header: "QUANTITY",
+        size: 30,
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].quantity}</div>,
       },
       {
-        accessorKey: "purchaseRate",
-        header: "Purchase Rate",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        id: "productpurchaseRate",
+        accessorKey: "products",
+        header: "PURCHASE RATE",
+        size: 140,
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].purchaseRate}</div>,
       },
       {
-        accessorKey: "tax",
+        id: "producttax",
+        accessorKey: "products",
         header: "Tax",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 90,
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].tax}</div>,
       },
       {
-        accessorKey: "totalAmount",
-        header: "Total Amount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        id: "producttotalAmount",
+        accessorKey: "products",
+        header: "TOTAL AMOUNT",
+        cell: ({ getValue }) => <div className="text-left">{getValue()[0].totalAmount}</div>,
       },
     ],
     []
@@ -140,17 +197,16 @@ const ProductPurchaseReportsTable = ({ data }) => {
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
-        SRNO: item.id,
-        Date: item.date,
-        Store: item.store,
-        Vendor: item.vendor,
-        Barcode: item.barcode,
-        Bill_Number: item.billNo,
-        SKU: item.sku,
-        Quantity: item.quantity,
-        Purchase_Rate: item.purchaseRate,
-        Tax: item.tax,
-        Total_Amount: item.totalAmount,
+        Date: item.createdAt,
+        Store: item.store.name,
+        Vendor: item.vendor.companyName,
+        Barcode: item.products?.[0].product.newBarcode,
+        Bill_Number: item.invoiceNumber,
+        SKU: item.products?.[0].product.sku,
+        Quantity: item.products?.[0].quantity,
+        Purchase_Rate: item.products?.[0].purchaseRate,
+        Tax: item.products?.[0].tax,
+        Total_Amount: item.products?.[0].totalAmount,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -182,7 +238,7 @@ const ProductPurchaseReportsTable = ({ data }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
+        <p className="mb-0 fw-normal text-black">Total Amount: {newamountData}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -215,13 +271,15 @@ const ProductPurchaseReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
+
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

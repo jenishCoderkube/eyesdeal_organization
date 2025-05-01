@@ -1,97 +1,58 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import ProductPurchaseReportsForm from "./ProductPurchaseReportsForm";
 import ProductPurchaseReportsTable from "./ProductPurchaseReportsTable";
+import { reportService } from "../../../services/reportService";
 
 const ProductPurchaseReportCom = () => {
-  // Dummy data (5 entries)
-  const initialData = useMemo(
-    () => [
-      {
-        id: 1,
-        date: "22/04/2025",
-        store: "EYESDEAL BARDOLI",
-        vendor: "Vision Suppliers",
-        barcode: "52154",
-        billNo: "BILL001",
-        sku: "SV-BLUE-CUT UV 400 1.56",
-        quantity: 50,
-        purchaseRate: 80,
-        tax: 400,
-        totalAmount: 4400,
-      },
-      {
-        id: 2,
-        date: "22/04/2025",
-        store: "EYESDEAL BARDOLI",
-        vendor: "Optic Distributors",
-        barcode: "32090",
-        billNo: "BILL002",
-        sku: "I-GOG-SG-1450",
-        quantity: 30,
-        purchaseRate: 90,
-        tax: 270,
-        totalAmount: 2970,
-      },
-      {
-        id: 3,
-        date: "23/04/2025",
-        store: "CITY OPTICS",
-        vendor: "Lens Crafters",
-        barcode: "12345",
-        billNo: "BILL003",
-        sku: "RB-FR-1001",
-        quantity: 40,
-        purchaseRate: 100,
-        tax: 400,
-        totalAmount: 4400,
-      },
-      {
-        id: 4,
-        date: "21/04/2025",
-        store: "ELITE HOSPITAL",
-        vendor: "Vision Suppliers",
-        barcode: "67890",
-        billNo: "BILL004",
-        sku: "OK-SG-2002",
-        quantity: 60,
-        purchaseRate: 85,
-        tax: 510,
-        totalAmount: 5610,
-      },
-      {
-        id: 5,
-        date: "22/04/2025",
-        store: "EYESDEAL BARDOLI",
-        vendor: "Optic Distributors",
-        barcode: "98765",
-        billNo: "BILL005",
-        sku: "FZ-FR-3003",
-        quantity: 35,
-        purchaseRate: 95,
-        tax: 332.5,
-        totalAmount: 3657.5,
-      },
-    ],
-    []
-  );
 
-  const [filteredData, setFilteredData] = useState(initialData);
+  const [filteredData, setFilteredData] = useState([]);
+  const [amountData, setAmountData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    // Get yesterday's date
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    fetchPurchaseLog(yesterday.getTime(), today.getTime());
+    fetchAmount(yesterday.getTime(), today.getTime());
+  }, []);
+ 
+  const fetchPurchaseLog = (dateFrom, dateTo) => {
+    reportService.getPurchaseLogByPage(dateFrom, dateTo)
+      .then(res => {
+        console.log(res)
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = (dateFrom, dateTo) => {
+    reportService.getAmount(dateFrom, dateTo)
+      .then(res => {
+        console.log(res)
+        setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
 
   const handleFormSubmit = (values) => {
-    const filtered = initialData.filter((item) => {
-      const itemDate = new Date(item.date.split("/").reverse().join("-"));
-      const fromDate = values.from;
-      const toDate = values.to;
-      return (
-        (!values.store || item.store === values.store.value) &&
-        (!values.vendor || item.vendor === values.vendor.value) &&
-        (!fromDate || itemDate >= fromDate) &&
-        (!toDate || itemDate <= toDate)
-      );
-    });
-    setFilteredData(filtered);
+    if (values) {
+      console.log(values);
+
+      const { from, to, page = 1 } = values;
+
+      const fromTimestamp = new Date(from).getTime();
+      const toTimestamp = new Date(to).getTime();
+
+      fetchPurchaseLog(fromTimestamp, toTimestamp);
+      fetchAmount(fromTimestamp, toTimestamp);
+      setCurrentPage(page);
+    }
   };
 
+console.log(amountData)
   return (
     <div className="max-width-95 mx-auto px-4 py-5">
       <div className="row justify-content-center">
@@ -104,7 +65,7 @@ const ProductPurchaseReportCom = () => {
           </div>
           <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Product Purchase Report</h6>
-            <ProductPurchaseReportsTable data={filteredData} />
+            <ProductPurchaseReportsTable data={filteredData} amountData={amountData[0]?.totalAmount} />
           </div>
         </div>
       </div>

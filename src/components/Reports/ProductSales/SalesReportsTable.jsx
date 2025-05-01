@@ -13,8 +13,12 @@ import { reportService } from "../../../services/reportService";
 
 const SalesReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(data);
+  const [filteredData, setFilteredData] = useState([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(()=>{
+    setFilteredData(data)
+  },[data])
 
   const handleSearch = (value) => {
     setSearchQuery(value);
@@ -37,9 +41,7 @@ const SalesReportsTable = ({ data, amountData }) => {
   const fetchSearchOrderData = async (value) => {
     try {
       const response = await reportService.getOrdersBySearch(value);
-
       if (response.success) {
-        console.log(response.data);
         setFilteredData(response.data.data.docs)
       } else {
         console.error(response.message);
@@ -93,47 +95,120 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "Brand",
         size: 210,
-        cell: ({ getValue }) => (
-          <div className="text-left">
-            {(getValue()?.item?.brand?.name ?? "") +
-              " " +
-              (getValue()?.item?.__t ?? "")}
-          </div>
-        ),
+        // cell: ({ getValue }) => (
+        //   <div className="text-left">
+        //     {(getValue()?.item?.brand?.name ?? "") +
+        //       " " +
+        //       (getValue()?.item?.__t ?? "")}
+        //   </div>
+        // ),
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const brandName = product?.item?.brand?.name ?? lens?.item?.brand?.name ?? "";
+          const type = product?.item?.__t ?? lens?.item?.__t ?? "";
+      
+          return (
+            <div className="text-left">
+              {brandName + " " + type}
+            </div>
+          );
+        },
       },
       {
         id: "productBarcode",
         accessorKey: "product",
         header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.barcode}</div>,
+        // cell: ({ getValue }) => <div className="text-left">{getValue()?.barcode}</div>,
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const barcode = product?.barcode ?? lens?.barcode ?? "";
+      
+          return (
+            <div className="text-left">
+              {barcode}
+            </div>
+          );
+        },
       },
       {
         id: "productSKU",
         accessorKey: "product",
         header: "SKU",
         size: 300,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
+        // cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const sku = product?.sku ?? lens?.sku ?? "";
+      
+          return (
+            <div className="text-left">
+              {sku}
+            </div>
+          );
+        },
       },
       {
         id: "productMRP",
         accessorKey: "product",
         header: "MRP",
         size: 80,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.mrp}</div>,
+        // cell: ({ getValue }) => <div className="text-left">{getValue()?.mrp}</div>,
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const mrp = product?.mrp ?? lens?.mrp ?? "";
+      
+          return (
+            <div className="text-left">
+              {mrp}
+            </div>
+          );
+        },
       },
       {
         id: "productDiscount",
         accessorKey: "product",
         header: "Discount",
         size: 100,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceDiscount}</div>,
+        // cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceDiscount}</div>,
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const perPieceDiscount = product?.perPieceDiscount ?? lens?.perPieceDiscount ?? "";
+      
+          return (
+            <div className="text-left">
+              {perPieceDiscount}
+            </div>
+          );
+        },
       },
       {
         id: "productNetAmount",
         accessorKey: "product",
         header: "Net Amount",
         size: 120,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceAmount}</div>,
+        // cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceAmount}</div>,
+        cell: ({ row }) => {
+          const product = row.original?.product;
+          const lens = row.original?.lens;
+      
+          const perPieceAmount = product?.perPieceAmount ?? lens?.perPieceAmount ?? "";
+      
+          return (
+            <div className="text-left">
+              {perPieceAmount}
+            </div>
+          );
+        },
       },
     ],
     []
@@ -157,15 +232,15 @@ const SalesReportsTable = ({ data, amountData }) => {
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
-        Store_Name: item.store,
-        Brand: item.brand,
-        Customer_Name: item.customerName,
-        SKU: item.sku,
-        "Order No": item.orderNo,
-        Barcode: item.barcode,
-        MRP: item.mrp,
-        Discount: item.discount,
-        Net_Amount: item.netAmount,
+        Store_Name: item?.store?.name,
+        Brand: item.product.item.brand?.name,
+        Customer_Name: item.sale.customerName,
+        SKU: item.product.sku,
+        "Order No": item.sale.orders?.[0]?.billNumber,
+        Barcode: item.product.barcode,
+        MRP: item.product.mrp,
+        Discount: item.product.perPieceDiscount,
+        Net_Amount: item.product.perPieceAmount,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -182,7 +257,7 @@ const SalesReportsTable = ({ data, amountData }) => {
   };
 
   // Calculate total amount
-  const totalAmount = filteredData.reduce(
+  const totalAmount = filteredData?.reduce(
     (sum, item) => sum + item.netAmount,
     0
   );

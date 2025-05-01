@@ -11,12 +11,14 @@ import moment from "moment/moment";
 import { reportService } from "../../../services/reportService";
 
 const PurchaseReportsTable = ({ data, amountData }) => {
-  console.log(data)
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [newamountData, setNewAmountData] = useState(amountData);
 
+  useEffect(() => {
+    setNewAmountData(amountData)
+  }, [amountData])
 
   // Sync filteredData with incoming data prop
   useEffect(() => {
@@ -38,10 +40,10 @@ const PurchaseReportsTable = ({ data, amountData }) => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (debouncedQuery.trim()) {
       fetchPurchaseLog(debouncedQuery);
-      fetchAmount(yesterday.getTime(), today.getTime(),debouncedQuery);
+      // fetchAmount(yesterday.getTime(), today.getTime(), debouncedQuery);
     }
   }, [debouncedQuery]);
 
@@ -54,20 +56,19 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   const fetchPurchaseLog = (search) => {
     reportService.getPurchaseLogBySearch(search)
       .then(res => {
-        console.log(res)
         setFilteredData(res.data?.data?.docs);
       })
       .catch(e => console.log("Failed to get pruchaselog: ", e))
   }
 
-  const fetchAmount = (dateFrom, dateTo, search) => {
-    reportService.getAmountBySearch(dateFrom, dateTo, search)
-      .then(res => {
-        console.log(res)
-        // setNewAmountData(res.data?.data?.docs);
-      })
-      .catch(e => console.log("Failed to get amount: ", e))
-  }
+  // const fetchAmount = (dateFrom, dateTo, search) => {
+  //   reportService.getAmountBySearch(dateFrom, dateTo, search)
+  //     .then(res => {
+  //       // setNewAmountData(res.data?.data?.docs);
+  //     })
+  //     .catch(e => console.log("Failed to get amount: ", e))
+  // }
+  
   // Table columns
   const columns = useMemo(
     () => [
@@ -79,18 +80,19 @@ const PurchaseReportsTable = ({ data, amountData }) => {
       {
         accessorKey: "store",
         header: "Store Name",
-        size: 230,
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
         accessorKey: "vendor",
         header: "Vendor Name",
-        size: 230,
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()?.companyName}</div>,
       },
       {
         accessorKey: "createdAt",
         header: "Date",
+        size: 100,
         cell: ({ getValue }) => (
           <div className="text-left">
             {moment(getValue()).format("DD/MM/YYYY")}
@@ -100,23 +102,29 @@ const PurchaseReportsTable = ({ data, amountData }) => {
       {
         accessorKey: "invoiceNumber",
         header: "Bill No",
-        size: 180,
+        size: 130,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "netAmount",
         header: "Amount",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "totalQuantity",
         header: "Total Piece",
+        size: 100,
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "totalAmount",
+        header: "Total Amount",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
-  console.log(filteredData)
   // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
@@ -135,12 +143,12 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
-        Store_Name: item.store,
-        Vendor_Name: item.vendor,
-        Date: item.date,
-        Bill_No: item.billNo,
-        Amount: item.amount,
-        Total_Piece: item.totalPiece,
+        Store_Name: item.store.name,
+        Vendor_Name: item.vendor.companyName,
+        Date: item.createdAt,
+        Bill_No: item.invoiceNumber,
+        Amount: item.totalAmount,
+        Total_Piece: item.totalQuantity,
       }))
     );
     const workbook = XLSX.utils.book_new();

@@ -1,34 +1,76 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { reportService } from "../../../services/reportService";
+import { purchaseService } from "../../../services/purchaseService";
 
 const ProductPurchaseReportsForm = ({ onSubmit }) => {
-  // Options for select fields
-  const storeOptions = [
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-    { value: "CITY OPTICS", label: "CITY OPTICS" },
-    { value: "ELITE HOSPITAL", label: "ELITE HOSPITAL" },
-  ];
-  const vendorOptions = [
-    { value: "Vision Suppliers", label: "Vision Suppliers" },
-    { value: "Optic Distributors", label: "Optic Distributors" },
-    { value: "Lens Crafters", label: "Lens Crafters" },
-  ];
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [vendorData, setVendorData] = useState([]);
+
+  const storeOptions = storeData?.map((store) => ({
+    value: store._id,
+    label: `${store.name}`, 
+  }));
+ 
+  const vendorOptions = vendorData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.companyName}`,
+  }));
+ useEffect(() => {
+    getStores();
+    getVendors();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getVendors = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getVendors();
+      if (response.success) {
+        console.log(response)
+        setVendorData(response?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Formik setup without validation
   const formik = useFormik({
     initialValues: {
       store: null,
       vendor: null,
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
+
 
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
@@ -106,7 +148,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>
