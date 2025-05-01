@@ -5,8 +5,9 @@ import Select from "react-select";
 import AssetSelector from "../EyeGlasses/AssetSelector";
 import { toast } from "react-toastify";
 import { productAttributeService } from "../../../../services/productAttributeService"; // Import the service
-import { uploadImage } from "../../../../utils/constants";
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { productService } from "../../../../services/productService"; // Import the service
+import { IoClose } from "react-icons/io5";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -61,15 +62,19 @@ function Accessories({ initialData = {}, mode = "add" }) {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch brands and units
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
 
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            brands: brandResponse.data.map(item => ({
+            brands: brandResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -81,7 +86,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
         if (unitResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            units: unitResponse.data.map(item => ({
+            units: unitResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -114,13 +119,20 @@ function Accessories({ initialData = {}, mode = "add" }) {
   });
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   // Toggle section visibility
   const toggleSection = (section) => {
@@ -166,7 +178,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
     setSubmitting(true);
-    
+
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
@@ -180,14 +192,21 @@ function Accessories({ initialData = {}, mode = "add" }) {
         // Ensure oldBarcode is a number or null
         oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
         // Ensure these fields are properly formatted
-        features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        features: Array.isArray(values.features)
+          ? values.features
+          : [values.features].filter(Boolean),
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       if (mode === "edit") {
         // Call the update API
-        const response = await productService.updateAccessories(initialData?.id, payload);
-        
+        const response = await productService.updateAccessories(
+          initialData?.id,
+          payload
+        );
+
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
@@ -196,8 +215,11 @@ function Accessories({ initialData = {}, mode = "add" }) {
         }
       } else {
         // Call the add API
-        const response = await productService.addProduct(payload, "accessories");
-        
+        const response = await productService.addProduct(
+          payload,
+          "accessories"
+        );
+
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
@@ -644,16 +666,40 @@ function Accessories({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}

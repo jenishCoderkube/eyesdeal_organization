@@ -61,6 +61,7 @@ import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
 import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
 import SubFolder from "../pages/MediaLibrary/SubFolder";
 import VendorListProcess from "../pages/Process/vendorListProcess";
+import ExportProducts from "../pages/Products/ExportProducts";
 
 const routes = [
   {
@@ -461,7 +462,7 @@ const routes = [
   },
   {
     title: "EditProduct",
-    path: "/products/edit/:productId",
+    path: "/products/edit/:productId/:model",
     element: (
       <PrivateRoute>
         <AddProduct mode="edit" />
@@ -474,6 +475,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <ProductList />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ExportProducts",
+    path: "/products/exportProducts",
+    element: (
+      <PrivateRoute>
+        <ExportProducts />
       </PrivateRoute>
     ),
   },

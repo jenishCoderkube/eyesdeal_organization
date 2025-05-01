@@ -5,24 +5,29 @@ function ProductDetailsModal({ show, onHide, product }) {
   if (!product) return null;
 
   const fields = [
-    { label: "Category", value: product.model },
+    { label: "Category", value: product.__t || "-" },
     { label: "Color Number", value: product.colorNumber || "-" },
-    { label: "SKU", value: product.sku },
+    { label: "SKU", value: product.sku || "-" },
     { label: "Display Name", value: product.displayName || "-" },
-    { label: "Cost Price", value: product.costPrice },
-    { label: "Tax", value: product.tax || "-" },
-    { label: "Brand", value: product.brand },
-    { label: "SRP", value: product.mrp },
-    { label: "Resell Price", value: product.resellerPrice || "-" },
-    { label: "Discount", value: product.discount || "0" },
-    { label: "Incentive Amount", value: product.incentiveAmount || "0" },
-    { label: "MRP", value: product.mrp },
-    { label: "Barcode", value: product.barcode },
-    { label: "Unit", value: product.unit || "-" },
+    { label: "Cost Price", value: product.costPrice ?? "-" },
+    { label: "Tax", value: product.tax ?? "-" },
+    { label: "Brand", value: product.brand?.name || "-" },
+    { label: "Resell Price", value: product.resellerPrice ?? "-" },
+    { label: "Discount", value: product.discount ?? "0" },
+    { label: "Incentive Amount", value: product.incentiveAmount ?? "0" },
+    { label: "MRP", value: product.MRP ?? "-" },
+    { label: "Barcode", value: product.newBarcode ?? "-" },
+    { label: "Unit", value: product.unit?.name || "-" },
     { label: "Model Number", value: product.modelNumber || "-" },
     { label: "Manage Stock", value: product.manageStock ? "Yes" : "No" },
     { label: "Inclusive Tax", value: product.inclusiveTax ? "Yes" : "No" },
-    { label: "Frame Feature", value: product.frameFeature || "-" },
+    { label: "Gender", value: product.gender || "-" },
+    { label: "Frame Size", value: product.frameSize || "-" },
+    { label: "Warranty", value: product.warranty || "-" },
+    {
+      label: "Inventory Quantity",
+      value: product.inventory?.totalQuantity ?? "-",
+    },
   ];
 
   return (
@@ -50,7 +55,7 @@ function ProductDetailsModal({ show, onHide, product }) {
                   className="p-3 border font-weight-600 rounded-sm bg-white shadow-sm"
                   style={{ borderColor: "#e2e8f0" }}
                 >
-                  <span className=" text-black ">{field.label}</span>:{" "}
+                  <span className="text-black">{field.label}</span>:{" "}
                   {field.value}
                 </div>
               </Col>

@@ -6,8 +6,8 @@ import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
-import { uploadImage } from "../../../../utils/constants";
-
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
+import { IoClose } from "react-icons/io5";
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -126,13 +126,20 @@ function ContactLens({ initialData = {}, mode = "add" }) {
 
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   // State for loading
   const [loading, setLoading] = useState(false);
@@ -152,52 +159,79 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
-        const disposabilityResponse = await productAttributeService.getAttributes("disposability");
-        const lensTechnologyResponse = await productAttributeService.getAttributes("lensTechnology");
-        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
-        const featuresResponse = await productAttributeService.getAttributes("features");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
+        const disposabilityResponse =
+          await productAttributeService.getAttributes("disposability");
+        const lensTechnologyResponse =
+          await productAttributeService.getAttributes("lensTechnology");
+        const prescriptionTypeResponse =
+          await productAttributeService.getAttributes("prescriptionType");
+        const featuresResponse = await productAttributeService.getAttributes(
+          "features"
+        );
 
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            brands: brandResponse.data.map(item => ({ value: item._id, label: item.name })),
+            brands: brandResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (unitResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            units: unitResponse.data.map(item => ({ value: item._id, label: item.name })),
+            units: unitResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (disposabilityResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            disposability: disposabilityResponse.data.map(item => ({ value: item._id, label: item.name })),
+            disposability: disposabilityResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (lensTechnologyResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            lensTechnology: lensTechnologyResponse.data.map(item => ({ value: item._id, label: item.name })),
+            lensTechnology: lensTechnologyResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (prescriptionTypeResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            prescriptionType: prescriptionTypeResponse.data.map(item => ({ value: item._id, label: item.name })),
+            prescriptionType: prescriptionTypeResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (featuresResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            features: featuresResponse.data.map(item => ({ value: item._id, label: item.name })),
+            features: featuresResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
       } catch (error) {
@@ -283,13 +317,18 @@ function ContactLens({ initialData = {}, mode = "add" }) {
       let response;
       if (mode === "edit") {
         console.log("Editing product ID:", initialData?.id);
-        response = await productService.updateContactLens(initialData?.id, payload);
+        response = await productService.updateContactLens(
+          initialData?.id,
+          payload
+        );
       } else {
         response = await productService.addProduct(payload, "contactLens");
       }
 
       if (response.success) {
-        toast.success(`Product ${mode === "edit" ? "updated" : "added"} successfully`);
+        toast.success(
+          `Product ${mode === "edit" ? "updated" : "added"} successfully`
+        );
         resetForm();
       } else {
         toast.error(response.message || "Failed to process your request");
@@ -861,7 +900,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                     className="text-danger text-sm"
                   />
                 </div>
-             
+
                 <div>
                   <label
                     className="form-label font-weight-600 text-sm font-medium"
@@ -978,16 +1017,40 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}

@@ -5,7 +5,7 @@ import FolderList from "../../components/MediaLibrary/FolderList";
 import FileList from "../../components/MediaLibrary/FileList";
 import AddAssetModal from "../../components/MediaLibrary/AddAssetModal";
 import AddFolderModal from "../../components/MediaLibrary/AddFolderModal";
-import { useFolderTree } from "./FolderTreeContext";
+import { FolderTreeProvider, useFolderTree } from "./FolderTreeContext";
 import { mediaService } from "../../services/mediaService";
 import { toast } from "react-toastify";
 import Processing from "../../components/Processing/Processing";
@@ -16,13 +16,9 @@ const MediaLibrary = () => {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [folderName, setFolder] = useState([]);
 
-  const { folderTree, setFolderTree } = useFolderTree();
+  const { setFolderTree } = useFolderTree();
 
   const [loading, setLoading] = useState(false);
-
-  // Root level: all top-level folders and their files
-  const subfolders = folderTree;
-  const files = folderTree.flatMap((folder) => folder.files);
 
   const handleFolderClick = (folderName) => {
     console.log("Navigating to folder:", folderName);
@@ -163,11 +159,15 @@ const MediaLibrary = () => {
             placeholder="Search..."
             style={{ width: "200px" }}
           /> */}
-          <Button variant="primary" onClick={() => setShowAssetModal(true)}>
+          <Button
+            className="custom-button-bgcolor"
+            variant="primary"
+            onClick={() => setShowAssetModal(true)}
+          >
             Add Asset
           </Button>
           <Button
-            variant="outline-primary"
+            className="custom-hover-border bg-white"
             onClick={() => setShowFolderModal(true)}
           >
             Add Folder
@@ -202,5 +202,9 @@ const MediaLibrary = () => {
     </div>
   );
 };
-
-export default MediaLibrary;
+const MediaLibraryWithProvider = () => (
+  <FolderTreeProvider>
+    <MediaLibrary />
+  </FolderTreeProvider>
+);
+export default MediaLibraryWithProvider;

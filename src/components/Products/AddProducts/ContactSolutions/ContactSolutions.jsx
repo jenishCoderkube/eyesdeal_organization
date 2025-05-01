@@ -7,9 +7,9 @@ import "react-datepicker/dist/react-datepicker.css";
 import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { productService } from "../../../../services/productService";
-import { uploadImage } from "../../../../utils/constants";
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { toast } from "react-toastify";
-
+import { IoClose } from "react-icons/io5";
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -90,13 +90,20 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
   });
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   // State for dynamic options
   const [attributeOptions, setAttributeOptions] = useState({
@@ -108,13 +115,17 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
 
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            brands: brandResponse.data.map(item => ({
+            brands: brandResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -124,7 +135,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
         if (unitResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            units: unitResponse.data.map(item => ({
+            units: unitResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -155,8 +166,12 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
     displayName: initialData?.displayName || "",
     HSNCode: initialData?.HSNCode || "",
     material: initialData?.material || "",
-    manufactureDate: initialData?.manufactureDate ? new Date(initialData.manufactureDate) : null,
-    expiryDate: initialData?.expiryDate ? new Date(initialData.expiryDate) : null,
+    manufactureDate: initialData?.manufactureDate
+      ? new Date(initialData.manufactureDate)
+      : null,
+    expiryDate: initialData?.expiryDate
+      ? new Date(initialData.expiryDate)
+      : null,
     unit: initialData?.unit || "",
     warranty: initialData?.warranty || "",
     description: initialData?.description || "",
@@ -196,17 +211,25 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
       // Prepare the payload
       const payload = {
         ...values,
-        manufactureDate: values.manufactureDate ? values.manufactureDate.toISOString() : null, // Ensure date is in ISO format
+        manufactureDate: values.manufactureDate
+          ? values.manufactureDate.toISOString()
+          : null, // Ensure date is in ISO format
         expiryDate: values.expiryDate ? values.expiryDate.toISOString() : null, // Ensure date is in ISO format
         oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       console.log("Payload being sent:", payload); // Log the payload
 
       let response;
       if (mode === "edit") {
-        response = await productService.updateProduct("contactSolutions", initialData?.id, payload);
+        response = await productService.updateProduct(
+          "contactSolutions",
+          initialData?.id,
+          payload
+        );
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
@@ -289,8 +312,12 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
               <Select
                 name="brand"
                 options={attributeOptions.brands}
-                onChange={(option) => setFieldValue("brand", option ? option.value : "")}
-                value={attributeOptions.brands.find((option) => option.value === values.brand)}
+                onChange={(option) =>
+                  setFieldValue("brand", option ? option.value : "")
+                }
+                value={attributeOptions.brands.find(
+                  (option) => option.value === values.brand
+                )}
                 placeholder="Select..."
                 classNamePrefix="react-select"
               />
@@ -415,8 +442,12 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
               <Select
                 name="unit"
                 options={attributeOptions.units}
-                onChange={(option) => setFieldValue("unit", option ? option.value : "")}
-                value={attributeOptions.units.find((option) => option.value === values.unit)}
+                onChange={(option) =>
+                  setFieldValue("unit", option ? option.value : "")
+                }
+                value={attributeOptions.units.find(
+                  (option) => option.value === values.unit
+                )}
                 placeholder="Select..."
                 classNamePrefix="react-select"
               />
@@ -702,16 +733,40 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}

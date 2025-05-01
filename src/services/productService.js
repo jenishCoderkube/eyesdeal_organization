@@ -22,13 +22,13 @@ const PRODUCT_ENDPOINTS = {
 const handleApiRequest = async (requestType, endpoint, data = null) => {
   try {
     let response;
-    if (requestType === 'GET') {
+    if (requestType === "GET") {
       response = await api.get(endpoint);
-    } else if (requestType === 'POST') {
+    } else if (requestType === "POST") {
       response = await api.post(endpoint, data);
-    } else if (requestType === 'PUT') {
+    } else if (requestType === "PUT") {
       response = await api.put(endpoint, data);
-    } else if (requestType === 'DELETE') {
+    } else if (requestType === "DELETE") {
       response = await api.delete(endpoint);
     }
 
@@ -58,22 +58,26 @@ export const productService = {
   // Add a new product
   addProduct: async (productData, productType) => {
     console.log(`Adding new ${productType} product:`, productData);
-    
-    const endpoint = PRODUCT_ENDPOINTS[productType.toUpperCase()] || PRODUCT_ENDPOINTS.ACCESSORIES;
+
+    const endpoint =
+      PRODUCT_ENDPOINTS[productType.toUpperCase()] ||
+      PRODUCT_ENDPOINTS.ACCESSORIES;
 
     // Process photos and seoImage as before
     let processedPhotos = [];
     if (productData.photos) {
       if (Array.isArray(productData.photos)) {
-        processedPhotos = productData.photos.map(photo => photo.replace('/public/', ''));
-      } else if (typeof productData.photos === 'string') {
-        processedPhotos = [productData.photos.replace('/public/', '')];
+        processedPhotos = productData.photos.map((photo) =>
+          photo.replace("/public/", "")
+        );
+      } else if (typeof productData.photos === "string") {
+        processedPhotos = [productData.photos.replace("/public/", "")];
       }
     }
 
-    let seoImagePath = '';
+    let seoImagePath = "";
     if (productData.seoImage) {
-      if (typeof productData.seoImage === 'string') {
+      if (typeof productData.seoImage === "string") {
         seoImagePath = productData.seoImage;
       } else if (productData.seoImage.name) {
         seoImagePath = `eyesdeal/website/image/seo/${productData.seoImage.name}`;
@@ -97,8 +101,12 @@ export const productService = {
       MRP: productData.MRP,
       discount: productData.discount,
       sellPrice: parseFloat(productData.sellPrice) || 0,
-      manageStock: productData.manageStock === undefined ? true : productData.manageStock,
-      inclusiveTax: productData.inclusiveTax === undefined ? true : productData.inclusiveTax,
+      manageStock:
+        productData.manageStock === undefined ? true : productData.manageStock,
+      inclusiveTax:
+        productData.inclusiveTax === undefined
+          ? true
+          : productData.inclusiveTax,
       modelNumber: productData.modelNumber,
       colorNumber: productData.colorNumber,
       frameType: productData.frameType,
@@ -110,14 +118,20 @@ export const productService = {
       frameColor: productData.frameColor,
       prescriptionType: productData.prescriptionType,
       frameCollection: productData.frameCollection,
-      features: Array.isArray(productData.features) ? productData.features : [productData.features].filter(Boolean),
+      features: Array.isArray(productData.features)
+        ? productData.features
+        : [productData.features].filter(Boolean),
       gender: productData.gender,
       frameSize: productData.frameSize,
       frameWidth: productData.frameWidth,
       frameDimensions: productData.frameDimensions,
       weight: productData.weight,
-      activeInWebsite: productData.activeInWebsite === undefined ? false : productData.activeInWebsite,
-      activeInERP: productData.activeInERP === undefined ? true : productData.activeInERP,
+      activeInWebsite:
+        productData.activeInWebsite === undefined
+          ? false
+          : productData.activeInWebsite,
+      activeInERP:
+        productData.activeInERP === undefined ? true : productData.activeInERP,
       seoTitle: productData.seoTitle,
       seoDescription: productData.seoDescription,
       seoImage: seoImagePath,
@@ -126,30 +140,33 @@ export const productService = {
       manufactureDate: productData.manufactureDate,
     };
 
-    return await handleApiRequest('POST', endpoint, formattedData);
+    return await handleApiRequest("POST", endpoint, formattedData);
   },
 
   // Get all products
   getProducts: async (productType) => {
     const endpoint = PRODUCT_ENDPOINTS[productType.toUpperCase()];
-    return await handleApiRequest('GET', endpoint);
+    return await handleApiRequest("GET", endpoint);
   },
 
   // Get a single product by ID
   getProductById: async (productType, id) => {
-    const endpoint = PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
-    return await handleApiRequest('GET', endpoint);
+    const endpoint =
+      PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
+    return await handleApiRequest("GET", endpoint);
   },
 
   // Update a product
   updateProduct: async (productType, id, productData) => {
-    const endpoint = PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
-    return await handleApiRequest('PUT', endpoint, productData);
+    const endpoint =
+      PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
+    return await handleApiRequest("PUT", endpoint, productData);
   },
 
   // Delete a product
   deleteProduct: async (productType, id) => {
-    const endpoint = PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
-    return await handleApiRequest('DELETE', endpoint);
+    const endpoint =
+      PRODUCT_ENDPOINTS[`${productType.toUpperCase()}_BY_ID`](id);
+    return await handleApiRequest("DELETE", endpoint);
   },
-}; 
+};

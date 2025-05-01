@@ -6,8 +6,8 @@ import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
-import { uploadImage } from "../../../../utils/constants";
-
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
+import { IoClose } from "react-icons/io5";
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -95,13 +95,20 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
 
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   // State for loading
   const [loading, setLoading] = useState(false);
@@ -122,60 +129,92 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
-        const frameColorResponse = await productAttributeService.getAttributes("color");
-        const frameCollectionResponse = await productAttributeService.getAttributes("collection");
-        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
-        const lensTechnologyResponse = await productAttributeService.getAttributes("lensTechnology");
-        const featuresResponse = await productAttributeService.getAttributes("feature");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
+        const frameColorResponse = await productAttributeService.getAttributes(
+          "color"
+        );
+        const frameCollectionResponse =
+          await productAttributeService.getAttributes("collection");
+        const prescriptionTypeResponse =
+          await productAttributeService.getAttributes("prescriptionType");
+        const lensTechnologyResponse =
+          await productAttributeService.getAttributes("lensTechnology");
+        const featuresResponse = await productAttributeService.getAttributes(
+          "feature"
+        );
 
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            brands: brandResponse.data.map(item => ({ value: item._id, label: item.name })),
+            brands: brandResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (unitResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            units: unitResponse.data.map(item => ({ value: item._id, label: item.name })),
+            units: unitResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (frameColorResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameColors: frameColorResponse.data.map(item => ({ value: item._id, label: item.name })),
+            frameColors: frameColorResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (frameCollectionResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameCollections: frameCollectionResponse.data.map(item => ({ value: item._id, label: item.name })),
+            frameCollections: frameCollectionResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (prescriptionTypeResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            prescriptionTypes: prescriptionTypeResponse.data.map(item => ({ value: item._id, label: item.name })),
+            prescriptionTypes: prescriptionTypeResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (lensTechnologyResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            lensTechnology: lensTechnologyResponse.data.map(item => ({ value: item._id, label: item.name })),
+            lensTechnology: lensTechnologyResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
 
         if (featuresResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            features: featuresResponse.data.map(item => ({ value: item._id, label: item.name })),
+            features: featuresResponse.data.map((item) => ({
+              value: item._id,
+              label: item.name,
+            })),
           }));
         }
       } catch (error) {
@@ -242,7 +281,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
     setSubmitting(true);
-    
+
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
@@ -256,14 +295,22 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
         // Ensure oldBarcode is a number or null
         oldBarcode: values.oldBarcode ? Number(values.oldBarcode) : null,
         // Ensure these fields are properly formatted
-        features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        features: Array.isArray(values.features)
+          ? values.features
+          : [values.features].filter(Boolean),
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       if (mode === "edit") {
         // Call the update API
-        const response = await productService.updateProduct("spectacleLens", initialData?.id, payload);
-        
+        const response = await productService.updateProduct(
+          "spectacleLens",
+          initialData?.id,
+          payload
+        );
+
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
@@ -272,8 +319,11 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
         }
       } else {
         // Call the add API
-        const response = await productService.addProduct(payload, "spectacleLens");
-        
+        const response = await productService.addProduct(
+          payload,
+          "spectacleLens"
+        );
+
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
@@ -292,7 +342,10 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
   // Display loading state while fetching options
   if (loading && attributeOptions.brands.length === 0) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "400px" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -771,7 +824,10 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
                     name="lensTechnology"
                     options={attributeOptions.lensTechnology}
                     onChange={(option) =>
-                      setFieldValue("lensTechnology", option ? option.value : "")
+                      setFieldValue(
+                        "lensTechnology",
+                        option ? option.value : ""
+                      )
                     }
                     value={attributeOptions.lensTechnology.find(
                       (option) => option.value === values.lensTechnology
@@ -876,16 +932,40 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}
@@ -897,25 +977,29 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
             />
 
             <div>
-            <label
-                    className="form-label font-weight-600 text-sm font-medium"
-                    htmlFor="frameColor"
-                  >
-                    Frame Color
-                  </label>
-                  <Select
-                    name="frameColor"
-                    options={attributeOptions.frameColors}
-                    onChange={(option) =>
-                      setFieldValue("frameColor", option ? option.value : "")
-                    }
-                    value={attributeOptions?.frameColors.find(
-                      (option) => option.value === values.frameColor
-                    )}
-                    placeholder="Select..."
-                    classNamePrefix="react-select"
-                  />
-              <ErrorMessage name="frameColor" component="div" className="text-danger text-sm" />
+              <label
+                className="form-label font-weight-600 text-sm font-medium"
+                htmlFor="frameColor"
+              >
+                Frame Color
+              </label>
+              <Select
+                name="frameColor"
+                options={attributeOptions.frameColors}
+                onChange={(option) =>
+                  setFieldValue("frameColor", option ? option.value : "")
+                }
+                value={attributeOptions?.frameColors.find(
+                  (option) => option.value === values.frameColor
+                )}
+                placeholder="Select..."
+                classNamePrefix="react-select"
+              />
+              <ErrorMessage
+                name="frameColor"
+                component="div"
+                className="text-danger text-sm"
+              />
             </div>
 
             <div>
@@ -928,12 +1012,20 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
               <Select
                 name="frameCollection"
                 options={attributeOptions.frameCollections}
-                onChange={(option) => setFieldValue("frameCollection", option ? option.value : "")}
-                value={attributeOptions.frameCollections.find((option) => option.value === values.frameCollection)}
+                onChange={(option) =>
+                  setFieldValue("frameCollection", option ? option.value : "")
+                }
+                value={attributeOptions.frameCollections.find(
+                  (option) => option.value === values.frameCollection
+                )}
                 placeholder="Select..."
                 classNamePrefix="react-select"
               />
-              <ErrorMessage name="frameCollection" component="div" className="text-danger text-sm" />
+              <ErrorMessage
+                name="frameCollection"
+                component="div"
+                className="text-danger text-sm"
+              />
             </div>
 
             {/* Submit Button */}

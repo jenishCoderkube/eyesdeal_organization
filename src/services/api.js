@@ -35,12 +35,10 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       error.response?.data?.success === false &&
-      error.response?.data?.error?.name === "JsonWebTokenError"
+      error.response?.statusText === "Unauthorized"
     ) {
-      // Clear invalid token and user data
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
-
       window.location.href = "/login";
     }
 

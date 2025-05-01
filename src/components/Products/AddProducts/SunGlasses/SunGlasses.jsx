@@ -6,7 +6,8 @@ import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
-import { uploadImage } from "../../../../utils/constants";
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
+import { IoClose } from "react-icons/io5";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -161,13 +162,20 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
   });
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   const [attributeOptions, setAttributeOptions] = useState({
     brands: [],
@@ -188,20 +196,37 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
-        const colorResponse = await productAttributeService.getAttributes("color");
-        const materialResponse = await productAttributeService.getAttributes("material");
-        const frameTypeResponse = await productAttributeService.getAttributes("frameType");
-        const frameShapeResponse = await productAttributeService.getAttributes("frameShape");
-        const frameStyleResponse = await productAttributeService.getAttributes("frameStyle");
-        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
-        const collectionResponse = await productAttributeService.getAttributes("collection");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
+        const colorResponse = await productAttributeService.getAttributes(
+          "color"
+        );
+        const materialResponse = await productAttributeService.getAttributes(
+          "material"
+        );
+        const frameTypeResponse = await productAttributeService.getAttributes(
+          "frameType"
+        );
+        const frameShapeResponse = await productAttributeService.getAttributes(
+          "frameShape"
+        );
+        const frameStyleResponse = await productAttributeService.getAttributes(
+          "frameStyle"
+        );
+        const prescriptionTypeResponse =
+          await productAttributeService.getAttributes("prescriptionType");
+        const collectionResponse = await productAttributeService.getAttributes(
+          "collection"
+        );
 
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            brands: brandResponse.data.map(item => ({
+            brands: brandResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -211,7 +236,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (unitResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            units: unitResponse.data.map(item => ({
+            units: unitResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -221,7 +246,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (colorResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            colors: colorResponse.data.map(item => ({
+            colors: colorResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -231,7 +256,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (materialResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            materials: materialResponse.data.map(item => ({
+            materials: materialResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -241,7 +266,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (frameTypeResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameTypes: frameTypeResponse.data.map(item => ({
+            frameTypes: frameTypeResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -251,7 +276,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (frameShapeResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameShapes: frameShapeResponse.data.map(item => ({
+            frameShapes: frameShapeResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -261,7 +286,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (frameStyleResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameStyles: frameStyleResponse.data.map(item => ({
+            frameStyles: frameStyleResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -271,7 +296,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (prescriptionTypeResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            prescriptionTypes: prescriptionTypeResponse.data.map(item => ({
+            prescriptionTypes: prescriptionTypeResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -281,7 +306,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (collectionResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,
-            frameCollections: collectionResponse.data.map(item => ({
+            frameCollections: collectionResponse.data.map((item) => ({
               value: item._id,
               label: item.name,
             })),
@@ -380,13 +405,21 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         templeColor: values.templeColor,
         frameColor: values.frameColor,
         frameCollection: values.frameCollection,
-        features: Array.isArray(values.features) ? values.features.map(feature => feature.value) : [],
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        features: Array.isArray(values.features)
+          ? values.features.map((feature) => feature.value)
+          : [],
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       if (mode === "edit") {
-        const response = await productService.updateProduct("sunglasses", initialData?.id, payload);
-        
+        const response = await productService.updateProduct(
+          "sunglasses",
+          initialData?._id,
+          payload
+        );
+
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
@@ -395,7 +428,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         }
       } else {
         const response = await productService.addProduct(payload, "sunglasses");
-        
+
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
@@ -414,7 +447,10 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
   // Display loading state while fetching options
   if (loading && attributeOptions.brands.length === 0) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "400px" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -997,7 +1033,10 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                     name="templeMaterial"
                     options={attributeOptions.materials}
                     onChange={(option) =>
-                      setFieldValue("templeMaterial", option ? option.value : "")
+                      setFieldValue(
+                        "templeMaterial",
+                        option ? option.value : ""
+                      )
                     }
                     value={attributeOptions.materials.find(
                       (option) => option.value === values.templeMaterial
@@ -1311,16 +1350,40 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}

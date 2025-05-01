@@ -5,9 +5,10 @@ import Select from "react-select";
 import AssetSelector from "./AssetSelector";
 
 import { toast } from "react-toastify";
-import { uploadImage } from "../../../../utils/constants";
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { productService } from "../../../../services/productService";
+import { IoClose } from "react-icons/io5";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -88,20 +89,28 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     frameDetails: false,
     additionalDetails: false,
   });
-  
+
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
-  
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
+
   // State for loading
   const [loading, setLoading] = useState(false);
-  
+
   // State for attribute options
   const [attributeOptions, setAttributeOptions] = useState({
     brands: [],
@@ -124,28 +133,37 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       try {
         // Show loading indicator
         setLoading(true);
-        
+
         // Fetch all necessary attributes for the form
         const attributeTypes = [
-          "brand", "unit", "frameType", "frameShape", "frameStyle", 
-          "material", "color", "prescriptionType", "collection", "feature",
-          "frameColor", "frameCollection"
+          "brand",
+          "unit",
+          "frameType",
+          "frameShape",
+          "frameStyle",
+          "material",
+          "color",
+          "prescriptionType",
+          "collection",
+          "feature",
+          "frameColor",
+          "frameCollection",
         ];
-        
+
         const attributeData = {};
-        
+
         for (const type of attributeTypes) {
           const response = await productAttributeService.getAttributes(type);
           if (response.success && response.data) {
-            attributeData[type] = response.data.map(item => ({
+            attributeData[type] = response.data.map((item) => ({
               value: item._id,
-              label: item.name
+              label: item.name,
             }));
           } else {
             console.error(`Failed to fetch ${type} data:`, response.message);
           }
         }
-        
+
         setAttributeOptions({
           brands: attributeData.brand || [],
           units: attributeData.unit || [],
@@ -160,7 +178,6 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
           frameColors: attributeData.frameColor || [],
           frameCollections: attributeData.frameCollection || [],
         });
-        
       } catch (error) {
         console.error("Error fetching attributes:", error);
         toast.error("Failed to load form options");
@@ -168,7 +185,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         setLoading(false);
       }
     };
-    
+
     fetchAttributes();
   }, []);
 
@@ -233,7 +250,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
     setSubmitting(true);
-    
+
     try {
       // Handle image upload for seoImage
       if (values.seoImage instanceof File) {
@@ -245,15 +262,22 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       const payload = {
         ...values,
         // Ensure these fields are properly formatted
-        features: Array.isArray(values.features) ? values.features : [values.features].filter(Boolean),
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        features: Array.isArray(values.features)
+          ? values.features
+          : [values.features].filter(Boolean),
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       if (mode === "edit") {
         console.log("Editing product ID:", initialData?.id);
         // Call the update API
-        const response = await productService.updateEyeGlasses(initialData?.id, payload);
-        
+        const response = await productService.updateEyeGlasses(
+          initialData?.id,
+          payload
+        );
+
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
@@ -263,8 +287,8 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         }
       } else {
         // Call the add API
-        const response = await productService.addProduct(payload,"eyeGlasses");
-        
+        const response = await productService.addProduct(payload, "eyeGlasses");
+
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
@@ -284,7 +308,10 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
   // Display loading state while fetching options
   if (loading && attributeOptions.brands.length === 0) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "400px" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -627,13 +654,14 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                     onChange={async (e) => {
                       const file = e.target.files[0];
                       if (file) {
-                          const res = await uploadImage(file, file.name); 
-                          setFieldValue("seoImage", res); 
+                        const res = await uploadImage(file, file.name);
+                        setFieldValue("seoImage", res);
                       }
                     }}
                   />
                   <small className="form-text text-muted">
-                    Selected file will be sent as: eyesdeal/website/image/seo/[filename]
+                    Selected file will be sent as:
+                    eyesdeal/website/image/seo/[filename]
                   </small>
                   <ErrorMessage
                     name="seoImage"
@@ -1102,31 +1130,60 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               </div>
               <div className="col-10">
                 <div className="form-group">
-                  <label htmlFor="photoInput" className="form-label font-weight-600 text-sm font-medium">
+                  <label
+                    htmlFor="photoInput"
+                    className="form-label font-weight-600 text-sm font-medium"
+                  >
                     Photo Filename
                   </label>
                   <Field
                     type="text"
-                    id="photoInput" 
+                    id="photoInput"
                     name="photos"
                     className="form-control"
                     placeholder="e.g. EyesO_1.png"
                   />
                   <small className="form-text text-muted">
-                    Enter photo filename exactly as shown in the working example: "EyesO_1.png"
+                    Enter photo filename exactly as shown in the working
+                    example: "EyesO_1.png"
                   </small>
                 </div>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}
@@ -1182,18 +1239,24 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
 
             {/* Submit Button */}
             <div className="mt-4 d-flex justify-content-end">
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
+              <button
+                type="submit"
+                className="btn btn-primary"
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
                     {mode === "edit" ? "Updating..." : "Adding..."}
                   </>
+                ) : mode === "edit" ? (
+                  "Update Product"
                 ) : (
-                  mode === "edit" ? "Update Product" : "Add Product"
+                  "Add Product"
                 )}
               </button>
             </div>

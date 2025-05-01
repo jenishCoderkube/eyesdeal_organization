@@ -1,4 +1,3 @@
-// src/components/ProductTable.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -9,6 +8,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import ProductDetailsModal from "./ProductDetailsModal";
+import ImageSliderModalProduct from "./ImageSliderModalProduct";
+import productViewService from "../../../services/Products/productViewService";
+import { toast } from "react-toastify";
+import { defalutImageBasePath } from "../../../utils/constants";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -21,239 +24,150 @@ const debounce = (func, wait) => {
 
 function ProductTable({ filters }) {
   const navigate = useNavigate();
-  const [filteredData, setFilteredData] = useState(null);
+  const [filteredData, setFilteredData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  // Dummy product data (10 entries with varied model types)
-  const products = useMemo(
-    () => [
-      {
-        id: 1,
-        model: "eyeGlasses",
-        barcode: "10027",
-        sku: "7STAR-9005-46",
-        costPrice: 400,
-        mrp: 1350,
-        photos: [
-          "https://placehold.co/100x100?text=Eyeglasses1",
-          "https://placehold.co/100x100?text=Eyeglasses2",
-        ],
-        brand: "brand1",
-        frameType: "fullRim",
-        frameShape: "rectangle",
-        gender: "unisex",
-        frameMaterial: "metal",
-        frameColor: "black",
-        frameSize: "medium",
-        prescriptionType: "singleVision",
-        frameCollection: "classic",
-      },
-      {
-        id: 2,
-        model: "contactSolutions",
-        barcode: "20001",
-        sku: "CS-SALINE-001",
-        costPrice: 50,
-        mrp: 70,
-        photos: [],
-        brand: "brand2",
-        material: "Saline",
-      },
-      {
-        id: 3,
-        model: "sunGlasses",
-        barcode: "30015",
-        sku: "SUN-RAY-123",
-        costPrice: 600,
-        mrp: 1500,
-        photos: ["https://placehold.co/100x100?text=Sunglasses1"],
-        brand: "brand3",
-        frameType: "fullRim",
-        frameShape: "round",
-        gender: "male",
-        frameMaterial: "plastic",
-        frameColor: "blue",
-        frameSize: "large",
-        prescriptionType: "none",
-        frameCollection: "trendy",
-      },
-      {
-        id: 4,
-        model: "accessories",
-        barcode: "40022",
-        sku: "ACC-CASE-001",
-        costPrice: 100,
-        mrp: 200,
-        photos: [],
-        brand: "brand1",
-      },
-      {
-        id: 5,
-        model: "spectacleLens",
-        barcode: "50033",
-        sku: "LENS-BLUECUT-01",
-        costPrice: 300,
-        mrp: 800,
-        photos: ["https://placehold.co/100x100?text=Lens1"],
-        brand: "brand2",
-        prescriptionType: "progressive",
-      },
-      {
-        id: 6,
-        model: "contactLens",
-        barcode: "60044",
-        sku: "CL-DAILY-001",
-        costPrice: 200,
-        mrp: 500,
-        photos: [],
-        brand: "brand3",
-        disposability: "daily",
-        prescriptionType: "singleVision",
-      },
-      {
-        id: 7,
-        model: "readingGlasses",
-        barcode: "70055",
-        sku: "RG-READ-001",
-        costPrice: 350,
-        mrp: 900,
-        photos: ["https://placehold.co/100x100?text=Reading1"],
-        brand: "brand1",
-        frameType: "halfRim",
-        frameShape: "rectangle",
-        gender: "female",
-        frameMaterial: "acetate",
-        frameColor: "red",
-        frameSize: "small",
-        prescriptionType: "bifocal",
-        frameCollection: "premium",
-      },
-      {
-        id: 8,
-        model: "eyeGlasses",
-        barcode: "80066",
-        sku: "EG-MODERN-002",
-        costPrice: 450,
-        mrp: 1400,
-        photos: ["https://placehold.co/100x100?text=Eyeglasses3"],
-        brand: "brand2",
-        frameType: "rimless",
-        frameShape: "catEye",
-        gender: "unisex",
-        frameMaterial: "metal",
-        frameColor: "black",
-        frameSize: "medium",
-        prescriptionType: "progressive",
-        frameCollection: "trendy",
-      },
-      {
-        id: 9,
-        model: "contactSolutions",
-        barcode: "90077",
-        sku: "CS-MULTI-002",
-        costPrice: 60,
-        mrp: 80,
-        photos: [],
-        brand: "brand3",
-        material: "Hydrogen Peroxide",
-      },
-      {
-        id: 10,
-        model: "sunGlasses",
-        barcode: "10088",
-        sku: "SUN-CLASSIC-456",
-        costPrice: 700,
-        mrp: 1600,
-        photos: ["https://placehold.co/100x100?text=Sunglasses2"],
-        brand: "brand1",
-        frameType: "fullRim",
-        frameShape: "round",
-        gender: "female",
-        frameMaterial: "plastic",
-        frameColor: "red",
-        frameSize: "large",
-        prescriptionType: "none",
-        frameCollection: "classic",
-      },
-    ],
-    []
-  );
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
+  const [photoFetchProgress, setPhotoFetchProgress] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
-  // Filter function
-  const filterProducts = useMemo(
-    () => (data, filters) => {
-      return data.filter((item) => {
-        const matchesSearch = filters.search
-          ? [item.barcode, item.sku, String(item.mrp), String(item.costPrice)]
-              .join(" ")
-              .toLowerCase()
-              .includes(filters.search.toLowerCase())
-          : true;
-        const matchesModel = filters.model
-          ? item.model === filters.model
-          : true;
-        const matchesBrand = filters.brand
-          ? item.brand === filters.brand
-          : true;
-        const matchesFrameType = filters.frameType
-          ? item.frameType === filters.frameType
-          : true;
-        const matchesFrameShape = filters.frameShape
-          ? item.frameShape === filters.frameShape
-          : true;
-        const matchesGender = filters.gender
-          ? item.gender === filters.gender
-          : true;
-        const matchesFrameMaterial = filters.frameMaterial
-          ? item.frameMaterial === filters.frameMaterial
-          : true;
-        const matchesFrameColor = filters.frameColor
-          ? item.frameColor === filters.frameColor
-          : true;
-        const matchesFrameSize = filters.frameSize
-          ? item.frameSize === filters.frameSize
-          : true;
-        const matchesPrescriptionType = filters.prescriptionType
-          ? item.prescriptionType === filters.prescriptionType
-          : true;
-        const matchesFrameCollection = filters.frameCollection
-          ? item.frameCollection === filters.frameCollection
-          : true;
-
-        return (
-          matchesSearch &&
-          matchesModel &&
-          matchesBrand &&
-          matchesFrameType &&
-          matchesFrameShape &&
-          matchesGender &&
-          matchesFrameMaterial &&
-          matchesFrameColor &&
-          matchesFrameSize &&
-          matchesPrescriptionType &&
-          matchesFrameCollection
+  // Fetch products
+  const fetchProducts = useMemo(
+    () =>
+      debounce(async (model, filters, page) => {
+        setLoading(true);
+        const response = await productViewService.getProducts(
+          model,
+          filters,
+          page
         );
-      });
-    },
+        if (response.success) {
+          setFilteredData(response.data);
+          setError(null);
+        } else {
+          setError(response.message);
+          setFilteredData([]);
+        }
+        setLoading(false);
+      }, 200),
     []
   );
 
-  // Apply filters with debounce
+  // Initial fetch and filter changes
   useEffect(() => {
-    const debouncedFilter = debounce(() => {
-      setFilteredData(filterProducts(products, filters));
-    }, 200);
-    debouncedFilter();
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [filters, products, filterProducts]);
+    const model = filters.model || "eyeGlasses";
+    fetchProducts(model, filters, page);
+    return () => clearTimeout(fetchProducts.timeout);
+  }, [filters, page, fetchProducts]);
 
-  const tableData = filteredData || products;
+  // Fetch photos for a single product
+  const handleFetchSinglePhoto = async (product) => {
+    setIsFetchingPhotos(true);
+    setPhotoFetchProgress(0);
+    setCompletedCount(0);
+
+    const response = await productViewService.fetchAndUpdateProductPhotos(
+      product._id,
+      product.oldBarcode
+    );
+
+    if (response.success) {
+      toast.success("Photo fetched and Updated.");
+      setFilteredData((prev) =>
+        prev.map((item) =>
+          item._id === product._id
+            ? { ...item, photos: response.data.photos }
+            : item
+        )
+      );
+    } else {
+      setError(response.message);
+    }
+
+    setIsFetchingPhotos(false);
+    setPhotoFetchProgress(100);
+    setCompletedCount(1);
+    const model = filters.model || "eyeGlasses";
+    fetchProducts(model, filters, page);
+  };
+
+  // Fetch photos for all products
+  const handleFetchAllPhotos = async () => {
+    setIsFetchingPhotos(true);
+    setPhotoFetchProgress(0);
+    setCompletedCount(0);
+
+    const totalProducts = filteredData.length;
+    let completed = 0;
+
+    for (const product of filteredData) {
+      const response = await productViewService.fetchAndUpdateProductPhotos(
+        product._id,
+        product.oldBarcode
+      );
+
+      if (response.success) {
+        setFilteredData((prev) =>
+          prev.map((item) =>
+            item._id === product._id
+              ? { ...item, photos: response.data.photos }
+              : item
+          )
+        );
+      }
+
+      completed += 1;
+      setCompletedCount(completed);
+      setPhotoFetchProgress((completed / totalProducts) * 100);
+    }
+
+    setIsFetchingPhotos(false);
+    toast.success("Photos fetched and Updated.");
+    const model = filters.model || "eyeGlasses";
+    fetchProducts(model, filters, page);
+  };
+  const handleDelete = async (productId) => {
+    // Show confirmation dialog
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this product (ID: ${productId})?`
+    );
+    const productModel = filters.model || "eyeGlasses";
+    if (confirmDelete) {
+      try {
+        const response = await productViewService.deleteProductById(
+          productModel,
+          productId
+        );
+        const model = filters.model || "eyeGlasses";
+        fetchProducts(model, filters, page);
+
+        if (response) {
+          toast.success(response?.message || "Product deleted successfully");
+        }
+      } catch (error) {
+        toast.error("An error occurred while deleting the product");
+      }
+    }
+  };
+  // Handle View More click
+  const handleViewMoreImages = (photos) => {
+    const fullImageUrls = photos.map(
+      (photo) => `${defalutImageBasePath}${photo}`
+    );
+    setSelectedImages(fullImageUrls);
+    setShowImageModal(true);
+  };
 
   // Table columns
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "_id",
         header: "SRNO",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
@@ -262,20 +176,38 @@ function ProductTable({ filters }) {
         header: "Photo",
         cell: ({ getValue }) => {
           const photos = getValue();
-          return photos.length > 0 ? (
-            <img
-              src={photos[0]}
-              alt="Product"
-              className="img-fluid rounded"
-              style={{ width: "50px", height: "50px" }}
-            />
-          ) : (
-            <div>-</div>
+          return (
+            <div className="text-center">
+              {photos.length > 0 ? (
+                <>
+                  <img
+                    src={`https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/${photos[0]}`}
+                    alt=""
+                    className="img-fluid rounded"
+                    style={{ width: "50px", height: "50px" }}
+                  />
+                  <div>
+                    <a
+                      href="#"
+                      className="text-primary text-decoration-underline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleViewMoreImages(photos);
+                      }}
+                    >
+                      View More
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div>-</div>
+              )}
+            </div>
           );
         },
       },
       {
-        accessorKey: "barcode",
+        accessorKey: "newBarcode",
         header: "Barcode",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
@@ -290,15 +222,21 @@ function ProductTable({ filters }) {
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "mrp",
+        accessorKey: "MRP",
         header: "MRP",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "photos",
         header: "Photos",
-        cell: ({ getValue }) => (
-          <button className="btn btn-primary btn-sm">Fetch Photos</button>
+        cell: ({ row }) => (
+          <button
+            className="btn custom-button-bgcolor btn-sm"
+            onClick={() => handleFetchSinglePhoto(row.original)}
+            disabled={isFetchingPhotos}
+          >
+            Fetch Photos
+          </button>
         ),
       },
       {
@@ -336,7 +274,11 @@ function ProductTable({ filters }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               style={{ cursor: "pointer" }}
-              onClick={() => navigate(`/products/edit/${row.original.id}`)}
+              onClick={() =>
+                navigate(
+                  `/products/edit/${row.original._id}/${row.original?.__t}`
+                )
+              }
             >
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
             </svg>
@@ -351,7 +293,7 @@ function ProductTable({ filters }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               style={{ cursor: "pointer" }}
-              onClick={() => alert("Delete: " + row.original.id)}
+              onClick={() => handleDelete(row.original._id)}
             >
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -365,40 +307,29 @@ function ProductTable({ filters }) {
 
   // Tanstack table setup
   const table = useReactTable({
-    data: tableData,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 100,
       },
     },
   });
 
   // Export to Excel
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      tableData.map((item) => ({
-        SRNO: item.id,
-        Barcode: item.barcode,
-        SKU: item.sku,
-        CostPrice: item.costPrice,
-        MRP: item.mrp,
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-    XLSX.writeFile(workbook, "Products.xlsx");
+    navigate("/products/exportProducts");
   };
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
-  const totalRows = tableData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
+  const totalRows = filteredData.length;
 
   return (
     <div className="card shadow-none border">
@@ -406,77 +337,122 @@ function ProductTable({ filters }) {
         <div className="d-flex flex-column flex-md-row gap-3 mb-4">
           <h5>{filters?.model || "eyeGlasses"}</h5>
           <button
-            className="btn btn-primary ms-md-auto"
+            className="btn custom-button-bgcolor ms-md-auto"
             onClick={exportToExcel}
+            disabled={isFetchingPhotos}
           >
             Export Products
           </button>
-          <button className="btn btn-primary">Fetch Photos</button>
+          <button
+            className="btn custom-button-bgcolor"
+            onClick={handleFetchAllPhotos}
+            disabled={isFetchingPhotos}
+          >
+            Fetch Photos
+          </button>
         </div>
-        <div className="table-responsive px-2">
-          <table className="table table-sm ">
-            <thead className="text-xs text-uppercase text-muted bg-light">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => (
-                    <th
-                      key={index}
-                      className="p-3 text-left custom-perchase-th"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="text-sm">
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell, index) => (
-                    <td key={index} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-3">
-          <div className="text-sm text-muted mb-3 mb-sm-0">
-            Showing <span className="fw-medium">{startRow}</span> to{" "}
-            <span className="fw-medium">{endRow}</span> of{" "}
-            <span className="fw-medium">{totalRows}</span> results
+        {isFetchingPhotos ? (
+          <div className="card shadow-sm p-4 text-center">
+            <h5>Fetching Photos</h5>
+            <div className="progress mb-3">
+              <div
+                className="progress-bar"
+                role="progressbar"
+                style={{ width: `${photoFetchProgress}%` }}
+                aria-valuenow={photoFetchProgress}
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                {Math.round(photoFetchProgress)}%
+              </div>
+            </div>
+            <p>
+              Completed: {completedCount} / {filteredData.length}
+            </p>
           </div>
-          <div className="btn-group">
-            <button
-              className="btn btn-outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </button>
-            <button
-              className="btn btn-outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        ) : (
+          <>
+            {loading && <div>Loading products...</div>}
+            {error && <div className="alert alert-danger">{error}</div>}
+            {!loading && !error && (
+              <div className="table-responsive px-2">
+                <table className="table table-sm">
+                  <thead className="text-xs text-uppercase text-muted bg-light">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header, index) => (
+                          <th
+                            key={index}
+                            className="p-3 text-left custom-perchase-th"
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="text-sm">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id}>
+                        {row.getVisibleCells().map((cell, index) => (
+                          <td key={index} className="p-3">
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-3">
+              <div className="text-sm text-muted mb-3 mb-sm-0">
+                Showing <span className="fw-medium">{startRow}</span> to{" "}
+                <span className="fw-medium">{endRow}</span> of{" "}
+                <span className="fw-medium">{totalRows}</span> results
+              </div>
+              <div className="btn-group">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    table.previousPage();
+                    setPage((prev) => Math.max(prev - 1, 1));
+                  }}
+                  disabled={!table.getCanPreviousPage() || isFetchingPhotos}
+                >
+                  Previous
+                </button>
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    table.nextPage();
+                    setPage((prev) => prev + 1);
+                  }}
+                  disabled={!table.getCanNextPage() || isFetchingPhotos}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         <ProductDetailsModal
           show={showModal}
           onHide={() => setShowModal(false)}
           product={selectedProduct}
+        />
+        <ImageSliderModalProduct
+          show={showImageModal}
+          onHide={() => setShowImageModal(false)}
+          images={selectedImages}
         />
       </div>
     </div>

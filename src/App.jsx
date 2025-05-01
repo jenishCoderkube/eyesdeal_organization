@@ -9,30 +9,27 @@ import "./assets/css/style.css";
 import Header from "./components/Header/Header";
 import Error from "./pages/404/Error/Error";
 import Login from "./pages/Auth/Login/Login";
-import { FolderTreeProvider } from "./pages/MediaLibrary/FolderTreeContext";
 import routes from "./routes/routes";
 const App = () => {
   const { pathname } = useLocation();
 
   return (
     <>
-      <FolderTreeProvider>
-        {pathname !== "/login" &&
-          pathname !== "/register" &&
-          pathname !== "/404" && <Header />}
+      {pathname !== "/login" &&
+        pathname !== "/register" &&
+        pathname !== "/404" && <Header />}
 
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-          {routes.map(({ path, element, title }) => (
-            <Route key={title} path={path} element={element} />
-          ))}
-          <Route path="/404" element={<Error />} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          {/* <Route path="/" element={<Navigate to="/media-library" replace />} /> */}
-        </Routes>
-      </FolderTreeProvider>
+        {routes.map(({ path, element, title }) => (
+          <Route key={title} path={path} element={element} />
+        ))}
+        <Route path="/404" element={<Error />} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* <Route path="/" element={<Navigate to="/media-library" replace />} /> */}
+      </Routes>
     </>
   );
 };

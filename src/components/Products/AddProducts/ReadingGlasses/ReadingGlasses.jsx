@@ -6,8 +6,8 @@ import AssetSelector from "../EyeGlasses/AssetSelector";
 import { productAttributeService } from "../../../../services/productAttributeService";
 import { toast } from "react-toastify";
 import { productService } from "../../../../services/productService";
-import { uploadImage } from "../../../../utils/constants"; // Adjust the path as necessary
-
+import { defalutImageBasePath, uploadImage } from "../../../../utils/constants"; // Adjust the path as necessary
+import { IoClose } from "react-icons/io5";
 // Validation schema using Yup
 const validationSchema = Yup.object({
   model: Yup.string().required("Model is required"),
@@ -190,13 +190,20 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
   });
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    initialData?.photos
-      ? Array.isArray(initialData.photos)
-        ? initialData.photos[0]
-        : initialData.photos
-      : null
-  );
+  const [selectedImage, setSelectedImage] = useState(null);
+  useEffect(() => {
+    if (mode !== "add") {
+      setSelectedImage(
+        initialData?.photos
+          ? Array.isArray(initialData.photos)
+            ? initialData.photos
+            : initialData.photos
+          : null
+      );
+    } else {
+      setSelectedImage([]);
+    }
+  }, [mode]);
 
   const [loading, setLoading] = useState(false);
 
@@ -228,71 +235,139 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         const attributeData = {};
 
         // Fetching attributes from the respective endpoints
-        const brandResponse = await productAttributeService.getAttributes("brand");
-        const unitResponse = await productAttributeService.getAttributes("unit");
-        const lensTechnologyResponse = await productAttributeService.getAttributes("lensTechnology");
-        const readingPowerResponse = await productAttributeService.getAttributes("readingPower");
-        const frameTypeResponse = await productAttributeService.getAttributes("frameType");
-        const frameShapeResponse = await productAttributeService.getAttributes("frameShape");
-        const frameStyleResponse = await productAttributeService.getAttributes("frameStyle");
-        const templeMaterialResponse = await productAttributeService.getAttributes("material"); // Using /master/material
-        const frameMaterialResponse = await productAttributeService.getAttributes("material"); // Using /master/material
-        const frameColorResponse = await productAttributeService.getAttributes("color"); // Using /master/color
-        const templeColorResponse = await productAttributeService.getAttributes("color"); // Using /master/color
-        const prescriptionTypeResponse = await productAttributeService.getAttributes("prescriptionType");
-        const frameCollectionResponse = await productAttributeService.getAttributes("collection");
-        const frameSizeResponse = await productAttributeService.getAttributes("frameSize");
-        const featuresResponse = await productAttributeService.getAttributes("feature");
-        const genderResponse = await productAttributeService.getAttributes("gender");
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
+        const lensTechnologyResponse =
+          await productAttributeService.getAttributes("lensTechnology");
+        const readingPowerResponse =
+          await productAttributeService.getAttributes("readingPower");
+        const frameTypeResponse = await productAttributeService.getAttributes(
+          "frameType"
+        );
+        const frameShapeResponse = await productAttributeService.getAttributes(
+          "frameShape"
+        );
+        const frameStyleResponse = await productAttributeService.getAttributes(
+          "frameStyle"
+        );
+        const templeMaterialResponse =
+          await productAttributeService.getAttributes("material"); // Using /master/material
+        const frameMaterialResponse =
+          await productAttributeService.getAttributes("material"); // Using /master/material
+        const frameColorResponse = await productAttributeService.getAttributes(
+          "color"
+        ); // Using /master/color
+        const templeColorResponse = await productAttributeService.getAttributes(
+          "color"
+        ); // Using /master/color
+        const prescriptionTypeResponse =
+          await productAttributeService.getAttributes("prescriptionType");
+        const frameCollectionResponse =
+          await productAttributeService.getAttributes("collection");
+        const frameSizeResponse = await productAttributeService.getAttributes(
+          "frameSize"
+        );
+        const featuresResponse = await productAttributeService.getAttributes(
+          "feature"
+        );
+        const genderResponse = await productAttributeService.getAttributes(
+          "gender"
+        );
 
         // Mapping responses to state
         if (brandResponse.success) {
-          attributeData.brand = brandResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.brand = brandResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (unitResponse.success) {
-          attributeData.unit = unitResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.unit = unitResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (lensTechnologyResponse.success) {
-          attributeData.lensTechnology = lensTechnologyResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.lensTechnology = lensTechnologyResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (readingPowerResponse.success) {
-          attributeData.readingPower = readingPowerResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.readingPower = readingPowerResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (frameTypeResponse.success) {
-          attributeData.frameType = frameTypeResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameType = frameTypeResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (frameShapeResponse.success) {
-          attributeData.frameShape = frameShapeResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameShape = frameShapeResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (frameStyleResponse.success) {
-          attributeData.frameStyle = frameStyleResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameStyle = frameStyleResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (templeMaterialResponse.success) {
-          attributeData.templeMaterial = templeMaterialResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.templeMaterial = templeMaterialResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (frameMaterialResponse.success) {
-          attributeData.frameMaterial = frameMaterialResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameMaterial = frameMaterialResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (frameColorResponse.success) {
-          attributeData.frameColor = frameColorResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameColor = frameColorResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (templeColorResponse.success) {
-          attributeData.templeColor = templeColorResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.templeColor = templeColorResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (prescriptionTypeResponse.success) {
-          attributeData.prescriptionType = prescriptionTypeResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.prescriptionType = prescriptionTypeResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (frameCollectionResponse.success) {
-          attributeData.frameCollection = frameCollectionResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameCollection = frameCollectionResponse.data.map(
+            (item) => ({ value: item._id, label: item.name })
+          );
         }
         if (frameSizeResponse.success) {
-          attributeData.frameSize = frameSizeResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.frameSize = frameSizeResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (featuresResponse.success) {
-          attributeData.features = featuresResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.features = featuresResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
         if (genderResponse.success) {
-          attributeData.gender = genderResponse.data.map(item => ({ value: item._id, label: item.name }));
+          attributeData.gender = genderResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
         }
 
         // Set attribute options
@@ -464,25 +539,40 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
       // Prepare the payload
       const payload = {
         ...values,
-        features: Array.isArray(values.features) ? values.features : [values.features],
-        photos: Array.isArray(values.photos) ? values.photos : [values.photos].filter(Boolean)
+        features: Array.isArray(values.features)
+          ? values.features
+          : [values.features],
+        photos: Array.isArray(values.photos)
+          ? values.photos
+          : [values.photos].filter(Boolean),
       };
 
       // Call the appropriate API based on mode
       let response;
       if (mode === "edit") {
         console.log("Editing product ID:", initialData?.id);
-        response = await productService.updateEyeGlasses(initialData?.id, payload);
+        response = await productService.updateEyeGlasses(
+          initialData?.id,
+          payload
+        );
       } else {
         response = await productService.addProduct(payload, "readingGlasses");
       }
 
       if (response.success) {
-        toast.success(`Product ${mode === "edit" ? "updated" : "added"} successfully`);
+        toast.success(
+          `Product ${mode === "edit" ? "updated" : "added"} successfully`
+        );
         resetForm();
-        console.log(`${mode === "edit" ? "Update" : "Add"} response:`, response.data);
+        console.log(
+          `${mode === "edit" ? "Update" : "Add"} response:`,
+          response.data
+        );
       } else {
-        toast.error(response.message || `Failed to ${mode === "edit" ? "update" : "add"} product`);
+        toast.error(
+          response.message ||
+            `Failed to ${mode === "edit" ? "update" : "add"} product`
+        );
       }
     } catch (error) {
       console.error("Error in product operation:", error);
@@ -874,9 +964,14 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                     options={attributeOptions.features}
                     isMulti
                     onChange={(options) =>
-                      setFieldValue("features", options ? options.map(option => option.value) : [])
+                      setFieldValue(
+                        "features",
+                        options ? options.map((option) => option.value) : []
+                      )
                     }
-                    value={attributeOptions.features.filter(option => values.features.includes(option.value))}
+                    value={attributeOptions.features.filter((option) =>
+                      values.features.includes(option.value)
+                    )}
                     placeholder="Select..."
                     classNamePrefix="react-select"
                   />
@@ -1378,16 +1473,40 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
                   Select Photos
                 </button>
               </div>
-              {selectedImage && (
-                <div className="col-12 mt-3">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-                </div>
-              )}
+              <div>
+                {selectedImage && selectedImage.length > 0 ? (
+                  <div className="row mt-4 g-3">
+                    {selectedImage.map((url, index) => (
+                      <div className="col-12 col-md-6 col-lg-3" key={index}>
+                        <div className="position-relative border text-center border-black rounded p-2">
+                          <img
+                            src={`${defalutImageBasePath}${url}`}
+                            alt={`Product ${index + 1}`}
+                            className="img-fluid rounded w-50 h-auto object-fit-cover"
+                            style={{ maxHeight: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              setSelectedImage(
+                                selectedImage.filter((_, i) => i !== index)
+                              )
+                            }
+                            aria-label="Remove image"
+                          >
+                            <IoClose size={16} className="text-dark" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">
+                    No images available.
+                  </div>
+                )}
+              </div>
             </div>
             <AssetSelector
               show={showModal}
