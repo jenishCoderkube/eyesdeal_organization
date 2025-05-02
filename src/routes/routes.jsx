@@ -60,8 +60,9 @@ import GstReport from "../pages/Reports/GstReport";
 import ProductInventoryReport from "../pages/Reports/ProductInventoryReport";
 import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
 import SubFolder from "../pages/MediaLibrary/SubFolder";
-import VendorListProcess from "../pages/Process/vendorListProcess";
+
 import ExportProducts from "../pages/Products/ExportProducts";
+import VendorListProcess from "../pages/Process/vendorListProcess";
 
 const routes = [
   {
