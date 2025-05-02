@@ -1,12 +1,11 @@
-import React from "react";
+import React from 'react'
 import VendorListCom from "../../components/Process/Vendor/VendorListCom";
-
-const VendorListProcess = () => {
+const vendorListProcess = () => {
   return (
     <div>
       <VendorListCom />
     </div>
-  );
-};
+  )
+}
 
-export default VendorListProcess;
+export default vendorListProcess
