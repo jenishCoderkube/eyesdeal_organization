@@ -1,32 +1,24 @@
-import React, { useState, useCallback, useEffect } from "react";
-import Select from "react-select";
+import React, {useState, useCallback, useEffect} from 'react';
+import Select from 'react-select';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from "@tanstack/react-table";
-import "bootstrap/dist/css/bootstrap.min.css";
-import debounce from "lodash/debounce";
-import { inventoryService } from "../../../services/inventoryService";
-import { toast } from "react-toastify";
+} from '@tanstack/react-table';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import debounce from 'lodash/debounce';
+import {inventoryService} from '../../../services/inventoryService';
+import {toast} from 'react-toastify';
 
 const StockAdjustmentCom = () => {
   const [to, setTo] = useState(null);
+  const [storeData, setStoreData] = useState([]);
 
   const [product, setProduct] = useState(null);
 
   const [productData, setProductData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [storeData, setStoreData] = useState([]);
   const [inventory, setInventory] = useState([]);
-  console.log("inventory", inventory);
-
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log({ from, to, product, tableData });
-    // Add API call or further logic here
-  };
 
   useEffect(() => {
     getStores();
@@ -43,7 +35,7 @@ const StockAdjustmentCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -59,7 +51,7 @@ const StockAdjustmentCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error(' error:', error);
     } finally {
       setLoading(false);
     }
@@ -71,7 +63,7 @@ const StockAdjustmentCom = () => {
         getProduct(value);
       }
     }, 1000),
-    [] // empty dependency to persist across re-renders
+    [], // empty dependency to persist across re-renders
   );
 
   const productOptions = productData?.docs?.map((vendor) => ({
@@ -79,16 +71,18 @@ const StockAdjustmentCom = () => {
     label: `${vendor.oldBarcode} ${vendor.sku}`,
   }));
 
+  console.log('productOptions', product);
+
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
   }));
 
   useEffect(() => {
-    if (to || product) {
+    if (product) {
       getInventoryData();
     }
-  }, [to, product]);
+  }, [product]);
 
   const getInventoryData = async () => {
     setLoading(true);
@@ -96,7 +90,7 @@ const StockAdjustmentCom = () => {
     try {
       const response = await inventoryService.getStockAdjustment(
         product?.value,
-        to?.value
+        to?.value,
       );
       if (response.success) {
         setInventory(response?.data?.data?.docs);
@@ -104,16 +98,18 @@ const StockAdjustmentCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("error:", error);
+      console.error('error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const reasonOptions = [
-    { value: "Damaged", label: "Damaged" },
-    { value: "Lost", label: "Lost" },
-    { value: "Returned", label: "Returned" },
+    {value: 'Product Damage ', label: 'Product Damage '},
+    {value: 'Product Defective ', label: 'Product Defective '},
+    {value: 'Product Theft/Loss', label: 'Product Theft/Loss'},
+    {value: 'Product Less then Actual', label: 'Product Less then Actual'},
+    {value: 'Product More then Actual', label: 'Product More then Actual'},
   ];
 
   useEffect(() => {
@@ -134,14 +130,14 @@ const StockAdjustmentCom = () => {
       ...item,
       quantityToUpdate: 0,
       reason: null,
-    }))
+    })),
   );
 
-  console.log("products", products);
+  console.log('products', products);
 
   const handleQuantityChange = (index, value) => {
     const updatedProducts = [...products];
-    updatedProducts[index].quantityToUpdate = parseInt(value, 10) || 0;
+    updatedProducts[index].quantityToUpdate = parseInt(value, 10);
     setProducts(updatedProducts);
   };
 
@@ -154,6 +150,59 @@ const StockAdjustmentCom = () => {
   const handleRemoveProduct = (index) => {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   };
+  function generateAdjustmentId() {
+    const getRandomDigit = () => Math.floor(Math.random() * 10).toString();
+    const getRandomLetter = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  
+    return [
+      getRandomDigit(), getRandomDigit(),       // First two digits
+      getRandomLetter(), getRandomLetter(),     // Next two letters
+      getRandomDigit(), getRandomDigit(),       // Next two digits
+      getRandomLetter(), getRandomLetter()      // Final two letters
+    ].join('');
+  }
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+
+
+    const data = {
+      store: to?.value,
+      product: product?.value,
+      newQuantity: products[0].quantity,
+      adjustmentId:generateAdjustmentId(),
+      stock: products[0]?.quantityToUpdate,
+      reason: products[0].reason.value,
+    };
+
+
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.addStockUpdate(data);
+      if (response.success) {
+        toast.success(response.data?.message);
+        setTo(null)
+        setStoreData([])
+        setInventory([])
+        setProductData([])
+        setProducts([])
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error('error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+
+  
 
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
@@ -183,8 +232,7 @@ const StockAdjustmentCom = () => {
                 <div className="">
                   <label
                     htmlFor="product"
-                    className="form-label font-weight-500"
-                  >
+                    className="form-label font-weight-500">
                     Product
                   </label>
                   <Select
@@ -198,9 +246,9 @@ const StockAdjustmentCom = () => {
                       debouncedGetProduct(value);
                     }}
                     isLoading={loading}
-                    loadingMessage={() => "Loading..."}
-                    noOptionsMessage={({ inputValue }) =>
-                      inputValue ? "No products found" : "Type to search"
+                    loadingMessage={() => 'Loading...'}
+                    noOptionsMessage={({inputValue}) =>
+                      inputValue ? 'No products found' : 'Type to search'
                     }
                   />
                 </div>
@@ -223,7 +271,7 @@ const StockAdjustmentCom = () => {
                         products.map((item, index) => (
                           <tr key={item.product?._id || index}>
                             <td className="">
-                              {item.product?.oldBarcode || "-"}
+                              {item.product?.oldBarcode || '-'}
                             </td>
                             <td className="">{item.quantity}</td>
                             <td className="">
@@ -231,17 +279,7 @@ const StockAdjustmentCom = () => {
                                 type="number"
                                 value={item.quantityToUpdate}
                                 onChange={(e) =>
-                                  setProducts((prev) =>
-                                    prev.map((p, i) =>
-                                      i === index
-                                        ? {
-                                            ...p,
-                                            quantityToUpdate:
-                                              parseInt(e.target.value) || 0,
-                                          }
-                                        : p
-                                    )
-                                  )
+                                  handleQuantityChange(index, e.target.value)
                                 }
                                 className="form-control"
                               />
@@ -251,25 +289,18 @@ const StockAdjustmentCom = () => {
                                 options={reasonOptions}
                                 value={item.reason}
                                 onChange={(selected) =>
-                                  setProducts((prev) =>
-                                    prev.map((p, i) =>
-                                      i === index
-                                        ? { ...p, reason: selected }
-                                        : p
-                                    )
-                                  )
+                                  handleReasonChange(index, selected)
                                 }
                                 placeholder="Select..."
                                 className="w-100"
                               />
                             </td>
-                            <td className="">{item.product?.sku || "-"}</td>
+                            <td className="">{item.product?.sku || '-'}</td>
                             <td className=" align-middle text-center">
                               <button
                                 type="button"
                                 className="btn btn-sm btn-danger"
-                                onClick={() => handleRemoveProduct(index)}
-                              >
+                                onClick={() => handleRemoveProduct(index)}>
                                 Remove
                               </button>
                             </td>
@@ -279,8 +310,7 @@ const StockAdjustmentCom = () => {
                         <tr>
                           <td
                             colSpan="6"
-                            className="text-center add_power_title p-4 text-gray-500"
-                          >
+                            className="text-center add_power_title p-4 text-gray-500">
                             No Data Found
                           </td>
                         </tr>
@@ -290,10 +320,10 @@ const StockAdjustmentCom = () => {
                 </div>
                 <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
                   <div className="text-sm text-muted mb-3 mb-sm-0">
-                    Showing <span className="fw-medium">1</span> to{" "}
-                    <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
-                    of{" "}
-                    <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+                    Showing <span className="fw-medium">{products?.length}</span> to{' '}
+                    <span className="fw-medium">{products?.length}</span>{' '}
+                    of{' '}
+                    <span className="fw-medium">{products?.length}</span>{' '}
                     results
                   </div>
                   <div className="btn-group">
