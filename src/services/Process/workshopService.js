@@ -44,6 +44,14 @@ const buildSalesParams = (filters) => {
     params.append("populate", "true");
   }
 
+  // Pagination parameters
+  if (filters.page) {
+    params.append("page", filters.page);
+  }
+  if (filters.limit) {
+    params.append("limit", filters.limit);
+  }
+
   return params.toString();
 };
 
@@ -74,6 +82,7 @@ const buildCountParams = (filters) => {
 
   return params.toString();
 };
+
 export const workshopService = {
   getStores: async () => {
     try {
@@ -93,7 +102,7 @@ export const workshopService = {
   getSales: async (filters) => {
     try {
       const params = buildSalesParams(filters);
-      console.log("getOrders params:", params, filters);
+      console.log("getOrders params:", params, filters); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.ORDERS}?${params}`);
       return {
         success: true,
@@ -110,7 +119,7 @@ export const workshopService = {
   getOrderCount: async (filters) => {
     try {
       const params = buildCountParams(filters);
-      console.log("getOrderCount params:", filters);
+      console.log("getOrderCount params:", filters); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.ORDER_COUNT}?${params}`);
       return {
         success: true,
@@ -130,7 +139,7 @@ export const workshopService = {
         type: "lens_vendor",
         ...filters,
       }).toString();
-      console.log("getVendors params:", params);
+      console.log("getVendors params:", params); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.VENDOR}?${params}`);
       return {
         success: true,

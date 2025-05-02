@@ -275,7 +275,6 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
       </Modal.Header>
       <Modal.Body className="p-4">
         <Form onSubmit={handleSubmit}>
-          <p className="mb-4">{selectedRows.length} orders selected</p>
           <p className="mb-4">Previous Vendors</p>
           <div className="row mb-3 align-items-center">
             <div className="col">

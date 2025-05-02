@@ -1,14 +1,6 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "react-datepicker/dist/react-datepicker.css";
 import Select from "react-select";
-import DatePicker from "react-datepicker";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -18,7 +10,7 @@ import InProcessTable from "./InProcessTable";
 import InFittingTable from "./InFittingTable";
 import ReadyTable from "./ReadyTable";
 
-// Debounce utility to prevent rapid API calls
+// Debounce utility
 const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {
@@ -30,7 +22,17 @@ const debounce = (func, delay) => {
 function WorkshopProcessCom() {
   const [activeStatus, setActiveStatus] = useState("New Order");
   const [storeData, setStoreData] = useState([]);
-  const [orders, setOrders] = useState([]); // Changed from tableData/productTableData
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({
+    totalDocs: 0,
+    limit: 100,
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+    prevPage: null,
+    nextPage: null,
+  });
   const [statusCounts, setStatusCounts] = useState({
     newOrder: 0,
     inProcess: 0,
@@ -43,40 +45,32 @@ function WorkshopProcessCom() {
   const isInitialLoad = useRef(true);
   const currentFilters = useRef({
     stores: [],
-    startDate: null,
-    endDate: null,
     search: "",
     status: "inWorkshop",
+    page: 1,
+    limit: 100,
   });
   const lastSalesCallParams = useRef(null);
   const lastCountsCallParams = useRef(null);
 
-  // Calculate default dates: today and one month ago
-  const today = new Date();
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(today.getMonth() - 1);
-
   const formik = useFormik({
     initialValues: {
-      startDate: oneMonthAgo,
-      endDate: today,
       stores: [],
       search: "",
     },
     validationSchema: Yup.object({}),
     onSubmit: (values) => {
       const newFilters = {
+        ...currentFilters.current,
         stores: values.stores.length
           ? values.stores.map((store) => store.value)
           : [],
-        startDate: values.startDate,
-        endDate: values.endDate,
-        search: values.search,
-        status: getStatusForTab(activeStatus),
+        search: "", // Explicitly exclude search on form submit
+        page: 1, // Reset to page 1
       };
       isInitialLoad.current = false;
       currentFilters.current = newFilters;
-      fetchSalesAndCounts(newFilters, true); // Force refresh on form submit
+      fetchSalesAndCounts(newFilters, true);
     },
   });
 
@@ -85,7 +79,7 @@ function WorkshopProcessCom() {
     try {
       const response = await workshopService.getStores();
       if (response.success) {
-        setStoreData(response.data.data);
+        setStoreData(response.data.data || []);
       } else {
         toast.error(response.message);
       }
@@ -112,6 +106,16 @@ function WorkshopProcessCom() {
 
   const clearOrders = useCallback(() => {
     setOrders([]);
+    setPagination({
+      totalDocs: 0,
+      limit: 100,
+      page: 1,
+      totalPages: 1,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    });
     lastSalesCallParams.current = null;
   }, []);
 
@@ -120,12 +124,15 @@ function WorkshopProcessCom() {
       stores: filters.stores,
       status: filters.status,
       search: filters.search,
-      startDate: filters.startDate?.toISOString(),
-      endDate: filters.endDate?.toISOString(),
+      page: filters.page,
+      limit: filters.limit,
       populate: true,
     });
 
-    // Removed duplicate check to ensure API call on tab change
+    if (!forceRefresh && lastSalesCallParams.current === callKey) {
+      return;
+    }
+
     setLoading(true);
     lastSalesCallParams.current = callKey;
 
@@ -133,8 +140,8 @@ function WorkshopProcessCom() {
       const params = {
         status: filters.status,
         search: filters.search || "",
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        page: filters.page,
+        limit: filters.limit,
         populate: true,
       };
       if (filters.stores.length) {
@@ -143,14 +150,48 @@ function WorkshopProcessCom() {
 
       const response = await workshopService.getSales(params);
       if (response.success) {
-        setOrders(response.data.data.docs); // Pass raw docs directly
+        // Ensure orders is an array
+        const newOrders = Array.isArray(response.data.data.docs)
+          ? response.data.data.docs
+          : [];
+        setOrders(newOrders);
+        setPagination({
+          totalDocs: response.data.data.totalDocs || 0,
+          limit: response.data.data.limit || 100,
+          page: response.data.data.page || 1,
+          totalPages: response.data.data.totalPages || 1,
+          hasPrevPage: response.data.data.hasPrevPage || false,
+          hasNextPage: response.data.data.hasNextPage || false,
+          prevPage: response.data.data.prevPage || null,
+          nextPage: response.data.data.nextPage || null,
+        });
       } else {
         toast.error(response.message);
         setOrders([]);
+        setPagination({
+          totalDocs: 0,
+          limit: 100,
+          page: 1,
+          totalPages: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        });
       }
     } catch (error) {
       setOrders([]);
       toast.error("Error fetching orders data");
+      setPagination({
+        totalDocs: 0,
+        limit: 100,
+        page: 1,
+        totalPages: 1,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      });
     } finally {
       setLoading(false);
     }
@@ -159,11 +200,9 @@ function WorkshopProcessCom() {
   const fetchCounts = useCallback(async (filters, forceRefresh = false) => {
     const callKey = JSON.stringify({
       stores: filters.stores,
-      search: filters.search,
     });
 
     if (!forceRefresh && lastCountsCallParams.current === callKey) {
-      // console.log("Skipping counts API call due to identical parameters");
       return;
     }
 
@@ -171,8 +210,6 @@ function WorkshopProcessCom() {
 
     try {
       const params = {
-        search: filters.search || "",
-
         statuses: ["inWorkshop", "inLab", "inFitting", "ready"],
       };
       if (filters.stores.length) {
@@ -180,15 +217,25 @@ function WorkshopProcessCom() {
       }
 
       const response = await workshopService.getOrderCount(params);
-      if (response.success && response.data.data.docs[0]) {
-        const orderCounts = response.data.data.docs[0];
-        setStatusCounts((prev) => ({
-          ...prev,
-          newOrder: orderCounts.inWorkshopCount || 0,
-          inProcess: orderCounts.inLabCount || 0,
-          inFitting: orderCounts.inFittingCount || 0,
-          ready: orderCounts.readyCount || 0,
-        }));
+      if (response.success) {
+        if (response.data.data.docs.length > 0) {
+          const orderCounts = response.data.data.docs[0];
+          setStatusCounts((prev) => ({
+            ...prev,
+            newOrder: orderCounts.inWorkshopCount || 0,
+            inProcess: orderCounts.inLabCount || 0,
+            inFitting: orderCounts.inFittingCount || 0,
+            ready: orderCounts.readyCount || 0,
+          }));
+        } else {
+          setStatusCounts((prev) => ({
+            ...prev,
+            newOrder: 0,
+            inProcess: 0,
+            inFitting: 0,
+            ready: 0,
+          }));
+        }
       } else {
         toast.error(response.message);
       }
@@ -198,7 +245,7 @@ function WorkshopProcessCom() {
   }, []);
 
   const fetchSalesAndCounts = useCallback(
-    debounce((filters, forceRefresh = false) => {
+    (filters, forceRefresh = false) => {
       setTabLoading(true);
       Promise.all([
         fetchSalesData(filters, forceRefresh),
@@ -206,11 +253,44 @@ function WorkshopProcessCom() {
       ]).finally(() => {
         setTabLoading(false);
       });
+    },
+    [fetchSalesData, fetchCounts]
+  );
+
+  // Debounced search handler
+  const debouncedSearch = useCallback(
+    debounce((searchValue) => {
+      const newFilters = {
+        ...currentFilters.current,
+        search: searchValue,
+        page: 1, // Reset to page 1 on search
+      };
+      currentFilters.current = newFilters;
+      // Fetch sales with search, counts without search
+      fetchSalesData(newFilters, true);
+      fetchCounts({ ...newFilters, search: "" }, true);
     }, 300),
     [fetchSalesData, fetchCounts]
   );
 
-  // Handle initial page load (page refresh)
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const searchValue = e.target.value;
+    formik.setFieldValue("search", searchValue);
+    debouncedSearch(searchValue);
+  };
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    const newFilters = {
+      ...currentFilters.current,
+      page,
+    };
+    currentFilters.current = newFilters;
+    fetchSalesData(newFilters);
+  };
+
+  // Handle initial page load
   useEffect(() => {
     clearOrders();
     setTabLoading(true);
@@ -219,10 +299,10 @@ function WorkshopProcessCom() {
       getStores();
       const initialFilters = {
         stores: [],
-        startDate: formik.values.startDate,
-        endDate: formik.values.endDate,
-        search: formik.values.search,
+        search: "",
         status: "inWorkshop",
+        page: 1,
+        limit: 100,
       };
       currentFilters.current = initialFilters;
       fetchSalesAndCounts(initialFilters);
@@ -237,6 +317,7 @@ function WorkshopProcessCom() {
       const filters = {
         ...currentFilters.current,
         status: getStatusForTab(activeStatus),
+        page: 1, // Reset to page 1 on tab change
       };
       currentFilters.current = filters;
       fetchSalesData(filters);
@@ -259,48 +340,8 @@ function WorkshopProcessCom() {
     <div className="mt-4 px-3">
       <form onSubmit={formik.handleSubmit}>
         <div className="row g-1 align-items-end">
-          <div className="col-12 col-md-6 d-flex flex-nowrap gap-3 align-items-end pe-3">
-            <div className="col-6 col-md-4">
-              <label htmlFor="startDate" className="form-label fw-semibold">
-                Start Date
-              </label>
-              <DatePicker
-                selected={formik.values.startDate}
-                onChange={(date) => formik.setFieldValue("startDate", date)}
-                className="form-control"
-                dateFormat="yyyy-MM-dd"
-                isClearable
-                autoComplete="off"
-              />
-            </div>
-            <div className="col-6 col-md-4">
-              <label htmlFor="endDate" className="form-label fw-semibold">
-                End Date
-              </label>
-              <DatePicker
-                selected={formik.values.endDate}
-                onChange={(date) => formik.setFieldValue("endDate", date)}
-                className="form-control"
-                dateFormat="yyyy-MM-dd"
-                isClearable
-                autoComplete="off"
-              />
-            </div>
-          </div>
           <div className="col-12 col-md-6">
             <div className="row g-3 align-items-end">
-              <div className="col-6">
-                <label className="form-label fw-semibold">Search</label>
-                <input
-                  type="text"
-                  id="search"
-                  name="search"
-                  className="form-control"
-                  placeholder="Search..."
-                  value={formik.values.search}
-                  onChange={formik.handleChange}
-                />
-              </div>
               <div className="col-6">
                 <label className="form-label fw-semibold">Stores</label>
                 <Select
@@ -317,6 +358,18 @@ function WorkshopProcessCom() {
                 {formik.touched.stores && formik.errors.stores && (
                   <div className="text-danger">{formik.errors.stores}</div>
                 )}
+              </div>
+              <div className="col-6">
+                <label className="form-label fw-semibold">Search</label>
+                <input
+                  type="text"
+                  id="search"
+                  name="search"
+                  className="form-control"
+                  placeholder="Search..."
+                  value={formik.values.search}
+                  onChange={handleSearchChange}
+                />
               </div>
             </div>
           </div>
@@ -357,6 +410,8 @@ function WorkshopProcessCom() {
           refreshSalesData={() =>
             fetchSalesAndCounts(currentFilters.current, true)
           }
+          pagination={pagination}
+          onPageChange={handlePageChange}
         />
       ) : activeStatus === "In Process" ? (
         <InProcessTable
@@ -365,6 +420,8 @@ function WorkshopProcessCom() {
           refreshSalesData={() =>
             fetchSalesAndCounts(currentFilters.current, true)
           }
+          pagination={pagination}
+          onPageChange={handlePageChange}
         />
       ) : activeStatus === "In Fitting" ? (
         <InFittingTable
@@ -373,6 +430,8 @@ function WorkshopProcessCom() {
           refreshSalesData={() =>
             fetchSalesAndCounts(currentFilters.current, true)
           }
+          pagination={pagination}
+          onPageChange={handlePageChange}
         />
       ) : activeStatus === "Ready" ? (
         <ReadyTable
@@ -381,6 +440,8 @@ function WorkshopProcessCom() {
           refreshSalesData={() =>
             fetchSalesAndCounts(currentFilters.current, true)
           }
+          pagination={pagination}
+          onPageChange={handlePageChange}
         />
       ) : (
         <></>

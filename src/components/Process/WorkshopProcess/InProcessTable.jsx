@@ -1,7 +1,6 @@
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo, useState, useEffect, useRef } from "react";
@@ -10,14 +9,19 @@ import { toast } from "react-toastify";
 import html2canvas from "html2canvas";
 import EditVendorModal from "./EditVendorModal";
 import { workshopService } from "../../../services/Process/workshopService";
-import OrderImageTemplate from "./OrderImageTemplate.jsx"; // Import the new component
+import OrderImageTemplate from "./OrderImageTemplate.jsx";
 
-const InProcessTable = ({ orders, loading, refreshSalesData }) => {
+const InProcessTable = ({
+  orders,
+  loading,
+  refreshSalesData,
+  pagination,
+  onPageChange,
+}) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [showEditVendorModal, setShowEditVendorModal] = useState(false);
-  const [pageSize] = useState(100);
-  const [downloadOrder, setDownloadOrder] = useState(null); // State to hold the order being downloaded
-  const downloadRef = useRef(null); // Ref to hold the template DOM element
+  const [downloadOrder, setDownloadOrder] = useState(null);
+  const downloadRef = useRef(null);
 
   // Derive tableData and productTableData from orders
   const { tableData, productTableData } = useMemo(() => {
@@ -190,7 +194,7 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
           successCount++;
           setLocalProductTableData((prev) =>
             prev.map((row) =>
-              row.id === row.id
+              row.id === order.id
                 ? { ...row, status: "pending", selected: false }
                 : row
             )
@@ -226,24 +230,18 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
   // Handle Download Image
   const handleDownloadImage = async (order) => {
     try {
-      // Set the order to be rendered in the template
       setDownloadOrder(order);
-
-      // Wait for the DOM to update
       await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Use html2canvas to capture the template
       const element = downloadRef.current;
       if (!element) {
         throw new Error("Template element not found");
       }
 
       const canvas = await html2canvas(element, {
-        scale: 2, // Increase resolution
-        useCORS: true, // Allow cross-origin images (e.g., logo)
+        scale: 2,
+        useCORS: true,
       });
 
-      // Convert canvas to image and download
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -253,11 +251,10 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
       document.body.removeChild(link);
 
       toast.success("Image downloaded successfully");
-
-      // Clear the download order to hide the template
       setDownloadOrder(null);
     } catch (error) {
       setDownloadOrder(null);
+      toast.error("Error downloading image");
     }
   };
 
@@ -403,62 +400,67 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
     }));
   }, [tableData, localProductTableData]);
 
-  // Table setup
+  // Table setup without getPaginationRowModel
   const table = useReactTable({
     data: combinedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    manualPagination: true, // Enable manual pagination
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1, // Adjust for zero-based index
+        pageSize: pagination.limit,
+      },
+    },
   });
 
   // Pagination info
-  const pageIndex = table.getState().pagination.pageIndex;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, combinedData.length);
-  const totalRows = combinedData.length;
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="card-body p-0">
       <div className="mb-4 col-12">
-        <div className="mb-4 col-12">
-          {hasSelectedRows && (
-            <div className="d-flex justify-content-between flex-wrap mt-2">
-              <div>
-                {!isSendForFittingDisabled && (
-                  <button
-                    className="btn custom-hover-border"
-                    type="button"
-                    onClick={handleSendForFitting}
-                    disabled={loading || isSendForFittingDisabled}
-                  >
-                    {loading ? "Processing..." : "Send for Fitting"}
-                  </button>
-                )}
-                <button
-                  className={`btn ${
-                    !isSendForFittingDisabled && "ms-2"
-                  }  custom-hover-border`}
-                  type="button"
-                  onClick={handleEditVendor}
-                  disabled={loading}
-                >
-                  Edit Vendor
-                </button>
-              </div>
-              <div>
+        {hasSelectedRows && (
+          <div className="d-flex justify-content-between flex-wrap mt-2">
+            <div>
+              {!isSendForFittingDisabled && (
                 <button
                   className="btn custom-hover-border"
                   type="button"
-                  onClick={handleRevertOrder}
-                  disabled={loading}
+                  onClick={handleSendForFitting}
+                  disabled={loading || isSendForFittingDisabled}
                 >
-                  Revert Order
+                  {loading ? "Processing..." : "Send for Fitting"}
                 </button>
-              </div>
+              )}
+              <button
+                className={`btn ${
+                  !isSendForFittingDisabled && "ms-2"
+                }  custom-hover-border`}
+                type="button"
+                onClick={handleEditVendor}
+                disabled={loading}
+              >
+                Edit Vendor
+              </button>
             </div>
-          )}
-        </div>
+            <div>
+              <button
+                className="btn custom-hover-border"
+                type="button"
+                onClick={handleRevertOrder}
+                disabled={loading}
+              >
+                Revert Order
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="table-responsive px-2">
         {loading ? (
@@ -533,15 +535,15 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
           <div className="btn-group">
             <Button
               variant="outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => onPageChange(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage}
             >
               Previous
             </Button>
             <Button
               variant="outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => onPageChange(pagination.nextPage)}
+              disabled={!pagination.hasNextPage}
             >
               Next
             </Button>
@@ -558,7 +560,6 @@ const InProcessTable = ({ orders, loading, refreshSalesData }) => {
           onSubmit={handleEditVendorSubmit}
         />
       )}
-      {/* Hidden div to render the template for image conversion */}
       <div
         style={{
           position: "absolute",

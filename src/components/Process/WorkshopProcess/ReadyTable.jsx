@@ -1,23 +1,22 @@
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useMemo, useState, useEffect } from "react";
 import { Button, Form } from "react-bootstrap";
 import { toast } from "react-toastify";
-import CustomerNameModal from "../Vendor/CustomerNameModal";
-import AddDamagedModal from "./AddDamagedModal";
 import { workshopService } from "../../../services/Process/workshopService";
 
-const ReadyTable = ({ orders, loading, refreshSalesData }) => {
+const ReadyTable = ({
+  orders,
+  loading,
+  refreshSalesData,
+  pagination,
+  onPageChange,
+}) => {
   const [selectedRows, setSelectedRows] = useState([]);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showDamagedModal, setShowDamagedModal] = useState(false); // Renamed for clarity
-  const [selectedRow, setSelectedRow] = useState(null);
-  const [pageSize] = useState(100);
+  const [localProductTableData, setLocalProductTableData] = useState([]);
 
   // Derive tableData and productTableData from orders
   const { tableData, productTableData } = useMemo(() => {
@@ -38,15 +37,13 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
       productSku: order.product?.sku || "N/A",
       lensSku: order.lens?.sku || "N/A",
       status: order.status || "N/A",
-      vendor: order.sale?.vendor || "", // Adjust if vendor is stored elsewhere
+      vendor: order.sale?.vendor || "",
       orderId: order._id,
+      fullOrder: order,
     }));
 
     return { tableData, productTableData };
   }, [orders]);
-
-  const [localProductTableData, setLocalProductTableData] =
-    useState(productTableData);
 
   // Sync localProductTableData when productTableData changes
   useEffect(() => {
@@ -69,17 +66,15 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
     );
   };
 
-  // Handle customer name click
-  const handleCustomerNoteClick = (row) => {
-    setSelectedRow(row);
-    setShowCustomerModal(true);
-  };
-
-  // Handle Deliver
-  const handleDeliver = async () => {
+  // Handle Revert Order
+  const handleRevertOrder = async () => {
     const selectedOrders = localProductTableData
       .filter((row) => row.selected)
-      .map((row) => ({ id: row.id, orderId: row.orderId }));
+      .map((row) => ({
+        id: row.id,
+        orderId: row.orderId,
+        fullOrder: row.fullOrder,
+      }));
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
@@ -87,62 +82,49 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
     }
 
     let successCount = 0;
+    const failedOrders = [];
+
     for (const order of selectedOrders) {
-      const response = await workshopService.updateOrderStatus(
-        order.orderId,
-        "delivered"
-      );
-      if (response.success) {
-        successCount++;
-        setLocalProductTableData((prev) =>
-          prev.map((row) =>
-            row.id === order.id
-              ? { ...row, status: "delivered", selected: false }
-              : row
-          )
+      try {
+        const response = await workshopService.updateOrderStatus(
+          order.orderId,
+          "inFitting"
         );
-      } else {
-        toast.error(`Failed to deliver order ${order.id}: ${response.message}`);
+        if (response.data.success && response.data.data.modifiedCount > 0) {
+          successCount++;
+          setLocalProductTableData((prev) =>
+            prev.map((row) =>
+              row.id === order.id
+                ? { ...row, status: "inFitting", selected: false }
+                : row
+            )
+          );
+        } else {
+          failedOrders.push({
+            orderId: order.orderId,
+            message: response.message || "Failed to update status",
+          });
+        }
+      } catch (error) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: error.message || "Error updating order status",
+        });
       }
     }
+
+    setSelectedRows([]);
 
     if (successCount > 0) {
-      toast.success(`${successCount} order(s) delivered successfully`);
-      setSelectedRows([]);
+      toast.success(`${successCount} order(s) reverted successfully`);
       refreshSalesData();
     }
-  };
 
-  // Handle Add Damaged click
-  const handleAddDamaged = () => {
-    setShowDamagedModal(true);
-  };
-
-  // Handle AddDamagedModal submit
-  const handleDamagedSubmit = async (data) => {
-    console.log("Damaged data submitted:", data);
-    setShowDamagedModal(false);
-    // Implement damaged item logic (e.g., API call to mark as damaged)
-    // Example:
-    /*
-    const selectedOrders = localProductTableData
-      .filter((row) => row.selected)
-      .map((row) => row.orderId);
-    try {
-      const response = await workshopService.markOrderAsDamaged({
-        orderIds: selectedOrders,
-        ...data, // Include damaged details
+    if (failedOrders.length > 0) {
+      failedOrders.forEach(({ orderId, message }) => {
+        toast.error(`Failed to revert order ${orderId}: ${message}`);
       });
-      if (response.success) {
-        toast.success("Order(s) marked as damaged successfully");
-        refreshSalesData();
-      } else {
-        toast.error(`Failed to mark as damaged: ${response.message}`);
-      }
-    } catch (error) {
-      toast.error("Error marking order(s) as damaged");
     }
-    */
   };
 
   // Table columns
@@ -182,19 +164,8 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
       {
         accessorKey: "customerName",
         header: "Customer Name",
-        cell: ({ getValue, row }) => (
-          <div
-            className="table-vendor-data-size"
-            style={{
-              cursor: "pointer",
-              textDecoration: "underline",
-              color: "#6366f1",
-              maxWidth: "180px",
-            }}
-            onClick={() => handleCustomerNoteClick(row.original)}
-          >
-            {getValue()}
-          </div>
+        cell: ({ getValue }) => (
+          <div className="table-vendor-data-size">{getValue()}</div>
         ),
       },
       {
@@ -215,10 +186,7 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
         accessorKey: "lensSku",
         header: "Lens SKU",
         cell: ({ getValue }) => (
-          <div
-            className="max-w-[150px] table-vendor-data-size"
-            style={{ maxWidth: "200px" }}
-          >
+          <div className="table-vendor-data-size" style={{ maxWidth: "200px" }}>
             {getValue()}
           </div>
         ),
@@ -226,43 +194,9 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
       {
         accessorKey: "vendor",
         header: "Vendor",
-        cell: ({ row }) => {
-          const order = row.original.fullOrder;
-          const leftVendor = order.currentLeftJobWork?.vendor?.companyName;
-          const rightVendor = order.currentRightJobWork?.vendor?.companyName;
-          const Leftcolor = order.currentRightJobWork?.status;
-          const Rightcolor = order.currentLeftJobWork?.status;
-
-          return (
-            <div
-              className="table-vendor-data-size text-success"
-              style={{ maxWidth: "170px" }}
-            >
-              {leftVendor && (
-                <p
-                  className="p-0 m-0"
-                  style={{
-                    color: `${Leftcolor === "pending" ? "#ef4444" : "#22c55e"}`,
-                  }}
-                >
-                  left:{leftVendor}
-                </p>
-              )}
-              {rightVendor && (
-                <p
-                  className="p-0 m-0"
-                  style={{
-                    color: `${
-                      Rightcolor === "pending" ? "#ef4444" : "#22c55e"
-                    }`,
-                  }}
-                >
-                  right:{rightVendor}
-                </p>
-              )}
-            </div>
-          );
-        },
+        cell: ({ getValue }) => (
+          <div className="table-vendor-data-size">{getValue()}</div>
+        ),
       },
       {
         accessorKey: "notes",
@@ -288,45 +222,48 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
         localProductTableData.find((p) => p.saleId === order.id)?.lensSku ||
         "N/A",
       vendor:
-        localProductTableData.find((p) => p.saleId === order.id)?.vendor ||
-        "N/A",
+        localProductTableData.find((p) => p.saleId === order.id)?.vendor || "",
     }));
   }, [tableData, localProductTableData]);
 
-  // Table setup
+  // Table setup without getPaginationRowModel
   const table = useReactTable({
     data: combinedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    manualPagination: true, // Enable manual pagination
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1, // Adjust for zero-based index
+        pageSize: pagination.limit,
+      },
+    },
   });
 
   // Pagination info
-  const pageIndex = table.getState().pagination.pageIndex;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, combinedData.length);
-  const totalRows = combinedData.length;
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="card-body p-0">
-      {/* <div className="mb-4 col-12 px-3">
+      <div className="mb-4 col-12">
         {hasSelectedRows && (
-          <div className="d-flex justify-content-between flex-wrap gap-3 mt-2">
-            <div>
-              <button
-                className="btn btn-outline-primary border-light-subtle"
-                type="button"
-                onClick={handleDeliver}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Deliver"}
-              </button>
-            
-            </div>
+          <div className="d-flex justify-content-end flex-wrap mt-2">
+            <button
+              className="btn custom-hover-border"
+              type="button"
+              onClick={handleRevertOrder}
+              disabled={loading}
+            >
+              Revert Order
+            </button>
           </div>
         )}
-      </div> */}
+      </div>
       <div className="table-responsive px-2">
         {loading ? (
           <div
@@ -400,38 +337,20 @@ const ReadyTable = ({ orders, loading, refreshSalesData }) => {
           <div className="btn-group">
             <Button
               variant="outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => onPageChange(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage}
             >
               Previous
             </Button>
             <Button
               variant="outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => onPageChange(pagination.nextPage)}
+              disabled={!pagination.hasNextPage}
             >
               Next
             </Button>
           </div>
         </div>
-      )}
-
-      {showCustomerModal && selectedRow && (
-        <CustomerNameModal
-          show={showCustomerModal}
-          onHide={() => setShowCustomerModal(false)}
-          selectedRow={selectedRow?.fullOrder}
-        />
-      )}
-      {showDamagedModal && (
-        <AddDamagedModal
-          show={showDamagedModal}
-          onHide={() => setShowDamagedModal(false)}
-          selectedRows={localProductTableData.filter((row) =>
-            selectedRows.includes(row.id)
-          )}
-          onSubmit={handleDamagedSubmit}
-        />
       )}
     </div>
   );

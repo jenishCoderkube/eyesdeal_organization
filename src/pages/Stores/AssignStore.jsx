@@ -16,11 +16,22 @@ const AssignStore = () => {
       const storeData = await storeService.getStores(); // Already returns res.data.data
 
       if (storeData) {
-        const options = storeData.map((store) => ({
+        const options = storeData?.map((store) => ({
           value: store._id,
           label: store.name,
         }));
         setStoreOptions(options);
+
+        // Check for storeInfoId in localStorage and set default selection
+        const storeInfoId = localStorage.getItem("storeInfoId");
+        if (storeInfoId) {
+          const defaultStore = options.find(
+            (option) => option.value === storeInfoId
+          );
+          if (defaultStore) {
+            setSelectedStore(defaultStore);
+          }
+        }
       }
     } catch (error) {
       console.log("err", error);
@@ -42,9 +53,11 @@ const AssignStore = () => {
 
     try {
       const response = await storeService.assignStore(bodyData);
-      if (response?.success) {
-        toast.success(response.message);
-        setSelectedStore("");
+
+      if (response?.data.success) {
+        localStorage.setItem("storeInfoId", response?.data?.data.stores[0]);
+        toast.success(response?.data.message);
+        setSelectedStore(null); // Reset to no selection after submit
       }
     } catch (error) {
       console.log("err", error);
@@ -60,7 +73,7 @@ const AssignStore = () => {
               Add Stores
             </h1>
           </div>
-          <div className=" shadow-sm">
+          <div className="shadow-sm">
             <div className="card-body p-4 p-sm-5 p-lg-5">
               <form
                 onSubmit={handleSubmit}
@@ -90,19 +103,7 @@ const AssignStore = () => {
                   />
                 </div>
                 <div>
-                  <button
-                    type="submit"
-                    className="btn custom-button-bgcolor"
-                    style={{
-                      borderColor: "#6366F1",
-                    }}
-                    onMouseOver={(e) =>
-                      (e.target.style.backgroundColor = "#4F46E5")
-                    }
-                    onMouseOut={(e) =>
-                      (e.target.style.backgroundColor = "#6366F1")
-                    }
-                  >
+                  <button type="submit" className="btn custom-button-bgcolor">
                     Submit
                   </button>
                 </div>

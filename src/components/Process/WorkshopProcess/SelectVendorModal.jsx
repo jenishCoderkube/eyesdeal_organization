@@ -14,7 +14,8 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [vendorOptions, setVendorOptions] = useState([]);
   const [loadingVendors, setLoadingVendors] = useState(false);
 
-  console.log("selectedRows<<<<", selectedRows);
+  // Log selectedRows for debugging
+  console.log("selectedRows:", selectedRows);
 
   // Fetch vendors when the modal opens
   useEffect(() => {
@@ -23,7 +24,7 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
         setLoadingVendors(true);
         try {
           const response = await workshopService.getVendors();
-
+          console.log("Vendors response:", response); // Debug log
           if (response.success) {
             const vendors = response?.data?.data?.docs?.map((vendor) => ({
               value: vendor._id,
@@ -35,7 +36,8 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             setVendorOptions([]);
           }
         } catch (error) {
-          // toast.error("Failed to fetch vendors");
+          console.error("Error fetching vendors:", error); // Debug log
+          toast.error("Failed to fetch vendors");
           setVendorOptions([]);
         } finally {
           setLoadingVendors(false);
@@ -47,6 +49,13 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("handleSubmit called with:", {
+      rightSelected,
+      leftSelected,
+      rightVendor,
+      leftVendor,
+      selectedRows,
+    }); // Debug log
 
     if (!rightSelected && !leftSelected) {
       toast.warning("Please select at least one side (Right or Left).");
@@ -57,15 +66,18 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
     for (const row of selectedRows) {
       const { _id: orderId, product, lens, sale, store, powerAtTime } = row;
+      console.log("Processing row:", row); // Debug log
 
-      // Validate required fields
+      // Validate required fields, allowing empty product.item
       if (
         !orderId ||
-        !product?.item?._id ||
-        !product?.barcode ||
-        !product?.sku ||
-        !product?.mrp ||
-        !product?.srp ||
+        (product?.item &&
+          Object.keys(product.item).length > 0 &&
+          (!product.item._id ||
+            !product.barcode ||
+            !product.sku ||
+            !product.mrp ||
+            !product.srp)) ||
         !lens?.item?._id ||
         !lens?.barcode ||
         !lens?.sku ||
@@ -83,13 +95,16 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
       // Prepare common payload data
       const basePayload = {
-        product: {
-          item: product.item._id,
-          barcode: product.barcode,
-          sku: product.sku,
-          mrp: product.mrp,
-          srp: product.srp,
-        },
+        product:
+          product?.item && Object.keys(product.item).length > 0
+            ? {
+                item: product.item._id,
+                barcode: product.barcode,
+                sku: product.sku,
+                mrp: product.mrp,
+                srp: product.srp,
+              }
+            : null, // Allow null product if not present
         lens: {
           item: lens.item._id,
           barcode: lens.barcode,
@@ -113,11 +128,14 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             side: "left",
             vendor: leftVendor.value,
           };
+          console.log("Creating left job work with payload:", leftPayload); // Debug log
 
           // Create job work for left side
           const jobWorkResponse = await workshopService.createJobWork(
             leftPayload
           );
+          console.log("Left job work response:", jobWorkResponse); // Debug log
+
           if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
             const jobWorkId = jobWorkResponse.data.data.id;
 
@@ -128,21 +146,24 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
               status: "inLab",
               vendorNote: vendorNote || null,
             };
+            console.log("Updating order with payload:", orderPayload); // Debug log
             const orderResponse = await workshopService.updateOrderJobWork(
               orderId,
               orderPayload
             );
+            console.log("Order update response:", orderResponse); // Debug log
+
             if (orderResponse.success) {
               successCount++;
             } else {
-              // toast.error(
-              //   `Failed to update order ${orderId} for left side: ${orderResponse.message}`
-              // );
+              toast.error(
+                `Failed to update order ${orderId} for left side: ${orderResponse.message}`
+              );
             }
           } else {
-            // toast.error(
-            //   `Failed to create job work for left side of order ${orderId}: ${jobWorkResponse.message}`
-            // );
+            toast.error(
+              `Failed to create job work for left side of order ${orderId}: ${jobWorkResponse.message}`
+            );
           }
         }
 
@@ -153,11 +174,13 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             side: "right",
             vendor: rightVendor.value,
           };
+          console.log("Creating right job work with payload:", rightPayload); // Debug log
 
           // Create job work for right side
           const jobWorkResponse = await workshopService.createJobWork(
             rightPayload
           );
+          console.log("Right job work response:", jobWorkResponse); // Debug log
 
           if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
             const jobWorkId = jobWorkResponse.data.data.id;
@@ -169,25 +192,29 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
               status: "inLab",
               vendorNote: vendorNote || null,
             };
+            console.log("Updating order with payload:", orderPayload); // Debug log
             const orderResponse = await workshopService.updateOrderJobWork(
               orderId,
               orderPayload
             );
+            console.log("Order update response:", orderResponse); // Debug log
+
             if (orderResponse.success) {
               successCount++;
             } else {
-              // toast.error(
-              //   `Failed to update order ${orderId} for right side: ${orderResponse.message}`
-              // );
+              toast.error(
+                `Failed to update order ${orderId} for right side: ${orderResponse.message}`
+              );
             }
           } else {
-            // toast.error(
-            //   `Failed to create job work for right side of order ${orderId}: ${jobWorkResponse.message}`
-            // );
+            toast.error(
+              `Failed to create job work for right side of order ${orderId}: ${jobWorkResponse.message}`
+            );
           }
         }
       } catch (error) {
-        // toast.error(`Error processing order ${orderId}: ${error.message}`);
+        console.error(`Error processing order ${orderId}:`, error); // Debug log
+        toast.error(`Error processing order ${orderId}: ${error.message}`);
       }
     }
 
@@ -295,6 +322,7 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             </div>
           </div>
           <div className="mb-3">
+            voli{" "}
             <Form.Label
               className="mb-1 text-sm font-medium"
               htmlFor="vendorNote"

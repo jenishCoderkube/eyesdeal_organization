@@ -3,13 +3,12 @@ import { FaSearch } from "react-icons/fa";
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { Button, Form } from "react-bootstrap";
 import VendorNoteModal from "./VendorNoteModal";
 import CustomerNameModal from "./CustomerNameModal";
-import { vendorshopService } from "../../../services/Process/vendorshopService"; // Updated import
+import { vendorshopService } from "../../../services/Process/vendorshopService";
 import { toast } from "react-toastify";
 
 const debounce = (func, wait) => {
@@ -20,7 +19,7 @@ const debounce = (func, wait) => {
   };
 };
 
-const VendorListTable = ({ data, loading }) => {
+const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -28,9 +27,7 @@ const VendorListTable = ({ data, loading }) => {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [pageSize, setPageSize] = useState(100);
 
-  // Filter function
   // Filter function
   const filterGlobally = useMemo(
     () => (data, query) => {
@@ -110,7 +107,6 @@ const VendorListTable = ({ data, loading }) => {
   };
 
   // Handle Receive All
-  // Handle Receive All
   const handleReceiveAll = async () => {
     try {
       const updates = selectedRows.map(async (rowId) => {
@@ -118,13 +114,9 @@ const VendorListTable = ({ data, loading }) => {
         const jobWorkId = row._id;
         const side = row.side;
 
-        // Determine which API to call based on the 'side' property
-        if (side === "left") {
-          return vendorshopService.updateJobWorkStatus(jobWorkId, "received"); // Example: Update left job work
-        } else if (side === "right") {
-          return vendorshopService.updateJobWorkStatus(jobWorkId, "received"); // Example: Update right job work
+        if (side === "left" || side === "right") {
+          return vendorshopService.updateJobWorkStatus(jobWorkId, "received");
         } else if (side === "both") {
-          // For 'both', you might need to update two job works (left and right)
           const leftJobWorkId = row.order.currentLeftJobWork;
           const rightJobWorkId = row.order.currentRightJobWork;
           const leftUpdate = vendorshopService.updateJobWorkStatus(
@@ -135,14 +127,12 @@ const VendorListTable = ({ data, loading }) => {
             rightJobWorkId,
             "received"
           );
-          return Promise.all([leftUpdate, rightUpdate]); // Wait for both updates
+          return Promise.all([leftUpdate, rightUpdate]);
         }
         return Promise.resolve({ success: false, message: "Invalid side" });
       });
 
       const results = await Promise.all(updates);
-
-      // Flatten results (since 'both' returns an array of results)
       const flattenedResults = results.flat();
       const failed = flattenedResults.filter((result) => !result.success);
 
@@ -151,22 +141,31 @@ const VendorListTable = ({ data, loading }) => {
         toast.error("Some updates failed. Check console for details.");
       } else {
         toast.success("All job works updated successfully!");
-        setSelectedRows([]); // Clear selected rows
+        setSelectedRows([]);
       }
 
-      // Finally, call getJobWorks API with default filters to refresh the table
+      // Refresh table data
       const filters = {
-        page: 1,
-        limit: pageSize,
+        page: pagination.page,
+        limit: pagination.limit,
         populate: true,
         status: "pending",
       };
       const response = await vendorshopService.getJobWorks(filters);
-
       if (response.success && response.data.data.docs) {
-        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+        setFilteredData(response.data.data.docs);
+        setPagination({
+          totalDocs: response.data.data.totalDocs,
+          limit: response.data.data.limit,
+          page: response.data.data.page,
+          totalPages: response.data.data.totalPages,
+          hasPrevPage: response.data.data.hasPrevPage,
+          hasNextPage: response.data.data.hasNextPage,
+          prevPage: response.data.data.prevPage,
+          nextPage: response.data.data.nextPage,
+        });
       } else {
-        console.error("Failed to fetch updated job works:", response.message);
+        setFilteredData([]);
         toast.error("Failed to refresh table data.");
       }
     } catch (error) {
@@ -180,24 +179,35 @@ const VendorListTable = ({ data, loading }) => {
     setSelectedRow(row);
     setShowVendorModal(true);
   };
+
+  // Handle Customer Note click
   const handleCustomerNoteClick = (row) => {
     setSelectedRow(row);
     setShowCustomerModal(true);
   };
+
   // Handle Vendor Note submit
   const handleVendorNoteSubmit = async (updatedRow) => {
     try {
-      // Fetch updated job works data
       const filters = {
-        page: 1,
-        limit: pageSize,
+        page: pagination.page,
+        limit: pagination.limit,
         populate: true,
         status: "pending",
       };
       const response = await vendorshopService.getJobWorks(filters);
-
       if (response.success && response.data.data.docs) {
-        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+        setFilteredData(response.data.data.docs);
+        setPagination({
+          totalDocs: response.data.data.totalDocs,
+          limit: response.data.data.limit,
+          page: response.data.data.page,
+          totalPages: response.data.data.totalPages,
+          hasPrevPage: response.data.data.hasPrevPage,
+          hasNextPage: response.data.data.hasNextPage,
+          prevPage: response.data.data.prevPage,
+          nextPage: response.data.data.nextPage,
+        });
       } else {
         console.error("Failed to fetch updated job works:", response.message);
       }
@@ -207,14 +217,14 @@ const VendorListTable = ({ data, loading }) => {
       setShowVendorModal(false);
     }
   };
-  // Transform job works data to required format
+
   // Transform job works data to required format
   const transformJobWorksData = (jobWorks) => {
     const jobWorkData = [];
     jobWorks.forEach((jobWork) => {
       const order = jobWork.order;
       const sale = jobWork.sale;
-      const powerSpecs = jobWork.powerAtTime?.specs?.right?.distance || {}; // Safely handle undefined
+      const powerSpecs = jobWork.powerAtTime?.specs?.right?.distance || {};
       const lensName =
         jobWork.lens?.item?.productName || jobWork.lens?.sku || "";
 
@@ -235,7 +245,6 @@ const VendorListTable = ({ data, loading }) => {
         add: powerSpecs.add || "",
       });
 
-      // Add left side if available
       const leftPowerSpecs = jobWork.powerAtTime?.specs?.left?.distance || {};
       if (leftPowerSpecs && jobWork.side === "both") {
         jobWorkData.push({
@@ -262,7 +271,7 @@ const VendorListTable = ({ data, loading }) => {
   // Handle PDF Download
   const handleDownloadPDF = async () => {
     try {
-      setIsDownloading(true); // Set downloading state to true
+      setIsDownloading(true);
       const filters = {
         page: 1,
         limit: 300,
@@ -290,10 +299,11 @@ const VendorListTable = ({ data, loading }) => {
       console.error("Error downloading PDF:", error);
       toast.error("Failed to download PDF.");
     } finally {
-      setIsDownloading(false); // Reset downloading state
+      setIsDownloading(false);
     }
   };
 
+  // Handle Receive
   const handleReveive = async (row) => {
     const response = await vendorshopService.updateJobWorkStatus(
       row.original._id,
@@ -302,18 +312,28 @@ const VendorListTable = ({ data, loading }) => {
     if (response?.success) {
       toast.success("Job work Updated");
       const filters = {
-        page: 1,
-        limit: pageSize,
+        page: pagination.page,
+        limit: pagination.limit,
         populate: true,
         status: "pending",
       };
       const response = await vendorshopService.getJobWorks(filters);
-
       if (response.success && response.data.data.docs) {
-        setFilteredData(response.data.data.docs); // Update table data with fresh API response
+        setFilteredData(response.data.data.docs);
+        setPagination({
+          totalDocs: response.data.data.totalDocs,
+          limit: response.data.data.limit,
+          page: response.data.data.page,
+          totalPages: response.data.data.totalPages,
+          hasPrevPage: response.data.data.hasPrevPage,
+          hasNextPage: response.data.data.hasNextPage,
+          prevPage: response.data.data.prevPage,
+          nextPage: response.data.data.nextPage,
+        });
       }
     }
   };
+
   // Table columns
   const columns = useMemo(
     () => [
@@ -334,7 +354,7 @@ const VendorListTable = ({ data, loading }) => {
         accessorKey: "sale.createdAt",
         header: "Process Date",
         cell: ({ row }) => (
-          <div className="table-vendor-data-size common-tabledata-minwidth ">
+          <div className="table-vendor-data-size common-tabledata-minwidth">
             {new Date(row.original.sale.createdAt).toLocaleDateString("en-GB", {
               day: "2-digit",
               month: "2-digit",
@@ -425,7 +445,7 @@ const VendorListTable = ({ data, loading }) => {
                 {["Specs", "SPH", "CYL", "Axis", "ADD"].map((label, idx) => (
                   <div
                     key={idx}
-                    className="border border-dark p-1 fw-bold table-vendor-data-size "
+                    className="border border-dark p-1 fw-bold table-vendor-data-size"
                   >
                     {label}
                   </div>
@@ -489,19 +509,27 @@ const VendorListTable = ({ data, loading }) => {
     [selectedRows, loading]
   );
 
-  // Table setup
+  // Table setup with manual pagination
   const table = useReactTable({
     data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    manualPagination: true,
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1, // Adjust for zero-based index
+        pageSize: pagination.limit,
+      },
+    },
   });
 
-  const pageIndex = table.getState().pagination.pageIndex;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  // Pagination info
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="card-body p-0">
@@ -516,39 +544,36 @@ const VendorListTable = ({ data, loading }) => {
           </Button>
         </div>
       </div>
-
-      {filteredData.length !== 0 && (
-        <div className="mb-2 col-md-4 px-2">
-          <div className="input-group">
-            <span className="input-group-text bg-white border-end-0">
-              <FaSearch
-                className="text-muted custom-search-icon"
-                style={{ color: "#94a3b8" }}
-              />
-            </span>
-            <input
-              type="search"
-              className="form-control border-start-0 py-2"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={loading}
+      <div className="mb-2 col-md-4 px-2">
+        <div className="input-group">
+          <span className="input-group-text bg-white border-end-0">
+            <FaSearch
+              className="text-muted custom-search-icon"
+              style={{ color: "#94a3b8" }}
             />
-          </div>
-          <div className="d-flex gap-2 mt-4">
-            {selectedRows.length > 0 && (
-              <Button
-                variant="primary"
-                onClick={handleReceiveAll}
-                disabled={loading}
-                className="custom-button-bgcolor"
-              >
-                Receive All
-              </Button>
-            )}
-          </div>
+          </span>
+          <input
+            type="search"
+            className="form-control border-start-0 py-2"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={loading}
+          />
         </div>
-      )}
+        <div className="d-flex gap-2 mt-4">
+          {selectedRows.length > 0 && (
+            <Button
+              variant="primary"
+              onClick={handleReceiveAll}
+              disabled={loading}
+              className="custom-button-bgcolor"
+            >
+              Receive All
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="table-responsive px-2">
         {loading ? (
@@ -564,18 +589,6 @@ const VendorListTable = ({ data, loading }) => {
             <div className="spinner-border m-5" role="status">
               <span className="sr-only"></span>
             </div>
-          </div>
-        ) : filteredData.length === 0 ? (
-          <div
-            style={{
-              width: "100%",
-              height: "300px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <p>No data available.</p>
           </div>
         ) : (
           <table className="table table-sm">
@@ -597,18 +610,31 @@ const VendorListTable = ({ data, loading }) => {
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={table.getAllColumns().length}
+                    className="text-center py-5"
+                  >
+                    {data.length === 0
+                      ? "No data available."
+                      : "No data found."}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         )}
@@ -623,15 +649,15 @@ const VendorListTable = ({ data, loading }) => {
           <div className="btn-group">
             <Button
               variant="outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage() || loading}
+              onClick={() => onPageChange(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage || loading}
             >
               Previous
             </Button>
             <Button
               variant="outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage() || loading}
+              onClick={() => onPageChange(pagination.nextPage)}
+              disabled={!pagination.hasNextPage || loading}
             >
               Next
             </Button>

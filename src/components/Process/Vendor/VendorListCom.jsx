@@ -1,13 +1,33 @@
 import React, { useState, useEffect } from "react";
 import VendorListForm from "./VendorListForm";
 import VendorListTable from "./VendorListTable";
-import { vendorshopService } from "../../../services/Process/vendorshopService"; // Adjusted path and name
+import { vendorshopService } from "../../../services/Process/vendorshopService";
 
 const VendorListCom = () => {
   const [stores, setStores] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    totalDocs: 0,
+    limit: 100,
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+    prevPage: null,
+    nextPage: null,
+  });
+
+  // Current filters state to track pagination and form values
+  const [currentFilters, setCurrentFilters] = useState({
+    populate: true,
+    status: "pending",
+    stores: [],
+    vendors: [],
+    page: 1,
+    limit: 100,
+  });
 
   // Fetch stores, vendors, and initial table data on mount
   useEffect(() => {
@@ -27,7 +47,6 @@ const VendorListCom = () => {
 
         // Fetch vendors
         const vendorsResponse = await vendorshopService.getVendors();
-
         if (vendorsResponse.success) {
           setVendors(
             vendorsResponse.data?.data?.docs?.map((vendor) => ({
@@ -37,20 +56,45 @@ const VendorListCom = () => {
           );
         }
 
-        // Fetch initial table data (job works with default filters)
+        // Fetch initial job works data
         const defaultFilters = {
           populate: true,
           status: "pending",
-          page: 1, // Added to match the request URL
+          page: 1,
+          limit: 100,
         };
+        setCurrentFilters(defaultFilters);
         const jobWorksResponse = await vendorshopService.getJobWorks(
           defaultFilters
         );
         if (jobWorksResponse.success) {
           setFilteredData(jobWorksResponse.data.data.docs || []);
+          setPagination({
+            totalDocs: jobWorksResponse.data.data.totalDocs,
+            limit: jobWorksResponse.data.data.limit,
+            page: jobWorksResponse.data.data.page,
+            totalPages: jobWorksResponse.data.data.totalPages,
+            hasPrevPage: jobWorksResponse.data.data.hasPrevPage,
+            hasNextPage: jobWorksResponse.data.data.hasNextPage,
+            prevPage: jobWorksResponse.data.data.prevPage,
+            nextPage: jobWorksResponse.data.data.nextPage,
+          });
+        } else {
+          setFilteredData([]);
+          setPagination({
+            totalDocs: 0,
+            limit: 100,
+            page: 1,
+            totalPages: 1,
+            hasPrevPage: false,
+            hasNextPage: false,
+            prevPage: null,
+            nextPage: null,
+          });
         }
       } catch (error) {
         console.error("Error fetching initial data:", error);
+        setFilteredData([]);
       } finally {
         setLoading(false);
       }
@@ -58,6 +102,7 @@ const VendorListCom = () => {
     fetchInitialData();
   }, []);
 
+  // Handle form submission with filters
   const handleFormSubmit = async (values) => {
     setLoading(true);
     try {
@@ -66,16 +111,78 @@ const VendorListCom = () => {
         status: "pending",
         stores: values.store ? [values.store.value] : [],
         vendors: values.vendor ? [values.vendor.value] : [],
-        page: 1, // Added to match the request URL
+        page: 1,
+        limit: 100,
       };
+      setCurrentFilters(filters);
       const response = await vendorshopService.getJobWorks(filters);
       if (response.success) {
         setFilteredData(response.data.data.docs || []);
+        setPagination({
+          totalDocs: response.data.data.totalDocs,
+          limit: response.data.data.limit,
+          page: response.data.data.page,
+          totalPages: response.data.data.totalPages,
+          hasPrevPage: response.data.data.hasPrevPage,
+          hasNextPage: response.data.data.hasNextPage,
+          prevPage: response.data.data.prevPage,
+          nextPage: response.data.data.nextPage,
+        });
       } else {
         setFilteredData([]);
+        setPagination({
+          totalDocs: 0,
+          limit: 100,
+          page: 1,
+          totalPages: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        });
       }
     } catch (error) {
       console.error("Error filtering data:", error);
+      setFilteredData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle page change
+  const handlePageChange = async (page) => {
+    setLoading(true);
+    try {
+      const newFilters = { ...currentFilters, page };
+      setCurrentFilters(newFilters);
+      const response = await vendorshopService.getJobWorks(newFilters);
+      if (response.success) {
+        setFilteredData(response.data.data.docs || []);
+        setPagination({
+          totalDocs: response.data.data.totalDocs,
+          limit: response.data.data.limit,
+          page: response.data.data.page,
+          totalPages: response.data.data.totalPages,
+          hasPrevPage: response.data.data.hasPrevPage,
+          hasNextPage: response.data.data.hasNextPage,
+          prevPage: response.data.data.prevPage,
+          nextPage: response.data.data.nextPage,
+        });
+      } else {
+        setFilteredData([]);
+        setPagination({
+          totalDocs: 0,
+          limit: 100,
+          page: 1,
+          totalPages: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        });
+      }
+    } catch (error) {
+      console.error("Error changing page:", error);
       setFilteredData([]);
     } finally {
       setLoading(false);
@@ -96,7 +203,12 @@ const VendorListCom = () => {
           </div>
           <div className="card shadow-none border p-0 mt-3">
             <h6 className="fw-bold px-3 pt-3">Job Works</h6>
-            <VendorListTable data={filteredData} loading={loading} />
+            <VendorListTable
+              data={filteredData}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>

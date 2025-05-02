@@ -4,8 +4,11 @@ import api from "./api";
 const STORE_ENDPOINTS = {
   STORES: `/stores`,
   STOREASSIGN: `/stores/assign`,
-  DELETESTORE : (params) =>  `/stores/${params}`,
+  DELETESTORE: (params) => `/stores/${params}`,
   DEACTIVATEINVENTORY: `/inventory/deactivate`,
+  PRODUCTS: `/products/product`,
+  INVENTORY_GENERAL: `/inventory/get-inventory-general`,
+  STOCK_SALE: `/stockSale`,
 };
 
 export const storeService = {
@@ -20,9 +23,9 @@ export const storeService = {
       };
     }
   },
-  createStore : async (data) => {
+  createStore: async (data) => {
     try {
-      const response = await api.post(STORE_ENDPOINTS.STORES,data);
+      const response = await api.post(STORE_ENDPOINTS.STORES, data);
       return response.data;
     } catch (error) {
       return {
@@ -31,9 +34,9 @@ export const storeService = {
       };
     }
   },
-  assignStore : async (data) => {
+  assignStore: async (data) => {
     try {
-      const response = await api.post(STORE_ENDPOINTS.STOREASSIGN,data);
+      const response = await api.post(STORE_ENDPOINTS.STOREASSIGN, data);
       return response;
     } catch (error) {
       return {
@@ -42,9 +45,9 @@ export const storeService = {
       };
     }
   },
-  updateStore : async (data) => {
+  updateStore: async (data) => {
     try {
-      const response = await api.patch(STORE_ENDPOINTS.STORES,data);
+      const response = await api.patch(STORE_ENDPOINTS.STORES, data);
       return response;
     } catch (error) {
       return {
@@ -66,7 +69,10 @@ export const storeService = {
   },
   deactivateInventory: async (data) => {
     try {
-      const response = await api.post(STORE_ENDPOINTS.DEACTIVATEINVENTORY,data);
+      const response = await api.post(
+        STORE_ENDPOINTS.DEACTIVATEINVENTORY,
+        data
+      );
       return response;
     } catch (error) {
       return {
@@ -75,7 +81,64 @@ export const storeService = {
       };
     }
   },
-}
+  searchProducts: async (searchQuery) => {
+    try {
+      const response = await api.get(STORE_ENDPOINTS.PRODUCTS, {
+        params: { search: searchQuery },
+      });
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error searching products",
+      };
+    }
+  },
+  searchProductsExcludingLenses: async (searchQuery) => {
+    try {
+      const response = await api.get(STORE_ENDPOINTS.PRODUCTS, {
+        params: {
+          search: searchQuery,
+          "__t[$nin][0]": "spectacleLens",
+          "__t[$nin][1]": "contactLens",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error searching products",
+      };
+    }
+  },
+  getInventoryGeneral: async (params) => {
+    try {
+      const response = await api.get(STORE_ENDPOINTS.INVENTORY_GENERAL, {
+        params: params,
+      });
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching inventory",
+      };
+    }
+  },
+  createStockSale: async (data) => {
+    try {
+      const response = await api.post(STORE_ENDPOINTS.STOCK_SALE, data);
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Error creating stock sale transaction",
+        error: error.response?.data?.error || "Unknown error",
+      };
+    }
+  },
+};
 // export const createStore = async (data, accessToken) => {
 //   try {
 //     const response = await axios.post(
@@ -138,7 +201,6 @@ export const storeService = {
 //     throw error;
 //   }
 // };
-
 
 // export const deleteStore = async (storeId, accessToken) => {
 //   try {

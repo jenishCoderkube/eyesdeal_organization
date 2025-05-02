@@ -6,7 +6,7 @@ const AUTH_ENDPOINTS = {
   VENDOR: `/vendors`,
   ORDER_COUNT: `/orders/get-count`,
   JOB_WORKS: `/jobWorks`,
-  JOB_WORKS_PDF: `/jobWorks/pdf`, // Added for PDF download
+  JOB_WORKS_PDF: `/jobWorks/pdf`,
 };
 
 const buildJobWorksParams = (filters) => {
@@ -66,6 +66,7 @@ const buildJobWorksParams = (filters) => {
 const buildCountParams = (filters) => {
   const params = new URLSearchParams();
 
+  // Status filters
   const statuses = filters.statuses || [
     "inWorkshop",
     "inLab",
@@ -75,12 +76,20 @@ const buildCountParams = (filters) => {
   statuses.forEach((status, index) => {
     params.append(`optimize[status][$in][${index}]`, status);
   });
-  filters?.stores?.forEach((status, index) => {
-    params.append(`store._id[$in][${index}]`, status);
-  });
+
+  // Store filters
+  if (filters.stores && filters.stores.length) {
+    filters.stores.forEach((storeId, index) => {
+      params.append(`store._id[$in][${index}]`, storeId);
+    });
+  }
+
+  // Search filter
   if (filters.search) {
     params.append("search", filters.search);
   }
+
+  // Populate flag
   params.append("populate", "true");
 
   return params.toString();
@@ -105,7 +114,7 @@ export const vendorshopService = {
   getJobWorks: async (filters) => {
     try {
       const params = buildJobWorksParams(filters);
-      console.log("getJobWorks params:", params, filters);
+      console.log("getJobWorks params:", params, filters); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.JOB_WORKS}?${params}`);
       return {
         success: true,
@@ -122,7 +131,7 @@ export const vendorshopService = {
   getOrderCount: async (filters) => {
     try {
       const params = buildCountParams(filters);
-      console.log("getOrderCount params:", filters);
+      console.log("getOrderCount params:", filters); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.ORDER_COUNT}?${params}`);
       return {
         success: true,
@@ -142,7 +151,7 @@ export const vendorshopService = {
         type: "lens_vendor",
         ...filters,
       }).toString();
-      console.log("getVendors params:", params);
+      console.log("getVendors params:", params); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.VENDOR}?${params}`);
       return {
         success: true,
@@ -226,11 +235,12 @@ export const vendorshopService = {
       };
     }
   },
+
   updateOrderNote: async (saleId, note) => {
     try {
       const response = await api.patch(AUTH_ENDPOINTS.ORDERS, {
         _id: saleId,
-        note,
+        vendorNote: note, // Updated to use vendorNote field
       });
       return {
         success: true,
@@ -239,14 +249,17 @@ export const vendorshopService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Error updating sale note",
+        message:
+          error.response?.data?.message ||
+          `Error updating order note for sale ${saleId}`,
       };
     }
   },
+
   downloadJobWorksPDF: async (payload) => {
     try {
       const response = await api.post(AUTH_ENDPOINTS.JOB_WORKS_PDF, payload, {
-        responseType: "blob", // Important for handling binary data (PDF)
+        responseType: "blob",
       });
       return {
         success: true,

@@ -1,7 +1,6 @@
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,12 +10,17 @@ import CustomerNameModal from "../Vendor/CustomerNameModal";
 import SelectVendorModal from "./SelectVendorModal";
 import { workshopService } from "../../../services/Process/workshopService";
 
-const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
+const NewOrderTable = ({
+  orders,
+  loading,
+  refreshSalesData,
+  pagination,
+  onPageChange,
+}) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [pageSize] = useState(100);
 
   // Derive tableData and productTableData from orders
   const { tableData, productTableData } = useMemo(() => {
@@ -39,7 +43,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       status: order.status || "N/A",
       vendor: order.sale?.vendor || "",
       orderId: order._id,
-      fullOrder: order, // Include full order data
+      fullOrder: order,
     }));
 
     return { tableData, productTableData };
@@ -84,7 +88,6 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       return;
     }
 
-    // Check if all selected orders have a valid lens
     const invalidOrders = selectedOrders.filter(
       (row) => !row.fullOrder.lens || row.lensSku === "N/A"
     );
@@ -98,7 +101,6 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       return;
     }
 
-    // Open the vendor modal and pass selected row data
     setShowVendorModal(true);
   };
 
@@ -128,7 +130,6 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
         );
         if (response.data.success && response.data.data.modifiedCount > 0) {
           successCount++;
-          // Update local state to reflect new status
           setLocalProductTableData((prev) =>
             prev.map((row) =>
               row.id === order.id
@@ -150,10 +151,8 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       }
     }
 
-    // Clear selected rows
     setSelectedRows([]);
 
-    // Display toast messages
     if (successCount > 0) {
       toast.success(`${successCount} order(s) sent for fitting successfully`);
       refreshSalesData();
@@ -166,6 +165,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
     }
   };
 
+  // Handle Revert Order
   const handleRevertOrder = async () => {
     const selectedOrders = localProductTableData
       .filter((row) => row.selected)
@@ -205,10 +205,8 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       }
     }
 
-    // Clear selected rows
     setSelectedRows([]);
 
-    // Display toast messages
     if (successCount > 0) {
       toast.success(`${successCount} order(s) updated successfully`);
       refreshSalesData();
@@ -220,6 +218,7 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
       });
     }
   };
+
   // Handle SelectVendorModal submit
   const handleVendorSubmit = async (data) => {
     console.log("Vendor data submitted:", data);
@@ -336,20 +335,27 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
     }));
   }, [tableData, localProductTableData]);
 
-  // Table setup
+  // Table setup without getPaginationRowModel
   const table = useReactTable({
     data: combinedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    manualPagination: true,
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit,
+      },
+    },
   });
 
   // Pagination info
-  const pageIndex = table.getState().pagination.pageIndex;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, combinedData.length);
-  const totalRows = combinedData.length;
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="card-body p-0">
@@ -467,15 +473,15 @@ const NewOrderTable = ({ orders, loading, refreshSalesData }) => {
           <div className="btn-group">
             <Button
               variant="outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => onPageChange(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage}
             >
               Previous
             </Button>
             <Button
               variant="outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => onPageChange(pagination.nextPage)}
+              disabled={!pagination.hasNextPage}
             >
               Next
             </Button>
