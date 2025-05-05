@@ -1,23 +1,46 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
 import { Offcanvas } from "react-bootstrap";
-
 import "bootstrap/dist/css/bootstrap.min.css";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
 
-// Debounce utility function
-
 const StockOutTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
   const [showOffcanvas, setShowOffCanvas] = useState(false);
   const [showData, setShowData] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
+
+  // Filtered data based on searchQuery
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return stockData?.docs || [];
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+    return (stockData?.docs || []).filter((item) => {
+      return (
+        item.from?.name?.toLowerCase().includes(lowerQuery) ||
+        item.from?.storeNumber?.toLowerCase().includes(lowerQuery) ||
+        item.to?.name?.toLowerCase().includes(lowerQuery) ||
+        item.to?.storeNumber?.toLowerCase().includes(lowerQuery) ||
+        item.status?.toLowerCase().includes(lowerQuery) ||
+        moment(item.createdAt).format("YYYY-MM-DD").includes(lowerQuery) ||
+        item.products?.some(
+          (product) =>
+            product.productId?.displayName
+              ?.toLowerCase()
+              .includes(lowerQuery) ||
+            product.productId?.sku?.toLowerCase().includes(lowerQuery) ||
+            product.productId?.newBarcode?.toLowerCase().includes(lowerQuery)
+        )
+      );
+    });
+  }, [searchQuery, stockData]);
 
   const handleCloseOffcanvas = () => {
     setShowOffCanvas(false);
@@ -45,7 +68,7 @@ const StockOutTable = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -66,7 +89,7 @@ const StockOutTable = () => {
     });
 
     const finalPayload = {
-      data: finalData, // Wrap your array like this
+      data: finalData,
     };
     console.log("finalPayload", finalPayload);
 
@@ -76,24 +99,20 @@ const StockOutTable = () => {
       const response = await inventoryService.exportCsv(finalPayload);
 
       if (response.success) {
-        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
-
-        // Create a Blob from the CSV string
+        const csvData = response.data;
         const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
-
-        // Create a temporary download link
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        link.setAttribute("download", "barcodes.csv");
         document.body.appendChild(link);
-        link.click(); // Trigger the download
-        document.body.removeChild(link); // Clean up
+        link.click();
+        document.body.removeChild(link);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Export error:", error);
     } finally {
       setLoading(false);
     }
@@ -117,40 +136,36 @@ const StockOutTable = () => {
               className="form-control border-start-0 py-2"
               placeholder="Search..."
               value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
 
         <div className="card p-0 shadow-none mt-3">
-          <div className="card-body  p-0">
+          <div className="card-body p-0">
             <div className="table-responsive px-2">
               <table className="table table-sm">
                 <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
                     <th className="custom-perchase-th">Srno</th>
-
                     <th className="custom-perchase-th">Date</th>
-                    <th className="custom-perchase-th">from</th>
-                    <th className="custom-perchase-th">to</th>
-                    <th className="custom-perchase-th">number of products</th>
-                    <th className="custom-perchase-th">Stock quantity</th>
-                    <th className="custom-perchase-th">status</th>
-
-                    <th className="custom-perchase-th">action</th>
+                    <th className="custom-perchase-th">From</th>
+                    <th className="custom-perchase-th">To</th>
+                    <th className="custom-perchase-th">Number of Products</th>
+                    <th className="custom-perchase-th">Stock Quantity</th>
+                    <th className="custom-perchase-th">Status</th>
+                    <th className="custom-perchase-th">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {stockData?.docs?.length > 0 ? (
-                    stockData.docs.map((item, index) => (
+                  {filteredData.length > 0 ? (
+                    filteredData.map((item, index) => (
                       <tr key={item.id || index}>
                         <td>{index + 1}</td>
                         <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
-
                         <td>
                           {item.from.storeNumber}/{item.from.name}
                         </td>
-
                         <td>
                           {item.to.storeNumber}/{item.to.name}
                         </td>
@@ -188,9 +203,8 @@ const StockOutTable = () => {
             <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
               <div className="text-sm text-muted mb-3 mb-sm-0">
                 Showing <span className="fw-medium">1</span> to{" "}
-                <span className="fw-medium">{stockData?.docs?.length}</span> of{" "}
-                <span className="fw-medium">{stockData?.docs?.length}</span>{" "}
-                results
+                <span className="fw-medium">{filteredData.length}</span> of{" "}
+                <span className="fw-medium">{filteredData.length}</span> results
               </div>
               <div className="btn-group">
                 <button className="btn btn-outline-primary">Previous</button>
@@ -228,12 +242,12 @@ const StockOutTable = () => {
               style={{ borderColor: "rgb(214, 199, 199)" }}
             >
               <p className="my-1">
-                <span className="text-muted ">Product Name: </span>
+                <span className="text-muted">Product Name: </span>
                 {product.productId?.displayName}
               </p>
               <p className="my-1">
                 <span className="text-muted">Product SKU: </span>
-                {product.productId?.productIdsku}
+                {product.productId?.sku}
               </p>
               <p className="my-1">
                 <span className="text-muted">Barcode: </span>

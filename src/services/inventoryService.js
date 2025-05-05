@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 // Auth endpoints
 const INVENTORY_ENDPOINTS = {
@@ -6,8 +6,8 @@ const INVENTORY_ENDPOINTS = {
   CATEGORY: `/expenseCategory`,
   FRAMETYPE: `/master/frameType`,
   FRAMESHAPE: `/master/frameShape`,
-  MATERIAL: '/master/material',
-  COLOR: '/master/color',
+  MATERIAL: "/master/material",
+  COLOR: "/master/color",
   PRESCRIPTION: `master/prescriptionType`,
   COLLECTION: `master/collection`,
   BRAND: `master/brand`,
@@ -15,7 +15,7 @@ const INVENTORY_ENDPOINTS = {
   INVENTORYSTORE: (params) => `/inventory/store?populate=true&${params}`,
   INVENTORYGROUP: (params) =>
     `/inventory/get/group-wise?populate=true&${params}`,
-  EXPORT: '/exportCsv',
+  EXPORT: "/exportCsv",
   UNIVERSALSEARCH: (params) => `/products/product?search=${params}`,
   UNIVERSALSEARCHGET: (params) => `/inventory/store?${params}`,
   STOCKTRANSFER: (params) => `/stockTransfer?populate=true&${params}`,
@@ -23,6 +23,8 @@ const INVENTORY_ENDPOINTS = {
   ADJUSTMENT: (params) => `/stockAdjustment?populate=true&${params}`,
   STOCKADJUSTMENT: (params) => `/inventory?${params}`,
   ADDSTOCKADJUSTMENT: `/stockAdjustment`,
+  BULK_UPLOAD: "/products/upload/bulk-upload-3",
+  UPDATE_INVENTORY: "/inventory/updateInventoryData",
 };
 
 const buildInventoryParams = (
@@ -39,31 +41,31 @@ const buildInventoryParams = (
   storeIds,
   page,
   search,
-  limit,
+  limit
 ) => {
   const params = new URLSearchParams();
 
   // Invoice date filters
-  if (_t) params.append('product.__t', _t);
-  if (brand) params.append('product.brand', brand);
-  if (gender) params.append('product.gender', gender);
-  if (frameSize) params.append('product.frameSize', frameSize);
-  if (frameType_id) params.append('product.frameType._id', frameType_id);
-  if (frameShape_id) params.append('product.frameShape._id', frameShape_id);
+  if (_t) params.append("product.__t", _t);
+  if (brand) params.append("product.brand", brand);
+  if (gender) params.append("product.gender", gender);
+  if (frameSize) params.append("product.frameSize", frameSize);
+  if (frameType_id) params.append("product.frameType._id", frameType_id);
+  if (frameShape_id) params.append("product.frameShape._id", frameShape_id);
   if (frameMaterial_id)
-    params.append('product.frameMaterial._id', frameMaterial_id);
-  if (frameColor_id) params.append('product.frameColor._id', frameColor_id);
+    params.append("product.frameMaterial._id", frameMaterial_id);
+  if (frameColor_id) params.append("product.frameColor._id", frameColor_id);
   if (frameCollection_id)
-    params.append('product.frameCollection._id', frameCollection_id);
+    params.append("product.frameCollection._id", frameCollection_id);
   if (prescriptionType_id)
-    params.append('product.prescriptionType._id', prescriptionType_id);
-  if (page) params.append('page', page);
+    params.append("product.prescriptionType._id", prescriptionType_id);
+  if (page) params.append("page", page);
 
   if (search) {
-    params.append('search[search]', search);
+    params.append("search[search]", search);
   }
   if (limit) {
-    params.append('limit', limit);
+    params.append("limit", limit);
   }
 
   // Store IDs
@@ -88,31 +90,31 @@ const buildInventoryStoreParams = (
   storeIds,
   page,
   search,
-  limit,
+  limit
 ) => {
   const params = new URLSearchParams();
 
   // Invoice date filters
-  if (_t) params.append('product.__t', _t);
-  if (brand) params.append('product.brand', brand);
-  if (gender) params.append('product.gender', gender);
-  if (frameSize) params.append('product.frameSize', frameSize);
-  if (frameType_id) params.append('product.frameType._id', frameType_id);
-  if (frameShape_id) params.append('product.frameShape._id', frameShape_id);
+  if (_t) params.append("product.__t", _t);
+  if (brand) params.append("product.brand", brand);
+  if (gender) params.append("product.gender", gender);
+  if (frameSize) params.append("product.frameSize", frameSize);
+  if (frameType_id) params.append("product.frameType._id", frameType_id);
+  if (frameShape_id) params.append("product.frameShape._id", frameShape_id);
   if (frameMaterial_id)
-    params.append('product.frameMaterial._id', frameMaterial_id);
-  if (frameColor_id) params.append('product.frameColor._id', frameColor_id);
+    params.append("product.frameMaterial._id", frameMaterial_id);
+  if (frameColor_id) params.append("product.frameColor._id", frameColor_id);
   if (frameCollection_id)
-    params.append('product.frameCollection._id', frameCollection_id);
+    params.append("product.frameCollection._id", frameCollection_id);
   if (prescriptionType_id)
-    params.append('product.prescriptionType._id', prescriptionType_id);
-  if (page) params.append('page', page);
+    params.append("product.prescriptionType._id", prescriptionType_id);
+  if (page) params.append("page", page);
 
   if (search) {
-    params.append('search[search]', search);
+    params.append("search[search]", search);
   }
   if (limit) {
-    params.append('limit', limit);
+    params.append("limit", limit);
   }
 
   // Store IDs
@@ -126,13 +128,13 @@ const buildInventoryStoreParams = (
 const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
   const params = new URLSearchParams();
 
-  if (page) params.append('page', page);
+  if (page) params.append("page", page);
 
   if (search) {
-    params.append('search[search]', search);
+    params.append("search[search]", search);
   }
   if (limit) {
-    params.append('limit', limit);
+    params.append("limit", limit);
   }
 
   brandId.forEach((brandId, index) => {
@@ -150,10 +152,10 @@ const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
 const buildProductStoreParams = (productIds, page, limit) => {
   const params = new URLSearchParams();
 
-  if (page) params.append('page', page);
+  if (page) params.append("page", page);
 
   if (limit) {
-    params.append('limit', limit);
+    params.append("limit", limit);
   }
 
   // Store IDs
@@ -167,13 +169,13 @@ const buildProductStoreParams = (productIds, page, limit) => {
 const buildAdjustmentParams = (productId, storeIds, page, search, limit) => {
   const params = new URLSearchParams();
 
-  if (page) params.append('page', page);
+  if (page) params.append("page", page);
 
   if (search) {
-    params.append('search[search]', search);
+    params.append("search[search]", search);
   }
   if (limit) {
-    params.append('limit', limit);
+    params.append("limit", limit);
   }
 
   // productId.forEach((productId, index) => {
@@ -219,7 +221,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -234,7 +236,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -249,7 +251,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -264,7 +266,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -278,7 +280,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -293,7 +295,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -308,7 +310,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -323,7 +325,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -338,7 +340,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -357,7 +359,7 @@ export const inventoryService = {
     storeIds = [],
     page,
     search,
-    limit,
+    limit
   ) => {
     try {
       let params = buildInventoryParams(
@@ -374,7 +376,7 @@ export const inventoryService = {
         storeIds,
         page,
         search,
-        limit,
+        limit
       );
       const response = await api.get(INVENTORY_ENDPOINTS.INVENTORY(params));
 
@@ -387,7 +389,7 @@ export const inventoryService = {
 
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -406,7 +408,7 @@ export const inventoryService = {
     storeIds = [],
     page,
     search,
-    limit,
+    limit
   ) => {
     try {
       let params = buildInventoryStoreParams(
@@ -423,10 +425,10 @@ export const inventoryService = {
         storeIds,
         page,
         search,
-        limit,
+        limit
       );
       const response = await api.get(
-        INVENTORY_ENDPOINTS.INVENTORYSTORE(params),
+        INVENTORY_ENDPOINTS.INVENTORYSTORE(params)
       );
 
       return {
@@ -436,7 +438,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -445,7 +447,7 @@ export const inventoryService = {
     try {
       let params = buildProductStoreParams(productIds, page, limit);
       const response = await api.get(
-        INVENTORY_ENDPOINTS.UNIVERSALSEARCHGET(params),
+        INVENTORY_ENDPOINTS.UNIVERSALSEARCHGET(params)
       );
 
       return {
@@ -455,7 +457,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -467,10 +469,10 @@ export const inventoryService = {
         storeIds,
         page,
         search,
-        limit,
+        limit
       );
       const response = await api.get(
-        INVENTORY_ENDPOINTS.INVENTORYGROUP(params),
+        INVENTORY_ENDPOINTS.INVENTORYGROUP(params)
       );
 
       return {
@@ -480,7 +482,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -495,7 +497,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -503,7 +505,7 @@ export const inventoryService = {
   universalSearch: async (search) => {
     try {
       const response = await api.get(
-        INVENTORY_ENDPOINTS.UNIVERSALSEARCH(search),
+        INVENTORY_ENDPOINTS.UNIVERSALSEARCH(search)
       );
       return {
         success: true,
@@ -512,7 +514,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -528,7 +530,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -542,10 +544,10 @@ export const inventoryService = {
         data: response.data,
       };
     } catch (error) {
-      console.log('error', error);
+      console.log("error", error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -557,9 +559,9 @@ export const inventoryService = {
         storeIds,
         page,
         search,
-        limit,
+        limit
       );
-      console.log('params', params);
+      console.log("params", params);
       const response = await api.get(INVENTORY_ENDPOINTS.ADJUSTMENT(params));
 
       return {
@@ -569,7 +571,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -579,7 +581,7 @@ export const inventoryService = {
       let params = buildStockAdjustmentParams(productIds, storeIds);
 
       const response = await api.get(
-        INVENTORY_ENDPOINTS.STOCKADJUSTMENT(params),
+        INVENTORY_ENDPOINTS.STOCKADJUSTMENT(params)
       );
 
       return {
@@ -589,7 +591,7 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
       };
     }
   },
@@ -598,7 +600,7 @@ export const inventoryService = {
     try {
       const response = await api.post(
         INVENTORY_ENDPOINTS.ADDSTOCKADJUSTMENT,
-        data,
+        data
       );
       return {
         success: true,
@@ -607,7 +609,53 @@ export const inventoryService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Error',
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  bulkUpload: async (storeId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append("store", storeId);
+      formData.append("bulkUploadFile", file);
+
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.BULK_UPLOAD,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error uploading file",
+      };
+    }
+  },
+
+  updateInventoryData: async (data) => {
+    try {
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.UPDATE_INVENTORY,
+        data
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating inventory",
       };
     }
   },

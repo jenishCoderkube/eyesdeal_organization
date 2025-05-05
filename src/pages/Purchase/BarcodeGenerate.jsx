@@ -117,10 +117,10 @@ function BarcodeGenerate() {
   );
 
   return (
-    <div className="max-width-90 mx-auto p-md-5 ">
+    <div className="max-width-100  mx-auto p-md-5 ">
       <h1 className="h2 text-dark fw-bold">Generate Barcodes</h1>
-      <form onSubmit={handleSubmit} className="px-md-5 mt-5 px-2 ">
-        <div className="card shadow-none border pt-3 ">
+      <form onSubmit={handleSubmit} className="px-md-5  mt-5 px-1 ">
+        <div className="card shadow-none border  pt-3 ">
           <div className="card-body">
             {items.map((item, index) => (
               <div

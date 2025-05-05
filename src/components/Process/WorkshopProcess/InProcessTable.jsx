@@ -438,16 +438,18 @@ const InProcessTable = ({
                   {loading ? "Processing..." : "Send for Fitting"}
                 </button>
               )}
-              <button
-                className={`btn ${
-                  !isSendForFittingDisabled && "ms-2"
-                }  custom-hover-border`}
-                type="button"
-                onClick={handleEditVendor}
-                disabled={loading}
-              >
-                Edit Vendor
-              </button>
+              {selectedRows.length < 2 ? (
+                <button
+                  className={`btn ${
+                    !isSendForFittingDisabled && "ms-2"
+                  }  custom-hover-border`}
+                  type="button"
+                  onClick={handleEditVendor}
+                  disabled={loading}
+                >
+                  Edit Vendor
+                </button>
+              ) : null}
             </div>
             <div>
               <button

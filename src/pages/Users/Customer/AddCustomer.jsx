@@ -1,5 +1,5 @@
+// AddCustomer.jsx
 import React, { useState } from "react";
-
 import UserDetailForm from "../../../components/Customer/UserDetailForm";
 import SpecsPowerModal from "../../../components/Customer/SpecsPowerModal";
 import ContactsPowerModal from "../../../components/Customer/ContactsPowerModal";
@@ -8,17 +8,30 @@ import "../../../assets/css/Customer/AddCustomer_style.css";
 const AddCustomer = () => {
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
+  const [editSpecsData, setEditSpecsData] = useState(null);
+
+  const handleAddSpecs = () => {
+    setEditSpecsData(null); // Clear edit data for "add" mode
+    setShowSpecsModal(true);
+  };
+
+  const handleEditSpecs = (prescription) => {
+    setEditSpecsData(prescription); // Set the prescription data for "edit" mode
+    setShowSpecsModal(true);
+  };
 
   return (
-    <div className="bg-white rounded-sm  mb-8">
-      <div className="px-4 py-8 w-full max-w-9xl  mx-auto">
+    <div className="bg-white rounded-sm mb-8">
+      <div className="px-4 py-8 w-full max-w-9xl mx-auto">
         <UserDetailForm
-          onAddSpecs={() => setShowSpecsModal(true)}
+          onAddSpecs={handleAddSpecs}
           onAddContacts={() => setShowContactsModal(true)}
+          onEditSpecs={handleEditSpecs} // Pass the edit handler
         />
         <SpecsPowerModal
           show={showSpecsModal}
           onHide={() => setShowSpecsModal(false)}
+          editData={editSpecsData} // Pass the edit data to the modal
         />
         <ContactsPowerModal
           show={showContactsModal}

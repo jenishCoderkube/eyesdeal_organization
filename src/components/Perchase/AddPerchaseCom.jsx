@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
@@ -6,6 +6,8 @@ import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import { purchaseService } from "../../services/purchaseService";
 import { toast } from "react-toastify";
+import debounce from "lodash/debounce";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const AddPerchaseCom = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +16,7 @@ const AddPerchaseCom = () => {
     invoiceDate: new Date("2025-03-31"),
     isDelivered: true,
     product: null,
-    store: { value: "elite-hospital-27", label: "ELITE HOSPITAL / 27" },
+    store: null,
     totalQuantity: 0,
     totalAmount: 0,
     totalTax: 0,
@@ -29,16 +31,17 @@ const AddPerchaseCom = () => {
   const [errors, setErrors] = useState({
     vendor: "",
     invoiceNumber: "",
-    invoiceDate: "", // Added invoiceDate to errors state
+    invoiceDate: "",
     product: "",
+    store: "",
   });
   const [loading, setLoading] = useState(false);
   const [vendorData, setVendorData] = useState([]);
   const [storeData, setStoreData] = useState([]);
   const [productData, setProductData] = useState([]);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
 
   const users = JSON.parse(localStorage.getItem("user"));
-
   const navigate = useNavigate();
 
   const vendorOptions = vendorData?.docs?.map((vendor) => ({
@@ -46,15 +49,10 @@ const AddPerchaseCom = () => {
     label: vendor.companyName,
   }));
 
-  const productOptions = productData?.docs?.map((vendor) => ({
-    value: vendor._id,
-    label: vendor.displayName,
+  const productOptions = productData?.docs?.map((product) => ({
+    value: product._id,
+    label: product.displayName,
   }));
-
-  // const storeOptions = [
-  //   { value: "elite-hospital-27", label: "ELITE HOSPITAL / 27" },
-  //   { value: "store2", label: "Store 2" },
-  // ];
 
   const storeOptions = storeData
     .filter((store) => users.stores.includes(store._id))
@@ -63,7 +61,89 @@ const AddPerchaseCom = () => {
       label: `${store.name} / ${store.companyName}`,
     }));
 
-  console.log("storeOptions", storeOptions);
+  // Debounced getProduct function
+  const debouncedGetProduct = useMemo(
+    () =>
+      debounce(async (search) => {
+        setLoading(true);
+        try {
+          const response = await purchaseService.searchProduct(search);
+          if (response.success) {
+            setProductData(response?.data?.data);
+          } else {
+            toast.error(response.message);
+          }
+        } catch (error) {
+          console.error("Product search error:", error);
+          toast.error("Failed to search products");
+        } finally {
+          setLoading(false);
+        }
+      }, 300),
+    []
+  );
+
+  // Calculate dependent fields for a product
+  const calculateProductFields = (product) => {
+    const quantity = parseFloat(product.quantity) || 0;
+    const purRate = parseFloat(product.purRate) || 0;
+    const discRate = parseFloat(product.discRate) || 0;
+    const tax = parseFloat(product.tax) || 0;
+
+    let discAmount = 0;
+    if (product.discType === "percentage") {
+      discAmount = (purRate * discRate) / 100;
+    } else if (product.discType === "amount") {
+      discAmount = discRate;
+    }
+
+    const taxableAmount = purRate - discAmount;
+    const taxAmount = (taxableAmount * tax) / 100;
+    const totalAmount = quantity * (taxableAmount + taxAmount);
+    const totalDisc = quantity * discAmount;
+
+    return {
+      ...product,
+      discAmount: discAmount.toFixed(2),
+      taxAmount: taxAmount.toFixed(2),
+      totalDisc: totalDisc.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+    };
+  };
+
+  // Recalculate form totals
+  const updateFormTotals = (updatedProducts) => {
+    const totalQuantity = updatedProducts.reduce(
+      (sum, p) => sum + (parseFloat(p.quantity) || 0),
+      0
+    );
+    const totalAmount = updatedProducts.reduce(
+      (sum, p) => sum + (parseFloat(p.totalAmount) || 0),
+      0
+    );
+    const totalTax = updatedProducts.reduce(
+      (sum, p) =>
+        sum + (parseFloat(p.taxAmount) * (parseFloat(p.quantity) || 0) || 0),
+      0
+    );
+    const totalDiscount = updatedProducts.reduce(
+      (sum, p) => sum + (parseFloat(p.totalDisc) || 0),
+      0
+    );
+    const netAmount =
+      totalAmount +
+      parseFloat(formData.otherCharges || 0) -
+      parseFloat(formData.flatDiscount || 0);
+
+    setFormData((prev) => ({
+      ...prev,
+      totalQuantity,
+      totalAmount: totalAmount.toFixed(2),
+      totalTax: totalTax.toFixed(2),
+      totalDiscount: totalDiscount.toFixed(2),
+      netAmount: netAmount.toFixed(2),
+    }));
+  };
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -77,71 +157,86 @@ const AddPerchaseCom = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+    if (name === "product" && option) {
+      handleAddProduct(option);
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.vendor) {
-      newErrors.vendor = "Vendor is required";
-    }
-    if (!formData.invoiceNumber.trim()) {
+    if (!formData.vendor) newErrors.vendor = "Vendor is required";
+    if (!formData.invoiceNumber.trim())
       newErrors.invoiceNumber = "Invoice Number is required";
-    }
-    if (!formData.invoiceDate) {
+    if (!formData.invoiceDate)
       newErrors.invoiceDate = "Invoice Date is required";
-    }
-    if (products.length === 0 && !formData.product) {
+    if (products.length === 0)
       newErrors.product = "At least one product must be selected";
-    }
+    if (!formData.store) newErrors.store = "Store is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAddProduct = () => {
-    if (formData.product) {
-      setProducts((prev) => [
-        ...prev,
-        {
-          id: formData.product.value,
-          barcode: `BAR${formData.product.value}`,
-          sku: `SKU${formData.product.value}`,
+  const handleAddProduct = (selectedOption) => {
+    if (selectedOption) {
+      const selectedProduct = productData?.docs?.find(
+        (p) => p._id === selectedOption.value
+      );
+      if (selectedProduct) {
+        const newProduct = {
+          id: selectedProduct._id,
+          barcode: selectedProduct.newBarcode,
+          sku: selectedProduct.sku,
           quantity: 1,
-          mrp: 100,
-          purRate: 80,
-          discType: "percentage",
+          mrp: selectedProduct.MRP,
+          purRate: selectedProduct.costPrice,
+          discType: "amount",
           discRate: 0,
           discAmount: 0,
-          tax: 5,
-          taxAmount: 5,
+          tax: selectedProduct.tax,
+          taxAmount: 0,
           totalDisc: 0,
-          totalAmount: 85,
-        },
-      ]);
-      setFormData((prev) => ({ ...prev, product: null }));
-      setErrors((prev) => ({ ...prev, product: "" }));
-      setFormData((prev) => ({
-        ...prev,
-        totalQuantity: prev.totalQuantity + 1,
-        totalAmount: prev.totalAmount + 85,
-        totalTax: prev.totalTax + 5,
-        netAmount: prev.netAmount + 85,
-      }));
-    } else {
-      setErrors((prev) => ({ ...prev, product: "Please select a product" }));
+          totalAmount: 0,
+        };
+        const calculatedProduct = calculateProductFields(newProduct);
+        const updatedProducts = [...products, calculatedProduct];
+        setProducts(updatedProducts);
+        updateFormTotals(updatedProducts);
+        setFormData((prev) => ({ ...prev, product: null }));
+        setErrors((prev) => ({ ...prev, product: "" }));
+      }
     }
+  };
+
+  const handleProductChange = (index, field, value) => {
+    const updatedProducts = [...products];
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      [field]: value,
+    };
+    const calculatedProduct = calculateProductFields(updatedProducts[index]);
+    updatedProducts[index] = calculatedProduct;
+    setProducts(updatedProducts);
+    updateFormTotals(updatedProducts);
+  };
+
+  const handleRemoveProduct = (index) => {
+    const updatedProducts = products.filter((_, i) => i !== index);
+    setProducts(updatedProducts);
+    updateFormTotals(updatedProducts);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
       console.log("Form submitted:", { ...formData, products });
+      // Add API call to submit the form if needed
     }
   };
 
   useEffect(() => {
     getStores();
     getVendor();
-    getProduct();
+    getProduct("");
   }, []);
 
   const getVendor = async () => {
@@ -154,7 +249,7 @@ const AddPerchaseCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Vendor error:", error);
     } finally {
       setLoading(false);
     }
@@ -166,11 +261,24 @@ const AddPerchaseCom = () => {
       const response = await purchaseService.getStores();
       if (response.success) {
         setStoreData(response?.data?.data);
+        // Optionally set default store if needed
+        const userStores = response?.data?.data.filter((store) =>
+          users.stores.includes(store._id)
+        );
+        if (userStores.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            store: {
+              value: userStores[0]._id,
+              label: `${userStores[0].name} / ${userStores[0].companyName}`,
+            },
+          }));
+        }
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Stores error:", error);
     } finally {
       setLoading(false);
     }
@@ -186,11 +294,16 @@ const AddPerchaseCom = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Product error:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const discTypeOptions = [
+    { value: "percentage", label: "Percentage" },
+    { value: "amount", label: "Amount" },
+  ];
 
   return (
     <div className="container-fluid p-2">
@@ -283,21 +396,21 @@ const AddPerchaseCom = () => {
               </div>
               <div className="mt-4">
                 <label className="form-label fw-medium mb-2">Product</label>
-                <div className="input-group">
-                  <Select
-                    options={productOptions}
-                    value={formData.product}
-                    onChange={(option) => handleSelectChange("product", option)}
-                    placeholder="Select..."
-                    classNamePrefix="react-select"
-                    className={`custom-select flex-grow-1 ${
-                      errors.product ? "is-invalid" : ""
-                    }`}
-                    onInputChange={(value) => {
-                      getProduct(value);
-                    }}
-                  />
-                </div>
+                <Select
+                  options={productOptions}
+                  value={formData.product}
+                  onChange={(option) => handleSelectChange("product", option)}
+                  placeholder="Select..."
+                  classNamePrefix="react-select"
+                  className={`custom-select flex-grow-1 ${
+                    errors.product ? "is-invalid" : ""
+                  }`}
+                  onInputChange={(value) => {
+                    setProductSearchQuery(value);
+                    debouncedGetProduct(value);
+                  }}
+                  isLoading={loading}
+                />
                 {errors.product && (
                   <div className="invalid-feedback d-block">
                     {errors.product}
@@ -308,7 +421,7 @@ const AddPerchaseCom = () => {
                 <table className="table table-sm">
                   <thead className="uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
-                      <th className="px-2 py-3 custom-perchase-th">Image</th>
+                      <th className="px-2 py-3 custom-perchase-th"></th>
                       <th className="px-2 py-3 custom-perchase-th">Barcode</th>
                       <th className="px-2 py-3 custom-perchase-th">SKU</th>
                       <th className="px-2 py-3 custom-perchase-th">Quantity</th>
@@ -333,7 +446,7 @@ const AddPerchaseCom = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="text-sm divide-y divide-slate-200">
+                  <tbody>
                     {products.length === 0 ? (
                       <tr>
                         <td colSpan="13" className="text-center py-3">
@@ -341,21 +454,154 @@ const AddPerchaseCom = () => {
                         </td>
                       </tr>
                     ) : (
-                      products.map((product) => (
+                      products.map((product, index) => (
                         <tr key={product.id}>
-                          <td className="px-2 py-3">-</td>
-                          <td className="px-2 py-3">{product.barcode}</td>
-                          <td className="px-2 py-3">{product.sku}</td>
-                          <td className="px-2 py-3">{product.quantity}</td>
-                          <td className="px-2 py-3">{product.mrp}</td>
-                          <td className="px-2 py-3">{product.purRate}</td>
-                          <td className="px-2 py-3">{product.discType}</td>
-                          <td className="px-2 py-3">{product.discRate}</td>
-                          <td className="px-2 py-3">{product.discAmount}</td>
-                          <td className="px-2 py-3">{product.tax}</td>
-                          <td className="px-2 py-3">{product.taxAmount}</td>
-                          <td className="px-2 py-3">{product.totalDisc}</td>
-                          <td className="px-2 py-3">{product.totalAmount}</td>
+                          <td className="p-2 text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="cursor-pointer text-danger"
+                              onClick={() => handleRemoveProduct(index)}
+                            >
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.barcode}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <textarea
+                              className="form-control form-control-sm"
+                              rows="2"
+                              readOnly
+                              value={product.sku}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              min="0"
+                              value={product.quantity}
+                              onChange={(e) =>
+                                handleProductChange(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.mrp}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              min="0"
+                              value={product.purRate}
+                              onChange={(e) =>
+                                handleProductChange(
+                                  index,
+                                  "purRate",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="p-2">
+                            <select
+                              className="form-select form-select-sm"
+                              value={product.discType}
+                              onChange={(e) =>
+                                handleProductChange(
+                                  index,
+                                  "discType",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              {discTypeOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              min="0"
+                              value={product.discRate}
+                              onChange={(e) =>
+                                handleProductChange(
+                                  index,
+                                  "discRate",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.discAmount}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.tax}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.taxAmount}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.totalDisc}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              readOnly
+                              value={product.totalAmount}
+                            />
+                          </td>
                         </tr>
                       ))
                     )}
@@ -376,12 +622,18 @@ const AddPerchaseCom = () => {
                 </div>
                 <Select
                   options={storeOptions}
-                  value={storeOptions}
+                  value={formData.store}
                   onChange={(option) => handleSelectChange("store", option)}
+                  placeholder="Select..."
                   classNamePrefix="react-select"
-                  className="custom-select"
-                  isDisabled
+                  className={`custom-select ${
+                    errors.store ? "is-invalid" : ""
+                  }`}
+                  isDisabled={storeOptions.length <= 1}
                 />
+                {errors.store && (
+                  <div className="invalid-feedback">{errors.store}</div>
+                )}
               </div>
               {[
                 {
@@ -408,13 +660,17 @@ const AddPerchaseCom = () => {
                   className="mb-3 d-flex align-items-center gap-2"
                   key={field.name}
                 >
-                  <label className="form-label mb-0" htmlFor={field.name}>
+                  <label
+                    className="form-label mb-0"
+                    style={{ minWidth: "80px" }}
+                    htmlFor={field.name}
+                  >
                     {field.label}
                   </label>
                   <input
                     type="number"
                     name={field.name}
-                    className={`form-control w-auto ${
+                    className={`form-control w-fit ${
                       field.readOnly ? "custom-disabled" : ""
                     }`}
                     value={formData[field.name]}

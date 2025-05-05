@@ -190,7 +190,7 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                         <input
                           type="text"
                           className="form-control custom-disabled"
-                          value={formData.__t}
+                          value="contacts"
                           readOnly
                         />
                       </div>
@@ -216,7 +216,7 @@ const ContactsPowerModal = ({ show, onHide, editData }) => {
                       </div>
                     </div>
                     <p className="add_power">Contact Power</p>
-                    <div className="table-responsive px-2">
+                    <div className="px-2">
                       <table className="table table-bordered contact_power_table">
                         <thead>
                           <tr>

@@ -43,8 +43,10 @@ const UserEditDetailForm = ({
   }));
 
   const genderOptions = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+    { value: "unisex", label: "Unisex" },
+    { value: "kids", label: "Kids" },
   ];
 
   const [referenceOptions, setReferenceOptions] = useState([]);
@@ -74,8 +76,19 @@ const UserEditDetailForm = ({
   const validationSchema = Yup.object({
     name: Yup.string().trim().required("Name is required"),
     phone: Yup.string()
-      .min(4, "Phone number is required")
-      .required("Phone number is required"),
+      .required("Phone number is required")
+      .test(
+        "min-digits",
+        "Phone number must be at least 10 digits",
+        (value) => {
+          if (!value) return false;
+          // Extract digits after the country code (e.g., remove "+91" and non-digits)
+          const phoneDigits = value
+            .replace(/^\+\d{1,3}/, "")
+            .replace(/\D/g, "");
+          return phoneDigits.length >= 10;
+        }
+      ),
     customerReference: Yup.object()
       .nullable()
       .required("Customer Reference is required"),
@@ -89,7 +102,7 @@ const UserEditDetailForm = ({
   const initialValues = {
     name: initialData?.Name,
     phone: String(initialData?.Phone),
-    customerReference: initialData?.customerReference,
+    customerReference: initialData?.marketingReference,
     gender: initialData?.gender,
     country: initialData?.country,
     state: initialData?.state,
@@ -133,21 +146,21 @@ const UserEditDetailForm = ({
         enableReinitialize={true}
         onSubmit={async (values) => {
           console.log("Updating user:", values);
-          // const data = {
-          //   ...values,
-          //   country: values.country?.label,
-          //   state: values?.state?.label,
-          //   city: values?.city?.label,
-          //   role: values.role?.value,
-          //   gender: values.gender?.value,
-          // }
-          // const response = await userService.updateCustomer(data);
-          // if(response.success){
-          //   toast.success(response.message);
-          //   navigate("/sale/new")
-          // } else {
-          //   toast.error(response.message);
-          // }
+          const data = {
+            ...values,
+            country: values.country?.label,
+            state: values?.state?.label,
+            city: values?.city?.label,
+            role: values.role?.value,
+            gender: values.gender?.value,
+          };
+          const response = await userService.updateCustomer(data);
+          if (response.success) {
+            toast.success(response.message);
+            navigate("/sale/new");
+          } else {
+            toast.error(response.message);
+          }
         }}
       >
         {({ values, setFieldValue, setValues, errors, touched }) => {

@@ -11,7 +11,6 @@ const ViewProductForm = () => {
   const [inventory, setInventory] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [productData, setProductData] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
   const productOptions = productData?.docs?.map((vendor) => ({
@@ -19,11 +18,8 @@ const ViewProductForm = () => {
     label: `${vendor.oldBarcode} ${vendor.sku}`,
   }));
 
-  // Formik setup with Yup validation
   const formik = useFormik({
-    initialValues: {
-      product: [],
-    },
+    initialValues: { product: [] },
     validationSchema: Yup.object({
       product: Yup.array().notRequired(),
     }),
@@ -35,7 +31,6 @@ const ViewProductForm = () => {
 
   const getProduct = async (search) => {
     setLoading(true);
-
     try {
       const response = await inventoryService.universalSearch(search);
       if (response.success) {
@@ -44,7 +39,7 @@ const ViewProductForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -52,9 +47,7 @@ const ViewProductForm = () => {
 
   const getInventoryData = async (values) => {
     const productIds = values?.product?.map((option) => option.value);
-
     setLoading(true);
-
     try {
       const response = await inventoryService.getProductStore(
         productIds,
@@ -78,15 +71,17 @@ const ViewProductForm = () => {
       if (value?.trim()) {
         getProduct(value);
       }
-    }, 1000),
-    [] // empty dependency to persist across re-renders
+    }, 400),
+    []
   );
 
   return (
     <div className="card-body px-3 py-1">
       <form onSubmit={formik.handleSubmit}>
-        <div className="row row-cols-1  g-3">
-          <div className="col">
+        <div className="row row-cols-1 g-3">
+          <div className="col position-relative">
+            {" "}
+            {/* Added position-relative for spinner */}
             <label className="form-label font-weight-500" htmlFor="product">
               Product
             </label>
@@ -106,25 +101,33 @@ const ViewProductForm = () => {
               onInputChange={(value) => {
                 debouncedGetProduct(value);
               }}
-              isLoading={loading}
-              loadingMessage={() => "Loading..."}
+              // Removed isLoading and loadingMessage
               noOptionsMessage={({ inputValue }) =>
-                inputValue ? "No products found" : "Type to search"
+                inputValue
+                  ? loading && (
+                      <div
+                        className="spinner-border spinner-border-sm text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    )
+                  : "No options"
               }
             />
-
             {formik.touched.product && formik.errors.product && (
               <div className="text-danger mt-1">{formik.errors.product}</div>
             )}
           </div>
         </div>
         <div className="mt-4">
-          <button type="submit" className="btn custom-button-bgcolor ">
+          <button type="submit" className="btn custom-button-bgcolor">
             Submit
           </button>
         </div>
       </form>
 
+      {/* Rest of your code (table, etc.) remains unchanged */}
       <div className="card p-0 shadow-none border mt-5">
         <div className="card-body p-0">
           <div className="table-responsive mt-3 px-2">
@@ -132,14 +135,12 @@ const ViewProductForm = () => {
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
                   <th className="custom-perchase-th">Barcode</th>
-
                   <th className="custom-perchase-th">Date</th>
                   <th className="custom-perchase-th">Photo</th>
                   <th className="custom-perchase-th">Store</th>
                   <th className="custom-perchase-th">Sku</th>
                   <th className="custom-perchase-th">Brand</th>
                   <th className="custom-perchase-th">Mrp</th>
-
                   <th className="custom-perchase-th">Stock</th>
                   <th className="custom-perchase-th">Sold</th>
                 </tr>
@@ -159,7 +160,6 @@ const ViewProductForm = () => {
                         />
                       </td>
                       <td>{item.product?.store}</td>
-
                       <td>{item.product?.sku}</td>
                       <td>{item.product?.mrp}</td>
                       <td>{item.quantity}</td>
@@ -192,12 +192,6 @@ const ViewProductForm = () => {
             </div>
           </div>
         </div>
-        {/* <ImageSliderModal
-              show={showModal}
-              onHide={closeImageModal}
-              images={modalImages}
-            /> */}
-        {/* <InventoryTable data={inventory} /> */}
       </div>
     </div>
   );

@@ -38,6 +38,7 @@ const InventoryForm = () => {
     { value: "male", label: "Male" },
     { value: "female", label: "Female" },
     { value: "unisex", label: "Unisex" },
+    { value: "kids", label: "Kids" },
   ];
 
   const frameSizeOptions = [
@@ -419,7 +420,10 @@ const InventoryForm = () => {
       <form onSubmit={formik.handleSubmit}>
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="stores">
+            <label
+              className="form-label font-weight-500 font-weight-500"
+              htmlFor="stores"
+            >
               Store <span className="text-danger">*</span>
             </label>
             <Select
@@ -441,7 +445,10 @@ const InventoryForm = () => {
             )}
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="selectedProduct">
+            <label
+              className="form-label font-weight-500"
+              htmlFor="selectedProduct"
+            >
               Product <span className="text-danger">*</span>
             </label>
             <Select
@@ -467,7 +474,7 @@ const InventoryForm = () => {
               )}
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="brand">
+            <label className="form-label font-weight-500" htmlFor="brand">
               Brand <span className="text-danger">*</span>
             </label>
             <Select
@@ -486,7 +493,7 @@ const InventoryForm = () => {
             )}
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameType">
+            <label className="form-label font-weight-500" htmlFor="frameType">
               Frame Type
             </label>
             <Select
@@ -499,7 +506,7 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameShape">
+            <label className="form-label font-weight-500" htmlFor="frameShape">
               Frame Shape
             </label>
             <Select
@@ -512,7 +519,7 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="gender">
+            <label className="form-label font-weight-500" htmlFor="gender">
               Gender
             </label>
             <Select
@@ -525,7 +532,10 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameMaterial">
+            <label
+              className="form-label font-weight-500"
+              htmlFor="frameMaterial"
+            >
               Frame Material
             </label>
             <Select
@@ -540,7 +550,7 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameColor">
+            <label className="form-label font-weight-500" htmlFor="frameColor">
               Frame Color
             </label>
             <Select
@@ -553,7 +563,7 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameSize">
+            <label className="form-label font-weight-500" htmlFor="frameSize">
               Frame Size
             </label>
             <Select
@@ -566,7 +576,10 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="prescriptionType">
+            <label
+              className="form-label font-weight-500"
+              htmlFor="prescriptionType"
+            >
               Prescription Type
             </label>
             <Select
@@ -581,7 +594,10 @@ const InventoryForm = () => {
             />
           </div>
           <div className="col">
-            <label className="form-label fw-medium" htmlFor="frameCollection">
+            <label
+              className="form-label font-weight-500"
+              htmlFor="frameCollection"
+            >
               Frame Collection
             </label>
             <Select
@@ -694,9 +710,10 @@ const InventoryForm = () => {
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              Showing <span className="font-weight-500">1</span> to{" "}
+              <span className="font-weight-500">{inventory?.docs?.length}</span>{" "}
+              of{" "}
+              <span className="font-weight-500">{inventory?.docs?.length}</span>{" "}
               results
             </div>
             <div className="btn-group">

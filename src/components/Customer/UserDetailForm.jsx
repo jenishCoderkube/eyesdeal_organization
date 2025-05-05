@@ -19,7 +19,14 @@ import { saleService } from "../../services/saleService";
 import { MdAdd } from "react-icons/md";
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
-  phone: Yup.string().required("Phone number is required"),
+  phone: Yup.string()
+    .required("Phone number is required")
+    .test("min-digits", "Phone number must be at least 10 digits", (value) => {
+      if (!value) return false;
+      // Extract digits after the country code (e.g., remove "+91" and non-digits)
+      const phoneDigits = value.replace(/^\+\d{1,3}/, "").replace(/\D/g, "");
+      return phoneDigits.length >= 10;
+    }),
   customerReference: Yup.string().required("Customer Reference is required"),
   gender: Yup.string().required("Gender is required"),
   country: Yup.string().required("Country is required"),
@@ -103,25 +110,15 @@ function transformPayload(frontendPayload) {
   };
 }
 
-const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
+const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { prescriptions } = useSelector((state) => state.specsPower);
-
-  const [editModal, setEditModal] = useState({
-    show: false,
-    type: null,
-    data: null,
-  });
   const [referenceOptions, setReferenceOptions] = useState([]);
 
   const handleEdit = (prescription) => {
-    setEditModal({
-      show: true,
-      type: prescription.type,
-      data: prescription,
-    });
+    onEditSpecs(prescription);
   };
 
   const handleDelete = (id) => {
@@ -160,7 +157,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
       if (response.success) {
         resetForm();
         toast.success(response.message);
-        navigate("/");
+        // navigate("/");
       } else {
         toast.error(response.message);
       }
@@ -180,6 +177,8 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
   const genderOptions = [
     { value: "Male", label: "Male" },
     { value: "Female", label: "Female" },
+    { value: "unisex", label: "Unisex" },
+    { value: "kids", label: "Kids" },
   ];
 
   const getMarketingReferences = async () => {
@@ -257,6 +256,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                   <Field
                     name="name"
                     type="text"
+                    placeholder="Name"
                     className={`form-control ${
                       touched.name && errors.name ? "is-invalid" : ""
                     }`}
@@ -278,7 +278,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     }`}
                   />
                   {touched.phone && errors.phone && (
-                    <div className="invalid-feedback">{errors.phone}</div>
+                    <div className="invalid-feedback-color">{errors.phone}</div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -321,7 +321,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     placeholder="Select..."
                   />
                   {touched.gender && errors.gender && (
-                    <div className="text-danger mt-1">{errors.gender}</div>
+                    <div className="invalid-feedback-color mt-1">
+                      {errors.gender}
+                    </div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -334,7 +336,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     }`}
                   />
                   {touched.email && errors.email && (
-                    <div className="invalid-feedback">{errors.email}</div>
+                    <div className="invalid-feedback-color">{errors.email}</div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -366,7 +368,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     placeholder="Select Country..."
                   />
                   {touched.country && errors.country && (
-                    <div className="text-danger mt-1">{errors.country}</div>
+                    <div className="invalid-feedback-color mt-1">
+                      {errors.country}
+                    </div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
@@ -386,7 +390,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     isDisabled={!values.country}
                   />
                   {touched.state && errors.state && (
-                    <div className="text-danger mt-1">{errors.state}</div>
+                    <div className="invalid-feedback-color mt-1">
+                      {errors.state}
+                    </div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
@@ -401,7 +407,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     isDisabled={!values.state}
                   />
                   {touched.city && errors.city && (
-                    <div className="text-danger mt-1">{errors.city}</div>
+                    <div className="invalid-feedback-color mt-1">
+                      {errors.city}
+                    </div>
                   )}
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
@@ -414,7 +422,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                     }`}
                   />
                   {touched.pincode && errors.pincode && (
-                    <div className="invalid-feedback">{errors.pincode}</div>
+                    <div className="invalid-feedback-color">
+                      {errors.pincode}
+                    </div>
                   )}
                 </div>
               </div>
@@ -519,18 +529,17 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts }) => {
                             </td>
                             <td className="px-3 py-2">{prescription.type}</td>
                             <td className="px-3 py-2">
-                              <button
+                              <FaEdit
+                                color="blue"
                                 className="btn p-0 me-2"
                                 onClick={() => handleEdit(prescription)}
-                              >
-                                <FaEdit color="blue" />
-                              </button>
-                              <button
+                              />
+
+                              <FaTrash
+                                color="red"
                                 className="btn p-0"
                                 onClick={() => handleDelete(prescription.id)}
-                              >
-                                <FaTrash color="red" />
-                              </button>
+                              />
                             </td>
                           </tr>
                         ))}

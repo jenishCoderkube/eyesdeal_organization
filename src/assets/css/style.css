@@ -1483,8 +1483,15 @@ h6 {
     transform: rotate(360deg);
   }
 }
-/* loader css end */
 
+/* loader css end */
+.invalid-feedback-color{
+  color: rgb(224, 71, 71);
+  font-size: 14px;
+}
+.country-name{
+  margin-left: 30px !important;
+}
 .remove-icon {
   position: absolute;
   left: -25px;
