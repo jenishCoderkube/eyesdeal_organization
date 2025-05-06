@@ -135,6 +135,11 @@ const menuItems = [
       },
     ],
   },
+  // {
+  //   label: "New Sale",
+  //   icon: "bi bi-cash-stack", // You can adjust the icon as needed
+  //   submenu: [{ label: "Sales", link: "/newsales" }],
+  // },
 ];
 
 const Header = () => {

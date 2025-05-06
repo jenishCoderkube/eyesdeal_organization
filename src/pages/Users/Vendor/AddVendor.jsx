@@ -396,7 +396,7 @@ const AddVendors = () => {
             placeholder="1 (702) 123-4567"
           />
           {formik.touched.phone && formik.errors.phone && (
-            <div className="invalid-feedback">{formik.errors.phone}</div>
+            <div className="invalid-feedback-color">{formik.errors.phone}</div>
           )}
         </div>
         <div className="w-100">

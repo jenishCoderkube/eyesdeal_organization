@@ -40,7 +40,7 @@ const AddPerchaseCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [productData, setProductData] = useState([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
-
+  const [loadBaseSubmit, setLoadBaseSubmit] = useState(false);
   const users = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
@@ -225,11 +225,58 @@ const AddPerchaseCom = () => {
     updateFormTotals(updatedProducts);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoadBaseSubmit(true);
     if (validateForm()) {
-      console.log("Form submitted:", { ...formData, products });
-      // Add API call to submit the form if needed
+      // Format the payload to match the API structure
+      const payload = {
+        store: formData.store?.value || "",
+        vendor: formData.vendor?.value || "",
+        invoiceNumber: formData.invoiceNumber,
+        invoiceDate: formData.invoiceDate.getTime(), // Convert Date to timestamp
+        notes: formData.notes || null,
+        isDelivered: formData.isDelivered,
+        totalAmount: formData.totalAmount.toString(),
+        totalQuantity: formData.totalQuantity,
+        totalTax: formData.totalTax.toString(),
+        totalDiscount: formData.totalDiscount.toString(),
+        flatDiscount: formData.flatDiscount.toString(),
+        netDiscount: formData.totalDiscount.toString(), // Assuming netDiscount is same as totalDiscount
+        deliveryCharges: "0.00", // As per your sample payload
+        otherCharges: formData.otherCharges.toString(),
+        netAmount: formData.netAmount.toString(),
+        products: products.map((product) => ({
+          product: product.id,
+          barcode: product.barcode,
+          sku: product.sku,
+          quantity: product.quantity,
+          mrp: product.mrp,
+          purchaseRate: product.purRate,
+          discountType: product.discType,
+          discountRate: product.discRate,
+          discountAmount: product.discAmount,
+          taxAmount: product.taxAmount,
+          tax: product.tax,
+          totalDiscount: product.totalDisc,
+          totalAmount: product.totalAmount,
+        })),
+      };
+
+      try {
+        const response = await purchaseService.addInventory(payload);
+        if (response.success) {
+          toast.success("Inventory added successfully!");
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        console.error("Error adding inventory<<<<<:", response);
+
+        toast.error("Failed to add inventory");
+      } finally {
+        setLoadBaseSubmit(false);
+      }
     }
   };
 
@@ -696,12 +743,27 @@ const AddPerchaseCom = () => {
               </div>
             </div>
           </div>
-          <button
-            type="submit"
-            className="btn mt-2 mb-5 px-4 py-2 custom-button-bgcolor w-auto"
-          >
-            Submit
-          </button>
+          {loadBaseSubmit ? (
+            <button
+              class="btn custom-button-bgcolor w-auto"
+              type="button"
+              disabled
+            >
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Loading...
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="btn mt-2 mb-5 px-4 py-2 custom-button-bgcolor w-auto"
+            >
+              Submit
+            </button>
+          )}
         </div>
       </form>
     </div>

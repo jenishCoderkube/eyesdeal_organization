@@ -254,7 +254,9 @@ function EditEmployee() {
                 placeholder="Enter name"
               />
               {formik.touched.name && formik.errors.name && (
-                <div className="invalid-feedback">{formik.errors.name}</div>
+                <div className="invalid-feedback-color">
+                  {formik.errors.name}
+                </div>
               )}
             </div>
 
@@ -278,7 +280,9 @@ function EditEmployee() {
                 placeholder="1 (702) 123-4567"
               />
               {formik.touched.phone && formik.errors.phone && (
-                <div className="invalid-feedback">{formik.errors.phone}</div>
+                <div className="invalid-feedback-color">
+                  {formik.errors.phone}
+                </div>
               )}
             </div>
 
@@ -301,7 +305,9 @@ function EditEmployee() {
                 placeholder="Enter email"
               />
               {formik.touched.email && formik.errors.email && (
-                <div className="invalid-feedback">{formik.errors.email}</div>
+                <div className="invalid-feedback-color">
+                  {formik.errors.email}
+                </div>
               )}
             </div>
 
@@ -353,7 +359,9 @@ function EditEmployee() {
                 classNamePrefix="react-select"
               />
               {formik.touched.country && formik.errors.country && (
-                <div className="text-danger mt-1">{formik.errors.country}</div>
+                <div className="invalid-feedback-color mt-1">
+                  {formik.errors.country}
+                </div>
               )}
             </div>
 
@@ -372,7 +380,9 @@ function EditEmployee() {
                 classNamePrefix="react-select"
               />
               {formik.touched.state && formik.errors.state && (
-                <div className="text-danger mt-1">{formik.errors.state}</div>
+                <div className="invalid-feedback-color mt-1">
+                  {formik.errors.state}
+                </div>
               )}
             </div>
 
@@ -391,7 +401,9 @@ function EditEmployee() {
                 classNamePrefix="react-select"
               />
               {formik.touched.city && formik.errors.city && (
-                <div className="text-danger mt-1">{formik.errors.city}</div>
+                <div className="invalid-feedback-color mt-1">
+                  {formik.errors.city}
+                </div>
               )}
             </div>
 
@@ -414,7 +426,9 @@ function EditEmployee() {
                 placeholder="Enter pincode"
               />
               {formik.touched.pincode && formik.errors.pincode && (
-                <div className="invalid-feedback">{formik.errors.pincode}</div>
+                <div className="invalid-feedback-color">
+                  {formik.errors.pincode}
+                </div>
               )}
             </div>
 
@@ -432,7 +446,9 @@ function EditEmployee() {
                 classNamePrefix="react-select"
               />
               {formik.touched.gender && formik.errors.gender && (
-                <div className="text-danger mt-1">{formik.errors.gender}</div>
+                <div className="invalid-feedback-color mt-1">
+                  {formik.errors.gender}
+                </div>
               )}
             </div>
 
@@ -451,12 +467,14 @@ function EditEmployee() {
                 classNamePrefix="react-select"
               />
               {formik.touched.stores && formik.errors.stores && (
-                <div className="text-danger mt-1">{formik.errors.stores}</div>
+                <div className="invalid-feedback-color mt-1">
+                  {formik.errors.stores}
+                </div>
               )}
             </div>
 
             {/* Joining Date */}
-            <div className="w-auto">
+            <div style={{ width: "fit-content" }}>
               <label className="form-label fw-medium" htmlFor="joiningDate">
                 Joining Date <span className="text-danger">*</span>
               </label>
@@ -474,7 +492,7 @@ function EditEmployee() {
                 autoComplete="off"
               />
               {formik.touched.joiningDate && formik.errors.joiningDate && (
-                <div className="invalid-feedback">
+                <div className="invalid-feedback-color">
                   {formik.errors.joiningDate}
                 </div>
               )}

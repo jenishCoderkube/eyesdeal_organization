@@ -62,7 +62,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
         const response = await userService.addOrganization(data);
         if (response.success) {
           toast.success(response.message);
-          navigate("/");
+          // navigate("/");
         } else {
           toast.error(response.message);
         }

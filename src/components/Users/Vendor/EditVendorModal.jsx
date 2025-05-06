@@ -257,7 +257,7 @@ const EditVendorModal = ({ show, onHide, onSubmit, editVendor }) => {
               placeholder="1 (702) 123-4567"
             />
             {formik.touched.phone && formik.errors.phone && (
-              <div className="invalid-feedback d-block">
+              <div className="invalid-feedback-color">
                 {formik.errors.phone}
               </div>
             )}

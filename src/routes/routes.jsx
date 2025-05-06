@@ -62,6 +62,7 @@ import MediaLibrary from "../pages/MediaLibrary/MediaLibrary";
 import SubFolder from "../pages/MediaLibrary/SubFolder";
 import ExportProducts from "../pages/Products/ExportProducts";
 import VendorListProcess from "../pages/Process/VendorListProcess";
+import NewSales from "../pages/NewSales/NewSales";
 
 const routes = [
   {
@@ -646,6 +647,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <MediaLibrary />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "newsales",
+    path: "/newsales",
+    element: (
+      <PrivateRoute>
+        <NewSales />
       </PrivateRoute>
     ),
   },

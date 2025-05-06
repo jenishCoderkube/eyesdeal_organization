@@ -9,6 +9,7 @@ const AUTH_ENDPOINTS = {
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
+  ADD_INVENTORY: "/inventory",
 };
 
 const buildPurchaseLogParams = (
@@ -166,6 +167,20 @@ export const purchaseService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  addInventory: async (data) => {
+    try {
+      const response = await api.post(AUTH_ENDPOINTS.ADD_INVENTORY, data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error adding inventory",
       };
     }
   },

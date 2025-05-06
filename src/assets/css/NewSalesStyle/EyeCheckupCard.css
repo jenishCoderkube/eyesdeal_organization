@@ -1,0 +1,125 @@
+.eye-checkup-card {
+  width: 401px;
+  height: 171px;
+  border-radius: 10px;
+  border: 1px solid #C7C7C7;
+  background: #F9F9F9;
+  position: relative;
+  overflow: visible;
+  transition: border 0.3s ease;
+  cursor: pointer;
+}
+
+.eye-checkup-card:hover {
+  border: none;
+}
+
+.card-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.card-title {
+  position: absolute;
+  width: 146px;
+  height: 76px;
+  left: 29px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 135%;
+  letter-spacing: 0%;
+  color: #242424;
+}
+
+.card-arrow {
+  position: absolute;
+  top: 100px; /* Places arrow below the card-title */
+  left: 29px;
+  margin: 0;
+  color: #242424;
+}
+
+.card-image {
+  position: absolute;
+  width: 150.00000359482453px;
+  height: 151.33427791879328px;
+  top: -43px;
+  left: 250.23px;
+  border-radius: 25px;
+  border: 1px solid #C7C7C7;
+  transform: rotate(13.45deg);
+  transition: transform 0.3s ease-in-out, scale 0.3s ease-in-out;
+  object-fit: cover;
+}
+
+.eye-checkup-card:hover .card-image {
+  transform: rotate(-8deg) translate(20px, 0px) scale(0.8);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .eye-checkup-card {
+    width: 90%;
+    height: auto;
+    min-height: 150px;
+    margin: 0 auto;
+  }
+
+  .card-title {
+    font-size: 24px;
+    width: 120px;
+    height: 60px;
+    top: 15px;
+    left: 20px;
+  }
+
+  .card-arrow {
+    top: 80px; /* Adjust for smaller title height */
+    left: 20px;
+  }
+
+  .card-image {
+    width: 120px;
+    height: 121px;
+    top: -35px;
+    left: 60%;
+  }
+
+  .eye-checkup-card:hover .card-image {
+    transform: rotate(-4deg) translate(20px, 0px) scale(0.8);
+  }
+}
+
+@media (max-width: 480px) {
+  .eye-checkup-card {
+    width: 100%;
+    height: auto;
+    min-height: 130px;
+  }
+
+  .card-title {
+    font-size: 20px;
+    width: 100px;
+    height: 50px;
+    top: 10px;
+    left: 15px;
+  }
+
+  .card-arrow {
+    top: 70px; /* Adjust for smaller title height */
+    left: 15px;
+  }
+
+  .card-image {
+    width: 100px;
+    height: 101px;
+    top: -30px;
+    left: 65%;
+  }
+
+  .eye-checkup-card:hover .card-image {
+    transform: rotate(-4deg) translate(20px, 0px) scale(0.8);
+  }
+}
