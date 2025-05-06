@@ -7,7 +7,6 @@ import { reportService } from "../../../services/reportService";
 import { purchaseService } from "../../../services/purchaseService";
 
 const PurchaseReportsForm = ({ onSubmit }) => {
-
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [vendorData, setVendorData] = useState([]);
@@ -46,9 +45,8 @@ const PurchaseReportsForm = ({ onSubmit }) => {
   const getVendorsByType = async () => {
     setLoading(true);
     try {
-      const response = await purchaseService.getVendorsByType();
+      const response = await purchaseService.getVendorsByType("purchase_vendor");
       if (response.success) {
-        console.log(response)
         setVendorData(response?.data?.docs);
       } else {
         toast.error(response.message);
@@ -60,7 +58,6 @@ const PurchaseReportsForm = ({ onSubmit }) => {
     }
   };
 
-  // Formik setup without validation
   const formik = useFormik({
     initialValues: {
       store: null,
@@ -76,13 +73,12 @@ const PurchaseReportsForm = ({ onSubmit }) => {
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
-          isMulti
+            isMulti
             options={storeOptions}
             value={formik.values.store}
             onChange={(option) => formik.setFieldValue("store", option)}
@@ -93,13 +89,12 @@ const PurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Vendor Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="vendor" className="form-label font-weight-500">
             Vendor
           </label>
           <Select
-          isMulti
+            isMulti
             options={vendorOptions}
             value={formik.values.vendor}
             onChange={(option) => formik.setFieldValue("vendor", option)}
@@ -110,7 +105,6 @@ const PurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -128,7 +122,6 @@ const PurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -146,7 +139,6 @@ const PurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"

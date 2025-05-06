@@ -1,74 +1,51 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import TransferReportsForm from "./TransferReportsForm";
 import TransferReportsTable from "./TransferReportsTable";
+import { reportService } from "../../../services/reportService";
 
 const TransferReportCom = () => {
-  // Data from HTML <tbody> plus 3 dummy entries
-  const initialData = useMemo(
-    () => [
-      {
-        id: 1,
-        date: "22/04/2025",
-        fromStore: "EYESDEAL YOGICHOWK",
-        toStore: "ED HO",
-        sku: "FD-FR-081-C1",
-        stockQuantity: 1,
-      },
-      {
-        id: 54,
-        date: "22/04/2025",
-        fromStore: "EYESDEAL VESU",
-        toStore: "EYESDEAL NAVSARI",
-        sku: "FZ-FR-90050-C11",
-        stockQuantity: 1,
-      },
-      {
-        id: 2,
-        date: "22/04/2025",
-        fromStore: "EYESDEAL NAVSARI",
-        toStore: "EYESDEAL YOGICHOWK",
-        sku: "RB-FR-1001-C2",
-        stockQuantity: 2,
-      },
-      {
-        id: 3,
-        date: "21/04/2025",
-        fromStore: "ED HO",
-        toStore: "EYESDEAL VESU",
-        sku: "OK-SG-2002-C3",
-        stockQuantity: 3,
-      },
-      {
-        id: 4,
-        date: "22/04/2025",
-        fromStore: "EYESDEAL YOGICHOWK",
-        toStore: "EYESDEAL NAVSARI",
-        sku: "FZ-FR-3003-C4",
-        stockQuantity: 1,
-      },
-    ],
-    []
-  );
+  const [filteredData, setFilteredData] = useState([]);
+  const [fromDate, setFromDate] = useState();
+  const [toDate, setToDate] = useState();
+  const [StoreFrom, setStoreFrom] = useState();
+  const [Storeto, setStoreTo] = useState();
 
-  const [filteredData, setFilteredData] = useState(initialData);
+  const fetchTransferStockWithFilter = async ({ fromDate, toDate, storeFrom, storeTo }) => {
+    try {
+      const payload = {
+        fromDate,
+        toDate,
+        ...(storeFrom && storeFrom.length && { storeFrom }),
+        ...(storeTo && storeTo.length && { storeTo }),
+      };
+      const response = await reportService.getTransferStock(payload)
+      if (response.success) {
+        setFilteredData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    }
+  }
 
   const handleFormSubmit = (values) => {
-    const filtered = initialData.filter((item) => {
-      const itemDate = new Date(item.date.split("/").reverse().join("-"));
-      const fromDate = values.from;
-      const toDate = values.to;
-      return (
-        (!values.storeFrom ||
-          values.storeFrom.length === 0 ||
-          values.storeFrom.some((s) => s.value === item.fromStore)) &&
-        (!values.storeTo ||
-          values.storeTo.length === 0 ||
-          values.storeTo.some((s) => s.value === item.toStore)) &&
-        (!fromDate || itemDate >= fromDate) &&
-        (!toDate || itemDate <= toDate)
-      );
-    });
-    setFilteredData(filtered);
+    const { from, to, storeFrom = [], storeTo = [] } = values;
+
+    const fromTimestamp = new Date(from).getTime();
+    const toTimestamp = new Date(to).getTime();
+
+    const storefromId = storeFrom.map(s => s.value);
+    const storetoId = storeTo.map(s => s.value);
+
+    if (storefromId.length || storetoId.length) {
+      fetchTransferStockWithFilter({
+        fromDate: fromTimestamp,
+        toDate: toTimestamp,
+        storeFrom: storefromId,
+        storeTo: storetoId
+      });
+    }
   };
 
   return (
@@ -82,11 +59,16 @@ const TransferReportCom = () => {
             <TransferReportsForm
               onSubmit={handleFormSubmit}
               data={filteredData}
+              setFromDate={setFromDate}
+              setToDate={setToDate}
+              setStoreFrom={setStoreFrom}
+              setStoreTo={setStoreTo}
+              setFilteredData={setFilteredData}
             />
           </div>
           <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">Transfer Report</h6>
-            <TransferReportsTable data={filteredData} />
+            <TransferReportsTable data={filteredData} fromDate={fromDate} toDate={toDate} StoreFrom={StoreFrom} Storeto={Storeto}/>
           </div>
         </div>
       </div>

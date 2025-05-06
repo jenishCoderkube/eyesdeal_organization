@@ -7,148 +7,225 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const GstReportsTable = ({ data }) => {
+const GstReportsTable = ({ data, storesIdsData }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(data);
+  const [formattedData, setFormattedData] = useState([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.date,
-          item.orderNo,
-          item.sku,
-          item.item,
-          item.godown,
-          String(item.qty),
-          String(item.rate),
-          String(item.cgst),
-          String(item.sgst),
-          String(item.netAmount),
-          item.narration,
-          String(item.cash),
-          String(item.upi),
-          String(item.card),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      const formattedData = processData(data);
+      setFormattedData(formattedData);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchOrders({
+        search: debouncedQuery,
+        stores: storesIdsData
+      });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchOrders = ({ search, stores }) => {
+    const payload = {
+      search,
+      ...(stores && stores.length && { stores }),
+    };
+    reportService.fetchOrders(payload)
+      .then(res => {
+        const formattedData = processData(res.data?.data?.docs);
+        setFormattedData(formattedData);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const processData = (rawData) => {
+    const processed = [];
+    rawData.forEach((item) => {
+
+      const date = moment(item.createdAt).format("YYYY-MM-DD");
+      const billNumber = item.billNumber;
+      const godownName = item.store?.name || "";
+      const totalQty = item.sale?.totalQuantity || "";
+      const netAmount = item.sale?.netAmount || "";
+
+      let paymentSummary = {
+        cash: 0,
+        upi: 0,
+        card: 0
+      };
+
+      item.sale?.receivedAmount.forEach(entry => {
+        const method = entry.method?.toLowerCase();
+        if (method == "cash") {
+          paymentSummary.cash += entry.amount
+        }
+        if (method == "bank") {
+          paymentSummary.upi += entry.amount
+        }
+        if (method == "card") {
+          paymentSummary.card += entry.amount
+        }
+      });
+
+      if (item.product?.item.displayName) {
+        processed.push({
+          type: "Product",
+          date,
+          billNumber,
+          godownName,
+          totalQty,
+          netAmount,
+          sku: item.product.sku || "",
+          item: [item.product.item.brand?.name, item.product.item.__t].filter(Boolean).join(" ") || "",
+          rate: (Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0),
+          cgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
+          sgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
+          narration: ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.product.sku} ` || "",
+          cash: paymentSummary.cash,
+          upi: paymentSummary.upi,
+          card: paymentSummary.card,
+        });
+      }
+
+      if (item.lens?.item.displayName) {
+        processed.push({
+          type: "Lens",
+          date,
+          billNumber,
+          godownName,
+          totalQty,
+          netAmount,
+          sku: item.lens.sku || "",
+          item: [item.lens.item.brand?.name, item.lens.item.__t].filter(Boolean).join(" ") || "",
+          rate: (Number(item.lens.perPieceAmount) || 0) - (Number(item.lens.item.perPieceTax) || 0),
+          cgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
+          sgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
+          narration: ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.lens.sku} ` || "",
+          cash: paymentSummary.cash,
+          upi: paymentSummary.upi,
+          card: paymentSummary.card,
+        });
+      }
+    });
+
+    return processed;
+  };
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "date",
         header: "Date",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "orderNo",
+        accessorKey: "billNumber",
         header: "Order No",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "sku",
         header: "SKU",
+        size: 500,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "item",
         header: "Item",
+        size: 230,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "godown",
+        accessorKey: "godownName",
         header: "Godown",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "qty",
+        accessorKey: "totalQty",
         header: "QTY",
+        size: 30,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "rate",
         header: "Rate",
+        size: 40,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "cgst",
         header: "CGST",
+        size: 40,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "sgst",
         header: "SGST",
+        size: 40,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "netAmount",
         header: "Net Amount",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "narration",
         header: "Narration",
+        size: 850,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "cash",
         header: "CASH",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "upi",
         header: "UPI",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "card",
         header: "Card",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
-    data: filteredData,
+    data: formattedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -160,17 +237,16 @@ const GstReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
+      data.map((item, index) => ({
+        SRNO: index + 1,
         Date: item.date,
-        Order_No: item.orderNo,
+        Order_No: item.billNumber,
         SKU: item.sku,
         Item: item.item,
-        Godown: item.godown,
-        QTY: item.qty,
+        Godown: item.godownName,
+        QTY: item.totalQty,
         Rate: item.rate,
         CGST: item.cgst,
         SGST: item.sgst,
@@ -187,28 +263,20 @@ const GstReportsTable = ({ data }) => {
   };
 
   const exportProduct = () => {
-    exportToExcel(filteredData, "GstReport");
+    exportToExcel(formattedData, "GstReport");
   };
-
-  // Calculate total net amount
-  const totalNetAmount = filteredData.reduce(
-    (sum, item) => sum + item.netAmount,
-    0
-  );
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, formattedData.length);
+  const totalRows = formattedData.length;
 
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">
-          Total Net Amount: {totalNetAmount}
-        </p>
+
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -241,13 +309,15 @@ const GstReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
+
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

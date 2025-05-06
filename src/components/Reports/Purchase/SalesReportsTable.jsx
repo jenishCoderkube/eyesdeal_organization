@@ -20,7 +20,6 @@ const PurchaseReportsTable = ({ data, amountData }) => {
     setNewAmountData(amountData)
   }, [amountData])
 
-  // Sync filteredData with incoming data prop
   useEffect(() => {
     if (Array.isArray(data)) {
       setFilteredData(data);
@@ -30,25 +29,21 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 500); // Adjust delay here
+    }, 500);
 
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
   useEffect(() => {
-
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (debouncedQuery.trim()) {
       fetchPurchaseLog(debouncedQuery);
-      // fetchAmount(yesterday.getTime(), today.getTime(), debouncedQuery);
     }
   }, [debouncedQuery]);
 
-
-  // Handle search input change
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
@@ -69,7 +64,6 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   //     .catch(e => console.log("Failed to get amount: ", e))
   // }
   
-  // Table columns
   const columns = useMemo(
     () => [
       {
@@ -125,7 +119,7 @@ const PurchaseReportsTable = ({ data, amountData }) => {
     ],
     []
   );
-  // @tanstack/react-table setup
+
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -139,13 +133,12 @@ const PurchaseReportsTable = ({ data, amountData }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
         Store_Name: item.store.name,
         Vendor_Name: item.vendor.companyName,
-        Date: item.createdAt,
+        Date: moment(item.createdAt).format("YYYY-MM-DD"),
         Bill_No: item.invoiceNumber,
         Amount: item.totalAmount,
         Total_Piece: item.totalQuantity,
@@ -159,9 +152,6 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   const exportProduct = () => {
     exportToExcel(filteredData, "PurchaseReport");
   };
-
-  // Calculate total amount
-  const totalAmount = filteredData.reduce((sum, item) => sum + item.amount, 0);
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;

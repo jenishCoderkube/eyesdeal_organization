@@ -4,7 +4,6 @@ import api from "./api";
 // Auth endpoints
 const AUTH_ENDPOINTS = {
   STORES: `/stores`,
-  VENDORSTYPE: "/vendors?type=purchase_vendor",
   VENDORS: "/vendors",
   PRODUCTS: (search) => `/products/product?search=${search}&manageStock=true`,
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
@@ -52,9 +51,10 @@ export const purchaseService = {
       };
     }
   },
-  getVendorsByType: async () => {
+  getVendorsByType: async (type) => {
     try {
-      const response = await api.get(AUTH_ENDPOINTS.VENDORSTYPE);
+      const params = { type };
+      const response = await api.get(AUTH_ENDPOINTS.VENDORS, { params });
 
       if (response.data.success) {
         return {
@@ -63,7 +63,6 @@ export const purchaseService = {
           data: response.data.data,
         };
       }
-
       return {
         success: false,
         message: response.data.message || "Error",
@@ -86,7 +85,6 @@ export const purchaseService = {
           data: response.data.data,
         };
       }
-
       return {
         success: false,
         message: response.data.message || "Error",

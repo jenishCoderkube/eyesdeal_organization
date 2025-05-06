@@ -1,30 +1,57 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
+import { reportService } from "../../../services/reportService";
 
-const GstReportsForm = ({ onSubmit, data }) => {
-  // Options for select field
-  const storeOptions = [
-    { value: "EYESDEAL BHARUCH", label: "EYESDEAL BHARUCH" },
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-  ];
+const GstReportsForm = ({ onSubmit, data, setStoresIdsData }) => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Formik setup without validation
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formik = useFormik({
     initialValues: {
       store: [],
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel function
+  useEffect(() => {
+    const ids = formik.values.store;
+    const transformed = ids.map(item => (item.value));
+    setStoresIdsData(transformed);
+  }, [formik.values.store]);
+
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -50,14 +77,9 @@ const GstReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "GstReport");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-4">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
@@ -74,7 +96,6 @@ const GstReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-4">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -92,7 +113,6 @@ const GstReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-4">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -110,12 +130,11 @@ const GstReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>

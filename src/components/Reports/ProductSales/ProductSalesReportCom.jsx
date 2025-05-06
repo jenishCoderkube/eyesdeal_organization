@@ -5,13 +5,11 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { reportService } from "../../../services/reportService";
 
 const ProductSalesReportCom = () => {
-
   const [filteredData, setFilteredData] = useState([]);
   const [amountData, setAmountData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    // Get yesterday's date
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -63,7 +61,6 @@ const ProductSalesReportCom = () => {
   const handleFormSubmit = (values) => {
     if (values) {
       const { from, to, page = 1, brand = [], store = [] } = values;
-
       setCurrentPage(page);
 
       const fromTimestamp = new Date(from).getTime();

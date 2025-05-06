@@ -1,31 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
+import { reportService } from "../../../services/reportService";
 
-const EmployeeIncentiveReportsForm = ({ onSubmit, data }) => {
-  // Options for select fields
-  const employeeOptions = [
-    { value: "HIRAL JAIN", label: "HIRAL JAIN" },
-    { value: "RAJESH PATEL", label: "RAJESH PATEL" },
-    { value: "SNEHA SHARMA", label: "SNEHA SHARMA" },
-  ];
+const EmployeeIncentiveReportsForm = ({ onSubmit, data, setEmployeeids, setFromDate, setToDate }) => {
+  const [employeeData, setEmployeeData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Formik setup without validation
+  const employeeOptions = employeeData?.map((emp) => ({
+    value: emp._id,
+    label: `${emp.name}`,
+  }));
+
+  useEffect(() => {
+    fetchEmployeeData();
+  }, []);
+
+  const fetchEmployeeData = async () => {
+    setLoading(true);
+    try {
+      const role = ["sales", "store_manager", "individual_store"];
+      const payload = {
+        role,
+        limit: 300
+      };
+      const response = await reportService.getEmployeeData(payload)
+      if (response.success) {
+        setEmployeeData(response?.data?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const formik = useFormik({
     initialValues: {
       employee: [],
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel function
+  useEffect(() => {
+    const ids = formik.values.employee;    
+    setEmployeeids(ids);
+  }, [formik.values.employee]);
+
+  useEffect(() => {
+    const fromTimestamp = new Date(formik.values.from).getTime();
+    setFromDate(fromTimestamp);
+  }, [formik.values.from]);
+
+  useEffect(() => {
+    const toTimestamp = new Date(formik.values.to).getTime();
+    setToDate(toTimestamp);
+  }, [formik.values.to]);
+
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -45,14 +85,9 @@ const EmployeeIncentiveReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "EmployeeIncentiveReport");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Employee Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="employee" className="form-label font-weight-500">
             Select Employee
@@ -67,11 +102,9 @@ const EmployeeIncentiveReportsForm = ({ onSubmit, data }) => {
             placeholder="Select..."
             classNamePrefix="react-select"
             id="employee"
-            isMulti
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -89,7 +122,6 @@ const EmployeeIncentiveReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -107,12 +139,11 @@ const EmployeeIncentiveReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>

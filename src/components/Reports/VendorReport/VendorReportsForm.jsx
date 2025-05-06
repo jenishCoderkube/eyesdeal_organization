@@ -1,44 +1,92 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { reportService } from "../../../services/reportService";
+import { purchaseService } from "../../../services/purchaseService";
 
-const VendorReportsForm = ({ onSubmit, data }) => {
-  // Options for select fields
-  const storeOptions = [
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-    { value: "CITY OPTICS", label: "CITY OPTICS" },
-    { value: "ELITE HOSPITAL", label: "ELITE HOSPITAL" },
-  ];
-  const vendorOptions = [
-    { value: "NICE OPTICAL VADODRA", label: "NICE OPTICAL VADODRA" },
-    { value: "VISION SUPPLIERS", label: "VISION SUPPLIERS" },
-    { value: "OPTIC DISTRIBUTORS", label: "OPTIC DISTRIBUTORS" },
-  ];
+const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [vendorData, setVendorData] = useState([]);
+
+  const storeOptions = storeData?.map((store) => ({
+    value: store._id,
+    label: `${store.name}`,
+  }));
+
+  const vendorOptions = vendorData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.companyName}`,
+  }));
+
   const statusOptions = [
-    { value: "Received", label: "Received" },
-    { value: "Damaged", label: "Damaged" },
-    { value: "Pending", label: "Pending" },
+    { value: "received", label: "Received" },
+    { value: "damaged", label: "Damaged" },
+    { value: "pending", label: "Pending" },
   ];
 
-  // Formik setup without validation
+  useEffect(() => {
+    getStores();
+    getVendorsByType();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getVendorsByType = async () => {
+    setLoading(true);
+    try {
+      const response = await purchaseService.getVendorsByType("lens_vendor");
+      if (response.success) {
+        setVendorData(response?.data?.docs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formik = useFormik({
     initialValues: {
       store: [],
       vendorName: [],
-      status: [],
-      from: null,
-      to: null,
+      status: [
+        { value: "damaged", label: "Damaged" },
+        { value: "received", label: "Received" }
+      ],
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel function
+  useEffect(() => {
+    const ids = formik.values.store.map(s => s.value);
+    setstoresNames(ids);
+  }, [formik.values.store]);
+  
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -57,14 +105,9 @@ const VendorReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "VendorReport");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
@@ -81,7 +124,6 @@ const VendorReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Vendor Name Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="vendorName" className="form-label font-weight-500">
             Vendor Name
@@ -100,7 +142,6 @@ const VendorReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Status Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="status" className="form-label font-weight-500">
             Select Status
@@ -119,7 +160,6 @@ const VendorReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -137,7 +177,6 @@ const VendorReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -155,12 +194,11 @@ const VendorReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>

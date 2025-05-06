@@ -7,9 +7,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { toast } from "react-toastify";
 import { reportService } from "../../../services/reportService";
 import CommonButton from "../../../components/CommonButton/CommonButton";
-const SalesReportsForm = ({ onSubmit }) => {
-  // Options for select fields
 
+const SalesReportsForm = ({ onSubmit }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [brandData, setBrandData] = useState([]);
@@ -61,24 +60,6 @@ const SalesReportsForm = ({ onSubmit }) => {
     }
   };
 
-  // const getCategoryData = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await reportService.getCategory();
-  //     if (response.success) {
-  //       console.log("res", response?.data?.data?.docs);
-  //       setCategoryData(response?.data?.data?.docs);
-  //     } else {
-  //       toast.error(response.message);
-  //     }
-  //   } catch (error) {
-  //     console.error("Login error:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Formik setup without validation
   const formik = useFormik({
     initialValues: {
       store: null,
@@ -94,7 +75,6 @@ const SalesReportsForm = ({ onSubmit }) => {
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
@@ -111,7 +91,6 @@ const SalesReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Brand Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="brand" className="form-label font-weight-500">
             Select Brand
@@ -128,7 +107,6 @@ const SalesReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -146,7 +124,6 @@ const SalesReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -164,7 +141,6 @@ const SalesReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <CommonButton
             loading={loading}

@@ -1,187 +1,93 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import CashReportsForm from "./CashReportsForm";
 import CashReportsTable from "./CashReportsTable";
+import { reportService } from "../../../services/reportService";
 
 const CashReportCom = () => {
-  // Data from HTML <tbody>
-  const initialData = useMemo(
-    () => [
-      {
-        id: 1,
-        date: "22/04/2025",
-        store: "EYESDEAL BHAGATALAV",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1300,
-        note: "2054942",
-      },
-      {
-        id: 2,
-        date: "22/04/2025",
-        store: "EYESDEAL VARACCHA",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1000,
-        note: "854940",
-      },
-      {
-        id: 3,
-        date: "22/04/2025",
-        store: "EYESDEAL ADAJAN",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1450,
-        note: "2437418",
-      },
-      {
-        id: 4,
-        date: "22/04/2025",
-        store: "EYESDEAL VARACCHA",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 800,
-        note: "854661",
-      },
-      {
-        id: 5,
-        date: "22/04/2025",
-        store: "EYESDEAL BHATAR",
-        mode: "cash",
-        expenseCategory: "OLD ERP DELIVERY ( +CREDIT )",
-        type: "credit",
-        amount: 1800,
-        note: "NEMISH BHAI KAPADIA OLD DLV OLD ERP",
-      },
-      {
-        id: 6,
-        date: "22/04/2025",
-        store: "EYESDEAL BHATAR",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1400,
-        note: "207649",
-      },
-      {
-        id: 7,
-        date: "22/04/2025",
-        store: "EYESDEAL KATARGAM",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 800,
-        note: "454936",
-      },
-      {
-        id: 8,
-        date: "22/04/2025",
-        store: "EYESDEAL PANCHBATTI BHARUCH",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1050,
-        note: "1454935",
-      },
-      {
-        id: 9,
-        date: "22/04/2025",
-        store: "EYESDEAL KATARGAM",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 500,
-        note: "454934",
-      },
-      {
-        id: 10,
-        date: "22/04/2025",
-        store: "EYESDEAL BARDOLI",
-        mode: "cash",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 400,
-        note: "1954932",
-      },
-      {
-        id: 11,
-        date: "22/04/2025",
-        store: "EYESDEAL PALANPUR",
-        mode: "bank",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 2500,
-        note: "1654941",
-      },
-      {
-        id: 12,
-        date: "22/04/2025",
-        store: "EYESDEAL PALANPUR",
-        mode: "bank",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 1100,
-        note: "1654937",
-      },
-      {
-        id: 13,
-        date: "22/04/2025",
-        store: "EYESDEAL BARDOLI",
-        mode: "bank",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 700,
-        note: "1954931",
-      },
-      {
-        id: 14,
-        date: "22/04/2025",
-        store: "EYESDEAL NAVSARI",
-        mode: "card",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 7500,
-        note: "354939",
-      },
-      {
-        id: 15,
-        date: "22/04/2025",
-        store: "EYESDEAL BHATAR",
-        mode: "card",
-        expenseCategory: "SALE",
-        type: "credit",
-        amount: 4400,
-        note: "251997",
-      },
-    ],
-    []
-  );
+  const [filteredData, setFilteredData] = useState([]);
 
-  const [filteredData, setFilteredData] = useState(initialData);
+  const defaultType = ["credit"];
+  const defaultMode = ["cash", "bank", "card"];
+
+  useEffect(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    fetchCashbook({ fromDate: yesterday.getTime(), toDate: today.getTime(), type: defaultType, mode: defaultMode });
+  }, []);
+
+  const fetchCashbook = ({ fromDate, toDate, type, mode }) => {
+    const payload = {
+      fromDate,
+      toDate,
+      ...(type && type.length && { type }),
+      ...(mode && mode.length && { mode })
+    };
+    reportService.getCashbook(payload)
+      .then(res => {
+        const combinedDocs = res.data
+          ?.flatMap(entry => {
+            const docs = entry?.data?.data?.docs || [];
+            return docs.map(doc => ({ ...doc, mode: entry.mode }));
+          });
+        setFilteredData(combinedDocs);
+      })
+      .catch(e => console.log("Failed to get jobWorks: ", e))
+  }
+
+  const fetchCashbookWithFilter = ({ fromDate, toDate, limit, type, stores, mode }) => {
+    const payload = {
+      fromDate,
+      toDate,
+      limit,
+      ...(type && type.length && { type }),
+      ...(stores && stores.length && { stores }),
+      ...(mode && mode.length && { mode })
+    };
+    reportService.getCashbook(payload)
+      .then(res => {
+        const combinedDocs = res.data
+          ?.flatMap(entry => {
+            const docs = entry?.data?.data?.docs || [];
+            return docs.map(doc => ({ ...doc, mode: entry.mode }));
+          });
+
+        setFilteredData(combinedDocs);
+      })
+      .catch(e => console.log("Failed to get jobWorks: ", e))
+  }
 
   const handleFormSubmit = (values) => {
-    const filtered = initialData.filter((item) => {
-      const itemDate = new Date(item.date.split("/").reverse().join("-"));
-      const fromDate = values.from;
-      const toDate = values.to;
-      return (
-        (!values.mode ||
-          values.mode.length === 0 ||
-          values.mode.some((m) => m.value === item.mode)) &&
-        (!values.store ||
-          values.store.length === 0 ||
-          values.store.some((s) => s.value === item.store)) &&
-        (!values.type ||
-          values.type.length === 0 ||
-          values.type.some((t) => t.value === item.type)) &&
-        (!fromDate || itemDate >= fromDate) &&
-        (!toDate || itemDate <= toDate)
-      );
+    const { from, to, type = [], store = [], mode = [] } = values;
+
+    const fromTimestamp = new Date(from).getTime();
+    const toTimestamp = new Date(to).getTime();
+
+    const typenames = type.map(t => t.value);
+    const storeIds = store.map(s => s.value);
+    const modenames = mode.map(m => m.value);
+
+    if (modenames.length === 0) {
+      setFilteredData([]);
+      console.warn("Mode is required. Skipping API call.");
+      return;
+    }
+
+    if (modenames.length === 0 && typenames.length === 0 && storeIds.length === 0) {
+      setFilteredData([]);
+      console.warn("No filters selected. Skipping API call.");
+      return;
+    }
+
+    fetchCashbookWithFilter({
+      fromDate: fromTimestamp,
+      toDate: toTimestamp,
+      limit: 1000,
+      type: typenames,
+      stores: storeIds,
+      mode: modenames,
     });
-    setFilteredData(filtered);
   };
 
   return (

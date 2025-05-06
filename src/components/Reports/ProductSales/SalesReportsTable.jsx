@@ -16,9 +16,9 @@ const SalesReportsTable = ({ data, amountData }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  useEffect(()=>{
+  useEffect(() => {
     setFilteredData(data)
-  },[data])
+  }, [data])
 
   const handleSearch = (value) => {
     setSearchQuery(value);
@@ -27,7 +27,7 @@ const SalesReportsTable = ({ data, amountData }) => {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 500); // Adjust delay here
+    }, 500);
 
     return () => clearTimeout(handler);
   }, [searchQuery]);
@@ -51,7 +51,6 @@ const SalesReportsTable = ({ data, amountData }) => {
     }
   };
 
-  // Table columns
   const columns = useMemo(
     () => [
       {
@@ -95,20 +94,11 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "Brand",
         size: 210,
-        // cell: ({ getValue }) => (
-        //   <div className="text-left">
-        //     {(getValue()?.item?.brand?.name ?? "") +
-        //       " " +
-        //       (getValue()?.item?.__t ?? "")}
-        //   </div>
-        // ),
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
           const brandName = product?.item?.brand?.name ?? lens?.item?.brand?.name ?? "";
           const type = product?.item?.__t ?? lens?.item?.__t ?? "";
-      
           return (
             <div className="text-left">
               {brandName + " " + type}
@@ -120,13 +110,12 @@ const SalesReportsTable = ({ data, amountData }) => {
         id: "productBarcode",
         accessorKey: "product",
         header: "Barcode",
-        // cell: ({ getValue }) => <div className="text-left">{getValue()?.barcode}</div>,
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
+
           const barcode = product?.barcode ?? lens?.barcode ?? "";
-      
+
           return (
             <div className="text-left">
               {barcode}
@@ -139,13 +128,12 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "SKU",
         size: 300,
-        // cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
+
           const sku = product?.sku ?? lens?.sku ?? "";
-      
+
           return (
             <div className="text-left">
               {sku}
@@ -158,13 +146,12 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "MRP",
         size: 80,
-        // cell: ({ getValue }) => <div className="text-left">{getValue()?.mrp}</div>,
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
+
           const mrp = product?.mrp ?? lens?.mrp ?? "";
-      
+
           return (
             <div className="text-left">
               {mrp}
@@ -177,13 +164,12 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "Discount",
         size: 100,
-        // cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceDiscount}</div>,
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
+
           const perPieceDiscount = product?.perPieceDiscount ?? lens?.perPieceDiscount ?? "";
-      
+
           return (
             <div className="text-left">
               {perPieceDiscount}
@@ -196,13 +182,10 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "product",
         header: "Net Amount",
         size: 120,
-        // cell: ({ getValue }) => <div className="text-left">{getValue()?.perPieceAmount}</div>,
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-      
           const perPieceAmount = product?.perPieceAmount ?? lens?.perPieceAmount ?? "";
-      
           return (
             <div className="text-left">
               {perPieceAmount}
@@ -214,7 +197,6 @@ const SalesReportsTable = ({ data, amountData }) => {
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -228,7 +210,6 @@ const SalesReportsTable = ({ data, amountData }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -255,12 +236,6 @@ const SalesReportsTable = ({ data, amountData }) => {
   const exportCustomerData = () => {
     exportToExcel(filteredData, "CustomerData");
   };
-
-  // Calculate total amount
-  const totalAmount = filteredData?.reduce(
-    (sum, item) => sum + item.netAmount,
-    0
-  );
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;

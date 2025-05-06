@@ -7,93 +7,158 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const EmployeeIncentiveReportsTable = ({ data }) => {
+const EmployeeIncentiveReportsTable = ({ data, amountData, employeeids, fromDate, toDate }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(data);
+  const [formattedData, setFormattedData] = useState([]);
+  const [newamountData, setNewAmountData] = useState(amountData);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.date,
-          item.orderNo,
-          item.brand,
-          item.sku,
-          String(item.mrp),
-          String(item.discount),
-          String(item.percentage),
-          String(item.incentiveAmount),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    setNewAmountData(amountData)
+  }, [amountData])
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    if (Array.isArray(data)) {
+      const formattedData = processData(data);
+      setFormattedData(formattedData);
+    }
+  }, [data]);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-  // Handle search input change
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchOrders({
+        search: debouncedQuery,
+        fromDate: fromDate,
+        toDate: toDate,
+        salesRep: employeeids.value,
+      });
+      fetchIncentiveAmount({
+        search: debouncedQuery,
+        fromDate: fromDate,
+        toDate: toDate,
+        salesRep: employeeids.value,
+      });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchOrders = ({ search, fromDate, toDate, salesRep }) => {
+    reportService.getIncentiveData({ search, fromDate, toDate, salesRep })
+      .then(res => {
+        const formattedData = processData(res.data?.data?.docs);
+        setFormattedData(formattedData);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchIncentiveAmount = ({ search, fromDate, toDate, salesRep }) => {
+    reportService.getIncentiveAmount({ search, fromDate, toDate, salesRep })
+      .then(res => {
+        setNewAmountData(res.data?.data?.docs?.[0].totalIncentiveAmount);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const processData = (rawData) => {
+    const processed = [];
+    rawData.forEach((item) => {
+
+      if (item.lens && item.product) {
+        const date = moment(item.createdAt).format("YYYY-MM-DD");
+        const billNumber = item.billNumber;
+
+        processed.push({
+          type: "Product",
+          date,
+          billNumber,
+          brand: [item.product?.item?.brand?.name, item.product?.item?.__t].filter(Boolean).join(" ") || "",
+          sku: item.product?.sku || "",
+          mrp: item.product?.mrp || "",
+          discount: item.product?.perPieceDiscount || "",
+          percentage: item.product?.mrp
+            ? ((item.product?.perPieceDiscount || 0) / item.product.mrp * 100).toFixed(2) + "%"
+            : "",
+          incentiveAmount: item.product?.incentiveAmount || "",
+        });
+
+        processed.push({
+          type: "Lens",
+          date,
+          billNumber,
+          brand: [item.lens?.item?.brand?.name, item.lens?.item?.__t].filter(Boolean).join(" ") || "",
+          sku: item.lens?.sku || "",
+          mrp: item.lens?.mrp || "",
+          discount: item.lens?.perPieceDiscount || "",
+          percentage: item.lens?.mrp
+            ? ((item.lens?.perPieceDiscount || 0) / item.lens.mrp * 100).toFixed(2) + "%"
+            : "",
+          incentiveAmount: item.lens?.incentiveAmount || "",
+        });
+      }
+    });
+
+    return processed;
+  };
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "date",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 70,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
-        accessorKey: "orderNo",
+        accessorKey: "billNumber",
         header: "Order No",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "brand",
         header: "Brand",
+        size: 210,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "sku",
         header: "SKU",
+        size: 500,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "mrp",
         header: "Mrp",
+        size: 60,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "discount",
         header: "Discount",
+        size: 70,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
@@ -104,15 +169,18 @@ const EmployeeIncentiveReportsTable = ({ data }) => {
       {
         accessorKey: "incentiveAmount",
         header: "Incentive Amount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 160,
+        cell: ({ getValue }) => {
+          const value = getValue();
+          return <div className="text-left">{value === "" ? 0 : value}</div>;
+        },
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
-    data: filteredData,
+    data: formattedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -124,13 +192,12 @@ const EmployeeIncentiveReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
+      data.map((item, index) => ({
+        SRNO: index + 1,
         Date: item.date,
-        Order_No: item.orderNo,
+        Order_No: item.billNumber,
         Brand: item.brand,
         SKU: item.sku,
         MRP: item.mrp,
@@ -145,27 +212,21 @@ const EmployeeIncentiveReportsTable = ({ data }) => {
   };
 
   const exportProduct = () => {
-    exportToExcel(filteredData, "EmployeeIncentiveReport");
+    exportToExcel(formattedData, "EmployeeIncentiveReport");
   };
-
-  // Calculate total incentive amount
-  const totalIncentiveAmount = filteredData.reduce(
-    (sum, item) => sum + item.incentiveAmount,
-    0
-  );
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, formattedData?.length);
+  const totalRows = formattedData?.length;
 
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
         <p className="mb-0 fw-normal text-black">
-          Total Incentive Amount: {totalIncentiveAmount}
+          Total Incentive Amount: {newamountData}
         </p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
@@ -199,13 +260,14 @@ const EmployeeIncentiveReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

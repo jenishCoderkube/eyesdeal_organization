@@ -7,73 +7,67 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
+import moment from "moment";
 
 const CashReportsTable = ({ data }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.date,
-          item.store,
-          item.mode,
-          item.expenseCategory,
-          item.type,
-          String(item.amount),
-          item.note,
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
-
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
-
-  // Handle search input change
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      if (query) {
+        const filtered = data.filter((item) => {
+          return (
+            item?.store?.name?.toLowerCase().includes(query) ||
+            item?.mode?.toLowerCase().includes(query) ||
+            item?.expenseCategory?.toLowerCase().includes(query) ||
+            item?.type?.toLowerCase().includes(query) ||
+            item?.notes?.toLowerCase().includes(query) ||
+            String(item?.amount).includes(query)
+          );
+        });
+        setFilteredData(filtered);
+      } else {
+        setFilteredData(data); 
+      }
+    }, 300); 
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
         accessorKey: "store",
         header: "Store Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 230,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
         accessorKey: "mode",
@@ -83,6 +77,7 @@ const CashReportsTable = ({ data }) => {
       {
         accessorKey: "expenseCategory",
         header: "Expense Category",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
@@ -96,15 +91,15 @@ const CashReportsTable = ({ data }) => {
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "note",
+        accessorKey: "notes",
         header: "Note",
+        size: 250,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -118,18 +113,17 @@ const CashReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
-        Date: item.date,
-        Store_Name: item.store,
+      data.map((item, index) => ({
+        SRNO: index + 1,
+        Date: moment(item.createdAt).format("YYYY-MM-DD"),
+        Store_Name: item?.store.name,
         Mode: item.mode,
         Expense_Category: item.expenseCategory,
         Type: item.type,
         Amount: item.amount,
-        Note: item.note,
+        Note: item.notes,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -141,20 +135,16 @@ const CashReportsTable = ({ data }) => {
     exportToExcel(filteredData, "CashReport");
   };
 
-  // Calculate total amount
-  const totalAmount = filteredData.reduce((sum, item) => sum + item.amount, 0);
-
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData?.length);
+  const totalRows = filteredData?.length;
 
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -187,13 +177,14 @@ const CashReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

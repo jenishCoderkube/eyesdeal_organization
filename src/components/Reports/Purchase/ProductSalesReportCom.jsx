@@ -1,16 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import PurchaseReportsForm from "./SalesReportsForm";
 import PurchaseReportsTable from "./SalesReportsTable";
 import { reportService } from "../../../services/reportService";
 
 const PurchaseReportCom = () => {
-
   const [filteredData, setFilteredData] = useState([]);
   const [amountData, setAmountData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    // Get yesterday's date
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -20,15 +17,16 @@ const PurchaseReportCom = () => {
   }, []);
 
   const fetchPurchaseLog = (dateFrom, dateTo) => {
-    reportService.getPurchaseLog(dateFrom, dateTo)
+    reportService.getPurchaseLog({ fromDate: dateFrom, toDate: dateTo })
       .then(res => {
         console.log(res)
         setFilteredData(res.data?.data?.docs);
       })
       .catch(e => console.log("Failed to get pruchaselog: ", e))
   }
-  const fetchPurchaseLogsWithFilter = ({ fromDate, toDate, vendors, brands }) => {
-    reportService.getPurchaseLog({ fromDate, toDate, brands, vendors })
+
+  const fetchPurchaseLogsWithFilter = ({ fromDate, toDate, vendors, stores }) => {
+    reportService.getPurchaseLog({ fromDate, toDate, stores, vendors })
       .then(res => {
         console.log(res)
         setFilteredData(res.data?.data?.docs);
@@ -45,11 +43,18 @@ const PurchaseReportCom = () => {
       .catch(e => console.log("Failed to get amount: ", e))
   }
 
+  const fetchAmountWithFilter = ({ fromDate, toDate, vendors, stores }) => {
+    reportService.getAmount({ fromDate, toDate, stores, vendors })
+      .then(res => {
+        console.log(res)
+        setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
   const handleFormSubmit = (values) => {
     if (values) {
-      console.log(values);
-
-      const { from, to, page = 1, vendor = [], store = [] } = values;
+      const { from, to, vendor = [], store = [] } = values;
 
       const fromTimestamp = new Date(from).getTime();
       const toTimestamp = new Date(to).getTime();
@@ -64,17 +69,17 @@ const PurchaseReportCom = () => {
           vendors: vendorIds,
           stores: storeIds,
         });
-        // fetchAmountWithFilter({
-        //   fromDate: fromTimestamp,
-        //   toDate: toTimestamp,
-        //   brands: brandIds,
-        //   stores: storeIds,
-        // });
+        fetchAmountWithFilter({
+          fromDate: fromTimestamp,
+          toDate: toTimestamp,
+          vendors: vendorIds,
+          stores: storeIds,
+        });
       }
-
-      fetchPurchaseLog(fromTimestamp, toTimestamp);
-      fetchAmount(fromTimestamp, toTimestamp);
-      setCurrentPage(page);
+      else {
+        fetchPurchaseLog(fromTimestamp, toTimestamp);
+        fetchAmount({ fromDate: fromTimestamp, toDate: toTimestamp });
+      }
     }
   };
 

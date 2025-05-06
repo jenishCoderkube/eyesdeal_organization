@@ -1,57 +1,84 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import SalesReportsForm from "./SalesReportsForm";
 import SalesReportsTable from "./SalesReportsTable";
 import { reportService } from "../../../services/reportService";
 
 const SalesReportCom = () => {
-
   const [filteredData, setFilteredData] = useState([]);
   const [amountData, setAmountData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
 
-   useEffect(() => {
-     // Get yesterday's date
-     const today = new Date();
-     const yesterday = new Date(today);
-     yesterday.setDate(yesterday.getDate() - 1);
- 
-     fetchPurchaseLog(yesterday.getTime(), today.getTime());
-     fetchAmount(yesterday.getTime(), today.getTime());
-   }, []);
- 
-   const fetchPurchaseLog = (dateFrom, dateTo) => {
-     reportService.getPurchaseLog(dateFrom, dateTo)
-       .then(res => {
-         console.log(res)
-         setFilteredData(res.data?.data?.docs);
-       })
-       .catch(e => console.log("Failed to get pruchaselog: ", e))
-   }
- 
-   const fetchAmount = (dateFrom, dateTo) => {
-     reportService.getAmount(dateFrom, dateTo)
-       .then(res => {
-         console.log(res)
-         setAmountData(res.data?.data?.docs);
-       })
-       .catch(e => console.log("Failed to get amount: ", e))
-   }
- 
-   const handleFormSubmit = (values) => {
-     if (values) {
-       console.log(values);
-       
-       const { from, to, page = 1 } = values;
- 
-       const fromTimestamp = new Date(from).getTime();
-       const toTimestamp = new Date(to).getTime();
- 
-       fetchPurchaseLog(fromTimestamp, toTimestamp);
-       fetchAmount(fromTimestamp, toTimestamp);
-       setCurrentPage(page);
-     }
-   };
- 
+  useEffect(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    fetchSalesData({ page: 1, fromDate: yesterday.getTime(), toDate: today.getTime() });
+    fetchAmount({ fromDate: yesterday.getTime(), toDate: today.getTime() });
+  }, []);
+
+  const fetchSalesData = ({ page, fromDate, toDate }) => {
+    const payload = {
+      ...(page !== undefined && { page }),
+      fromDate,
+      toDate
+    };
+    reportService.getSalesData(payload)
+      .then(res => {
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchSalesDataWithFilter = ({ fromDate, toDate, stores }) => {
+    reportService.getSalesData({ fromDate, toDate, stores })
+      .then(res => {
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = (dateFrom, dateTo) => {
+    reportService.getAmount(dateFrom, dateTo)
+      .then(res => {
+        setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
+
+  const fetchAmountWithFilter = ({ fromDate, toDate, stores }) => {
+    reportService.getAmount({ fromDate, toDate, stores })
+      .then(res => {
+        setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const handleFormSubmit = (values) => {
+    if (values) {
+      const { from, to, store = [] } = values;
+
+      const fromTimestamp = new Date(from).getTime();
+      const toTimestamp = new Date(to).getTime();
+
+      const storeIds = store.map(s => s.value);
+
+      if (storeIds.length) {
+        fetchSalesDataWithFilter({
+          fromDate: fromTimestamp,
+          toDate: toTimestamp,
+          stores: storeIds,
+        });
+        fetchAmountWithFilter({
+          fromDate: fromTimestamp,
+          toDate: toTimestamp,
+          stores: storeIds,
+        });
+      } else {
+        fetchSalesData({ fromDate: fromTimestamp, toDate: toTimestamp });
+        fetchAmount({ fromDate: fromTimestamp, toDate: toTimestamp });
+      }
+    }
+  };
 
   return (
     <div className="max-width-95 mx-auto px-4 py-5">

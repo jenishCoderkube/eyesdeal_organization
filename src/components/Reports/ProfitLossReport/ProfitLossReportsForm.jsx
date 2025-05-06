@@ -1,37 +1,76 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
+import { reportService } from "../../../services/reportService";
+import { toast } from "react-toastify";
 
 const ProfitLossReportsForm = ({ onSubmit, data }) => {
-  // Options for select fields
-  const storeOptions = [
-    { value: "EYESDEAL BHARUCH", label: "EYESDEAL BHARUCH" },
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-  ];
-  const brandOptions = [
-    { value: "I-Gog eyeGlasses", label: "I-Gog eyeGlasses" },
-    { value: "I-Gog sunGlasses", label: "I-Gog sunGlasses" },
-    { value: "Ray-Ban", label: "Ray-Ban" },
-    { value: "Oakley", label: "Oakley" },
-  ];
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [brandData, setBrandData] = useState([]);
 
-  // Formik setup without validation
+  const storeOptions = storeData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  const brandOptions = brandData?.map((vendor) => ({
+    value: vendor._id,
+    label: `${vendor.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+    getBrandData();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getBrandData = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getBrands();
+      if (response.success) {
+        setBrandData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formik = useFormik({
     initialValues: {
       store: [],
       brands: [],
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel function
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -55,14 +94,9 @@ const ProfitLossReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "ProfitLossReport");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
@@ -79,7 +113,6 @@ const ProfitLossReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Brands Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="brands" className="form-label font-weight-500">
             Select Brand
@@ -98,7 +131,6 @@ const ProfitLossReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -116,7 +148,6 @@ const ProfitLossReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -134,12 +165,11 @@ const ProfitLossReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>

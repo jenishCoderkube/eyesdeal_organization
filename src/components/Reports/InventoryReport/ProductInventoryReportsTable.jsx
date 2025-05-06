@@ -7,104 +7,109 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
+import { reportService } from "../../../services/reportService";
 
 const ProductInventoryReportsTable = ({ data }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.name,
-          item.sku,
-          String(item.mrp),
-          String(item.sellPrice),
-          item.brand,
-          item.barcode,
-          String(item.stock),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchInventoryReport({ page: 1, manageStock: true, search: debouncedQuery });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchInventoryReport = ({ page, manageStock, search }) => {
+    const payload = {
+      ...(page && { page }),
+      manageStock,
+      search
+    };
+    reportService.fetchInventoryReport(payload)
+      .then(res => {
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get orders: ", e))
+  }
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
-        accessorKey: "name",
+        id: "ProductName",
+        accessorKey: "product",
         header: "Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 700,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.displayName}</div>,
       },
       {
-        accessorKey: "sku",
+        id: "ProductSku",
+        accessorKey: "product",
         header: "Sku",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 250,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
       },
       {
-        accessorKey: "mrp",
+        id: "ProductMrp",
+        accessorKey: "product",
         header: "MRP",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 50,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.MRP}</div>,
       },
       {
-        accessorKey: "sellPrice",
+        id: "ProductSellprice",
+        accessorKey: "product",
         header: "Sell Price",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 120,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.sellPrice}</div>,
       },
       {
-        accessorKey: "brand",
+        id: "ProductBrand",
+        accessorKey: "product",
         header: "Brand",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 150,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.brand?.name}</div>,
       },
       {
-        accessorKey: "barcode",
+        id: "ProductBarcode",
+        accessorKey: "product",
         header: "Barcode",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 100,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.newBarcode}</div>,
       },
       {
         accessorKey: "stock",
         header: "Stock",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -118,17 +123,16 @@ const ProductInventoryReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
-        Name: item.name,
-        Sku: item.sku,
-        MRP: item.mrp,
-        Sell_Price: item.sellPrice,
-        Brand: item.brand,
-        Barcode: item.barcode,
+      data.map((item, index) => ({
+        SRNO: index + 1,
+        Name: item?.product?.displayName,
+        Sku: item?.product?.sku,
+        MRP: item?.product?.MRP,
+        Sell_Price: item?.product?.sellPrice,
+        Brand: item?.product?.brand?.name,
+        Barcode: item?.product?.newBarcode,
         Stock: item.stock,
       }))
     );
@@ -141,9 +145,6 @@ const ProductInventoryReportsTable = ({ data }) => {
     exportToExcel(filteredData, "ProductInventoryReport");
   };
 
-  // Calculate total stock
-  const totalStock = filteredData.reduce((sum, item) => sum + item.stock, 0);
-
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
@@ -154,7 +155,6 @@ const ProductInventoryReportsTable = ({ data }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Stock: {totalStock}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -187,13 +187,14 @@ const ProductInventoryReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

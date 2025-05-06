@@ -8,104 +8,118 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const VendorReportsTable = ({ data }) => {
+const VendorReportsTable = ({ storesNames, data }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.store,
-          item.vendorName,
-          item.date,
-          item.billNo,
-          item.sku,
-          item.status,
-          String(item.costPrice),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (debouncedQuery.trim()) {
+      fetchJobWorks({ search: debouncedQuery, stores: storesNames });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchJobWorks = ({ search, stores }) => {
+    const payload = {
+      search,
+      ...(stores && stores.length && { stores }),
+    };
+    reportService.getJobWorksData(payload)
+      .then(res => {
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get jobWorks: ", e))
+  }
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "store",
         header: "Store Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 230,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
-        accessorKey: "vendorName",
+        accessorKey: "vendor",
         header: "Vendor Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 320,
+        cell: ({ row }) => {
+          const vendor = row.original.vendor.companyName || "";
+          const lens = row.original.lens.item.__t || "";
+
+          return <div className="text-left">{vendor} {lens}</div>;
+        },
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
-        accessorKey: "billNo",
+        accessorKey: "order",
         header: "Bill No",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 80,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.billNumber}</div>,
       },
       {
-        accessorKey: "sku",
+        id: "Sku",
+        accessorKey: "lens",
         header: "SKU",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 600,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
       },
       {
         accessorKey: "status",
         header: "Status",
+        size: 40,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "costPrice",
+        id: "CostPrice",
+        accessorKey: "lens",
         header: "Cost Price",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 110,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.item.costPrice}</div>,
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -119,18 +133,17 @@ const VendorReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
-        Store_Name: item.store,
-        Vendor_Name: item.vendorName,
-        Date: item.date,
-        Bill_No: item.billNo,
-        SKU: item.sku,
+      data.map((item, index) => ({
+        SRNO: index + 1,
+        Store_Name: item.store?.name || "-",
+        Vendor_Name: item.vendor?.companyName,
+        Date: moment(item.createdAt).format("YYYY-MM-DD"),
+        Bill_No: item.order?.billNumber,
+        SKU: item.lens?.sku,
         Status: item.status,
-        Cost_Price: item.costPrice,
+        Cost_Price: item.lens.item?.costPrice,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -142,12 +155,6 @@ const VendorReportsTable = ({ data }) => {
     exportToExcel(filteredData, "VendorReport");
   };
 
-  // Calculate total cost price
-  const totalCostPrice = filteredData.reduce(
-    (sum, item) => sum + item.costPrice,
-    0
-  );
-
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
@@ -157,11 +164,8 @@ const VendorReportsTable = ({ data }) => {
 
   return (
     <div className="card-body p-0">
-      <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">
-          Total Cost Price: {totalCostPrice}
-        </p>
-        <div className="ms-md-auto d-flex gap-2">
+      <div className="d-flex flex-column px-3 mb-4">
+        <div className="ms-md-auto d-flex ">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
           </button>
@@ -193,13 +197,15 @@ const VendorReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
+
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

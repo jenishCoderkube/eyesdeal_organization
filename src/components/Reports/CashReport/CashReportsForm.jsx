@@ -1,52 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
+import { reportService } from "../../../services/reportService";
+
+const MODE_OPTIONS = [
+  { value: "cash", label: "Cash" },
+  { value: "bank", label: "UPI" },
+  { value: "card", label: "Card" },
+];
+
+const TYPE_OPTIONS = [
+  { value: "credit", label: "Credit(+)" },
+  { value: "debit", label: "Debit(-)" },
+];
 
 const CashReportsForm = ({ onSubmit, data }) => {
-  // Options for select fields
-  const modeOptions = [
-    { value: "Cash", label: "Cash" },
-    { value: "UPI", label: "UPI" },
-    { value: "Card", label: "Card" },
-    { value: "Bank", label: "Bank" },
-  ];
-  const storeOptions = [
-    { value: "EYESDEAL BHAGATALAV", label: "EYESDEAL BHAGATALAV" },
-    { value: "EYESDEAL VARACCHA", label: "EYESDEAL VARACCHA" },
-    { value: "EYESDEAL ADAJAN", label: "EYESDEAL ADAJAN" },
-    { value: "EYESDEAL BHATAR", label: "EYESDEAL BHATAR" },
-    { value: "EYESDEAL KATARGAM", label: "EYESDEAL KATARGAM" },
-    {
-      value: "EYESDEAL PANCHBATTI BHARUCH",
-      label: "EYESDEAL PANCHBATTI BHARUCH",
-    },
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-    { value: "EYESDEAL PALANPUR", label: "EYESDEAL PALANPUR" },
-    { value: "EYESDEAL NAVSARI", label: "EYESDEAL NAVSARI" },
-  ];
-  const typeOptions = [
-    { value: "Credit(+)", label: "Credit(+)" },
-    { value: "Debit(-)", label: "Debit(-)" },
-  ];
 
-  // Formik setup without validation
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const storeOptions = storeData?.map((store) => ({
+    value: store._id,
+    label: `${store.name}`,
+  }));
+
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const formik = useFormik({
     initialValues: {
-      mode: [],
+      mode: [
+        { value: "cash", label: "Cash" },
+        { value: "bank", label: "UPI" },
+        { value: "card", label: "Card" }
+      ],
       store: [],
-      type: [],
-      from: null,
-      to: null,
+      type: [
+        { value: "credit", label: "Credit(+)" }
+      ],
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel function
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -65,10 +84,6 @@ const CashReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "CashReport");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
@@ -78,7 +93,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
             Mode
           </label>
           <Select
-            options={modeOptions}
+            options={MODE_OPTIONS}
             value={formik.values.mode}
             onChange={(options) => formik.setFieldValue("mode", options || [])}
             onBlur={() => formik.setFieldTouched("mode", true)}
@@ -89,7 +104,6 @@ const CashReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
@@ -106,13 +120,12 @@ const CashReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Type Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="type" className="form-label font-weight-500">
             Type
           </label>
           <Select
-            options={typeOptions}
+            options={TYPE_OPTIONS}
             value={formik.values.type}
             onChange={(options) => formik.setFieldValue("type", options || [])}
             onBlur={() => formik.setFieldTouched("type", true)}
@@ -123,7 +136,6 @@ const CashReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -141,7 +153,6 @@ const CashReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-2">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -159,12 +170,11 @@ const CashReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>

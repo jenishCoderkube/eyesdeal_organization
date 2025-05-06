@@ -13,14 +13,14 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
-    label: `${store.name}`, 
+    label: `${store.name}`,
   }));
- 
+
   const vendorOptions = vendorData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.companyName}`,
   }));
- useEffect(() => {
+  useEffect(() => {
     getStores();
     getVendors();
   }, []);
@@ -46,7 +46,6 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
     try {
       const response = await purchaseService.getVendors();
       if (response.success) {
-        console.log(response)
         setVendorData(response?.data?.docs);
       } else {
         toast.error(response.message);
@@ -58,7 +57,6 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
     }
   };
 
-  // Formik setup without validation
   const formik = useFormik({
     initialValues: {
       store: null,
@@ -71,16 +69,15 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
     },
   });
 
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
+            isMulti
             options={storeOptions}
             value={formik.values.store}
             onChange={(option) => formik.setFieldValue("store", option)}
@@ -91,12 +88,12 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Vendor Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="vendor" className="form-label font-weight-500">
             Vendor
           </label>
           <Select
+            isMulti
             options={vendorOptions}
             value={formik.values.vendor}
             onChange={(option) => formik.setFieldValue("vendor", option)}
@@ -107,7 +104,6 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -125,7 +121,6 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-3">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -143,7 +138,6 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"

@@ -7,136 +7,187 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const ProfitLossReportsTable = ({ data }) => {
+const ProfitLossReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(data);
+  const [formattedData, setFormattedData] = useState([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.store,
-          item.date,
-          item.orderNo,
-          item.customerName,
-          item.barcode,
-          item.sku,
-          item.brand,
-          String(item.mrp),
-          String(item.discount),
-          String(item.netAmount),
-          String(item.costPrice),
-          String(item.profitLoss),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      const formattedData = processData(data);
+      setFormattedData(formattedData);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchOrders({
+        search: debouncedQuery,
+      });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchOrders = ({ search }) => {
+    reportService.fetchOrders({ search })
+      .then(res => {
+        const formattedData = processData(res.data?.data?.docs);
+        setFormattedData(formattedData);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const processData = (rawData) => {
+    const processed = [];
+    rawData.forEach((item) => {
+
+      const date = moment(item.createdAt).format("YYYY-MM-DD");
+      const billNumber = item.billNumber;
+      const storeName = item.store?.name || "";
+      const custName = item.sale?.customerName || "";
+
+      if (item.product?.item.displayName) {
+        processed.push({
+          type: "Product",
+          date,
+          billNumber,
+          storeName,
+          custName,
+          barcode: item.product.barcode || "",
+          sku: item.product.sku || "",
+          brand: [item.product.item.brand?.name, item.product.item.__t].filter(Boolean).join(" ") || "",
+          mrp: item.product.mrp || "",
+          discount: item.product.perPieceDiscount || "",
+          netAmount: item.product.perPieceAmount || "",
+          costPrice: item.product.item.costPrice || "",
+          profitLoss:
+            (Number(item.product.perPieceAmount) || 0) -
+            (Number(item.product.item.costPrice) || 0),
+        });
+      }
+
+      if (item.lens?.item.displayName) {
+        processed.push({
+          type: "Lens",
+          date,
+          billNumber,
+          storeName,
+          custName,
+          barcode: item.lens.barcode || "",
+          sku: item.lens.sku || "",
+          brand: [item.lens.item.brand?.name, item.lens.item.__t].filter(Boolean).join(" ") || "",
+          mrp: item.lens.mrp || "",
+          discount: item.lens.perPieceDiscount || "",
+          netAmount: item.lens.perPieceAmount || "",
+          costPrice: item.lens.item.costPrice || "",
+          profitLoss:
+            (Number(item.lens.perPieceAmount) || 0) -
+            (Number(item.lens.item.costPrice) || 0),
+        });
+      }
+    });
+    return processed;
+  };
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
-        accessorKey: "store",
+        accessorKey: "storeName",
         header: "Store Name",
+        size: 220,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "date",
         header: "Date",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "orderNo",
+        accessorKey: "billNumber",
         header: "Order No",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "customerName",
+        accessorKey: "custName",
         header: "Customer Name",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "barcode",
         header: "Barcode",
+        size: 100,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "sku",
         header: "SKU",
+        size: 450,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "brand",
         header: "Brand",
+        size: 220,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "mrp",
         header: "MRP",
+        size: 80,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "discount",
         header: "Discount",
+        size: 80,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "netAmount",
         header: "Net Amount",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "costPrice",
         header: "Cost Price",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "profitLoss",
         header: "Profit Loss",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
-    data: filteredData,
+    data: formattedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -148,15 +199,14 @@ const ProfitLossReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
-        Store_Name: item.store,
+      data.map((item, index) => ({
+        SRNO: index + 1,
+        Store_Name: item.storeName,
         Date: item.date,
-        Order_No: item.orderNo,
-        Customer_Name: item.customerName,
+        Order_No: item.billNumber,
+        Customer_Name: item.custName,
         Barcode: item.barcode,
         SKU: item.sku,
         Brand: item.brand,
@@ -173,34 +223,23 @@ const ProfitLossReportsTable = ({ data }) => {
   };
 
   const exportProduct = () => {
-    exportToExcel(filteredData, "ProfitLossReport");
+    exportToExcel(formattedData, "ProfitLossReport");
   };
-
-  // Calculate totals
-  const totalAmount = filteredData.reduce(
-    (sum, item) => sum + item.netAmount,
-    0
-  );
-  const totalCost = filteredData.reduce((sum, item) => sum + item.costPrice, 0);
-  const totalProfitLoss = filteredData.reduce(
-    (sum, item) => sum + item.profitLoss,
-    0
-  );
 
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
-
+  const endRow = Math.min((pageIndex + 1) * pageSize, formattedData.length);
+  const totalRows = formattedData.length;
+  
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
-        <p className="mb-0 fw-normal text-black">Total Cost: {totalCost}</p>
+        <p className="mb-0 fw-normal text-black">Total Amount: {amountData?.totalAmount}</p>
+        <p className="mb-0 fw-normal text-black">Total Cost: {amountData?.totalCost}</p>
         <p className="mb-0 fw-normal text-black">
-          Profit-Loss: {totalProfitLoss}
+          Profit-Loss: {amountData?.ProfitLoss?.toFixed(2)}
         </p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
@@ -234,13 +273,14 @@ const ProfitLossReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

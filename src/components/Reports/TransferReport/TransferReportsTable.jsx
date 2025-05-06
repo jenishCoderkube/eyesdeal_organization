@@ -7,84 +7,125 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
+import { toast } from "react-toastify";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const TransferReportsTable = ({ data }) => {
+const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.date,
-          item.fromStore,
-          item.toStore,
-          item.sku,
-          String(item.stockQuantity),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      const formattedData = processData(data);
+      setFilteredData(formattedData);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      fetchTransferStockWithFilter({
+        search: debouncedQuery,
+        fromDate: fromDate,
+        toDate: toDate,
+        storeFromid: StoreFrom.value,
+        storeToid: Storeto.value,
+      });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchTransferStockWithFilter = async ({ search, fromDate, toDate, storeFromid, storeToid }) => {
+    try {
+      const payload = {
+        fromDate,
+        toDate,
+        ...(storeFromid && storeFromid.length && { storeFromid }),
+        ...(storeToid && storeToid.length && { storeToid }),
+        search
+      };
+      const response = await reportService.getTransferStock(payload)
+      
+      if (response.success) {
+        const formattedData = processData(response?.data?.data?.docs);
+        setFilteredData(formattedData);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    }
+  }
+
+  const processData = (rawData) => {
+    const processed = [];
+
+    rawData.forEach((item) => {
+      const date = moment(item.createdAt).format("YYYY-MM-DD");
+      const fromName = item.from?.name || "";
+      const toName = item.to?.name || "";
+      const Qty = item.products?.stockQuantity || "";
+
+      if (Array.isArray(item.string)) {
+        item.string.forEach((entry) => {
+          processed.push({
+            date,
+            from: fromName,
+            to: toName,
+            sku: entry.sku || "",
+            stockQty: Qty
+          });
+        });
+      }
+    });
+    return processed;
+  };
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "date",
         header: "Date",
+        size: 120,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "fromStore",
+        accessorKey: "from",
         header: "From Store",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "toStore",
+        accessorKey: "to",
         header: "To Store",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "sku",
         header: "SKU",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "stockQuantity",
+        accessorKey: "stockQty",
         header: "Stock Quantity",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
@@ -92,7 +133,6 @@ const TransferReportsTable = ({ data }) => {
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -106,16 +146,15 @@ const TransferReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
+      data.map((item, index) => ({
+        SRNO: index + 1,
         Date: item.date,
-        From_Store: item.fromStore,
-        To_Store: item.toStore,
+        From_Store: item.from,
+        To_Store: item.to,
         SKU: item.sku,
-        Stock_Quantity: item.stockQuantity,
+        Stock_Quantity: item.stockQty,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -127,29 +166,17 @@ const TransferReportsTable = ({ data }) => {
     exportToExcel(filteredData, "TransferReport");
   };
 
-  const exportCustomerData = () => {
-    exportToExcel(filteredData, "CustomerData");
-  };
-
-  // Calculate total stock quantity
-  const totalStockQuantity = filteredData.reduce(
-    (sum, item) => sum + item.stockQuantity,
-    0
-  );
-
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData.length);
-  const totalRows = filteredData.length;
+  const endRow = Math.min((pageIndex + 1) * pageSize, filteredData?.length);
+  const totalRows = filteredData?.length;
 
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">
-          Total Stock Quantity: {totalStockQuantity}
-        </p>
+
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -182,13 +209,14 @@ const TransferReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

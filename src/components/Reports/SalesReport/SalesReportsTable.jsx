@@ -7,104 +7,133 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import moment from "moment";
+import { reportService } from "../../../services/reportService";
 
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const SalesReportsTable = ({ data }) => {
+const SalesReportsTable = ({ data, amountData }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.store,
-          item.customerName,
-          item.salesmanName,
-          item.date,
-          item.billNo,
-          String(item.totalAmount),
-          String(item.pendingAmount),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
-    },
-    []
-  );
-
-  // Debounced filter logic in useEffect
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(data, query));
-    }, 200);
+    if (Array.isArray(data)) {
+      setFilteredData(data);
+    }
+  }, [data]);
 
-    debouncedFilter(searchQuery);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, data, filterGlobally]);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Handle search input change
+  useEffect(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (debouncedQuery.trim()) {
+      fetchSalesData({ search: debouncedQuery, fromDate: yesterday.getTime(), toDate: today.getTime() });
+      fetchAmount({ search: debouncedQuery, fromDate: yesterday.getTime(), toDate: today.getTime() });
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = (value) => {
     setSearchQuery(value);
   };
 
-  // Table columns
+  const fetchSalesData = ({ search, fromDate, toDate }) => {
+    const payload = {
+      search,
+      fromDate,
+      toDate
+    };
+    reportService.getSalesData(payload)
+      .then(res => {
+        setFilteredData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get pruchaselog: ", e))
+  }
+
+  const fetchAmount = ({ search, fromDate, toDate }) => {
+    const payload = {
+      search,
+      fromDate,
+      toDate
+    };
+    reportService.getAmount(payload)
+      .then(res => {
+        //  setAmountData(res.data?.data?.docs);
+      })
+      .catch(e => console.log("Failed to get amount: ", e))
+  }
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
         header: "SRNO",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 10,
+        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
       },
       {
         accessorKey: "store",
         header: "Store Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 250,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
         accessorKey: "customerName",
         header: "Customer Name",
+        size: 200,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "salesmanName",
+        accessorKey: "salesRep",
         header: "Salesman Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 200,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
       },
       {
-        accessorKey: "date",
+        accessorKey: "createdAt",
         header: "Date",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left">
+            {moment(getValue()).format("DD/MM/YYYY")}
+          </div>
+        ),
       },
       {
-        accessorKey: "billNo",
+        accessorKey: "orders",
         header: "Bill No",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 100,
+        cell: ({ getValue }) => <div className="text-left">{getValue()?.[0].billNumber}</div>,
       },
       {
         accessorKey: "totalAmount",
         header: "Total Amount",
+        size: 135,
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "pendingAmount",
         header: "Pending Amount",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        size: 150,
+        cell: ({ row }) => {
+          const total = row.original.totalAmount || 0;
+          const receivedArray = row.original.receivedAmount || [];
+
+          const receivedTotal = receivedArray.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+          const pending = total - receivedTotal;
+
+          return <div className="text-left">{pending}</div>;
+        },
       },
     ],
     []
   );
 
-  // @tanstack/react-table setup
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -118,20 +147,30 @@ const SalesReportsTable = ({ data }) => {
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        SRNO: item.id,
-        Store_Name: item.store,
-        Customer_Name: item.customerName,
-        Salesman_Name: item.salesmanName,
-        Date: item.date,
-        Bill_No: item.billNo,
-        Total_Amount: item.totalAmount,
-        Pending_Amount: item.pendingAmount,
-      }))
-    );
+    const transformedData = data.map((item, index) => {
+      const total = item.totalAmount || 0;
+      const receivedList = item.receivedAmount || [];
+      const receivedTotal = receivedList.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+      const pending = total - receivedTotal;
+  
+      const billNumbers = (item.orders || [])
+        .map(order => order.billNumber)
+        .filter(Boolean)
+        .join(", ");
+  
+      return {
+        SRNO: index + 1,
+        Store_Name: item.store?.name || "-",
+        Customer_Name: item.customerName || "-",
+        Salesman_Name: item.salesRep?.name || "-",
+        Date: moment(item.createdAt).format("YYYY-MM-DD"),
+        Bill_No: billNumbers,
+        Total_Amount: total,
+        Pending_Amount: pending,
+      };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(transformedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "SalesReport");
     XLSX.writeFile(workbook, `${filename}.xlsx`);
@@ -145,12 +184,6 @@ const SalesReportsTable = ({ data }) => {
     exportToExcel(filteredData, "CustomerData");
   };
 
-  // Calculate total amount
-  const totalAmount = filteredData.reduce(
-    (sum, item) => sum + item.totalAmount,
-    0
-  );
-
   // Pagination info
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
@@ -161,7 +194,7 @@ const SalesReportsTable = ({ data }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {totalAmount}</p>
+        <p className="mb-0 fw-normal text-black">Total Amount: {amountData}</p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -200,13 +233,14 @@ const SalesReportsTable = ({ data }) => {
                   <th
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
+                    style={{ minWidth: `${header.getSize()}px` }}
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

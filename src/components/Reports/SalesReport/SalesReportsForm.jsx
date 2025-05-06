@@ -1,39 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { reportService } from "../../../services/reportService";
 
 const SalesReportsForm = ({ onSubmit, data }) => {
-  // Options for select fields
-  const storeOptions = [
-    { value: "EYESDEAL VARACCHA", label: "EYESDEAL VARACCHA" },
-    { value: "EYESDEAL NAVSARI", label: "EYESDEAL NAVSARI" },
-    { value: "EYESDEAL KAMREJ", label: "EYESDEAL KAMREJ" },
-    { value: "EYESDEAL PALANPUR", label: "EYESDEAL PALANPUR" },
-    { value: "EYESDEAL KATARGAM", label: "EYESDEAL KATARGAM" },
-    {
-      value: "EYESDEAL PANCHBATTI BHARUCH",
-      label: "EYESDEAL PANCHBATTI BHARUCH",
-    },
-    { value: "EYESDEAL BARDOLI", label: "EYESDEAL BARDOLI" },
-  ];
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Formik setup without validation
+  const storeOptions = storeData?.map((store) => ({
+    value: store._id,
+    label: `${store.name}`,
+  }));
+
+  useEffect(() => { 
+    getStores();
+  }, []);
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await reportService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formik = useFormik({
     initialValues: {
       store: [],
-      from: null,
-      to: null,
+      from: new Date(),
+      to: new Date(),
     },
     onSubmit: (values) => {
       onSubmit(values);
     },
   });
 
-  // Export to Excel functions
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -52,23 +65,15 @@ const SalesReportsForm = ({ onSubmit, data }) => {
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
-  const exportProduct = () => {
-    exportToExcel(data, "SalesReport");
-  };
-
-  const exportCustomerData = () => {
-    exportToExcel(data, "CustomerData");
-  };
-
   return (
     <form onSubmit={formik.handleSubmit} className="mt-3">
       <div className="row g-3">
-        {/* Store Field (Multiselect) */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="store" className="form-label font-weight-500">
             Select Store
           </label>
           <Select
+            isMulti
             options={storeOptions}
             value={formik.values.store}
             onChange={(options) => formik.setFieldValue("store", options || [])}
@@ -76,11 +81,9 @@ const SalesReportsForm = ({ onSubmit, data }) => {
             placeholder="Select..."
             classNamePrefix="react-select"
             id="store"
-            isMulti
           />
         </div>
 
-        {/* Date From Field */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="from" className="form-label font-weight-500">
             Date From
@@ -98,7 +101,6 @@ const SalesReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Date To Field */}
         <div className="col-12 col-md-6 col-lg-4">
           <label htmlFor="to" className="form-label font-weight-500">
             Date To
@@ -116,12 +118,11 @@ const SalesReportsForm = ({ onSubmit, data }) => {
           />
         </div>
 
-        {/* Buttons */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={formik.isSubmitting}
+            disabled={loading}
           >
             Submit
           </button>
