@@ -36,6 +36,8 @@ const SaleForm = () => {
     note: "",
     dueAmount: 0,
     prescriptions: [],
+    recallOption: "",
+    recallDate: "",
   });
 
   const [receivedAmounts, setReceivedAmounts] = useState([]);
@@ -45,12 +47,29 @@ const SaleForm = () => {
   const [filteredStores, setFilteredStores] = useState([]);
   const [defaultStore, setDefaultStore] = useState(null);
   const [showProductSelector, setShowProductSelector] = useState(true);
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
+    useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [OrderModelVisible, setOrderModelVisible] = useState(false);
   const [SalesOrderData, setSalesOrderData] = useState(null);
   const [inventoryData, setInventoryData] = useState([]);
   const [InventoryPairs, setInventoryPairs] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [documentsFiles, setDocumentsFiles] = useState([]);
+  const recallOptions = [
+    { value: "3 month", label: "3 month" },
+    { value: "6 month", label: "6 month" },
+    { value: "9 month", label: "9 month" },
+    { value: "12 month", label: "12 month" },
+    { value: "other", label: "Other" },
+  ];
+
+  const loadRecallOptions = (inputValue, callback) => {
+    const filtered = recallOptions.filter((option) =>
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
+    callback(filtered);
+  };
 
   useEffect(() => {
     const fetchStoresData = async () => {
@@ -59,8 +78,8 @@ const SaleForm = () => {
         const userStoreIds = user?.stores || [];
 
         const matchedStores = allStores
-          .filter(store => userStoreIds.includes(store._id))
-          .map(store => ({
+          .filter((store) => userStoreIds.includes(store._id))
+          .map((store) => ({
             value: store._id,
             label: `${store.storeNumber} / ${store.name}`,
             data: store,
@@ -70,10 +89,11 @@ const SaleForm = () => {
         if (matchedStores.length === 1) {
           const defaultStore = matchedStores[0];
           setDefaultStore(defaultStore);
-          setFormData(prev => ({ ...prev, store: defaultStore.label }));
+          setFormData((prev) => ({ ...prev, store: defaultStore.label }));
         }
       } catch (error) {
         console.error("Error fetching stores:", error);
+        toast.error("Failed to fetch stores");
       }
     };
 
@@ -81,14 +101,15 @@ const SaleForm = () => {
   }, []);
 
   const loadStoreOptions = (inputValue, callback) => {
-    const filtered = filteredStores.filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()));
+    const filtered = filteredStores.filter((option) =>
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
     callback(filtered);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
@@ -96,9 +117,26 @@ const SaleForm = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName) newErrors.customerName = "Customer Name is required";
-    if (!formData.customerPhone) newErrors.customerPhone = "Customer Phone is required";
+    if (!formData.customerName)
+      newErrors.customerName = "Customer Name is required";
+    if (!formData.customerPhone)
+      newErrors.customerPhone = "Customer Phone is required";
     if (!formData.salesRep) newErrors.salesRep = "Sales Rep is required";
+    if (!formData.recallOption)
+      newErrors.recallOption = "Recall Date is required";
+    if (formData.recallOption === "other" && !formData.recallDate)
+      newErrors.recallDate = "Custom Recall Date is required";
+
+    receivedAmounts.forEach((amount, index) => {
+      if (!amount.date) {
+        newErrors[`receivedAmount.${index}.date`] = "Date is required";
+      }
+      if (!amount.amount || amount.amount <= 0) {
+        newErrors[`receivedAmount.${index}.amount`] =
+          "Valid amount is required";
+      }
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -107,23 +145,29 @@ const SaleForm = () => {
     const updatedAmounts = [...receivedAmounts];
     updatedAmounts[index][field] = value;
     setReceivedAmounts(updatedAmounts);
+    if (errors[`receivedAmount.${index}.${field}`]) {
+      setErrors({ ...errors, [`receivedAmount.${index}.${field}`]: "" });
+    }
   };
 
   const addReceivedAmount = () => {
+    const today = new Date().toISOString().split("T")[0];
     setReceivedAmounts([
       ...receivedAmounts,
-      {
-        method: "cash",
-        amount: 0,
-        date: "14/04/2025",
-        reference: "",
-      },
+      { method: "cash", amount: 0, date: today, reference: "" },
     ]);
   };
 
   const removeReceivedAmount = (index) => {
     const updatedAmounts = receivedAmounts.filter((_, i) => i !== index);
     setReceivedAmounts(updatedAmounts);
+    const newErrors = { ...errors };
+    Object.keys(newErrors).forEach((key) => {
+      if (key.startsWith(`receivedAmount.${index}.`)) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
   };
 
   const handleAddCustomerClick = () => {
@@ -141,9 +185,12 @@ const SaleForm = () => {
         }));
       } else {
         console.error(response.data.message);
+        return [];
       }
     } catch (error) {
       console.error("Error fetching customers:", error);
+      toast.error("Failed to fetch customers");
+      return [];
     }
   };
 
@@ -156,7 +203,8 @@ const SaleForm = () => {
         console.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error("Error fetching customer sales:", error);
+      toast.error("Failed to fetch customer sales");
     }
   };
 
@@ -164,42 +212,127 @@ const SaleForm = () => {
     try {
       const response = await saleService.getSalesRep(storeId);
       if (response.success) {
-        setSalesRepData(response.data.data.docs)
+        setSalesRepData(response.data.data.docs);
       } else {
         console.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error fetching stores:", error);
+      console.error("Error fetching sales reps:", error);
+      toast.error("Failed to fetch sales reps");
     }
   };
 
-  // transform function
   const transformInventoryPairs = (inventoryPairs) => {
-    const productObject = {};
-
-    inventoryPairs.forEach((pair, index) => {
-      productObject[index] = {
-        product: pair.product,
-        lens_package: pair.lens,
-      };
-    });
-
-    return { products: productObject };
+    return inventoryPairs.map((pair) => ({
+      product: pair.product
+        ? {
+            product: pair.product._id || pair.product.product,
+            productObject: pair.product.productObject || pair.product,
+            quantity: pair.product.quantity || 1,
+            barcode:
+              pair.product.barcode ||
+              pair.product.newBarcode ||
+              pair.product.oldBarcode,
+            stock:
+              pair.product.stock || pair.product.inventory?.totalQuantity || 0,
+            sku: pair.product.sku,
+            photos: pair.product.photos || [],
+            mrp: pair.product.mrp || pair.product.MRP || 0,
+            srp: pair.product.srp || pair.product.sellPrice || 0,
+            taxRate: pair.product.taxRate || `${pair.product.tax} (Inc)`,
+            taxAmount: pair.product.taxAmount || 0,
+            discount: pair.product.discount || 0,
+            displayName: pair.product.displayName,
+            unit: pair.product.unit?.name || pair.product.unit,
+            netAmount: pair.product.netAmount || pair.product.sellPrice || 0,
+            inclusiveTax: null,
+            manageStock: pair.product.manageStock,
+            resellerPrice: pair.product.resellerPrice || 0,
+            incentiveAmount: pair.product.incentiveAmount || 0,
+          }
+        : null,
+      lens: pair.lens
+        ? {
+            product: pair.lens._id || pair.lens.product,
+            quantity: pair.lens.quantity || 1,
+            barcode: pair.lens.barcode,
+            stock: pair.lens.stock || 0,
+            sku: pair.lens.sku,
+            photos: pair.lens.photos || [],
+            mrp: pair.lens.mrp || 0,
+            srp: pair.lens.srp || 0,
+            taxRate: pair.lens.taxRate || `${pair.lens.tax} (Inc)`,
+            taxAmount: pair.lens.taxAmount || 0,
+            discount: pair.lens.discount || 0,
+            netAmount: pair.lens.netAmount || 0,
+            inclusiveTax: pair.lens.inclusiveTax || true,
+            manageStock: pair.lens.manageStock || false,
+            displayName: pair.lens.displayName,
+            unit: pair.lens.unit?.name || pair.lens.unit,
+            incentiveAmount: pair.lens.incentiveAmount || 0,
+          }
+        : null,
+    }));
   };
 
   const checkingCouponCode = async (coupon, customerPhone, inventoryPairs) => {
     try {
       const products = transformInventoryPairs(inventoryPairs);
-      console.log("response", coupon, customerPhone, products);
-
-      const response = await saleService.checkCouponCode({ couponCode: coupon, phone: customerPhone, products });
+      const response = await saleService.checkCouponCode({
+        couponCode: coupon,
+        phone: customerPhone,
+        products,
+      });
       if (response.success) {
         console.log(response.data);
+        toast.success("Coupon applied successfully");
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Error fetching stores:", error);
+      console.error("Error checking coupon:", error);
+      toast.error("Failed to check coupon");
+    }
+  };
+
+  const addDocumentInput = () => {
+    setDocuments([...documents, { documentName: "", documentFile: null }]);
+  };
+
+  const removeDocumentInput = (index) => {
+    const updatedDocuments = documents.filter((_, i) => i !== index);
+    setDocuments(updatedDocuments);
+  };
+
+  const handleDocumentChange = (index, field, value) => {
+    const updatedDocuments = [...documents];
+    updatedDocuments[index][field] = value;
+    setDocuments(updatedDocuments);
+  };
+
+  const uploadDocument = async (file, fileName, index) => {
+    if (!file || !fileName) {
+      toast.error("Please provide both document name and file.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fileName", fileName);
+    formData.append("location", "Sale/documents/");
+
+    try {
+      const response = await saleService.uploadFile(formData);
+      if (response.success) {
+        toast.success("Document uploaded successfully!");
+        const newKeys = response.data.data.map((item) => item.key);
+        setDocumentsFiles((prevDocuments) => [...prevDocuments, ...newKeys]);
+      } else {
+        toast.error(response.message || "Failed to upload document.");
+      }
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      toast.error("Error uploading document.");
     }
   };
 
@@ -229,10 +362,83 @@ const SaleForm = () => {
     setSalesOrderData(null);
   };
 
-  const handleSubmit = (e) => {
+  const calculateRecallDate = (months) => {
+    const today = new Date();
+    const recallDate = new Date(today);
+    recallDate.setMonth(today.getMonth() + months);
+    // Format as DD-MM-YYYY
+    const day = String(recallDate.getDate()).padStart(2, "0");
+    const month = String(recallDate.getMonth() + 1).padStart(2, "0");
+    const year = recallDate.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!InventoryPairs || InventoryPairs.length === 0) {
+      toast.error("Please add at least one product to proceed.");
+      return;
+    }
+
     if (validateForm()) {
-      console.log("Form submitted:", formData);
+      try {
+        let recall;
+        if (formData.recallOption === "other") {
+          const date = new Date(formData.recallDate);
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const year = date.getFullYear();
+          recall = `${day}-${month}-${year}`;
+        } else {
+          const months = parseInt(formData.recallOption) || 0;
+          recall = calculateRecallDate(months);
+        }
+
+        const payload = {
+          store: defaultStore?.value || "",
+          customerId: formData.customerId,
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          salesRep: formData.salesRep,
+          products: transformInventoryPairs(InventoryPairs),
+          totalAmount: Number(formData.totalAmount) || 0,
+          totalQuantity: Number(formData.totalQuantity) || 0,
+          totalTax: Number(formData.totalTax) || 0,
+          totalDiscount: null,
+          flatDiscount: Number(formData.flatDiscount) || 0,
+          couponDiscount: Number(formData.couponDiscount) || 0,
+          netDiscount: Number(formData.netDiscount) || 0,
+          deliveryCharges: 0,
+          otherCharges: Number(formData.otherCharges) || 0,
+          netAmount: Number(formData.netAmount) || 0,
+          receivedAmount: receivedAmounts.map((amount) => ({
+            method: amount.method,
+            amount: Number(amount.amount),
+            date: new Date(amount.date).toISOString(),
+            reference: amount.reference,
+          })),
+          coupon: formData.coupon || "",
+          coupons: formData.coupon ? [formData.coupon] : [],
+          incentiveAmount: "",
+          note: formData.note,
+          powerAtTime: {},
+          attachments: documentsFiles,
+          recall,
+        };
+
+        console.log("Submitting form with payload:", payload);
+
+        const response = await saleService.addSales(payload);
+        if (response.success) {
+          toast.success("Sale submitted successfully");
+        } else {
+          toast.error(response.message || "Failed to submit sale");
+        }
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        toast.error("Failed to submit sale");
+      }
     }
   };
 
@@ -245,41 +451,43 @@ const SaleForm = () => {
     let couponDiscount = Number(formData.couponDiscount) || 0;
     let otherCharges = Number(formData.otherCharges) || 0;
 
-    inventoryData.forEach(pair => {
-      console.log(pair);
+    inventoryData.forEach((pair) => {
       if (pair.data) {
         totalQuantity += 1 || 0;
-        totalAmount += (pair.totalAmount || 0);
-        taxAmount += (pair.taxAmount || 0);
-        totalDiscount += (pair.discount || 0)
+        totalAmount += pair.totalAmount || 0;
+        taxAmount += pair.taxAmount || 0;
+        totalDiscount += pair.discount || 0;
       }
     });
 
     totalDiscount += flatDiscount + couponDiscount;
-    const netAmount = totalAmount - flatDiscount + otherCharges - couponDiscount;
+    const netAmount =
+      totalAmount - flatDiscount + otherCharges - couponDiscount;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       totalQuantity,
       totalAmount,
       totalTax: taxAmount,
       netDiscount: totalDiscount,
-      netAmount
+      netAmount,
     }));
   };
 
   useEffect(() => {
     calculateTotals();
-  }, [inventoryData, formData.flatDiscount, formData.otherCharges, formData.couponDiscount])
+  }, [
+    inventoryData,
+    formData.flatDiscount,
+    formData.otherCharges,
+    formData.couponDiscount,
+  ]);
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
       <div className="row d-flex align-items-stretch">
-        {/* Left Column */}
         <div className="col-lg-9 col-md-6 col-12 p-0">
-          <div className="border h-100 border-black  p-4 bg-white d-flex flex-column gap-4">
-
-            {/* Customer Section */}
+          <div className="border h-100 border-black p-4 bg-white d-flex flex-column gap-4">
             <div>
               <label htmlFor="customerId" className="custom-label">
                 Customer
@@ -298,7 +506,6 @@ const SaleForm = () => {
                   Add Customer
                 </button>
               </label>
-
               <AsyncSelect
                 cacheOptions
                 loadOptions={loadCustomerOptions}
@@ -311,7 +518,9 @@ const SaleForm = () => {
                     customerPhone: customer.phone || "",
                     prescriptions: customer.prescriptions || [],
                   });
-                  loadCustomerSalesData(customer._id);
+                  if (customer._id) {
+                    await loadCustomerSalesData(customer._id);
+                  }
                 }}
                 placeholder="Search or select customer..."
               />
@@ -322,11 +531,11 @@ const SaleForm = () => {
                 <label htmlFor="customerName" className="custom-label">
                   Customer Name
                 </label>
-
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerName ? "is-invalid" : ""
+                  }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
@@ -341,11 +550,11 @@ const SaleForm = () => {
                 <label htmlFor="customerPhone" className="custom-label">
                   Customer Phone
                 </label>
-
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerPhone ? "is-invalid" : ""
+                  }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
@@ -361,8 +570,9 @@ const SaleForm = () => {
                   Sales Rep
                 </label>
                 <select
-                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
-                    }`}
+                  className={`form-select w-100 ${
+                    errors.salesRep ? "is-invalid" : ""
+                  }`}
                   id="salesRep"
                   name="salesRep"
                   value={formData.salesRep}
@@ -370,15 +580,11 @@ const SaleForm = () => {
                   style={{ color: "#808080" }}
                 >
                   <option value="">Select...</option>
-                  {salesRepData && (
-                    <>
-                      {salesRepData?.map((rep) => (
-                        <option key={rep._id} value={rep._id}>
-                          {rep.name}
-                        </option>
-                      ))}
-                    </>
-                  )}
+                  {salesRepData?.map((rep) => (
+                    <option key={rep._id} value={rep._id}>
+                      {rep.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.salesRep && (
                   <div className="invalid-feedback">{errors.salesRep}</div>
@@ -393,7 +599,9 @@ const SaleForm = () => {
                     <button
                       type="button"
                       className="btn border-secondary-subtle text-primary"
-                      onClick={() => openPrescriptionModel(formData.prescriptions)}
+                      onClick={() =>
+                        openPrescriptionModel(formData.prescriptions)
+                      }
                     >
                       View Prescriptions
                     </button>
@@ -436,37 +644,103 @@ const SaleForm = () => {
 
             {!showProductSelector && (
               <button
+                type="button"
                 className="btn btn-sm btn-primary my-2 w-25"
                 onClick={() => setShowProductSelector(true)}
               >
                 Add Another Pair
               </button>
             )}
+            <div className="row">
+              <div className="col-md-6 col-12">
+                <ProductSelector
+                  showProductSelector={showProductSelector}
+                  defaultStore={defaultStore}
+                  setInventoryData={setInventoryData}
+                  setShowProductSelector={setShowProductSelector}
+                  setInventoryPairs={setInventoryPairs}
+                />
+              </div>
+              <div className="col-md-6 col-12">
+                <label htmlFor="recallOption" className="custom-label">
+                  Recall Date <span className="text-danger">*</span>
+                </label>
+                {formData.recallOption !== "other" ? (
+                  <AsyncSelect
+                    cacheOptions
+                    defaultOptions={recallOptions}
+                    loadOptions={loadRecallOptions}
+                    value={
+                      recallOptions.find(
+                        (opt) => opt.value === formData.recallOption
+                      ) || null
+                    }
+                    onChange={(selected) => {
+                      setFormData({
+                        ...formData,
+                        recallOption: selected ? selected.value : "",
+                        recallDate: "",
+                      });
+                      if (errors.recallOption || errors.recallDate) {
+                        setErrors({
+                          ...errors,
+                          recallOption: "",
+                          recallDate: "",
+                        });
+                      }
+                    }}
+                    placeholder="Select..."
+                    className={errors.recallOption ? "is-invalid" : ""}
+                  />
+                ) : (
+                  <DatePicker
+                    selected={
+                      formData.recallDate ? new Date(formData.recallDate) : null
+                    }
+                    onChange={(date) => {
+                      setFormData({
+                        ...formData,
+                        recallDate: date
+                          ? date.toISOString().split("T")[0]
+                          : "",
+                      });
+                      if (errors.recallDate) {
+                        setErrors({ ...errors, recallDate: "" });
+                      }
+                    }}
+                    className={`form-control ${
+                      errors.recallDate ? "is-invalid" : ""
+                    }`}
+                    placeholderText="Select date"
+                    dateFormat="yyyy-MM-dd"
+                    required
+                  />
+                )}
+                {errors.recallOption && (
+                  <div className="invalid-feedback">{errors.recallOption}</div>
+                )}
+                {errors.recallDate && (
+                  <div className="invalid-feedback">{errors.recallDate}</div>
+                )}
+              </div>
+            </div>
 
-            {/* Product Selector */}
-            <ProductSelector
-              showProductSelector={showProductSelector}
-              defaultStore={defaultStore}
+            <InventoryData
+              inventoryData={inventoryData}
               setInventoryData={setInventoryData}
-              setShowProductSelector={setShowProductSelector}
-              setInventoryPairs={setInventoryPairs} />
-
-            {/* Product List */}
-            <InventoryData inventoryData={inventoryData} setInventoryData={setInventoryData} setInventoryPairs={setInventoryPairs} />
-
+              setInventoryPairs={setInventoryPairs}
+            />
           </div>
         </div>
 
-        {/* Right Column - Summary */}
         <div className="col-lg-3 col-md-6 col-12 p-0">
-          <div className="border border-black  p-4 bg-white">
+          <div className="border border-black p-4 bg-white">
             <div className="mb-3 w-100">
               <div className="d-flex align-items-center gap-2 mb-1">
                 <label className="custom-label" htmlFor="store">
                   Store
                 </label>
               </div>
-
               <AsyncSelect
                 cacheOptions
                 defaultOptions={filteredStores}
@@ -474,7 +748,7 @@ const SaleForm = () => {
                 value={defaultStore}
                 onChange={(selected) => {
                   setDefaultStore(selected);
-                  setFormData(prev => ({ ...prev, store: selected.label }));
+                  setFormData((prev) => ({ ...prev, store: selected.label }));
                 }}
                 isDisabled={filteredStores.length === 1}
               />
@@ -503,8 +777,9 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${field.readOnly ? "custom-disabled" : ""
-                      }`}
+                    className={`form-control w-auto ${
+                      field.readOnly ? "custom-disabled" : ""
+                    }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}
@@ -520,13 +795,12 @@ const SaleForm = () => {
               </div>
             ))}
 
-            {/* Coupon Section */}
-            <div className="border border-black rounded p-2 ">
-              <label className="custom-label  d-block">Coupon</label>
-              <div className="">
+            <div className="border border-black rounded p-2">
+              <label className="custom-label d-block">Coupon</label>
+              <div>
                 <input
                   type="text"
-                  className="form-control w-100 "
+                  className="form-control w-100"
                   id="coupon"
                   name="coupon"
                   placeholder="Enter Coupon Code"
@@ -545,7 +819,13 @@ const SaleForm = () => {
                     e.target.style.backgroundColor = "#4f46e5";
                     e.target.style.borderColor = "#4f46e5";
                   }}
-                  onClick={() => checkingCouponCode(formData.coupon, formData.customerPhone, InventoryPairs)}
+                  onClick={() =>
+                    checkingCouponCode(
+                      formData.coupon,
+                      formData.customerPhone,
+                      InventoryPairs
+                    )
+                  }
                 >
                   Add
                 </button>
@@ -584,150 +864,269 @@ const SaleForm = () => {
             </div>
           </div>
         </div>
-
-        {/* Final Section */}
-        <div className="col-12 p-0">
-          <div className="border border-black p-3  bg-white">
-            <div className="d-flex justify-content-end ">
-              <span>Due Amount: {formData.netAmount}</span>
-            </div>
-
-            <div className="d-flex align-items-center gap-3 ">
-              <label className="custom-label">Received Amount</label>
-              <button
-                type="button"
-                className="btn px-3 py-2"
-                style={{
-                  borderColor: "#e2e8f0",
-                  color: "#4f46e5",
-                  fontSize: "0.875rem",
-                }}
-                onMouseOver={(e) => (e.target.style.borderColor = "#cbd5e1")}
-                onMouseOut={(e) => (e.target.style.borderColor = "#e2e8f0")}
-                onClick={addReceivedAmount}
-              >
-                Add
-              </button>
-            </div>
-
-            <div className="mt-3">
-              {receivedAmounts.length === 0 ? (
-                // <div className="text-center py-2">No received amounts</div>
-                <></>
-              ) : (
-                receivedAmounts.map((amount, index) => (
-                  <div className="row align-items-center px-3 mb-3" key={index}>
-                    {/* Remove Button + Select */}
-                    <div className="col-md-3 p-1 d-flex align-items-center">
-                      <button
-                        type="button"
-                        onClick={() => removeReceivedAmount(index)}
-                        className="btn p-0 me-2"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+        <div className="ms-0 row border border-black">
+          <div className="col-12 border-end col-md-6 p-0">
+            <div className="p-3 bg-white">
+              <div className="d-flex justify-content-end">
+                <span>Due Amount: {formData.netAmount}</span>
+              </div>
+              <div className="d-flex align-items-center gap-3">
+                <label className="custom-label">Received Amount</label>
+                <button
+                  type="button"
+                  className="btn px-3 py-2"
+                  style={{
+                    borderColor: "#e2e8f0",
+                    color: "#4f46e5",
+                    fontSize: "0.875rem",
+                  }}
+                  onMouseOver={(e) => (e.target.style.borderColor = "#cbd5e1")}
+                  onMouseOut={(e) => (e.target.style.borderColor = "#e2e8f0")}
+                  onClick={addReceivedAmount}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="mt-3">
+                {receivedAmounts.length === 0 ? (
+                  <></>
+                ) : (
+                  receivedAmounts.map((amount, index) => (
+                    <div
+                      className="row align-items-center px-3 mb-3"
+                      key={index}
+                    >
+                      <div className="col-md-3 p-1 d-flex align-items-center">
+                        <button
+                          type="button"
+                          onClick={() => removeReceivedAmount(index)}
+                          className="btn p-0 me-2"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
                         >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                      <select
-                        className="form-select"
-                        name={`receivedAmount.${index}.method`}
-                        value={amount.method}
-                        onChange={(e) =>
-                          handleReceivedAmountChange(
-                            index,
-                            "method",
-                            e.target.value
-                          )
-                        }
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="card">Card</option>
-                        <option value="bank">Bank</option>
-                      </select>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                        <select
+                          className="form-select"
+                          name={`receivedAmount.${index}.method`}
+                          value={amount.method}
+                          onChange={(e) =>
+                            handleReceivedAmountChange(
+                              index,
+                              "method",
+                              e.target.value
+                            )
+                          }
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          <option value="bank">Bank</option>
+                        </select>
+                      </div>
+                      <div className="col-md-3 p-1">
+                        <input
+                          type="number"
+                          className={`form-control ${
+                            errors[`receivedAmount.${index}.amount`]
+                              ? "is-invalid"
+                              : ""
+                          }`}
+                          name={`receivedAmount.${index}.amount`}
+                          value={amount.amount}
+                          onChange={(e) =>
+                            handleReceivedAmountChange(
+                              index,
+                              "amount",
+                              e.target.value
+                            )
+                          }
+                        />
+                        {errors[`receivedAmount.${index}.amount`] && (
+                          <div className="invalid-feedback">
+                            {errors[`receivedAmount.${index}.amount`]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-md-3 p-1">
+                        <DatePicker
+                          selected={
+                            amount.date && !isNaN(new Date(amount.date))
+                              ? new Date(amount.date)
+                              : null
+                          }
+                          onChange={(date) =>
+                            handleReceivedAmountChange(
+                              index,
+                              "date",
+                              date ? date.toISOString().split("T")[0] : ""
+                            )
+                          }
+                          className={`form-control ${
+                            errors[`receivedAmount.${index}.date`]
+                              ? "is-invalid"
+                              : ""
+                          }`}
+                          placeholderText="Select date"
+                          dateFormat="yyyy-MM-dd"
+                          required
+                        />
+                        {errors[`receivedAmount.${index}.date`] && (
+                          <div className="invalid-feedback">
+                            {errors[`receivedAmount.${index}.date`]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-md-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name={`receivedAmount.${index}.reference`}
+                          value={amount.reference}
+                          onChange={(e) =>
+                            handleReceivedAmountChange(
+                              index,
+                              "reference",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
                     </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
 
-                    {/* Amount */}
-                    <div className="col-md-3 p-1">
-                      <input
-                        type="number"
-                        className="form-control"
-                        name={`receivedAmount.${index}.amount`}
-                        value={amount.amount}
-                        onChange={(e) =>
-                          handleReceivedAmountChange(
-                            index,
-                            "amount",
-                            e.target.value
-                          )
-                        }
-                      />
+          <div className="col-12 col-md-6 p-0">
+            <div className="p-3 bg-white">
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <button
+                  type="button"
+                  className="btn px-3 py-2"
+                  style={{
+                    borderColor: "#e2e8f0",
+                    color: "#4f46e5",
+                    fontSize: "0.875rem",
+                  }}
+                  onMouseOver={(e) => (e.target.style.borderColor = "#cbd5e1")}
+                  onMouseOut={(e) => (e.target.style.borderColor = "#e2e8f0")}
+                  onClick={addDocumentInput}
+                >
+                  Attach More Documents
+                </button>
+              </div>
+              <div className="mt-3">
+                {documents.length === 0 ? (
+                  <p>No documents added.</p>
+                ) : (
+                  documents.map((doc, index) => (
+                    <div className="row align-items-center mb-3" key={index}>
+                      <div className="col-md-5 p-1">
+                        <label
+                          className="d-block text-sm font-medium mb-1"
+                          htmlFor={`documents.${index}.documentName`}
+                        >
+                          Document Name
+                        </label>
+                        <div className="d-flex align-items-center">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id={`documents.${index}.documentName`}
+                            name={`documents.${index}.documentName`}
+                            value={doc.documentName}
+                            onChange={(e) =>
+                              handleDocumentChange(
+                                index,
+                                "documentName",
+                                e.target.value
+                              )
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeDocumentInput(index)}
+                            className="btn p-0 ms-2"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="red"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="col-md-7 p-1">
+                        <label
+                          className="d-block text-sm font-medium mb-1"
+                          htmlFor={`documents.${index}.documentFile`}
+                        >
+                          Document File
+                        </label>
+                        <input
+                          type="file"
+                          className="form-control"
+                          id={`documents.${index}.documentFile`}
+                          name={`documents.${index}.documentFile`}
+                          accept=".pdf,.doc,.docx,.jpg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            handleDocumentChange(index, "documentFile", file);
+                            if (file) {
+                              uploadDocument(
+                                file,
+                                doc.documentName || file.name,
+                                index
+                              );
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="col-md-3 p-1">
-                      <DatePicker
-                        selected={
-                          amount.date && !isNaN(new Date(amount.date))
-                            ? new Date(amount.date)
-                            : null
-                        }
-                        onChange={(date) =>
-                          handleReceivedAmountChange(
-                            index,
-                            "date",
-                            date ? date.toISOString().split("T")[0] : ""
-                          )
-                        }
-                        className="form-control"
-                        placeholderText="Select date"
-                        dateFormat="yyyy-MM-dd"
-                      />
-                    </div>
-
-                    {/* Reference */}
-                    <div className="col-md-3">
-                      <input
-                        type="text"
-                        className="form-control"
-                        name={`receivedAmount.${index}.reference`}
-                        value={amount.reference}
-                        onChange={(e) =>
-                          handleReceivedAmountChange(
-                            index,
-                            "reference",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
-
         <div className="col-12 mb-5 p-0 mt-3">
           <button type="submit" className="btn btn-primary py-2">
             Submit
           </button>
         </div>
       </div>
-    </form >
+    </form>
   );
 };
 
