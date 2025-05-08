@@ -8,6 +8,7 @@ import PreviousNotesModel from "../../components/ReCall/PreviousNotesModel";
 import WhatsAppModal from "../../components/ReCall/WhatsAppModal"; // Import new component
 import { recallService } from "../../services/recallService";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
+import RescheduleRecallDateModal from "../../components/ReCall/RescheduleRecallDateModal";
 
 const debounce = (func, delay) => {
   let timeoutId;
@@ -66,10 +67,13 @@ function RecallReportCom() {
                 productSku: order.product?.sku || "N/A",
                 lensSku: order.lens?.sku || "N/A",
                 status: order.status || "N/A",
+                leftLens: order?.leftLens?.displayName,
+                rightLens: order?.rightLens?.displayName,
               })),
               fullSale: recall.salesId,
               updateNotes: recall?.updateNotes,
               rescheduleNotes: recall?.rescheduleNotes,
+              recallStatus: recall?.recallStatus,
             }))
           );
         } else {
@@ -128,6 +132,8 @@ function RecallReportCom() {
     setSelectedRow(null);
   };
   const openRecallNoteModal = (row) => {
+    console.log("row<<<<<", row);
+
     setSelectedRow(row);
     setRecallNoteModal(true);
   };
@@ -136,6 +142,8 @@ function RecallReportCom() {
     setRecallNoteModal(false);
     setSelectedRow(null);
   };
+  console.log("selectedRow<<<", selectedRow);
+
   return (
     <div className="mt-4 max-width-90 mx-auto px-3">
       <div className="table-responsive overflow-x-auto">
@@ -251,20 +259,35 @@ function RecallReportCom() {
                             <thead>
                               <tr className="small fw-semibold text-primary-emphasis bg-light">
                                 <th className="py-3 px-2">Product SKU</th>
-                                <th className="py-3 px-2">Lens SKU</th>
+
+                                <th className="py-3 px-2"> Right Lens Sku</th>
+                                <th className="py-3 px-2">Left Lens Sku</th>
+
                                 <th className="py-3 px-2">Status</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {row.orders.map((order) => (
-                                <tr key={order.id}>
-                                  <td className="py-3 px-2">
-                                    {order.productSku}
-                                  </td>
-                                  <td className="py-3 px-2">{order.lensSku}</td>
-                                  <td className="py-3 px-2">{order.status}</td>
-                                </tr>
-                              ))}
+                              {row.orders.map((order) => {
+                                console.log("order<<<<<<<", order);
+
+                                return (
+                                  <tr key={order.id}>
+                                    <td className="py-3 px-2">
+                                      {order.productSku}
+                                    </td>
+                                    <td className="py-3 px-2">
+                                      {order?.rightLens}
+                                    </td>
+                                    <td className="py-3 px-2">
+                                      {order.leftLens}
+                                    </td>
+
+                                    <td className="py-3 px-2">
+                                      {order.status}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -300,9 +323,15 @@ function RecallReportCom() {
       {recallNoteModal && selectedRow && (
         <UpdateRecallNoteModel
           closeModal={closeRecallNoteModal}
-          selectedRow={selectedRow}
+          selectedRecall={selectedRow}
         />
       )}
+      {/* {recallNoteModal && selectedRow && (
+        <RescheduleRecallDateModal
+          closeModal={closeRecallNoteModal}
+          selectedRecall={selectedRow}
+        />
+      )} */}
     </div>
   );
 }

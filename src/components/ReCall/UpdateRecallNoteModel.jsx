@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { recallService } from "../../services/recallService";
 
 function UpdateRecallNoteModel({
   closeModal,
   selectedRecall,
   refreshSalesData,
 }) {
+  console.log("selectedRecall<<", selectedRecall);
+
   const [recallStatus, setRecallStatus] = useState(
     selectedRecall?.recallStatus || false
   );
@@ -30,10 +33,7 @@ function UpdateRecallNoteModel({
     };
 
     try {
-      const response = await axios.patch(
-        "https://devnode.coderkubes.com/eyesdeal-api/report/recall",
-        payload
-      );
+      const response = await recallService.updateRecallNote(payload);
 
       if (response.data.success) {
         toast.success("Recall updated successfully");
