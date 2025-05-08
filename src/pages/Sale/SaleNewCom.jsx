@@ -83,6 +83,7 @@ const SaleForm = () => {
             label: `${store.storeNumber} / ${store.name}`,
             data: store,
           }));
+        console.log("matchedStoresmatchedStores<<", matchedStores);
 
         setFilteredStores(matchedStores);
         if (matchedStores.length === 1) {
@@ -501,6 +502,7 @@ const SaleForm = () => {
     formData.otherCharges,
     formData.couponDiscount,
   ]);
+  console.log("defaultStore<<<", defaultStore);
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
@@ -661,15 +663,6 @@ const SaleForm = () => {
               />
             )}
 
-            {!showProductSelector && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary my-2 w-25"
-                onClick={() => setShowProductSelector(true)}
-              >
-                Add Another Pair
-              </button>
-            )}
             <div className="row">
               <div className="col-md-6 col-12">
                 <ProductSelector
@@ -679,7 +672,17 @@ const SaleForm = () => {
                   setShowProductSelector={setShowProductSelector}
                   setInventoryPairs={setInventoryPairs}
                 />
+                {!showProductSelector && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary my-2 w-25"
+                    onClick={() => setShowProductSelector(true)}
+                  >
+                    Add Another Pair
+                  </button>
+                )}
               </div>
+
               <div className="col-md-6 col-12">
                 <label htmlFor="recallOption" className="custom-label">
                   Recall Date <span className="text-danger">*</span>

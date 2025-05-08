@@ -47,7 +47,7 @@ const AssignStore = () => {
     let userId = JSON.parse(localStorage.getItem("user"))?._id;
 
     const bodyData = {
-      id: selectedStore.value, // Replace with actual data
+      id: selectedStore.value,
       uId: userId,
     };
 
@@ -55,12 +55,22 @@ const AssignStore = () => {
       const response = await storeService.assignStore(bodyData);
 
       if (response?.data.success) {
-        localStorage.setItem("storeInfoId", response?.data?.data.stores[0]);
+        const newStoreId = response?.data?.data.stores[0];
+        localStorage.setItem("storeInfoId", newStoreId);
+
+        // Update the stores array in the user object in localStorage
+        let user = JSON.parse(localStorage.getItem("user"));
+        if (user) {
+          user.stores = [newStoreId]; // Replace the stores array with the new store ID
+          localStorage.setItem("user", JSON.stringify(user));
+        }
+
         toast.success(response?.data.message);
         setSelectedStore(null); // Reset to no selection after submit
       }
     } catch (error) {
       console.log("err", error);
+      toast.error("Failed to assign store");
     }
   };
 
