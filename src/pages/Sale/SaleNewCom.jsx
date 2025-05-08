@@ -799,9 +799,8 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${
-                      field.readOnly ? "custom-disabled" : ""
-                    }`}
+                    className={`form-control w-100 ${field.readOnly ? "custom-disabled" : ""
+                      }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}

@@ -25,9 +25,9 @@ const StockOutTable = () => {
     return (stockData?.docs || []).filter((item) => {
       return (
         item.from?.name?.toLowerCase().includes(lowerQuery) ||
-        item.from?.storeNumber?.toLowerCase().includes(lowerQuery) ||
+        String(item.from?.storeNumber).includes(lowerQuery) || 
         item.to?.name?.toLowerCase().includes(lowerQuery) ||
-        item.to?.storeNumber?.toLowerCase().includes(lowerQuery) ||
+        String(item.to?.storeNumber).toLowerCase().includes(lowerQuery) || 
         item.status?.toLowerCase().includes(lowerQuery) ||
         moment(item.createdAt).format("YYYY-MM-DD").includes(lowerQuery) ||
         item.products?.some(
@@ -36,7 +36,7 @@ const StockOutTable = () => {
               ?.toLowerCase()
               .includes(lowerQuery) ||
             product.productId?.sku?.toLowerCase().includes(lowerQuery) ||
-            product.productId?.newBarcode?.toLowerCase().includes(lowerQuery)
+            String(product.productId?.newBarcode)?.toLowerCase().includes(lowerQuery)
         )
       );
     });
@@ -91,8 +91,6 @@ const StockOutTable = () => {
     const finalPayload = {
       data: finalData,
     };
-    console.log("finalPayload", finalPayload);
-
     setLoading(true);
 
     try {
@@ -161,18 +159,18 @@ const StockOutTable = () => {
                   {filteredData.length > 0 ? (
                     filteredData.map((item, index) => (
                       <tr key={item.id || index}>
-                        <td>{index + 1}</td>
-                        <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
-                        <td>
+                        <td style={{minWidth:"50px"}}>{index + 1}</td>
+                        <td style={{minWidth:"110px"}}>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
+                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
                           {item.from.storeNumber}/{item.from.name}
                         </td>
-                        <td>
+                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
                           {item.to.storeNumber}/{item.to.name}
                         </td>
-                        <td>{item.products?.length}</td>
-                        <td>{item.products?.length}</td>
+                        <td style={{minWidth:"160px"}}>{item.products?.length}</td>
+                        <td style={{minWidth:"150px"}}>{item.products?.length}</td> 
                         <td>{item.status}</td>
-                        <td className="d-flex align-items-center gap-2">
+                        <td className="d-flex align-items-center gap-2" >
                           <button
                             type="button"
                             className="btn btn-link p-0 text-primary"

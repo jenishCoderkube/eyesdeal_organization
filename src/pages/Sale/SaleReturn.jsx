@@ -619,7 +619,7 @@ const SaleReturn = () => {
                     </div>
 
                     {/* Reference */}
-                    <div className="col-md-3">
+                    <div className="col-md-3 p-1">
                       <input
                         type="text"
                         className="form-control"

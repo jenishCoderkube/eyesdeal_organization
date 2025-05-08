@@ -13,8 +13,11 @@ const INVENTORY_ENDPOINTS = {
   BRAND: `master/brand`,
   INVENTORY: (params) => `/inventory?populate=true&${params}`,
   INVENTORYSTORE: (params) => `/inventory/store?populate=true&${params}`,
+  INVENTORYGETCOUNT: (params) => `/inventory/store/get-count?populate=true&${params}`,
   INVENTORYGROUP: (params) =>
     `/inventory/get/group-wise?populate=true&${params}`,
+  INVENTORYGROUPTOTAL: (params) =>
+    `/inventory/get/group-wise/total?populate=true&${params}`,
   EXPORT: "/exportCsv",
   UNIVERSALSEARCH: (params) => `/products/product?search=${params}`,
   UNIVERSALSEARCHGET: (params) => `/inventory/store?${params}`,
@@ -149,7 +152,7 @@ const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
   return params.toString();
 };
 
-const buildProductStoreParams = (productIds, page, limit) => {
+const buildProductStoreParams = (productIds, page, limit, populate) => {
   const params = new URLSearchParams();
 
   if (page) params.append("page", page);
@@ -158,6 +161,9 @@ const buildProductStoreParams = (productIds, page, limit) => {
     params.append("limit", limit);
   }
 
+  if(populate){
+    params.append("populate",populate);
+  }
   // Store IDs
   productIds.forEach((productIds, index) => {
     params.append(`product._id[$in][${index}]`, productIds);
@@ -442,10 +448,58 @@ export const inventoryService = {
       };
     }
   },
-
-  getProductStore: async (productIds = [], page, limit) => {
+  getInventoryGetCount: async (
+    _t,
+    brand,
+    gender,
+    frameSize,
+    frameType_id,
+    frameShape_id,
+    frameMaterial_id,
+    frameColor_id,
+    frameCollection_id,
+    prescriptionType_id,
+    storeIds = [],
+    page,
+    search,
+    limit
+  ) => {
     try {
-      let params = buildProductStoreParams(productIds, page, limit);
+      let params = buildInventoryStoreParams(
+        _t,
+        brand,
+        gender,
+        frameSize,
+        frameType_id,
+        frameShape_id,
+        frameMaterial_id,
+        frameColor_id,
+        frameCollection_id,
+        prescriptionType_id,
+        storeIds,
+        page,
+        search,
+        limit
+      );
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.INVENTORYGETCOUNT(params)
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  getProductStore: async (productIds = [], page, limit, populate) => {
+    try {
+      let params = buildProductStoreParams(productIds, page, limit, populate);
       const response = await api.get(
         INVENTORY_ENDPOINTS.UNIVERSALSEARCHGET(params)
       );
@@ -473,6 +527,31 @@ export const inventoryService = {
       );
       const response = await api.get(
         INVENTORY_ENDPOINTS.INVENTORYGROUP(params)
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  getGroupStoreTotal: async (brandIds = [], storeIds = [], page, search, limit) => {
+    try {
+      let params = buildGroupStoreParams(
+        brandIds,
+        storeIds,
+        page,
+        search,
+        limit
+      );
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.INVENTORYGROUPTOTAL(params)
       );
 
       return {
@@ -544,7 +623,6 @@ export const inventoryService = {
         data: response.data,
       };
     } catch (error) {
-      console.log("error", error);
       return {
         success: false,
         message: error.response?.data?.message || "Error",
@@ -561,7 +639,6 @@ export const inventoryService = {
         search,
         limit
       );
-      console.log("params", params);
       const response = await api.get(INVENTORY_ENDPOINTS.ADJUSTMENT(params));
 
       return {

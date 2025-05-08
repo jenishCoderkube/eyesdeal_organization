@@ -264,6 +264,7 @@ const InProcessTable = ({
       {
         accessorKey: "id",
         header: "Select",
+        size: 20,
         cell: ({ row }) => {
           const productRow = localProductTableData.find(
             (p) => p.saleId === row.original.id
@@ -281,6 +282,7 @@ const InProcessTable = ({
       {
         accessorKey: "date",
         header: "Date",
+        size: 100,
         cell: ({ getValue }) => (
           <div className="table-vendor-data-size">{getValue()}</div>
         ),
@@ -288,6 +290,7 @@ const InProcessTable = ({
       {
         accessorKey: "billNumber",
         header: "Bill Number",
+        size: 100,
         cell: ({ getValue }) => (
           <div className="table-vendor-data-size">{getValue()}</div>
         ),
@@ -295,6 +298,7 @@ const InProcessTable = ({
       {
         accessorKey: "customerName",
         header: "Customer Name",
+        size: 200,
         cell: ({ getValue }) => (
           <div className="table-vendor-data-size">{getValue()}</div>
         ),
@@ -328,6 +332,7 @@ const InProcessTable = ({
       {
         accessorKey: "vendor",
         header: "Vendor",
+        size: 200,
         cell: ({ row }) => {
           const order = row.original.fullOrder;
           const leftVendor = order.currentLeftJobWork?.vendor?.companyName;
@@ -375,6 +380,7 @@ const InProcessTable = ({
       {
         accessorKey: "notes",
         header: "Note",
+        size: 350,
         cell: ({ getValue }) => (
           <div className="table-vendor-data-size" style={{ maxWidth: "200px" }}>
             {getValue()}
@@ -500,6 +506,7 @@ const InProcessTable = ({
                     <th
                       key={header.id}
                       className="py-3 text-left custom-perchase-th"
+                      style={{ minWidth: `${header.getSize()}px` }}
                     >
                       {flexRender(
                         header.column.columnDef.header,

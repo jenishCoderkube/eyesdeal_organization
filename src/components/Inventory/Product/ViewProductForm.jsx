@@ -6,6 +6,7 @@ import { FaSearch } from "react-icons/fa";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
+import moment from "moment";
 
 const ViewProductForm = () => {
   const [inventory, setInventory] = useState([]);
@@ -52,7 +53,8 @@ const ViewProductForm = () => {
       const response = await inventoryService.getProductStore(
         productIds,
         1,
-        20
+        20,
+        true
       );
       if (response.success) {
         setInventory(response?.data?.data);
@@ -105,13 +107,13 @@ const ViewProductForm = () => {
               noOptionsMessage={({ inputValue }) =>
                 inputValue
                   ? loading && (
-                      <div
-                        className="spinner-border spinner-border-sm text-primary"
-                        role="status"
-                      >
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                    )
+                    <div
+                      className="spinner-border spinner-border-sm text-primary"
+                      role="status"
+                    >
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  )
                   : "No options"
               }
             />
@@ -149,19 +151,21 @@ const ViewProductForm = () => {
                 {inventory?.docs?.length > 0 ? (
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td>{item.product?.oldBarcode}</td>
-                      <td>{item.product?.data}</td>
+                      <td style={{ minWidth: "70px" }}>{item.product?.oldBarcode}</td>
+                      <td style={{ minWidth: "100px" }}>{moment(item.product?.createdAt).format("YYYY-MM-DD")}</td>
                       <td>
                         <img
+                          style={{ minWidth: "100px" }}
                           src={item.photo}
                           alt="Product"
                           width="40"
                           height="40"
                         />
                       </td>
-                      <td>{item.product?.store}</td>
-                      <td>{item.product?.sku}</td>
-                      <td>{item.product?.mrp}</td>
+                      <td style={{minWidth:"180px"}}>{item.store?.name}</td>
+                      <td style={{minWidth:"180px"}}>{item.product?.sku}</td>
+                      <td style={{minWidth:"180px"}}>{item.product?.brand?.name} {item.product?.__t}</td>
+                      <td>{item.product?.MRP}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>
                     </tr>

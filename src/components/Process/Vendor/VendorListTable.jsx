@@ -340,6 +340,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "_id",
         header: "Select",
+        size: 20,
         cell: ({ row }) => (
           <input
             type="checkbox"
@@ -353,6 +354,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "sale.createdAt",
         header: "Process Date",
+        size: 120,
         cell: ({ row }) => (
           <div className="table-vendor-data-size common-tabledata-minwidth">
             {new Date(row.original.sale.createdAt).toLocaleDateString("en-GB", {
@@ -366,6 +368,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "store.name",
         header: "Store",
+        size: 200,
         cell: ({ row }) => (
           <div className="table-vendor-data-size common-tabledata-minwidth">
             {row.original.store.name}
@@ -375,6 +378,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "order.billNumber",
         header: "Bill Number",
+        size: 100,
         cell: ({ row }) => (
           <div className="table-vendor-data-size common-tabledata-minwidth">
             {row.original.order.billNumber}
@@ -384,6 +388,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "sale.customerName",
         header: "Customer Name",
+        size: 180,
         cell: ({ row }) => (
           <div
             className="table-vendor-data-size common-tabledata-minwidth common-text-color"
@@ -400,6 +405,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "vendorNote",
         header: "Vendor Note",
+        size: 150,
         cell: ({ row }) => (
           <div
             className="table-vendor-data-size common-tabledata-minwidth common-text-color"
@@ -416,6 +422,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "lens.sku",
         header: "Lens SKU",
+        size: 200,
         cell: ({ row }) => (
           <div className="max-w-[150px] table-vendor-data-size common-tabledata-minwidth">
             {row.original.lens.sku}
@@ -425,6 +432,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "side",
         header: "Side",
+        size: 100,
         cell: ({ row }) => (
           <div className="table-vendor-data-size common-tabledata-minwidth">
             {row.original.side}
@@ -484,6 +492,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       {
         accessorKey: "vendor.companyName",
         header: "Vendor",
+        size: 230,
         cell: ({ row }) => (
           <div className="table-vendor-data-size">
             {row.original.vendor.companyName}
@@ -599,6 +608,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
                     <th
                       key={header.id}
                       className="py-3 text-left custom-perchase-th"
+                      style={{ minWidth: `${header.getSize()}px` }}
                     >
                       {flexRender(
                         header.column.columnDef.header,

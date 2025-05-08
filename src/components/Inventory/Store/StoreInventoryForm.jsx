@@ -5,6 +5,7 @@ import Select from "react-select";
 import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
 import { FaSearch } from "react-icons/fa";
+import moment from "moment";
 
 const StoreInventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
@@ -17,6 +18,7 @@ const StoreInventoryForm = () => {
   const [preType, setPreType] = useState([]);
   const [collection, setCollection] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [inventoryGetCount, setInventoryGetCount] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -67,6 +69,7 @@ const StoreInventoryForm = () => {
     }),
     onSubmit: (values) => {
       getInventoryData(values);
+      getInventoryGetCount(values)
     },
   });
 
@@ -251,6 +254,7 @@ const StoreInventoryForm = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       getInventoryData();
+      getInventoryGetCount();
     }, 500); // 500ms delay
 
     return () => clearTimeout(delayDebounce);
@@ -290,6 +294,40 @@ const StoreInventoryForm = () => {
     }
   };
 
+  const getInventoryGetCount = async (values) => {
+    const storeId = values?.stores?.map((option) => option.value);
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getInventoryGetCount(
+        values?.selectedProduct?.value || productOptions[0]?.value,
+        values?.brand?.value,
+        values?.gender?.value,
+        values?.frameSize?.value,
+        values?.frameType?.value,
+        values?.frameShape?.value,
+        values?.frameMaterial?.value,
+        values?.frameColor?.value,
+        values?.frameCollection?.value,
+        values?.prescriptionType?.value,
+        storeId || user?.stores,
+        1,
+        searchQuery,
+        20
+      );
+      if (response.success) {
+        setInventoryGetCount(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const exportProduct = async (e) => {
     e.preventDefault();
 
@@ -314,7 +352,6 @@ const StoreInventoryForm = () => {
         "Frame Color": product.frameColor?.name || "",
         "Frame Size": product.frameSize || "",
       });
-      console.log("object", product?.frameType?.name);
     });
 
     const finalPayload = {
@@ -611,7 +648,7 @@ const StoreInventoryForm = () => {
           <button
             type="submit"
             className="btn custom-button-bgcolor"
-            // disabled={formik.isSubmitting}
+          // disabled={formik.isSubmitting}
           >
             Submit
           </button>
@@ -623,10 +660,10 @@ const StoreInventoryForm = () => {
         <div className="card-body p-0">
           <div className="d-flex flex-column px-3  flex-md-row gap-3 mb-4">
             <p className="mb-0 fw-normal text-black">
-              Total Quantity: {inventory?.countResult?.[0]?.totalQuantity}
+              Total Quantity: {inventoryGetCount?.[0]?.totalQuantity}
             </p>
             <p className="mb-0 fw-normal text-black">
-              Total Sold: {inventory?.countResult?.[0]?.totalQuantity}
+              Total Sold: {inventoryGetCount?.[0]?.totalSold}
             </p>
 
             <button
@@ -678,20 +715,21 @@ const StoreInventoryForm = () => {
                 {inventory?.docs?.length > 0 ? (
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td>{item.product?.oldBarcode}</td>
-                      <td>{item.product?.oldBarcode}</td>
+                      <td style={{ minWidth: "80px" }}>{item.product?.oldBarcode}</td>
+                      <td style={{ minWidth: "100px" }}>{moment(item.product?.createdAt).format("YYYY-MM-DD")}</td>
                       <td>
                         <img
+                          style={{ minWidth: "100px" }}
                           src={item.photo}
                           alt="Product"
-                          width="40"
+                          width="60"
                           height="40"
                         />
                       </td>
-                      <td>{item.product?.displayName}</td>
-                      <td>{item.product?.sku}</td>
+                      <td style={{minWidth:"200px"}}>{item.store?.name}</td>
+                      <td style={{minWidth:"210px"}}>{item.product?.sku}</td>
 
-                      <td>{item.product?.displayName}</td>
+                      <td style={{minWidth:"200px"}}>{item.product?.brand?.name} {item.product?.__t}</td>
                       <td>{item.product?.MRP}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>

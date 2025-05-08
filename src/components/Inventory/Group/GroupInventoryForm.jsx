@@ -12,6 +12,7 @@ const GroupInventoryForm = () => {
   const [loading, setLoading] = useState(false);
   const [categoryData, setCategoryData] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [inventoryTotal, setInventoryTotal] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -39,6 +40,7 @@ const GroupInventoryForm = () => {
     onSubmit: (values) => {
       console.log("Form submitted:", values);
       getInventoryData(values);
+      getInventoryTotal(values);
     },
   });
 
@@ -111,6 +113,7 @@ const GroupInventoryForm = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       getInventoryData();
+      getInventoryTotal();
     }, 500); // 500ms delay
 
     return () => clearTimeout(delayDebounce);
@@ -132,8 +135,33 @@ const GroupInventoryForm = () => {
         20
       );
       if (response.success) {
-        console.log("response", response);
         setInventory(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const getInventoryTotal = async (values) => {
+    const storeId = values?.stores?.map((option) => option.value);
+
+    const brandId = values?.brand?.map((option) => option.value);
+
+    setLoading(true);
+
+    try {
+      const response = await inventoryService.getGroupStoreTotal(
+        brandId,
+        storeId || user?.stores,
+        1,
+        searchQuery,
+        20
+      );
+      if (response.success) {
+        setInventoryTotal(response?.data?.data.docs);
       } else {
         toast.error(response.message);
       }
@@ -240,10 +268,10 @@ const GroupInventoryForm = () => {
         <div className="card-body p-0">
           <div className="d-flex flex-column px-3  flex-md-row gap-3 mb-4">
             <p className="mb-0 fw-normal text-black">
-              Total Quantity: {inventory?.countResult?.[0]?.totalQuantity}
+              Total Quantity: {inventoryTotal?.[0]?.totalQuantity}
             </p>
             <p className="mb-0 fw-normal text-black">
-              Total Sold: {inventory?.countResult?.[0]?.totalQuantity}
+              Total Sold: {inventoryTotal?.[0]?.totalSold}
             </p>
 
             <button
@@ -286,16 +314,8 @@ const GroupInventoryForm = () => {
                 {inventory?.docs?.length > 0 ? (
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td>icon</td>
-                      <td>
-                        <img
-                          src={item.photo}
-                          alt="Product"
-                          width="40"
-                          height="40"
-                        />
-                      </td>
-
+                      <td>{item.brand}</td>
+                      <td>{item.model}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>
                     </tr>

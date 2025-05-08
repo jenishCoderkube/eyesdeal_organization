@@ -8,11 +8,13 @@ import { toast } from "react-toastify";
 import { FaTrash } from "react-icons/fa";
 
 const StockSaleForm = () => {
+  const users = JSON.parse(localStorage.getItem("user"));
+
   const [formData, setFormData] = useState({
     from: "",
     to: "",
     product: "", // Store first product ID here
-    store: "ELITE HOSPITAL / 27",
+    store: "",
     totalQuantity: 0,
     totalAmount: 0,
     totalTax: 0,
@@ -30,6 +32,7 @@ const StockSaleForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
+
 
   useEffect(() => {
     (async () => {
@@ -122,7 +125,7 @@ const StockSaleForm = () => {
           from: formData.from,
           to: "",
           product: "",
-          store: "ELITE HOSPITAL / 27",
+          store: "",
           totalQuantity: 0,
           totalAmount: 0,
           totalTax: 0,
@@ -152,6 +155,23 @@ const StockSaleForm = () => {
     };
     return option;
   });
+
+  const [hasSetDefaultStore, setHasSetDefaultStore] = useState(false);
+
+  useEffect(() => {
+    if (
+      !hasSetDefaultStore &&
+      storeOptions.length > 0 &&
+      users?.stores?.length > 0
+    ) {
+      const defaultOption = storeOptions.find(opt => users.stores.includes(opt.value));
+      if (defaultOption) {
+        handleSelectChange(defaultOption, { name: "store" });
+        setHasSetDefaultStore(true);
+      }
+    }
+  }, [storeOptions, users?.stores, hasSetDefaultStore]);
+
 
   // Debounced product search for first AsyncSelect
   const loadProductOptions = async (inputValue) => {
@@ -220,7 +240,7 @@ const StockSaleForm = () => {
 
     const params = {
       "optimize[product]": option.value,
-      // "optimize[store]": storeInfoId,
+      "optimize[store]": formData.store,
       limit: 5,
       populate: true,
     };
@@ -312,10 +332,10 @@ const StockSaleForm = () => {
       const updatedProducts = prev.map((product) =>
         product.id === productId
           ? {
-              ...product,
-              quantity: newQuantity,
-              amount: newQuantity * product.resellerPrice,
-            }
+            ...product,
+            quantity: newQuantity,
+            amount: newQuantity * product.resellerPrice,
+          }
           : product
       );
       updateTotals(updatedProducts);
@@ -329,10 +349,10 @@ const StockSaleForm = () => {
       const updatedProducts = prev.map((product) =>
         product.id === productId
           ? {
-              ...product,
-              resellerPrice: newPrice,
-              amount: product.quantity * newPrice,
-            }
+            ...product,
+            resellerPrice: newPrice,
+            amount: product.quantity * newPrice,
+          }
           : product
       );
       updateTotals(updatedProducts);
@@ -380,7 +400,7 @@ const StockSaleForm = () => {
                   name="from"
                   options={storeOptions}
                   value={storeOptions.find(
-                    (option) => option.value === formData.from
+                    (option) => users.stores.includes(option.value)
                   )}
                   onChange={(option) =>
                     handleSelectChange(option, { name: "from" })
@@ -673,9 +693,8 @@ const StockSaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-auto ${
-                      field.readOnly ? "custom-disabled" : ""
-                    }`}
+                    className={`form-control w-100 ${field.readOnly ? "custom-disabled" : ""
+                      }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}

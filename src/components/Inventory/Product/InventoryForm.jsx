@@ -631,7 +631,7 @@ const InventoryForm = () => {
               Total Quantity: {inventory?.countResult?.[0]?.totalQuantity}
             </p>
             <p className="mb-0 fw-normal text-black">
-              Total Sold: {inventory?.countResult?.[0]?.totalQuantity}
+              Total Sold: {inventory?.countResult?.[0]?.totalSold}
             </p>
 
             <button
@@ -690,7 +690,7 @@ const InventoryForm = () => {
                         />
                       </td>
                       <td>{item.product?.sku}</td>
-                      <td>{item.product?.mrp}</td>
+                      <td>{item.product?.MRP}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>
                     </tr>
