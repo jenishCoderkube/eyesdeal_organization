@@ -135,6 +135,11 @@ const menuItems = [
       },
     ],
   },
+  {
+    label: "Recall",
+    icon: "bi bi-collection-play",
+    link: "/re-call",
+  },
   // {
   //   label: "New Sale",
   //   icon: "bi bi-cash-stack", // You can adjust the icon as needed

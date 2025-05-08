@@ -4,7 +4,6 @@ import AsyncSelect from "react-select/async";
 import DatePicker from "react-datepicker";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
-
 import { saleService } from "../../services/saleService";
 import PrescriptionModel from "../../components/Process/PrescriptionModel";
 import OrdersModel from "../../components/Process/OrdersModel";
@@ -251,25 +250,46 @@ const SaleForm = () => {
             incentiveAmount: pair.product.incentiveAmount || 0,
           }
         : null,
-      lens: pair.lens
+      rightLens: pair.rightLens
         ? {
-            product: pair.lens._id || pair.lens.product,
-            quantity: pair.lens.quantity || 1,
-            barcode: pair.lens.barcode,
-            stock: pair.lens.stock || 0,
-            sku: pair.lens.sku,
-            photos: pair.lens.photos || [],
-            mrp: pair.lens.mrp || 0,
-            srp: pair.lens.srp || 0,
-            taxRate: pair.lens.taxRate || `${pair.lens.tax} (Inc)`,
-            taxAmount: pair.lens.taxAmount || 0,
-            discount: pair.lens.discount || 0,
-            netAmount: pair.lens.netAmount || 0,
-            inclusiveTax: pair.lens.inclusiveTax || true,
-            manageStock: pair.lens.manageStock || false,
-            displayName: pair.lens.displayName,
-            unit: pair.lens.unit?.name || pair.lens.unit,
-            incentiveAmount: pair.lens.incentiveAmount || 0,
+            product: pair.rightLens.item,
+            quantity: pair.rightLens.quantity || 1,
+            barcode: pair.rightLens.barcode,
+            stock: pair.rightLens.stock || 0,
+            sku: pair.rightLens.sku,
+            photos: pair.rightLens.photos || [],
+            mrp: pair.rightLens.mrp,
+            srp: pair.rightLens.srp,
+            taxRate: pair.rightLens.taxRate,
+            taxAmount: pair.rightLens.perPieceTax,
+            discount: pair.rightLens.perPieceDiscount,
+            netAmount: pair.rightLens.perPieceAmount,
+            inclusiveTax: pair.rightLens.inclusiveTax,
+            manageStock: pair.rightLens.manageStock,
+            displayName: pair.rightLens.displayName,
+            unit: pair.rightLens.unit,
+            incentiveAmount: pair.rightLens.incentiveAmount,
+          }
+        : null,
+      leftLens: pair.leftLens
+        ? {
+            product: pair.leftLens.item,
+            quantity: pair.leftLens.quantity || 1,
+            barcode: pair.leftLens.barcode,
+            stock: pair.leftLens.stock || 0,
+            sku: pair.leftLens.sku,
+            photos: pair.leftLens.photos || [],
+            mrp: pair.leftLens.mrp,
+            srp: pair.leftLens.srp,
+            taxRate: pair.leftLens.taxRate,
+            taxAmount: pair.leftLens.perPieceTax,
+            discount: pair.leftLens.perPieceDiscount,
+            netAmount: pair.leftLens.perPieceAmount,
+            inclusiveTax: pair.leftLens.inclusiveTax,
+            manageStock: pair.leftLens.manageStock,
+            displayName: pair.leftLens.displayName,
+            unit: pair.leftLens.unit,
+            incentiveAmount: pair.leftLens.incentiveAmount,
           }
         : null,
     }));
@@ -366,7 +386,6 @@ const SaleForm = () => {
     const today = new Date();
     const recallDate = new Date(today);
     recallDate.setMonth(today.getMonth() + months);
-    // Format as DD-MM-YYYY
     const day = String(recallDate.getDate()).padStart(2, "0");
     const month = String(recallDate.getMonth() + 1).padStart(2, "0");
     const year = recallDate.getFullYear();
