@@ -64,6 +64,7 @@ import ExportProducts from "../pages/Products/ExportProducts";
 import VendorListProcess from "../pages/Process/VendorListProcess";
 import NewSales from "../pages/NewSales/NewSales";
 import RecallReportCom from "../pages/Recall/RecallReportCom";
+import RecallReport from "../pages/Reports/RecallReport";
 
 const routes = [
   {
@@ -669,6 +670,16 @@ const routes = [
       </PrivateRoute>
     ),
   },
+  {
+    title: "recall report",
+    path: "/recall-report",
+    element: (
+      <PrivateRoute>
+        <RecallReport />
+        
+      </PrivateRoute>
+    ),
+  }
 ];
 
 export default routes;

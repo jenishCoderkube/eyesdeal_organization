@@ -133,6 +133,11 @@ const menuItems = [
         label: "Empty Inventory Report",
         link: "/reports/empty-inventory-report",
       },
+      {
+        label: "Recall Report",
+        link: "/recall-report",
+        
+      },
     ],
   },
   {
