@@ -4,6 +4,11 @@ import { reportService } from "../../../services/reportService";
 import { recallService } from "../../../services/recallService";
 import { useFormik } from "formik";
 import { toast } from 'react-toastify';
+import { FaAngleDown, FaAngleRight } from "react-icons/fa";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+
 
 const RecallReportForm = () => {
   const [showAssetModal, setShowAssetModal] = useState(false);
@@ -12,7 +17,8 @@ const RecallReportForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState([]);
-  const [selectedNotes, setSelectedNotes] = useState(''); // New state for selected record's notes
+  const [selectedNotes, setSelectedNotes] = useState('');
+  const [expandedRows, setExpandedRows] = useState([]); // New state for expanded rows
 
   // Static data for folders
   const folders = [
@@ -75,11 +81,14 @@ const RecallReportForm = () => {
     try {
       const body = {
         stores: formValues.store.map(store => store.value) || ["638b1a079f67a63ea1e1ba01"],
+        // stores: ["638b1a079f67a63ea1e1ba01"],
+
+
         status: selectedStatus.length > 0 ? selectedStatus[0].value === 'yes' : true,
         startDate: formValues.from.toLocaleDateString('en-GB').replace(/\//g, '-'),
         endDate: formValues.to.toLocaleDateString('en-GB').replace(/\//g, '-'),
       };
-  
+
       const result = await recallService.getRecallReport(body);
       if (result.success) {
         const mappedData = result.data.data.map((item, index) => ({
@@ -90,7 +99,19 @@ const RecallReportForm = () => {
           totalInvoiceValue: `$${item.salesId.netAmount.toFixed(2)}`,
           recallDate: new Date(item.recallDate).toISOString().split('T')[0],
           previousNotes: item.updateNotes || 'No notes',
+          orders: item.salesId.orders.map((order, orderIndex) => ({
+            id: `${item._id}-${orderIndex + 1}`,
+            lensSku: order.lens?.sku || "N/A",
+            leftlensSku: order.leftLens?.sku || "N/A",
+            rightlensSku: order.rightLens?.sku || "N/A",
+
+            status: order.status || "N/A",
+            productSku: order.product?.sku || "N/A",
+
+          })), // Map orders for nested table
         }));
+        console.log("Mapped Data:", mappedData.orders);
+
         setReportData(mappedData);
       } else {
         toast.error(result.message);
@@ -105,22 +126,29 @@ const RecallReportForm = () => {
     }
   };
 
+  // Toggle row expansion
+  const toggleSplit = (index) => {
+    setExpandedRows((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
+
   return (
     <main>
       {/* Asset Selection Modal */}
-      <div 
-        className={`modal fade ${showAssetModal ? 'show d-block' : ''}`} 
-        tabIndex="-1" 
-        role="dialog" 
+      <div
+        className={`modal fade ${showAssetModal ? 'show d-block' : ''}`}
+        tabIndex="-1"
+        role="dialog"
         aria-hidden={!showAssetModal}
       >
         <div className="modal-dialog modal-xl">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Select Assets</h5>
-              <button 
-                type="button" 
-                className="btn-close" 
+              <button
+                type="button"
+                className="btn-close"
                 onClick={() => setShowAssetModal(false)}
               ></button>
             </div>
@@ -135,19 +163,19 @@ const RecallReportForm = () => {
                       </div>
                       {folders.map((folder, index) => (
                         <div key={index} className="col-3 text-center mb-3">
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="70" 
-                            height="70" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="70"
+                            height="70"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
                             strokeLinejoin="round"
                             className="cursor-pointer"
                           >
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0  1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                           </svg>
                           <p className="truncate">{folder}</p>
                         </div>
@@ -166,8 +194,8 @@ const RecallReportForm = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-primary"
                 onClick={() => setShowAssetModal(false)}
               >
@@ -213,22 +241,30 @@ const RecallReportForm = () => {
                 </div>
                 <div className="col-md-3">
                   <label htmlFor="from" className="form-label">Date From</label>
-                  <input 
-                    type="date" 
-                    className="form-control" 
-                    id="from" 
-                    value={formik.values.from.toISOString().split('T')[0]}
-                    onChange={(e) => formik.setFieldValue('from', new Date(e.target.value))}
+                  <DatePicker
+                    selected={formik.values.from}
+                    onChange={(date) => formik.setFieldValue("from", date)}
+                    onBlur={() => formik.setFieldTouched("from", true)}
+                    dateFormat="dd/MM/yyyy"
+                    className="form-control"
+                    id="from"
+                    name="from"
+                    autoComplete="off"
+                    placeholderText="Select date"
                   />
                 </div>
                 <div className="col-md-3">
                   <label htmlFor="to" className="form-label">Date To</label>
-                  <input 
-                    type="date" 
-                    className="form-control" 
-                    id="to" 
-                    value={formik.values.to.toISOString().split('T')[0]}
-                    onChange={(e) => formik.setFieldValue('to', new Date(e.target.value))}
+                  <DatePicker
+                    selected={formik.values.to}
+                    onChange={(date) => formik.setFieldValue("to", date)}
+                    onBlur={() => formik.setFieldTouched("to", true)}
+                    dateFormat="dd/MM/yyyy"
+                    className="form-control"
+                    id="to"
+                    name="to"
+                    autoComplete="off"
+                    placeholderText="Select date"
                   />
                 </div>
               </div>
@@ -239,8 +275,9 @@ const RecallReportForm = () => {
 
             {/* Table */}
             <div className="table-responsive">
-              <table className="table custom-table">
-                <thead>
+              <table className="table custom-table1" style={{ minWidth: "900px", borderCollapse: "collapse" }}>
+                <thead className="custom-th"
+                >
                   <tr>
                     <th>Last Invoice Date</th>
                     <th>Customer Name</th>
@@ -248,30 +285,90 @@ const RecallReportForm = () => {
                     <th>Total Invoice Value</th>
                     <th>Recall Date</th>
                     <th>Previous Notes</th>
-                    <th>Actions</th>
+                    <th></th> {/* Column for expand arrow */}
+
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.lastInvoiceDate}</td>
-                      <td>{item.customerName}</td>
-                      <td>{item.customerNumber}</td>
-                      <td>{item.totalInvoiceValue}</td>
-                      <td>{item.recallDate}</td>
-                      <td>{item.previousNotes}</td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => {
-                            setSelectedNotes(item.previousNotes);
-                            setShowNotesModal(true);
-                          }}
+                  {reportData.map((item, index) => (
+                    <React.Fragment key={item.id}>
+                      <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                        <td>{item.lastInvoiceDate}</td>
+                        <td>{item.customerName}</td>
+                        <td>{item.customerNumber}</td>
+                        <td style={{ color: 'blue', cursor: 'pointer' }}>
+                          {item.totalInvoiceValue}</td>
+                        <td>{item.recallDate}</td>
+                        <td>
+                          <span
+                            style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
+                            onClick={() => {
+                              setSelectedNotes(item.previousNotes);
+                              setShowNotesModal(true);
+                            }}
+                          >
+                            View Notes
+                          </span>
+
+                        </td>
+                        <td
+                          className="text-center cursor-pointer"
+                          onClick={() => toggleSplit(index)}
                         >
-                          View Notes
-                        </button>
-                      </td>
-                    </tr>
+                          {expandedRows.includes(index) ? <FaAngleDown /> : <FaAngleRight />}
+                        </td>
+                        <td>
+
+                        </td>
+                      </tr>
+                      {expandedRows.includes(index) && (
+                        <tr>
+                          <td colSpan={8} className="p-0">
+                            <div className="table-responsive">
+                              <table
+                                className="table mb-0"
+                                style={{
+                                  minWidth: "900px",
+                                  borderCollapse: "collapse",
+                                  border: "none",
+                                }}
+                              >
+                                <thead>
+                                  <tr
+                                    className="small text-primary-emphasis bg-light"
+                                    style={{ fontWeight: "bold", border: "none" }}
+                                  >
+                                    <th className="py-2 px-2" style={{ border: "none" }}>Product Sku</th>
+                                    <th className="py-2 px-2" style={{ border: "none" }}>Left Lens SKU</th>
+                                    <th className="py-2 px-2" style={{ border: "none" }}>Right Lens SKU</th>
+                                    <th className="py-2 px-2" style={{ border: "none" }}>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {item.orders.map((order) => (
+                                    <tr key={order.id} style={{ border: "none" }}>
+                                      <td className="py-1 px-2" style={{ border: "none" }}>
+                                        {order.productSku || order.lensSku}
+                                      </td>
+                                      <td className="py-1 px-2" style={{ border: "none" }}>
+                                        {order.leftlensSku}
+                                      </td>
+                                      <td className="py-1 px-2" style={{ border: "none" }}>
+                                        {order.rightlensSku}
+                                      </td>
+                                      <td className="py-1 px-2" style={{ border: "none" }}>
+                                        {order.status}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -281,27 +378,46 @@ const RecallReportForm = () => {
       </div>
 
       {/* Notes Modal */}
-      <div 
-        className={`modal fade ${showNotesModal ? 'show d-block' : ''}`} 
-        tabIndex="-1" 
-        role="dialog" 
+      <div
+        className={`modal fade ${showNotesModal ? 'show d-block' : ''}`}
+        tabIndex="-1"
+        role="dialog"
         aria-hidden={!showNotesModal}
       >
-        <div className="modal-dialog modal-lg">
+        <div className="modal-dialog modal-lg" style={{ marginTop: '15%', width: '30%' }}>
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Notes</h5>
-              <button 
-                type="button" 
-                className="btn-close" 
+              <div className="font-weight-bold text-dark modal-title h4">Notes</div>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
                 onClick={() => setShowNotesModal(false)}
               ></button>
             </div>
-            <div className="modal-body">
-              <h6 className="fw-bold">Recall Update Notes</h6>
-              <p>{selectedNotes || 'No notes available'}</p>
-              <h6 className="fw-bold mt-3">Reschedule Notes</h6>
-              <p>No notes available</p>
+            <div className="p-3 modal-body">
+              <form>
+                <div className="mb-3">
+                  <h6 className="font-weight-bold">Recall Update Notes</h6>
+                  <input
+                    placeholder="No recall update notes available"
+                    disabled
+                    className="mt-2 form-control"
+                    type="text"
+                    value={selectedNotes || ''}
+                  />
+                </div>
+                <div className="mb-3">
+                  <h6 className="font-weight-bold mt-2">Reschedule Notes</h6>
+                  <input
+                    placeholder="No reschedule notes available"
+                    disabled
+                    className="mt-2 form-control"
+                    type="text"
+                    value="No notes available" // Replace with actual reschedule notes if available
+                  />
+                </div>
+              </form>
             </div>
           </div>
         </div>
