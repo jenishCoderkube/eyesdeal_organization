@@ -37,7 +37,7 @@ const ReadyTable = ({
       productSku: order.product?.sku || "N/A",
       lensSku: order.lens?.sku || "N/A",
       status: order.status || "N/A",
-      vendor: order.sale?.vendor || "",
+      vendor: `Right: ${order.currentRightJobWork?.vendor?.companyName} Left: ${order.currentLeftJobWork?.vendor?.companyName}` || "",
       orderId: order._id,
       fullOrder: order,
     }));
@@ -195,7 +195,7 @@ const ReadyTable = ({
         accessorKey: "vendor",
         header: "Vendor",
         cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+          <div className="table-vendor-data-size text-success">{getValue()}</div>
         ),
       },
       {

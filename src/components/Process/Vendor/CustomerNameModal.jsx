@@ -90,7 +90,6 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
     { value: "doctor", label: "Doctor" },
     { value: "optometrist", label: "Optometrist" },
   ];
-
   return (
     <Modal show={show} onHide={onHide} centered size="xl">
       <Modal.Header className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
@@ -118,11 +117,10 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
             <Nav.Item className="me-4">
               <Nav.Link
                 eventKey="specs"
-                className={`pb-3 text-sm font-medium ${
-                  activeTab === "specs"
+                className={`pb-3 text-sm font-medium ${activeTab === "specs"
                     ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
                     : "text-slate-500 hover:text-slate-600"
-                }`}
+                  }`}
                 style={{
                   color: activeTab === "specs" ? "#6366f1" : "black",
                 }}
@@ -133,12 +131,11 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
             <Nav.Item className="me-4">
               <Nav.Link
                 eventKey="contact"
-                disabled
-                className={`pb-3 text-sm font-medium ${
-                  activeTab === "contact"
+                // disabled
+                className={`pb-3 text-sm font-medium ${activeTab === "contact"
                     ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
                     : "text-slate-500 hover:text-slate-600"
-                }`}
+                  }`}
                 style={{
                   color: activeTab === "contact" ? "#6366f1" : "black",
                 }}

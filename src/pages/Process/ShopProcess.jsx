@@ -10,18 +10,19 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaAngleRight, FaAngleDown } from "react-icons/fa6";
-import BillModel from "../../components/Process/BillModel";
 import PrescriptionModel from "../../components/Process/PrescriptionModel";
 import RAModel from "../../components/Process/RAModel";
 import NotesModel from "../../components/Process/NotesModel";
 import AssignPowerModel from "../../components/Process/AssignPowerModel";
+import BillModel from "../../components/Process/BillModel";
 import { useNavigate } from "react-router-dom";
-import CustomerNameModal from "../../components/Process/Vendor/CustomerNameModal";
 import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import generateInvoicePDF from "../../components/Process/generateInvoicePDF";
+import SalesCommanModel from "../../components/Process/SalesCommanModel";
+import CustomerNameModal from "../../components/Process/Vendor/CustomerNameModal";
 
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
@@ -35,10 +36,7 @@ const debounce = (func, delay) => {
 function ShopProcess() {
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [expandedRows, setExpandedRows] = useState([]);
-  const [BillModalVisible, setBillModalVisible] = useState(false);
-  const [selectedBill, setSelectedBill] = useState(null);
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
-    useState(false);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [RAModalVisible, setRAModalVisible] = useState(false);
   const [selectedRA, setSelectedRA] = useState(null);
@@ -46,13 +44,17 @@ function ShopProcess() {
   const [selectedNotes, setSelectedNotes] = useState(null);
   const [APModalVisible, setAPModalVisible] = useState(false);
   const [selectedAP, setSelectedAP] = useState(null);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
   const [storeData, setStoreData] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [productTableData, setProductTableData] = useState([]);
+  const [salesReturnProductData, setSalesReturnProductData] = useState([]);
+  const [BillModalVisible, setBillModalVisible] = useState(false);
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [salesReturn, setSalesReturn] = useState([]);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
     inProcess: 0,
@@ -61,7 +63,6 @@ function ShopProcess() {
     returned: 0,
   });
   const navigate = useNavigate();
-
   const users = useMemo(
     () =>
       JSON.parse(localStorage.getItem("user")) || {
@@ -163,9 +164,9 @@ function ShopProcess() {
         startDate: filters.startDate?.toISOString(),
         endDate: filters.endDate?.toISOString(),
         createdAtGte:
-          filters.status === "delivered" ? "1742841000000" : undefined,
+          filters.status === "delivered" ? Math.floor(filters.startDate.getTime()) : undefined,
         createdAtLte:
-          filters.status === "delivered" ? "1745519399999" : undefined,
+          filters.status === "delivered" ? Math.floor(filters.endDate.getTime()) : undefined,
         populate: isInitialLoad.current ? true : undefined,
       });
 
@@ -184,9 +185,9 @@ function ShopProcess() {
           startDate: filters.startDate,
           endDate: filters.endDate,
           createdAtGte:
-            filters.status === "delivered" ? "1742841000000" : undefined,
+            filters.status === "delivered" ? Math.floor(filters.startDate.getTime()) : undefined,
           createdAtLte:
-            filters.status === "delivered" ? "1745519399999" : undefined,
+            filters.status === "delivered" ? Math.floor(filters.endDate.getTime()) : undefined,
           populate: isInitialLoad.current ? true : undefined,
         };
         if (!isInitialLoad.current) {
@@ -194,6 +195,7 @@ function ShopProcess() {
         }
 
         const response = await shopProcessService.getSales(params);
+
         if (response.success) {
           const sales = response.data.data.docs;
           setTableData(
@@ -203,20 +205,21 @@ function ShopProcess() {
               billNumber: sale.saleNumber,
               customerName: sale.customerName,
               phone: sale.customerPhone,
+              storeName: sale.store.name,
               totalItems: sale.totalQuantity,
               receivedAmount: sale.receivedAmount?.length
                 ? sale.receivedAmount.reduce(
-                    (sum, amt) => sum + (amt.amount || 0),
-                    0
-                  )
+                  (sum, amt) => sum + (amt.amount || 0),
+                  0
+                )
                 : 0,
               remainingAmount:
                 sale.netAmount -
                 (sale.receivedAmount?.length
                   ? sale.receivedAmount.reduce(
-                      (sum, amt) => sum + (amt.amount || 0),
-                      0
-                    )
+                    (sum, amt) => sum + (amt.amount || 0),
+                    0
+                  )
                   : 0),
               notes: sale.note || "N/A",
               action: "Edit",
@@ -274,35 +277,88 @@ function ShopProcess() {
         const params = isInitialLoad.current
           ? {}
           : {
-              stores: filters.stores.length ? filters.stores : null,
-              search: filters.search || "",
-            };
+            stores: filters.stores.length ? filters.stores : null,
+            search: filters.search || "",
+          };
 
-        const [orderResponse, returnResponse] = await Promise.all([
-          shopProcessService.getOrderCount(params),
-          shopProcessService.getSaleReturnCount(params),
-        ]);
+        if (filters.status == "returned") {
+          const [orderResponse, salesReturnResponse, returnResponse] = await Promise.all([
+            shopProcessService.getOrderCount(params),
+            shopProcessService.getSaleReturn(params),
+            shopProcessService.getSaleReturnCount(params),
+          ]);
 
-        if (orderResponse.success && orderResponse.data.data.docs[0]) {
-          const orderCounts = orderResponse.data.data.docs[0];
-          setStatusCounts((prev) => ({
-            ...prev,
-            pending: orderCounts.pendingCount || 0,
-            inProcess:
-              (orderCounts.inWorkshopCount || 0) +
-              (orderCounts.inLabCount || 0) +
-              (orderCounts.inFittingCount || 0),
-            ready: orderCounts.readyCount || 0,
-            delivered: orderCounts.deliveredCount || 0,
-          }));
+          if (orderResponse.success && orderResponse.data.data.docs[0]) {
+            const orderCounts = orderResponse.data.data.docs[0];
+            setStatusCounts((prev) => ({
+              ...prev,
+              pending: orderCounts.pendingCount || 0,
+              inProcess:
+                (orderCounts.inWorkshopCount || 0) +
+                (orderCounts.inLabCount || 0) +
+                (orderCounts.inFittingCount || 0),
+              ready: orderCounts.readyCount || 0,
+              delivered: orderCounts.deliveredCount || 0,
+            }));
+          }
+
+          if (salesReturnResponse.success) {
+            setSalesReturn((prev) => ({
+              ...prev,
+              returned: salesReturnResponse?.data?.data?.docs,
+            }));
+
+            setSalesReturnProductData(
+              salesReturnResponse?.data?.data?.docs.flatMap((doc, docIndex) =>
+                doc.products.map((product, prodIndex) => ({
+                  id: `${doc._id}-${prodIndex + 1}`,
+                  saleId: doc._id,
+                  selected: false,
+                  productSku: product.sku || "N/A",
+                  lensSku: product.sku || "N/A",
+                  barcode: product.barcode || "N/A",
+                  srp: product.purchaseRate || product.totalAmount || 0,
+                  orderId: product._id || doc._id,
+                }))
+              )
+            );
+          }
+
+          if (returnResponse.success) {
+            setStatusCounts((prev) => ({
+              ...prev,
+              returned: returnResponse.data.data.docs[0]?.returnedCount || 0,
+            }));
+          }
+        }
+        else {
+          const [orderResponse, returnResponse] = await Promise.all([
+            shopProcessService.getOrderCount(params),
+            shopProcessService.getSaleReturnCount(params),
+          ]);
+
+          if (orderResponse.success && orderResponse.data.data.docs[0]) {
+            const orderCounts = orderResponse.data.data.docs[0];
+            setStatusCounts((prev) => ({
+              ...prev,
+              pending: orderCounts.pendingCount || 0,
+              inProcess:
+                (orderCounts.inWorkshopCount || 0) +
+                (orderCounts.inLabCount || 0) +
+                (orderCounts.inFittingCount || 0),
+              ready: orderCounts.readyCount || 0,
+              delivered: orderCounts.deliveredCount || 0,
+            }));
+          }
+
+          if (returnResponse.success) {
+            setStatusCounts((prev) => ({
+              ...prev,
+              returned: returnResponse.data.data.docs[0]?.returnedCount || 0,
+            }));
+          }
         }
 
-        if (returnResponse.success) {
-          setStatusCounts((prev) => ({
-            ...prev,
-            returned: returnResponse.data.data.docs[0]?.returnedCount || 0,
-          }));
-        }
       } catch (error) {
         toast.error("Error fetching counts");
       }
@@ -330,7 +386,6 @@ function ShopProcess() {
     if (isInitialLoad.current) {
       getStores();
     }
-
     // Use formik.values for dates, which have defaults set
     const filters = {
       ...currentFilters.current,
@@ -355,10 +410,30 @@ function ShopProcess() {
     }
   }, [fetchSalesAndCounts]);
 
-  const storeOptions = storeData.map((store) => ({
-    value: store._id,
-    label: store.name,
-  }));
+  const storeOptions = useMemo(() => {
+    return storeData.map((store) => ({
+      value: store._id,
+      label: `${store.name} / ${store.storeNumber}`,
+    }));
+  }, [storeData]);
+
+  const [hasSetDefaultStore, setHasSetDefaultStore] = useState(false);
+
+  useEffect(() => {
+    if (
+      !hasSetDefaultStore &&
+      storeOptions.length > 0 &&
+      users?.stores?.length > 0
+    ) {
+      const defaultOptions = storeOptions.filter(opt =>
+        users.stores.includes(opt.value)
+      );
+      if (defaultOptions.length > 0) {
+        formik.setFieldValue("stores", defaultOptions);
+        setHasSetDefaultStore(true);
+      }
+    }
+  }, [storeOptions, users?.stores, hasSetDefaultStore, formik]);
 
   const statuses = [
     { name: "Pending", count: statusCounts.pending },
@@ -652,11 +727,10 @@ function ShopProcess() {
             <button
               key={status.name}
               onClick={() => setActiveStatus(status.name)}
-              className={`bg-transparent border-0 pb-2 px-1 fw-medium ${
-                activeStatus === status.name
-                  ? "common-text-color border-bottom common-tab-border-color"
-                  : "text-secondary"
-              } hover:text-dark focus:outline-none`}
+              className={`bg-transparent border-0 pb-2 px-1 fw-medium ${activeStatus === status.name
+                ? "common-text-color border-bottom common-tab-border-color"
+                : "text-secondary"
+                } hover:text-dark focus:outline-none`}
               style={{ boxShadow: "none", outline: "none" }}
             >
               {status.name} ({status.count})
@@ -676,7 +750,7 @@ function ShopProcess() {
           <div className="mb-3">
             {activeStatus === "Pending" && (
               <button
-                className="btn  me-2 custom-hover-border"
+                className="btn me-2 custom-hover-border"
                 onClick={handleSendToWorkshop}
                 disabled={loading}
               >
@@ -717,7 +791,7 @@ function ShopProcess() {
               <span className="sr-only"></span>
             </div>
           </div>
-        ) : tableData.length === 0 ? (
+        ) : (activeStatus === "Returned" ? salesReturn : tableData).length === 0 ? (
           <div
             style={{
               width: "100%",
@@ -736,43 +810,44 @@ function ShopProcess() {
           >
             <thead>
               <tr>
-                {activeStatus === "Returned"
+                {(activeStatus === "Returned"
                   ? [
-                      "DATE",
-                      "CUSTOMER NAME",
-                      "PHONE",
-                      "TOTAL ITEMS",
-                      "RECEIVED AMOUNT",
-                      "",
-                    ]
+                    "DATE",
+                    "CUSTOMER NAME",
+                    "PHONE",
+                    "TOTAL ITEMS",
+                    "RECEIVED AMOUNT",
+                    "",
+                  ]
                   : [
-                      "DATE",
-                      "BILL NUMBER",
-                      "CUSTOMER NAME",
-                      "PHONE",
-                      "TOTAL ITEMS",
-                      "RECEIVED AMOUNT",
-                      "REMAINING AMOUNT",
-                      "NOTES",
-                      "",
-                      "ACTION",
-                    ].map((heading, idx) => (
-                      <th
-                        key={idx}
-                        className="border-top border-bottom text-uppercase small fw-semibold"
-                        style={{
-                          backgroundColor: "#f2f7fc",
-                          color: "#64748b",
-                          padding: "12px",
-                        }}
-                      >
-                        {heading}
-                      </th>
-                    ))}
+                    "DATE",
+                    "BILL NUMBER",
+                    "CUSTOMER NAME",
+                    "PHONE",
+                    "TOTAL ITEMS",
+                    "RECEIVED AMOUNT",
+                    "REMAINING AMOUNT",
+                    "NOTES",
+                    "",
+                    "ACTION",
+                  ]).map((heading, idx) => (
+                    <th
+                      key={idx}
+                      className="border-top border-bottom text-uppercase small fw-semibold"
+                      style={{
+                        backgroundColor: "#f2f7fc",
+                        color: "#64748b",
+                        padding: "12px",
+                      }}
+                    >
+                      {heading}
+                    </th>
+                  ))}
               </tr>
             </thead>
             <tbody>
-              {tableData.map((row, index) => (
+              {/* {tableData.map((row, index) => ( */}
+              {(activeStatus === "Returned" ? salesReturn.returned : tableData).map((row, index) => (
                 <React.Fragment key={row._id}>
                   <tr style={{ borderTop: "1px solid #dee2e6" }}>
                     <td
@@ -782,7 +857,7 @@ function ShopProcess() {
                         paddingBottom: "12px",
                       }}
                     >
-                      {row.date}
+                      {row.date || row.createdAt}
                     </td>
                     {activeStatus !== "Returned" && (
                       <>
@@ -882,7 +957,7 @@ function ShopProcess() {
                             paddingBottom: "12px",
                           }}
                         >
-                          {row.phone}
+                          {row.customerPhone}
                         </td>
                         <td
                           style={{
@@ -891,10 +966,10 @@ function ShopProcess() {
                             paddingBottom: "12px",
                           }}
                         >
-                          {row.totalItems}
+                          {row.products.length}
                         </td>
                         <td style={{ minWidth: "150px" }}>
-                          {row.receivedAmount}
+                          {row.payAmount?.reduce((total, item) => total + Number(item.amount || 0), 0)}
                         </td>
                       </>
                     )}
@@ -951,25 +1026,25 @@ function ShopProcess() {
                         )}
                         {(activeStatus === "Ready" ||
                           activeStatus === "Delivered") && (
-                          <div className="d-flex flex-column align-items-center justify-content-center">
-                            <button
-                              className="btn btn-sm border px-2 py-2 mb-2 btn-primary"
-                              style={{ minWidth: "40px", width: "60px" }}
-                              onClick={() =>
-                                navigate(`/process/shop/${row._id}`)
-                              }
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="btn btn-sm border px-2 py-2"
-                              style={{ minWidth: "60px", width: "80px" }}
-                              onClick={() => openBillInNewTab(row)}
-                            >
-                              View Bill
-                            </button>
-                          </div>
-                        )}
+                            <div className="d-flex flex-column align-items-center justify-content-center">
+                              <button
+                                className="btn btn-sm border px-2 py-2 mb-2 btn-primary"
+                                style={{ minWidth: "40px", width: "60px" }}
+                                onClick={() =>
+                                  navigate(`/process/shop/${row._id}`)
+                                }
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-sm border px-2 py-2"
+                                style={{ minWidth: "60px", width: "80px" }}
+                                onClick={() => openBillInNewTab(row)}
+                              >
+                                View Bill
+                              </button>
+                            </div>
+                          )}
                       </td>
                     )}
                   </tr>
@@ -1001,7 +1076,7 @@ function ShopProcess() {
                               </tr>
                             </thead>
                             <tbody>
-                              {productTableData
+                              {(activeStatus !== "Returned" ? productTableData : salesReturnProductData)
                                 .filter((prod) => prod.saleId === row._id)
                                 .map((prodRow, prodIndex) => (
                                   <tr key={prodRow.id}>
@@ -1060,6 +1135,8 @@ function ShopProcess() {
           </table>
         )}
       </div>
+
+      {/* <SalesCommanModel loading={loading} tabLoading={tabLoading} tableData={tableData} activeStatus={activeStatus} openRAModal={openRAModal} openNotesModal={openNotesModal} toggleSplit={toggleSplit} expandedRows={expandedRows} handleDeleteSale={handleDeleteSale} openAPModal={openAPModal} openBillInNewTab={openBillInNewTab} productTableData={productTableData} /> */}
 
       {BillModalVisible && selectedBill && (
         <BillModel

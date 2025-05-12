@@ -4,12 +4,13 @@ const AUTH_ENDPOINTS = {
   STORES: `/stores`,
   SALES: `/sales`,
   ORDER_COUNT: `/orders/get-count`,
+  SALE_RETURN: `/saleReturn`,
   SALE_RETURN_COUNT: `/saleReturn/total/count`,
   ORDERS: `/orders`,
   USER: `/user/list`,
 };
 
-const buildPurchaseLogParams = (
+const  buildPurchaseLogParams = (
   invoiceDateGte,
   invoiceDateLte,
   storeIds = [],
@@ -58,6 +59,20 @@ const buildCountParams = (storeIds = [], search = "") => {
   return params.toString();
 };
 
+const buildSalesReturnParams = (storeIds = [], search = "") => {
+  const params = new URLSearchParams();
+
+  storeIds.forEach((storeId, index) => {
+    params.append(`store._id[$in][${index}]`, storeId);
+  });
+
+  if (search) params.append("search", search);
+
+  params.append("populate", "true");
+
+  return params.toString();
+};
+
 const buildUserParams = (userId) => {
   const params = new URLSearchParams();
   params.append("_id", userId);
@@ -84,10 +99,11 @@ export const shopProcessService = {
   getSales: async (filters) => {
     try {
       const params = buildPurchaseLogParams(
-        filters.startDate
-          ? filters.startDate.toISOString().split("T")[0]
-          : null,
-        filters.endDate ? filters.endDate.toISOString().split("T")[0] : null,
+        // filters.startDate
+        //   ? filters.startDate.toISOString().split("T")[0]
+        //   : null,
+        // filters.endDate ? filters.endDate.toISOString().split("T")[0] : null,
+        "","",
         filters.stores,
         filters.status,
         filters.search,
@@ -110,7 +126,6 @@ export const shopProcessService = {
   getOrderCount: async (filters) => {
     try {
       const params = buildCountParams(filters.stores, filters.search);
-      console.log("get count is<<<<", params);
       const response = await api.get(`${AUTH_ENDPOINTS.ORDER_COUNT}?${params}`);
       return {
         success: true,
@@ -124,6 +139,24 @@ export const shopProcessService = {
     }
   },
 
+  getSaleReturn: async (filters) => {
+    try {
+      const params = buildSalesReturnParams(filters.stores, filters.search);
+      const response = await api.get(
+        `${AUTH_ENDPOINTS.SALE_RETURN}?${params}`
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error fetching sale return count",
+      };
+    }
+  },
   getSaleReturnCount: async (filters) => {
     try {
       const params = buildCountParams(filters.stores, filters.search);

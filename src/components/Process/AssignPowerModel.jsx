@@ -28,11 +28,11 @@ function AssignPowerModel({ closeAPModal, selectedAP, refreshSalesData }) {
         const response = await shopProcessService.getUser(customerId);
 
         if (response.success) {
-          const user = response.data.docs[0];
-          const specsPrescriptions = user.prescriptions.filter(
+          const user = response?.data?.data?.docs?.[0];
+          const specsPrescriptions = user?.prescriptions.filter(
             (p) => p.__t === "specs"
           );
-          const contactsPrescriptions = user.prescriptions.filter(
+          const contactsPrescriptions = user?.prescriptions.filter(
             (p) => p.__t === "contacts"
           );
           setPrescriptions({

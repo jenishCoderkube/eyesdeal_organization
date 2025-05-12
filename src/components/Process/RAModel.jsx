@@ -4,6 +4,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import Select from "react-select";
 import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
+import { IoMdClose, IoIosSave } from "react-icons/io";
+import { MdEdit } from "react-icons/md";
 
 function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
   const [payments, setPayments] = useState([]);
@@ -47,6 +49,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
           amount: "",
           date: null,
           reference: "",
+          isEditing: true,
         },
       ]);
     }
@@ -73,6 +76,18 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
   const handleChange = (index, field, value) => {
     const updatedPayments = [...payments];
     updatedPayments[index][field] = value;
+    setPayments(updatedPayments);
+  };
+
+  const handleRemovePayment = (index) => {
+    const updatedPayments = [...payments];
+    updatedPayments.splice(index, 1);
+    setPayments(updatedPayments);
+  };
+
+  const handleToggleEdit = (index) => {
+    const updatedPayments = [...payments];
+    updatedPayments[index].isEditing = !updatedPayments[index].isEditing;
     setPayments(updatedPayments);
   };
 
@@ -158,7 +173,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
         ref={modalRef} // Attach ref to modal content
         style={{
           width: "100%",
-          maxWidth: "650px",
+          maxWidth: "700px",
           maxHeight: "500px",
           backgroundColor: "#fff",
           borderRadius: "5px",
@@ -248,8 +263,8 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                 Add
               </button>
               {payments.map((payment, index) => (
-                <div className="row g-3 my-3" key={index}>
-                  <div className="col-3">
+                <div className="row g-3 my-3 align-items-end d-flex align-items-top" key={index}>
+                  <div className="col-2">
                     <label className="form-label mb-1 fw-semibold">
                       Method
                     </label>
@@ -264,7 +279,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                       placeholder="Select method"
                     />
                   </div>
-                  <div className="col-3">
+                  <div className="col-2">
                     <label className="form-label mb-1 fw-semibold">
                       Amount
                     </label>
@@ -275,6 +290,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                       onChange={(e) =>
                         handleChange(index, "amount", e.target.value)
                       }
+                      disabled={!payment.isEditing}
                     />
                   </div>
                   <div className="col-3">
@@ -300,6 +316,22 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                         handleChange(index, "reference", e.target.value)
                       }
                     />
+                  </div>
+                  <div className="d-flex gap-2 col-2">
+                    <button
+                      className="btn btn-sm btn-outline-primary rounded shadow-sm"
+                      onClick={() => handleToggleEdit(index)}
+                      title={payment.isEditing ? "Save" : "Edit"}
+                    >
+                      {payment.isEditing ? <IoIosSave /> : <MdEdit />}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger rounded shadow-sm"
+                      onClick={() => handleRemovePayment(index)}
+                      title="Remove"
+                    >
+                      <IoMdClose />
+                    </button>
                   </div>
                 </div>
               ))}

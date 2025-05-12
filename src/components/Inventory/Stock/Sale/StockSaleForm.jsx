@@ -33,7 +33,6 @@ const StockSaleForm = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
 
-
   useEffect(() => {
     (async () => {
       try {
@@ -151,7 +150,7 @@ const StockSaleForm = () => {
   const storeOptions = storeData.map((vendor) => {
     const option = {
       value: vendor._id,
-      label: `${vendor.name}`,
+      label: `${vendor.name} / ${vendor.storeNumber}`,
     };
     return option;
   });
