@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 function DashBoardCard() {
   const cardStyle = {
@@ -34,12 +34,50 @@ function DashBoardCard() {
     fontSize: '1.125rem'
   }
 
-  const cardData = [
+  const [cardData, setCardData] = useState([
     { title: "Today's Sale", value: 0 },
     { title: "This Week's Sale", value: 0 },
-    { title: "This Month's Sale", value: 1100 },
+    { title: "This Month's Sale", value: 0 },
     { title: "Previous Month's Sale", value: 0 }
-  ];
+  ]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (!userData) {
+          console.error('User data not found in localStorage');
+          return;
+        }
+
+        const user = JSON.parse(userData);
+        const userId = user._id;
+        // const userId = "64e30076c68b7b37a98b4b4c";
+
+        if (!userId) {
+          console.error('User ID not found in user data');
+          return;
+        }
+
+        const response = await fetch(`https://devnode.coderkubes.com/eyesdeal-api/dashboard?id=${userId}`);
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+          const apiData = result.data[0];
+          setCardData([
+            { title: "Today's Sale", value: apiData.todaySales },
+            { title: "This Week's Sale", value: apiData.weekSales },
+            { title: "This Month's Sale", value: apiData.monthSales },
+            { title: "Previous Month's Sale", value: apiData.prevMonthSales }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="containe1">

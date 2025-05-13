@@ -65,6 +65,7 @@ import VendorListProcess from "../pages/Process/VendorListProcess";
 import NewSales from "../pages/NewSales/NewSales";
 import RecallReportCom from "../pages/Recall/RecallReportCom";
 import RecallReport from "../pages/Reports/RecallReport";
+import EditSale from "../pages/Process/EditSale";
 
 const routes = [
   {
@@ -127,6 +128,16 @@ const routes = [
     element: (
       <PrivateRoute>
         <ShopProcessEdit />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ShopProcess",
+    path: "/process/shopedit/:id",
+    element: (
+      <PrivateRoute>
+        {/* <ShopProcessEdit /> */}
+        <EditSale/>
       </PrivateRoute>
     ),
   },

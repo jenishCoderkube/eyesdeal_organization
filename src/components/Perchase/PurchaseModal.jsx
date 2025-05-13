@@ -36,7 +36,6 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
           item.product.sku,
           item.quantity.toString(),
           item.purchaseRate.toString(),
-          item.product.tax.toString(),
           item.tax.toString(),
           item.totalDiscount.toString(),
           item.totalAmount.toString(),
@@ -91,12 +90,17 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
         cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
       },
       {
-        accessorKey: "product.tax",
+        accessorKey: "tax",
         header: "TAX",
         cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
       },
       {
-        accessorKey: "tax",
+        accessorFn: (row) => {
+          // Combine tax1 and tax2, for example add them
+          const tax1 = row.purchaseRate || 0;
+          const tax2 = row.tax || 0;
+          return (tax1 * tax2) / 100;
+        },
         header: "TAX AMOUNT",
         cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
       },

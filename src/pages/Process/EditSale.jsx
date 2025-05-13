@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
-import { useNavigate } from "react-router-dom";
+import ProductSelector from "../../components/Sale/ProductSelector";
+import InventoryData from "../../components/Sale/InventoryData";
 
-function ShopProcessEdit() {
-  const { id } = useParams(); // Get sale ID from URL
+function EditSale() {
+  const { id } = useParams();
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
-
+  const [showProductSelector, setShowProductSelector] = useState(true);
+  const [defaultStore, setDefaultStore] = useState(null);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [inventoryPairs, setInventoryPairs] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [saleData, setSaleData] = useState(null);
   const [formData, setFormData] = useState({
@@ -30,24 +33,23 @@ function ShopProcessEdit() {
     },
   ]);
 
-  // Fetch sale data on mount
+  // Fetch sale data on mount and populate inventoryData
   useEffect(() => {
     const fetchSale = async () => {
       setLoading(true);
       try {
         const response = await shopProcessService.getSaleById(id);
-        console.log("res", response?.data);
         if (response.success && response.data.data.docs.length > 0) {
           const sale = response.data.data.docs[0];
           setSaleData(sale);
-          // Initialize form data
           setFormData({
             flatDiscount: sale.flatDiscount?.toString() || "0",
             deliveryCharges: sale.deliveryCharges?.toString() || "0",
             otherCharges: sale.otherCharges?.toString() || "0",
             note: sale.note || "",
           });
-          // Initialize payments from receivedAmount
+
+          // Populate payments
           if (sale.receivedAmount?.length > 0) {
             setPayments(
               sale.receivedAmount.map((payment) => ({
@@ -60,6 +62,96 @@ function ShopProcessEdit() {
               }))
             );
           }
+
+          // Populate inventoryData and inventoryPairs from sale.orders
+          const newInventoryData = [];
+          const newInventoryPairs = [];
+          sale.orders.forEach((order, index) => {
+            const pairId = `pair-${index}-${order._id}`;
+            // Product
+            if (order.product) {
+              newInventoryData.push({
+                type: "product",
+                data: {
+                  _id: order.product.item,
+                  oldBarcode: order.product.barcode,
+                  sku: order.product.sku,
+                  productName: order.product.displayName,
+                  MRP: order.product.mrp,
+                  sellPrice: order.product.perPieceAmount,
+                  tax: parseFloat(order.product.taxRate) || 0,
+                  photos: [], // Add photos if available
+                  manageStock: order.product.manageStock,
+                  inclusiveTax: order.product.inclusiveTax,
+                  incentiveAmount: order.product.incentiveAmount,
+                },
+                quantity: 1,
+                taxAmount: order.product.perPieceTax,
+                discount: order.product.perPieceDiscount,
+                totalAmount: order.product.perPieceAmount,
+                pairId,
+              });
+            }
+            // Right Lens
+            if (order.rightLens) {
+              newInventoryData.push({
+                type: "rightLens",
+                data: {
+                  _id: order.rightLens.item,
+                  oldBarcode: order.rightLens.barcode,
+                  sku: order.rightLens.sku,
+                  productName: order.rightLens.displayName,
+                  MRP: order.rightLens.mrp,
+                  sellPrice: order.rightLens.perPieceAmount,
+                  tax: parseFloat(order.rightLens.taxRate) || 0,
+                  photos: [], // Add photos if available
+                  manageStock: order.rightLens.manageStock,
+                  inclusiveTax: order.rightLens.inclusiveTax,
+                  incentiveAmount: order.rightLens.incentiveAmount,
+                },
+                quantity: 1,
+                taxAmount: order.rightLens.perPieceTax,
+                discount: order.rightLens.perPieceDiscount,
+                totalAmount: order.rightLens.perPieceAmount,
+                pairId,
+              });
+            }
+            // Left Lens
+            if (order.leftLens) {
+              newInventoryData.push({
+                type: "leftLens",
+                data: {
+                  _id: order.leftLens
+
+.item,
+                  oldBarcode: order.leftLens.barcode,
+                  sku: order.leftLens.sku,
+                  productName: order.leftLens.displayName,
+                  MRP: order.leftLens.mrp,
+                  sellPrice: order.leftLens.perPieceAmount,
+                  tax: parseFloat(order.leftLens.taxRate) || 0,
+                  photos: [], // Add photos if available
+                  manageStock: order.leftLens.manageStock,
+                  inclusiveTax: order.leftLens.inclusiveTax,
+                  incentiveAmount: order.leftLens.incentiveAmount,
+                },
+                quantity: 1,
+                taxAmount: order.leftLens.perPieceTax,
+                discount: order.leftLens.perPieceDiscount,
+                totalAmount: order.leftLens.perPieceAmount,
+                pairId,
+              });
+            }
+            // Add to inventoryPairs
+            newInventoryPairs.push({
+              pairId,
+              product: order.product || null,
+              rightLens: order.rightLens || null,
+              leftLens: order.leftLens || null,
+            });
+          });
+          setInventoryData(newInventoryData);
+          setInventoryPairs(newInventoryPairs);
         } else {
           toast.error(response.message || "Sale not found");
         }
@@ -79,6 +171,87 @@ function ShopProcessEdit() {
     { value: "card", label: "Card" },
     { value: "upi", label: "UPI" },
   ];
+
+  // Handle products selected from ProductSelector
+  const handleProductsSelected = (selectedProducts) => {
+    const newOrders = selectedProducts.map((product, index) => {
+      const pairId = `pair-new-${Date.now()}-${index}`;
+      return {
+        product: {
+          item: product._id,
+          unit: product.unit?._id || "Pieces",
+          displayName: product.productName,
+          barcode: product.newBarcode || product.oldBarcode,
+          sku: product.sku,
+          mrp: product.MRP,
+          srp: product.sellPrice || product.MRP,
+          perPieceDiscount: product.discount || 0,
+          taxRate: `${product.tax || 0} (Inc)`,
+          perPieceTax: ((product.sellPrice || product.MRP) * (product.tax || 0)) / 100,
+          perPieceAmount: product.sellPrice || product.MRP,
+          inclusiveTax: product.inclusiveTax ?? true,
+          manageStock: product.manageStock ?? true,
+          incentiveAmount: product.incentiveAmount || 0,
+        },
+        pairId,
+      };
+    });
+
+    // Update saleData
+    setSaleData((prev) => ({
+      ...prev,
+      orders: [...(prev.orders || []), ...newOrders],
+      totalQuantity: (prev.totalQuantity || 0) + newOrders.length,
+      totalAmount:
+        (prev.totalAmount || 0) +
+        newOrders.reduce((sum, order) => sum + (order.product.perPieceAmount || 0), 0),
+      totalTax:
+        (prev.totalTax || 0) +
+        newOrders.reduce((sum, order) => sum + (order.product.perPieceTax || 0), 0),
+      netAmount:
+        (prev.netAmount || 0) +
+        newOrders.reduce(
+          (sum, order) => sum + (order.product.perPieceAmount || 0) + (order.product.perPieceTax || 0),
+          0
+        ),
+    }));
+
+    // Update inventoryData
+    const newInventoryData = newOrders.map((order) => ({
+      type: "product",
+      data: {
+        _id: order.product.item,
+        oldBarcode: order.product.barcode,
+        sku: order.product.sku,
+        productName: order.product.displayName,
+        MRP: order.product.mrp,
+        sellPrice: order.product.perPieceAmount,
+        tax: parseFloat(order.product.taxRate) || 0,
+        photos: [], // Add photos if available
+        manageStock: order.product.manageStock,
+        inclusiveTax: order.product.inclusiveTax,
+        incentiveAmount: order.product.incentiveAmount,
+      },
+      quantity: 1,
+      taxAmount: order.product.perPieceTax,
+      discount: order.product.perPieceDiscount,
+      totalAmount: order.product.perPieceAmount,
+      pairId: order.pairId,
+    }));
+
+    setInventoryData((prev) => [...prev, ...newInventoryData]);
+    setInventoryPairs((prev) => [
+      ...prev,
+      ...newOrders.map((order) => ({
+        pairId: order.pairId,
+        product: order.product,
+        rightLens: null,
+        leftLens: null,
+      })),
+    ]);
+
+    setShowProductSelector(false);
+  };
 
   const handleAddPayment = () => {
     setPayments([
@@ -111,7 +284,6 @@ function ShopProcessEdit() {
     e.preventDefault();
     setSubmitting(true);
 
-    // Validate payments
     const validPayments = payments
       .filter(
         (payment) =>
@@ -127,14 +299,26 @@ function ShopProcessEdit() {
         reference: payment.reference || "",
       }));
 
-    // Prepare payload matching the provided structure
+    // Construct orders from inventoryPairs
+    const updatedOrders = inventoryPairs.map((pair) => ({
+      _id: pair.pairId.includes("pair-new-") ? undefined : pair.pairId.split("-")[2], // Extract order _id if not new
+      product: pair.product,
+      rightLens: pair.rightLens,
+      leftLens: pair.leftLens,
+      store: saleData?.store?._id,
+      status: "pending",
+      attachments: [],
+      sale: id,
+      billNumber: saleData?.saleNumber?.toString(),
+    })).filter((order) => order.product || order.rightLens || order.leftLens);
+
     const payload = {
       _id: id,
-      store: saleData?.store || null,
+      store: saleData?.store?._id || null,
       customerName: saleData?.customerName || null,
       customerPhone: saleData?.customerPhone || null,
       customerId: saleData?.customerId || null,
-      totalDiscount: saleData?.totalDiscount ?? null, // Preserve null
+      totalDiscount: saleData?.totalDiscount ?? null,
       flatDiscount: parseFloat(formData.flatDiscount) || 0,
       netDiscount: saleData?.netDiscount || 0,
       totalAmount: saleData?.totalAmount || 0,
@@ -143,14 +327,14 @@ function ShopProcessEdit() {
       deliveryCharges: parseFloat(formData.deliveryCharges) || 0,
       netAmount: saleData?.netAmount || 0,
       totalQuantity: saleData?.totalQuantity || 0,
-      salesRep: saleData?.salesRep || null,
-      orders: saleData?.orders || [],
+      salesRep: saleData?.salesRep?._id || null,
+      orders: updatedOrders,
       receivedAmount: validPayments,
       createdAt: saleData?.createdAt || null,
       updatedAt: saleData?.updatedAt || null,
       saleNumber: saleData?.saleNumber || 0,
       powerAtTime: saleData?.powerAtTime || {},
-      note: formData.note || null, // Allow null if empty
+      note: formData.note || null,
       __v: saleData?.__v || 0,
     };
 
@@ -158,15 +342,11 @@ function ShopProcessEdit() {
       const response = await shopProcessService.updateSale(id, payload);
       if (response.success) {
         toast.success("Sale updated successfully");
-        // Update saleData with response data or payload
         setSaleData((prev) => ({
           ...prev,
           ...payload,
           ...(response.data.data ? response.data.data : {}),
         }));
-        console.log(response?.data, "hjgcfghcdfghcgh");
-
-        // Update formData to reflect submitted values
         setFormData({
           flatDiscount: payload.flatDiscount.toString(),
           deliveryCharges: payload.deliveryCharges.toString(),
@@ -183,11 +363,6 @@ function ShopProcessEdit() {
       setSubmitting(false);
     }
   };
-
-  // const setEditValue=()=>{
-  //   console.log("hgfcghc");
-
-  // }
 
   if (loading) {
     return (
@@ -243,142 +418,34 @@ function ShopProcessEdit() {
             <label htmlFor="products" className="form-label mb-1">
               Products
             </label>
-            <span
-              className="mx-3 btn btn-primary"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(`/process/shopedit/${saleData._id}`);
-                setEditMode((prev) => !prev); // Toggle edit mode
-              }}
-            >
-              {editMode ? "Cancel" : "Edit"}
-            </span>
           </div>
 
-          {saleData.orders?.map((order, index) => (
-            <div className="d-flex gap-2 raw col-12 flex-wrap mb-3" key={index}>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`ProductSKU-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Product SKU
-                </label>
-                <input
-                  type="text"
-                  id={`ProductSKU-${index}`}
-                  className="form-control"
-                  value={order.product?.sku || order.lens?.sku || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`Barcode-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Barcode
-                </label>
-                <input
-                  type="text"
-                  id={`Barcode-${index}`}
-                  className="form-control"
-                  value={order.product?.barcode || order.lens?.barcode || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`MRP-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  MRP
-                </label>
-                <input
-                  type="text"
-                  id={`MRP-${index}`}
-                  className="form-control"
-                  value={order.product?.mrp || order.lens?.mrp || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`SRP-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  SRP
-                </label>
-                <input
-                  type="text"
-                  id={`SRP-${index}`}
-                  className="form-control"
-                  value={order.perPieceAmount || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`Discount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Discount
-                </label>
-                <input
-                  type="text"
-                  id={`Discount-${index}`}
-                  className="form-control"
-                  value={order.perPieceDiscount || "0"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TaxRate-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Tax Rate
-                </label>
-                <input
-                  type="text"
-                  id={`TaxRate-${index}`}
-                  className="form-control"
-                  value={order.taxRate || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TaxAmount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Tax Amount
-                </label>
-                <input
-                  type="text"
-                  id={`TaxAmount-${index}`}
-                  className="form-control"
-                  value={order.perPieceTax || "0"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TotalAmount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Total Amount
-                </label>
-                <input
-                  type="text"
-                  id={`TotalAmount-${index}`}
-                  className="form-control"
-                  value={order.perPieceAmount || "N/A"}
-                  disabled
-                />
-              </div>
-            </div>
-          ))}
+          <div className="col-md-6 col-12">
+            <ProductSelector
+              showProductSelector={showProductSelector}
+              defaultStore={defaultStore}
+              setInventoryData={setInventoryData}
+              setShowProductSelector={setShowProductSelector}
+              setInventoryPairs={setInventoryPairs}
+              onProductsSelected={handleProductsSelected}
+            />
+            {!showProductSelector && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary my-2 w-25"
+                onClick={() => setShowProductSelector(true)}
+              >
+                Add Another Pair
+              </button>
+            )}
+          </div>
+
+          <InventoryData
+            inventoryData={inventoryData}
+            setInventoryData={setInventoryData}
+            inventoryPairs={inventoryPairs}
+            setInventoryPairs={setInventoryPairs}
+          />
 
           <div className="row g-3 mt-4">
             {[
@@ -403,7 +470,7 @@ function ShopProcessEdit() {
               {
                 label: "Total Discount",
                 id: "TotalDiscount",
-                value: saleData.totalDiscount ?? "0", // Handle null
+                value: saleData.totalDiscount ?? "0",
                 disabled: true,
               },
               {
@@ -582,4 +649,4 @@ function ShopProcessEdit() {
   );
 }
 
-export default ShopProcessEdit;
+export default EditSale;

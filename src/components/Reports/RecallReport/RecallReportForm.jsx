@@ -66,6 +66,8 @@ const RecallReportForm = () => {
       const response = await reportService.getStores();
       if (response.success) {
         setStoreData(response?.data?.data);
+        console.log(response,"jhvhjvjhvjghv");
+        
       } else {
         toast.error(response.message);
       }
