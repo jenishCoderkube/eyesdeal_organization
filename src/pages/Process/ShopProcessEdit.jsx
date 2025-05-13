@@ -10,6 +10,8 @@ import { shopProcessService } from "../../services/Process/shopProcessService";
 function ShopProcessEdit() {
   const { id } = useParams(); // Get sale ID from URL
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [saleData, setSaleData] = useState(null);
   const [formData, setFormData] = useState({
@@ -33,6 +35,7 @@ function ShopProcessEdit() {
       setLoading(true);
       try {
         const response = await shopProcessService.getSaleById(id);
+        console.log("res", response?.data);
         if (response.success && response.data.data.docs.length > 0) {
           const sale = response.data.data.docs[0];
           setSaleData(sale);
@@ -226,9 +229,20 @@ function ShopProcessEdit() {
           />
         </div>
         <div className="col-12 my-3">
-          <label htmlFor="products" className="form-label mb-1">
-            Products
-          </label>
+          <div>
+            <label htmlFor="products" className="form-label mb-1">
+              Products
+            </label>
+            <span
+              className="mx-3 btn btn-primary"
+              onClick={(e) => {
+                e.preventDefault();
+                setEditMode((prev) => !prev); // Toggle edit mode
+              }}
+            >
+              {editMode ? "Cancel" : "Edit"}
+            </span>
+          </div>
 
           {saleData.orders?.map((order, index) => (
             <div className="d-flex gap-2 raw col-12 flex-wrap mb-3" key={index}>

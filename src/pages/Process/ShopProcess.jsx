@@ -36,7 +36,8 @@ const debounce = (func, delay) => {
 function ShopProcess() {
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [expandedRows, setExpandedRows] = useState([]);
-  const [PrescriptionModelVisible, setPrescriptionModelVisible] = useState(false);
+  const [PrescriptionModelVisible, setPrescriptionModelVisible] =
+    useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [RAModalVisible, setRAModalVisible] = useState(false);
   const [selectedRA, setSelectedRA] = useState(null);
@@ -164,9 +165,13 @@ function ShopProcess() {
         startDate: filters.startDate?.toISOString(),
         endDate: filters.endDate?.toISOString(),
         createdAtGte:
-          filters.status === "delivered" ? Math.floor(filters.startDate.getTime()) : undefined,
+          filters.status === "delivered"
+            ? Math.floor(filters.startDate.getTime())
+            : undefined,
         createdAtLte:
-          filters.status === "delivered" ? Math.floor(filters.endDate.getTime()) : undefined,
+          filters.status === "delivered"
+            ? Math.floor(filters.endDate.getTime())
+            : undefined,
         populate: isInitialLoad.current ? true : undefined,
       });
 
@@ -185,9 +190,13 @@ function ShopProcess() {
           startDate: filters.startDate,
           endDate: filters.endDate,
           createdAtGte:
-            filters.status === "delivered" ? Math.floor(filters.startDate.getTime()) : undefined,
+            filters.status === "delivered"
+              ? Math.floor(filters.startDate.getTime())
+              : undefined,
           createdAtLte:
-            filters.status === "delivered" ? Math.floor(filters.endDate.getTime()) : undefined,
+            filters.status === "delivered"
+              ? Math.floor(filters.endDate.getTime())
+              : undefined,
           populate: isInitialLoad.current ? true : undefined,
         };
         if (!isInitialLoad.current) {
@@ -209,17 +218,17 @@ function ShopProcess() {
               totalItems: sale.totalQuantity,
               receivedAmount: sale.receivedAmount?.length
                 ? sale.receivedAmount.reduce(
-                  (sum, amt) => sum + (amt.amount || 0),
-                  0
-                )
+                    (sum, amt) => sum + (amt.amount || 0),
+                    0
+                  )
                 : 0,
               remainingAmount:
                 sale.netAmount -
                 (sale.receivedAmount?.length
                   ? sale.receivedAmount.reduce(
-                    (sum, amt) => sum + (amt.amount || 0),
-                    0
-                  )
+                      (sum, amt) => sum + (amt.amount || 0),
+                      0
+                    )
                   : 0),
               notes: sale.note || "N/A",
               action: "Edit",
@@ -277,16 +286,17 @@ function ShopProcess() {
         const params = isInitialLoad.current
           ? {}
           : {
-            stores: filters.stores.length ? filters.stores : null,
-            search: filters.search || "",
-          };
+              stores: filters.stores.length ? filters.stores : null,
+              search: filters.search || "",
+            };
 
         if (filters.status == "returned") {
-          const [orderResponse, salesReturnResponse, returnResponse] = await Promise.all([
-            shopProcessService.getOrderCount(params),
-            shopProcessService.getSaleReturn(params),
-            shopProcessService.getSaleReturnCount(params),
-          ]);
+          const [orderResponse, salesReturnResponse, returnResponse] =
+            await Promise.all([
+              shopProcessService.getOrderCount(params),
+              shopProcessService.getSaleReturn(params),
+              shopProcessService.getSaleReturnCount(params),
+            ]);
 
           if (orderResponse.success && orderResponse.data.data.docs[0]) {
             const orderCounts = orderResponse.data.data.docs[0];
@@ -330,8 +340,7 @@ function ShopProcess() {
               returned: returnResponse.data.data.docs[0]?.returnedCount || 0,
             }));
           }
-        }
-        else {
+        } else {
           const [orderResponse, returnResponse] = await Promise.all([
             shopProcessService.getOrderCount(params),
             shopProcessService.getSaleReturnCount(params),
@@ -358,7 +367,6 @@ function ShopProcess() {
             }));
           }
         }
-
       } catch (error) {
         toast.error("Error fetching counts");
       }
@@ -425,7 +433,7 @@ function ShopProcess() {
       storeOptions.length > 0 &&
       users?.stores?.length > 0
     ) {
-      const defaultOptions = storeOptions.filter(opt =>
+      const defaultOptions = storeOptions.filter((opt) =>
         users.stores.includes(opt.value)
       );
       if (defaultOptions.length > 0) {
@@ -727,10 +735,11 @@ function ShopProcess() {
             <button
               key={status.name}
               onClick={() => setActiveStatus(status.name)}
-              className={`bg-transparent border-0 pb-2 px-1 fw-medium ${activeStatus === status.name
-                ? "common-text-color border-bottom common-tab-border-color"
-                : "text-secondary"
-                } hover:text-dark focus:outline-none`}
+              className={`bg-transparent border-0 pb-2 px-1 fw-medium ${
+                activeStatus === status.name
+                  ? "common-text-color border-bottom common-tab-border-color"
+                  : "text-secondary"
+              } hover:text-dark focus:outline-none`}
               style={{ boxShadow: "none", outline: "none" }}
             >
               {status.name} ({status.count})
@@ -791,7 +800,8 @@ function ShopProcess() {
               <span className="sr-only"></span>
             </div>
           </div>
-        ) : (activeStatus === "Returned" ? salesReturn : tableData).length === 0 ? (
+        ) : (activeStatus === "Returned" ? salesReturn : tableData).length ===
+          0 ? (
           <div
             style={{
               width: "100%",
@@ -812,42 +822,46 @@ function ShopProcess() {
               <tr>
                 {(activeStatus === "Returned"
                   ? [
-                    "DATE",
-                    "CUSTOMER NAME",
-                    "PHONE",
-                    "TOTAL ITEMS",
-                    "RECEIVED AMOUNT",
-                    "",
-                  ]
+                      "DATE",
+                      "CUSTOMER NAME",
+                      "PHONE",
+                      "TOTAL ITEMS",
+                      "RECEIVED AMOUNT",
+                      "",
+                    ]
                   : [
-                    "DATE",
-                    "BILL NUMBER",
-                    "CUSTOMER NAME",
-                    "PHONE",
-                    "TOTAL ITEMS",
-                    "RECEIVED AMOUNT",
-                    "REMAINING AMOUNT",
-                    "NOTES",
-                    "",
-                    "ACTION",
-                  ]).map((heading, idx) => (
-                    <th
-                      key={idx}
-                      className="border-top border-bottom text-uppercase small fw-semibold"
-                      style={{
-                        backgroundColor: "#f2f7fc",
-                        color: "#64748b",
-                        padding: "12px",
-                      }}
-                    >
-                      {heading}
-                    </th>
-                  ))}
+                      "DATE",
+                      "BILL NUMBER",
+                      "CUSTOMER NAME",
+                      "PHONE",
+                      "TOTAL ITEMS",
+                      "RECEIVED AMOUNT",
+                      "REMAINING AMOUNT",
+                      "NOTES",
+                      "",
+                      "ACTION",
+                    ]
+                ).map((heading, idx) => (
+                  <th
+                    key={idx}
+                    className="border-top border-bottom text-uppercase small fw-semibold"
+                    style={{
+                      backgroundColor: "#f2f7fc",
+                      color: "#64748b",
+                      padding: "12px",
+                    }}
+                  >
+                    {heading}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {/* {tableData.map((row, index) => ( */}
-              {(activeStatus === "Returned" ? salesReturn.returned : tableData).map((row, index) => (
+              {(activeStatus === "Returned"
+                ? salesReturn.returned
+                : tableData
+              ).map((row, index) => (
                 <React.Fragment key={row._id}>
                   <tr style={{ borderTop: "1px solid #dee2e6" }}>
                     <td
@@ -969,7 +983,10 @@ function ShopProcess() {
                           {row.products.length}
                         </td>
                         <td style={{ minWidth: "150px" }}>
-                          {row.payAmount?.reduce((total, item) => total + Number(item.amount || 0), 0)}
+                          {row.payAmount?.reduce(
+                            (total, item) => total + Number(item.amount || 0),
+                            0
+                          )}
                         </td>
                       </>
                     )}
@@ -991,6 +1008,15 @@ function ShopProcess() {
                       <td className="text-center align-middle">
                         {activeStatus === "Pending" && (
                           <div className="d-flex flex-column align-items-center justify-content-center">
+                            <button
+                              className="btn btn-sm btn-primary px-0 py-2 mb-2"
+                              style={{ minWidth: "60px", width: "50px" }}
+                              onClick={() =>
+                                navigate(`/process/shop/${row._id}`)
+                              }
+                            >
+                              Edit
+                            </button>
                             <button
                               className="btn btn-sm btn-danger border px-0 py-2 mb-2"
                               style={{ minWidth: "60px", width: "80px" }}
@@ -1026,25 +1052,25 @@ function ShopProcess() {
                         )}
                         {(activeStatus === "Ready" ||
                           activeStatus === "Delivered") && (
-                            <div className="d-flex flex-column align-items-center justify-content-center">
-                              <button
-                                className="btn btn-sm border px-2 py-2 mb-2 btn-primary"
-                                style={{ minWidth: "40px", width: "60px" }}
-                                onClick={() =>
-                                  navigate(`/process/shop/${row._id}`)
-                                }
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn btn-sm border px-2 py-2"
-                                style={{ minWidth: "60px", width: "80px" }}
-                                onClick={() => openBillInNewTab(row)}
-                              >
-                                View Bill
-                              </button>
-                            </div>
-                          )}
+                          <div className="d-flex flex-column align-items-center justify-content-center">
+                            <button
+                              className="btn btn-sm border px-2 py-2 mb-2 btn-primary"
+                              style={{ minWidth: "40px", width: "60px" }}
+                              onClick={() =>
+                                navigate(`/process/shop/${row._id}`)
+                              }
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-sm border px-2 py-2"
+                              style={{ minWidth: "60px", width: "80px" }}
+                              onClick={() => openBillInNewTab(row)}
+                            >
+                              View Bill
+                            </button>
+                          </div>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -1076,7 +1102,10 @@ function ShopProcess() {
                               </tr>
                             </thead>
                             <tbody>
-                              {(activeStatus !== "Returned" ? productTableData : salesReturnProductData)
+                              {(activeStatus !== "Returned"
+                                ? productTableData
+                                : salesReturnProductData
+                              )
                                 .filter((prod) => prod.saleId === row._id)
                                 .map((prodRow, prodIndex) => (
                                   <tr key={prodRow.id}>
