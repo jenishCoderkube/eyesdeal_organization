@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { saleService } from "../../services/saleService";
 import AsyncSelect from "react-select/async";
-import { Row, Col } from "react-bootstrap";
+import { v4 as uuidv4 } from "uuid";
 
 export default function InventoryData({
   inventoryData,
@@ -9,13 +9,11 @@ export default function InventoryData({
   inventoryPairs,
   setInventoryPairs,
 }) {
-  const [rightLensSelected, setRightLensSelected] = useState(null);
-  const [leftLensSelected, setLeftLensSelected] = useState(null);
+  const [lensSelections, setLensSelections] = useState({});
 
   const fetchLensData = async (inputValue) => {
     try {
       const response = await saleService.getLensData(inputValue);
-
       if (response.success) {
         return response.data.data.docs.map((prod) => ({
           value: prod._id,
@@ -67,19 +65,18 @@ export default function InventoryData({
     setInventoryData(updatedData);
   }, [inventoryData.length, setInventoryData]);
 
-  const handleLensSelection = (selectedLens, lensType, index) => {
-    const selectedPairId = inventoryData[index]?.pairId;
-
+  const handleLensSelection = (selectedLens, lensType, groupId, index) => {
     if (!selectedLens) {
-      // Handle clearing the selection
-      if (lensType === "rightLens") {
-        setRightLensSelected(null);
-      } else {
-        setLeftLensSelected(null);
-      }
+      setLensSelections((prev) => ({
+        ...prev,
+        [groupId]: {
+          ...prev[groupId],
+          [lensType]: null,
+        },
+      }));
       setInventoryPairs((prev) => {
         const updated = prev.map((pair) => {
-          if (pair.pairId === selectedPairId) {
+          if (pair.pairId === groupId) {
             return {
               ...pair,
               [lensType]: null,
@@ -102,25 +99,21 @@ export default function InventoryData({
       taxRate
     );
 
-    // Update the selected lens state
-    if (lensType === "rightLens") {
-      setRightLensSelected({
-        barcode: selectedLens.data.oldBarcode,
-        sku: selectedLens.data.sku,
-        item: selectedLens.data._id,
-      });
-    } else {
-      setLeftLensSelected({
-        barcode: selectedLens.data.oldBarcode,
-        sku: selectedLens.data.sku,
-        item: selectedLens.data._id,
-      });
-    }
+    setLensSelections((prev) => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        [lensType]: {
+          barcode: selectedLens.data.oldBarcode,
+          sku: selectedLens.data.sku,
+          item: selectedLens.data._id,
+        },
+      },
+    }));
 
-    // Update InventoryPairs to store the selected lens
     setInventoryPairs((prev) => {
       const updated = prev.map((pair) => {
-        if (pair.pairId === selectedPairId) {
+        if (pair.pairId === groupId) {
           const newPair = {
             ...pair,
             [lensType]: {
@@ -141,42 +134,56 @@ export default function InventoryData({
             },
           };
 
-          // Check if both lenses are selected
-          const bothLensesSelected = newPair.rightLens && newPair.leftLens;
-
-          if (bothLensesSelected) {
-            // Add both lens items to inventoryData and remove lensDropdown
+          if (newPair.rightLens && newPair.leftLens) {
+            const newGroupId = uuidv4();
             setInventoryData((prevData) => {
               const updatedData = [...prevData];
-              updatedData.splice(index, 1); // Remove lensDropdown
+              updatedData.splice(index, 1);
               updatedData.push({
                 type: "rightLens",
-                data:
-                  newPair.rightLens.item === selectedLens.data._id
-                    ? selectedLens.data
-                    : pair.rightLens,
+                data: newPair.rightLens.item === selectedLens.data._id ? selectedLens.data : pair.rightLens,
                 quantity: 1,
                 taxAmount: newPair.rightLens.perPieceTax,
                 discount: newPair.rightLens.perPieceDiscount,
                 totalAmount: newPair.rightLens.perPieceAmount,
-                pairId: selectedPairId,
+                pairId: groupId,
+                groupId,
               });
               updatedData.push({
                 type: "leftLens",
-                data:
-                  newPair.leftLens.item === selectedLens.data._id
-                    ? selectedLens.data
-                    : pair.leftLens,
+                data: newPair.leftLens.item === selectedLens.data._id ? selectedLens.data : pair.leftLens,
                 quantity: 1,
                 taxAmount: newPair.leftLens.perPieceTax,
                 discount: newPair.leftLens.perPieceDiscount,
                 totalAmount: newPair.leftLens.perPieceAmount,
-                pairId: selectedPairId,
+                pairId: groupId,
+                groupId,
+              });
+              updatedData.push({
+                type: "lensDropdown",
+                pairId: newGroupId,
+                groupId: newGroupId,
               });
               return updatedData;
             });
-          }
 
+            setInventoryPairs((prevPairs) => [
+              ...prevPairs,
+              {
+                pairId: newGroupId,
+                rightLens: null,
+                leftLens: null,
+              },
+            ]);
+
+            setLensSelections((prev) => ({
+              ...prev,
+              [newGroupId]: {
+                rightLens: null,
+                leftLens: null,
+              },
+            }));
+          }
           return newPair;
         }
         return pair;
@@ -185,310 +192,413 @@ export default function InventoryData({
     });
   };
 
+  const handleRemoveRow = (groupId, index) => {
+    setInventoryData((prev) => prev.filter((item, i) => !(item.groupId === groupId && i === index)));
+    if (inventoryData.filter((item) => item.groupId === groupId).length === 1) {
+      setInventoryPairs((prev) => prev.filter((pair) => pair.pairId !== groupId));
+      setLensSelections((prev) => {
+        const newSelections = { ...prev };
+        delete newSelections[groupId];
+        return newSelections;
+      });
+    }
+  };
+
+  const handleRemoveGroup = (groupId) => {
+    setInventoryData((prev) => prev.filter((item) => item.groupId !== groupId));
+    setInventoryPairs((prev) => prev.filter((pair) => pair.pairId !== groupId));
+    setLensSelections((prev) => {
+      const newSelections = { ...prev };
+      delete newSelections[groupId];
+      return newSelections;
+    });
+  };
+
+  const groupedData = inventoryData.reduce((acc, item) => {
+    const groupId = item.groupId || item.pairId || uuidv4();
+    if (!acc[groupId]) acc[groupId] = [];
+    acc[groupId].push({ ...item, groupId });
+    return acc;
+  }, {});
+
   return (
     <div className="px-2">
-      <div
-        className="table-responsive"
-        style={{ maxHeight: "400px", overflowY: "auto" }}
-      >
-        <table className="table table-sm align-middle custom-table">
-          <thead
-            className="text-uppercase"
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              color: "#64748b",
-              backgroundColor: "#f8fafc",
-              borderTop: "1px solid #e5e7eb",
-              borderBottom: "1px solid #e5e7eb",
-            }}
-          >
+      <div className="table-responsive" style={{ maxHeight: "400px", overflowY: "auto" }}>
+        <table className="table-auto w-full">
+          <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
             <tr>
-              <th
-                style={{
-                  minWidth: "80px",
-                  padding: "0.75rem 1.25rem 0.75rem 1.25rem",
-                }}
-                className="custom-th"
-              >
-                Barcode
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                  Barcode
+                </div>
               </th>
-              <th
-                style={{
-                  minWidth: "160px",
-                  padding: "0.75rem 0.5rem",
-                }}
-                className="custom-th"
-              >
-                SKU
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "160px" }}>
+                  SKU
+                </div>
               </th>
-              <th
-                style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                Photos
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                  Photos
+                </div>
               </th>
-              <th
-                style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                Stock
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                  Stock
+                </div>
               </th>
-              <th
-                style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                MRP
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                  MRP
+                </div>
               </th>
-              <th
-                style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                SRP
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                  SRP
+                </div>
               </th>
-              <th
-                style={{ minWidth: "80px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                Tax Rate
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                  Tax Rate
+                </div>
               </th>
-              <th
-                style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                Tax Amount
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                  Tax Amount
+                </div>
               </th>
-              <th
-                style={{ minWidth: "20px", padding: "0.75rem 0.5rem" }}
-                className="custom-th"
-              >
-                Discount
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                  Discount
+                </div>
               </th>
-              <th
-                style={{
-                  minWidth: "50px",
-                  padding: "0.75rem 0.5rem 0.75rem 1.25rem",
-                }}
-                className="custom-th"
-              >
-                Total Amount
+              <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div className="font-semibold text-left break-words" style={{ minWidth: "50px" }}>
+                  Total Amount
+                </div>
               </th>
             </tr>
           </thead>
-          <tbody
-            style={{
-              fontSize: "0.875rem",
-            }}
-          >
-            {inventoryData.length === 0 ? (
+          <tbody className="text-sm">
+            {Object.keys(groupedData).length === 0 ? (
               <tr>
                 <td colSpan="10" className="text-center">
                   No products added
                 </td>
               </tr>
             ) : (
-              inventoryData.map((item, index) => {
-                if (
-                  item.type === "product" ||
-                  item.type === "rightLens" ||
-                  item.type === "leftLens"
-                ) {
-                  const data = item.data || item.product;
-                  const isProduct = item.type === "product";
+              Object.entries(groupedData).map(([groupId, items], groupIndex) => (
+                <React.Fragment key={`group-${groupId}`}>
+                  <tr>
+                    <td colSpan="10" className="py-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Product Group {groupIndex + 1}</span>
+                        <button
+                          onClick={() => handleRemoveGroup(groupId)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
+                      <table className="table-auto w-full mt-2">
+                        <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+                          <tr>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                                Barcode
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "160px" }}>
+                                SKU
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                                Photos
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                                Stock
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                                MRP
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                                SRP
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "80px" }}>
+                                Tax Rate
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                                Tax Amount
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "20px" }}>
+                                Discount
+                              </div>
+                            </th>
+                            <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                              <div className="font-semibold text-left break-words" style={{ minWidth: "50px" }}>
+                                Total Amount
+                              </div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {items
+                            .filter((item) => item.type !== "lensDropdown")
+                            .map((item, index) => {
+                              const data = item.data || item.product;
+                              const isProduct = item.type === "product";
 
-                  const handleSellPriceChange = (e) => {
-                    const updated = [...inventoryData];
-                    const newSRP = parseFloat(e.target.value) || 0;
-                    const mrp = parseFloat(data?.MRP) || 0;
-                    const taxRate = parseFloat(data?.tax) || 0;
+                              const handleSellPriceChange = (e) => {
+                                const updated = [...inventoryData];
+                                const newSRP = parseFloat(e.target.value) || 0;
+                                const mrp = parseFloat(data?.MRP) || 0;
+                                const taxRate = parseFloat(data?.tax) || 0;
 
-                    updated[index].data.sellPrice = e.target.value;
+                                updated[index].data.sellPrice = e.target.value;
 
-                    const { taxAmount, discount, totalAmount } =
-                      calculateInvoiceValues(mrp, newSRP, taxRate);
+                                const { taxAmount, discount, totalAmount } = calculateInvoiceValues(
+                                  mrp,
+                                  newSRP,
+                                  taxRate
+                                );
 
-                    updated[index].taxAmount = taxAmount;
-                    updated[index].discount = discount;
-                    updated[index].totalAmount = totalAmount;
+                                updated[index].taxAmount = taxAmount;
+                                updated[index].discount = discount;
+                                updated[index].totalAmount = totalAmount;
 
-                    setInventoryData(updated);
+                                setInventoryData(updated);
 
-                    setInventoryPairs((prev) => {
-                      const updated = prev.map((pair) => {
-                        if (pair.pairId === item.pairId) {
-                          const lensKey =
-                            item.type === "rightLens"
-                              ? "rightLens"
-                              : item.type === "leftLens"
-                              ? "leftLens"
-                              : null;
-                          if (lensKey) {
-                            return {
-                              ...pair,
-                              [lensKey]: {
-                                ...pair[lensKey],
-                                srp: newSRP,
-                                perPieceDiscount: discount,
-                                perPieceTax: taxAmount,
-                                perPieceAmount: totalAmount,
-                              },
-                            };
-                          }
-                        }
-                        return pair;
-                      });
-                      return updated;
-                    });
-                  };
+                                setInventoryPairs((prev) => {
+                                  const updated = prev.map((pair) => {
+                                    if (pair.pairId === item.pairId) {
+                                      const lensKey =
+                                        item.type === "rightLens"
+                                          ? "rightLens"
+                                          : item.type === "leftLens"
+                                          ? "leftLens"
+                                          : null;
+                                      if (lensKey) {
+                                        return {
+                                          ...pair,
+                                          [lensKey]: {
+                                            ...pair[lensKey],
+                                            srp: newSRP,
+                                            perPieceDiscount: discount,
+                                            perPieceTax: taxAmount,
+                                            perPieceAmount: totalAmount,
+                                          },
+                                        };
+                                      }
+                                    }
+                                    return pair;
+                                  });
+                                  return updated;
+                                });
+                              };
 
-                  return (
-                    <tr key={`item-${index}`}>
-                      <td className="custom-td">{data?.oldBarcode || ""}</td>
-                      <td className="custom-td">
-                        {isProduct ? data?.sku : data?.productName}
-                      </td>
-                      <td className="custom-td">
-                        {data?.photos?.length > 0 ? (
-                          <img
-                            src={data?.photos[0]}
-                            alt="Product"
-                            style={{
-                              width: 40,
-                              height: 40,
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <p style={{ width: 40, height: 40 }}>No image</p>
-                        )}
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={item?.quantity || 1}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={data?.MRP || ""}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={data?.sellPrice || ""}
-                          className="form-control form-control-sm"
-                          onChange={handleSellPriceChange}
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={`${data?.tax || 0} (Inc)`}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={item?.taxAmount || 0}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={item?.discount || 0}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                      <td className="custom-td">
-                        <input
-                          type="text"
-                          value={item?.totalAmount || 0}
-                          disabled
-                          className="form-control form-control-sm"
-                        />
-                      </td>
-                    </tr>
-                  );
-                }
-                return null;
-              })
+                              return (
+                                <tr key={`item-${groupId}-${index}`}>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <button
+                                        onClick={() => handleRemoveRow(groupId, inventoryData.findIndex((i) => i === item))}
+                                        className="text-red-500 hover:text-red-700 mr-2"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          width="24"
+                                          height="24"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                      </button>
+                                      {data?.oldBarcode || ""}
+                                    </div>
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <textarea
+                                      className="w-full form-input"
+                                      rows="1"
+                                      cols="5"
+                                      type="text"
+                                      readOnly
+                                      value={isProduct ? data?.sku : data?.productName}
+                                      style={{ height: "50px" }}
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <div className="border border-b-0 relative">
+                                      {data?.photos?.length > 0 ? (
+                                        <>
+                                          <img
+                                            src={data?.photos[0]}
+                                            alt="Product"
+                                            style={{ width: "50px", height: "50px" }}
+                                          />
+                                          <div
+                                            style={{
+                                              textDecoration: "underline",
+                                              color: "blue",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            View More
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <p style={{ width: 50, height: 50 }}>No image</p>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="text"
+                                      value={item?.quantity || 1}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="number"
+                                      value={data?.MRP || ""}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="number"
+                                      value={data?.sellPrice || ""}
+                                      className="w-full form-input"
+                                      onChange={handleSellPriceChange}
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="text"
+                                      value={`${data?.tax || 0} (Inc)`}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="number"
+                                      value={item?.taxAmount || 0}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="number"
+                                      value={item?.discount || 0}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="number"
+                                      value={item?.totalAmount || 0}
+                                      readOnly
+                                      className="w-full form-input"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {items.some((item) => item.type === "lensDropdown") && (
+                            <>
+                              <tr className="border-b-2 border-slate-300">
+                                <td colSpan="10">
+                                  <label className="block text-sm font-medium mb-1">Right Lens</label>
+                                  {!lensSelections[groupId]?.rightLens ? (
+                                    <AsyncSelect
+                                      cacheOptions
+                                      loadOptions={fetchLensData}
+                                      placeholder="Select..."
+                                      isClearable
+                                      onChange={(selectedLens) =>
+                                        handleLensSelection(selectedLens, "rightLens", groupId, inventoryData.findIndex((i) => i.groupId === groupId && i.type === "lensDropdown"))
+                                      }
+                                    />
+                                  ) : (
+                                    <p className="mb-0">
+                                      Selected: {lensSelections[groupId].rightLens.barcode} /{" "}
+                                      {lensSelections[groupId].rightLens.sku}
+                                    </p>
+                                  )}
+                                </td>
+                              </tr>
+                              <tr className="border-b-2 border-slate-300">
+                                <td colSpan="10">
+                                  <label className="block text-sm font-medium mb-1">Left Lens</label>
+                                  {!lensSelections[groupId]?.leftLens ? (
+                                    <AsyncSelect
+                                      cacheOptions
+                                      loadOptions={fetchLensData}
+                                      placeholder="Select..."
+                                      isClearable
+                                      onChange={(selectedLens) =>
+                                        handleLensSelection(selectedLens, "leftLens", groupId, inventoryData.findIndex((i) => i.groupId === groupId && i.type === "lensDropdown"))
+                                      }
+                                    />
+                                  ) : (
+                                    <p className="mb-0">
+                                      Selected: {lensSelections[groupId].leftLens.barcode} /{" "}
+                                      {lensSelections[groupId].leftLens.sku}
+                                    </p>
+                                  )}
+                                </td>
+                              </tr>
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              ))
             )}
           </tbody>
         </table>
       </div>
-
-      {inventoryData.some((item) => item.type === "lensDropdown") && (
-        <div className="mt-3">
-          <Row>
-            {inventoryData.map((item, index) => {
-              if (item.type === "lensDropdown") {
-                return (
-                  <React.Fragment key={`lens-dropdown-${index}`}>
-                    <Col md={6}>
-                      <label className="d-block mb-1 fw-medium">
-                        Right Lens
-                      </label>
-                      {!rightLensSelected ? (
-                        <AsyncSelect
-                          cacheOptions
-                          loadOptions={fetchLensData}
-                          placeholder="Select right lens"
-                          isClearable
-                          onChange={(selectedLens) =>
-                            handleLensSelection(
-                              selectedLens,
-                              "rightLens",
-                              index
-                            )
-                          }
-                        />
-                      ) : (
-                        <p className="mb-0">
-                          Selected: {rightLensSelected.barcode} /{" "}
-                          {rightLensSelected.sku}
-                        </p>
-                      )}
-                    </Col>
-                    <Col md={6}>
-                      <label className="d-block mb-1 fw-medium">
-                        Left Lens
-                      </label>
-                      {!leftLensSelected ? (
-                        <AsyncSelect
-                          cacheOptions
-                          loadOptions={fetchLensData}
-                          placeholder="Select left lens"
-                          isClearable
-                          onChange={(selectedLens) =>
-                            handleLensSelection(selectedLens, "leftLens", index)
-                          }
-                        />
-                      ) : (
-                        <p className="mb-0">
-                          Selected: {leftLensSelected.barcode} /{" "}
-                          {leftLensSelected.sku}
-                        </p>
-                      )}
-                    </Col>
-                  </React.Fragment>
-                );
-              }
-              return null;
-            })}
-          </Row>
-        </div>
-      )}
     </div>
   );
 }

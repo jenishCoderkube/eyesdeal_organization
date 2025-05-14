@@ -1,3 +1,5 @@
+//EditSale.jsx 
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -9,7 +11,8 @@ import { shopProcessService } from "../../services/Process/shopProcessService";
 import ProductSelector from "../../components/Sale/ProductSelector";
 import InventoryData from "../../components/Sale/InventoryData";
 import AsyncSelect from "react-select/async";
-
+import { v4 as uuidv4 } from "uuid";
+import { saleService } from "../../services/saleService";
 
 function EditSale() {
   const { id } = useParams();
@@ -44,11 +47,82 @@ function EditSale() {
     { value: "other", label: "Other" },
   ];
 
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user")); // Assuming user data is stored under 'user' key
+    if (user && user.stores && user.stores.length > 0) {
+      const storeId = user.stores[0]; // Use the first store ID
+      setDefaultStore({ value: storeId, label: storeId }); // Format for react-select
+    } else {
+      console.error("No store found in localStorage user data");
+      toast.error("No store found in user data");
+    }
+  }, []);
+
   const loadRecallOptions = (inputValue, callback) => {
     const filtered = recallOptions.filter((option) =>
       option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
     callback(filtered);
+  };
+
+  const handleAddProduct = async (selectedProduct) => {
+    if (
+      !selectedProduct ||
+      !selectedProduct.value ||
+      !defaultStore ||
+      !defaultStore.value
+    ) {
+      console.warn("Selected product or default store is missing.");
+      toast.error("Please select a product and ensure a store is selected.");
+      return;
+    }
+
+    const productDetails = await fetchInventoryDetails(
+      selectedProduct.value,
+      defaultStore.value
+    );
+    if (productDetails) {
+      const pairId = uuidv4();
+
+      setInventoryData((prev) => [
+        ...prev,
+        { type: "product", data: productDetails, pairId },
+        { type: "lensDropdown", pairId },
+      ]);
+
+      const newPair = {
+        pairId,
+        product: productDetails,
+        lens: null,
+      };
+      setInventoryPairs((prev) => [...prev, newPair]);
+    } else {
+      toast.error("Failed to fetch product details or product out of stock.");
+    }
+  };
+
+  const fetchInventoryDetails = async (prodID, storeID) => {
+    try {
+      const response = await saleService.checkInventory(prodID, storeID);
+      if (response.success) {
+        const newItem = response?.data?.data?.docs?.[0];
+        if (newItem) {
+          return newItem.product;
+        }
+        if (response.data.data.docs.length === 0) {
+          toast.error("Product out of stock");
+          return null;
+        }
+      } else {
+        console.error(response.data.message);
+        toast.error(response.data.message || "Error fetching inventory");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+      toast.error("Error fetching inventory");
+      return null;
+    }
   };
 
   const calculateTotals = () => {
@@ -82,7 +156,6 @@ function EditSale() {
       netAmount,
     }));
   };
-
 
   useEffect(() => {
     calculateTotals();
@@ -181,9 +254,7 @@ function EditSale() {
               newInventoryData.push({
                 type: "leftLens",
                 data: {
-                  _id: order.leftLens
-
-.item,
+                  _id: order.leftLens.item,
                   oldBarcode: order.leftLens.barcode,
                   sku: order.leftLens.sku,
                   productName: order.leftLens.displayName,
@@ -247,7 +318,8 @@ function EditSale() {
           srp: product.sellPrice || product.MRP,
           perPieceDiscount: product.discount || 0,
           taxRate: `${product.tax || 0} (Inc)`,
-          perPieceTax: ((product.sellPrice || product.MRP) * (product.tax || 0)) / 100,
+          perPieceTax:
+            ((product.sellPrice || product.MRP) * (product.tax || 0)) / 100,
           perPieceAmount: product.sellPrice || product.MRP,
           inclusiveTax: product.inclusiveTax ?? true,
           manageStock: product.manageStock ?? true,
@@ -264,14 +336,23 @@ function EditSale() {
       totalQuantity: (prev.totalQuantity || 0) + newOrders.length,
       totalAmount:
         (prev.totalAmount || 0) +
-        newOrders.reduce((sum, order) => sum + (order.product.perPieceAmount || 0), 0),
+        newOrders.reduce(
+          (sum, order) => sum + (order.product.perPieceAmount || 0),
+          0
+        ),
       totalTax:
         (prev.totalTax || 0) +
-        newOrders.reduce((sum, order) => sum + (order.product.perPieceTax || 0), 0),
+        newOrders.reduce(
+          (sum, order) => sum + (order.product.perPieceTax || 0),
+          0
+        ),
       netAmount:
         (prev.netAmount || 0) +
         newOrders.reduce(
-          (sum, order) => sum + (order.product.perPieceAmount || 0) + (order.product.perPieceTax || 0),
+          (sum, order) =>
+            sum +
+            (order.product.perPieceAmount || 0) +
+            (order.product.perPieceTax || 0),
           0
         ),
     }));
@@ -360,17 +441,21 @@ function EditSale() {
       }));
 
     // Construct orders from inventoryPairs
-    const updatedOrders = inventoryPairs.map((pair) => ({
-      _id: pair.pairId.includes("pair-new-") ? undefined : pair.pairId.split("-")[2], // Extract order _id if not new
-      product: pair.product,
-      rightLens: pair.rightLens,
-      leftLens: pair.leftLens,
-      store: saleData?.store?._id,
-      status: "pending",
-      attachments: [],
-      sale: id,
-      billNumber: saleData?.saleNumber?.toString(),
-    })).filter((order) => order.product || order.rightLens || order.leftLens);
+    const updatedOrders = inventoryPairs
+      .map((pair) => ({
+        _id: pair.pairId.includes("pair-new-")
+          ? undefined
+          : pair.pairId.split("-")[2], // Extract order _id if not new
+        product: pair.product,
+        rightLens: pair.rightLens,
+        leftLens: pair.leftLens,
+        store: saleData?.store?._id,
+        status: "pending",
+        attachments: [],
+        sale: id,
+        billNumber: saleData?.saleNumber?.toString(),
+      }))
+      .filter((order) => order.product || order.rightLens || order.leftLens);
 
     const payload = {
       _id: id,
@@ -449,6 +534,7 @@ function EditSale() {
   return (
     <div className="mt-4 px-3">
       <form onSubmit={handleSubmit}>
+        {/* Customer Name and Phone */}
         <div className="col-12 small">
           <label htmlFor="name" className="form-label mb-1 fw-semibold">
             Name
@@ -457,7 +543,7 @@ function EditSale() {
             type="text"
             id="name"
             className="form-control"
-            value={saleData.customerName || ""}
+            value={saleData?.customerName || ""}
             disabled
           />
         </div>
@@ -469,10 +555,12 @@ function EditSale() {
             type="text"
             id="phone"
             className="form-control"
-            value={saleData.customerPhone || ""}
+            value={saleData?.customerPhone || ""}
             disabled
           />
         </div>
+
+        {/* Products and Recall Date */}
         <div className="col-12 my-3">
           <div>
             <label htmlFor="products" className="form-label mb-1">
@@ -489,7 +577,6 @@ function EditSale() {
               setInventoryPairs={setInventoryPairs}
               onProductsSelected={handleProductsSelected}
             />
-            
             {!showProductSelector && (
               <button
                 type="button"
@@ -501,69 +588,66 @@ function EditSale() {
             )}
           </div>
 
-
+          {/* Recall Date */}
           <div className="col-md-6 col-12">
-                <label htmlFor="recallOption" className="custom-label">
-                  Recall Date <span className="text-danger">*</span>
-                </label>
-                {formData.recallOption !== "other" ? (
-                  <AsyncSelect
-                    cacheOptions
-                    defaultOptions={recallOptions}
-                    loadOptions={loadRecallOptions}
-                    value={
-                      recallOptions.find(
-                        (opt) => opt.value === formData.recallOption
-                      ) || null
-                    }
-                    onChange={(selected) => {
-                      setFormData({
-                        ...formData,
-                        recallOption: selected ? selected.value : "",
-                        recallDate: "",
-                      });
-                      if (errors.recallOption || errors.recallDate) {
-                        setErrors({
-                          ...errors,
-                          recallOption: "",
-                          recallDate: "",
-                        });
-                      }
-                    }}
-                    placeholder="Select..."
-                    className={errors.recallOption ? "is-invalid" : ""}
-                  />
-                ) : (
-                  <DatePicker
-                    selected={
-                      formData.recallDate ? new Date(formData.recallDate) : null
-                    }
-                    onChange={(date) => {
-                      setFormData({
-                        ...formData,
-                        recallDate: date
-                          ? date.toISOString().split("T")[0]
-                          : "",
-                      });
-                      if (errors.recallDate) {
-                        setErrors({ ...errors, recallDate: "" });
-                      }
-                    }}
-                    className={`form-control ${
-                      errors.recallDate ? "is-invalid" : ""
-                    }`}
-                    placeholderText="Select date"
-                    dateFormat="yyyy-MM-dd"
-                    required
-                  />
-                )}
-                {errors.recallOption && (
-                  <div className="invalid-feedback">{errors.recallOption}</div>
-                )}
-                {errors.recallDate && (
-                  <div className="invalid-feedback">{errors.recallDate}</div>
-                )}
-              </div>
+            <label htmlFor="recallOption" className="custom-label">
+              Recall Date <span className="text-danger">*</span>
+            </label>
+            {formData.recallOption !== "other" ? (
+              <AsyncSelect
+                cacheOptions
+                defaultOptions={recallOptions}
+                loadOptions={loadRecallOptions}
+                value={
+                  recallOptions.find(
+                    (opt) => opt.value === formData.recallOption
+                  ) || null
+                }
+                onChange={(selectedOption) => {
+                  setFormData({
+                    ...formData,
+                    recallOption: selectedOption ? selectedOption.value : null,
+                    recallDate:
+                      selectedOption?.value === "other"
+                        ? formData.recallDate
+                        : null,
+                  });
+                  if (errors.recallOption) {
+                    setErrors({ ...errors, recallOption: "" });
+                  }
+                }}
+                placeholder="Select..."
+                className={errors.recallOption ? "is-invalid" : ""}
+              />
+            ) : (
+              <DatePicker
+                selected={
+                  formData.recallDate ? new Date(formData.recallDate) : null
+                }
+                onChange={(date) => {
+                  setFormData({
+                    ...formData,
+                    recallDate: date ? date.toISOString().split("T")[0] : null,
+                  });
+                  if (errors.recallDate) {
+                    setErrors({ ...errors, recallDate: "" });
+                  }
+                }}
+                className={`form-control ${
+                  errors.recallDate ? "is-invalid" : ""
+                }`}
+                placeholderText="Select date"
+                dateFormat="yyyy-MM-dd"
+                required
+              />
+            )}
+            {errors.recallOption && (
+              <div className="invalid-feedback">{errors.recallOption}</div>
+            )}
+            {errors.recallDate && (
+              <div className="invalid-feedback">{errors.recallDate}</div>
+            )}
+          </div>
 
           <InventoryData
             inventoryData={inventoryData}
@@ -571,8 +655,6 @@ function EditSale() {
             inventoryPairs={inventoryPairs}
             setInventoryPairs={setInventoryPairs}
           />
-
-          
 
           <div className="row g-3 mt-4">
             {[

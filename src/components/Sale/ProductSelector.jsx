@@ -1,3 +1,5 @@
+
+
 import React from 'react'
 import AsyncSelect from "react-select/async";
 import { saleService } from '../../services/saleService';
@@ -48,27 +50,31 @@ export default function ProductSelector({
             console.error("Error fetching customers:", error);
         }
     }
-
     const handleAddProduct = async (selectedProduct) => {
-        const productDetails = await fetchInventoryDetails(selectedProduct?.value, defaultStore.value);
+        if (!selectedProduct || !defaultStore || !defaultStore.value) {
+            console.warn("Selected product or default store is missing.");
+            return;
+        }
+    
+        const productDetails = await fetchInventoryDetails(selectedProduct.value, defaultStore.value);
         if (productDetails) {
             const pairId = uuidv4(); // generate unique ID
-
+    
             setInventoryData(prev => [
                 ...prev,
                 { type: "product", data: productDetails, pairId },
                 { type: "lensDropdown", pairId }
             ]);
-
+    
             const newPair = {
                 pairId,
                 product: productDetails,
                 lens: null,
             };
             setInventoryPairs((prev) => [...prev, newPair]);
-
         }
     };
+    
 
     return (
         <>
