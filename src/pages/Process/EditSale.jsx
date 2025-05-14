@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
 import ProductSelector from "../../components/Sale/ProductSelector";
 import InventoryData from "../../components/Sale/InventoryData";
+import AsyncSelect from "react-select/async";
+
 
 function EditSale() {
   const { id } = useParams();
@@ -15,6 +17,8 @@ function EditSale() {
   const [showProductSelector, setShowProductSelector] = useState(true);
   const [defaultStore, setDefaultStore] = useState(null);
   const [inventoryData, setInventoryData] = useState([]);
+  const [errors, setErrors] = useState({});
+
   const [inventoryPairs, setInventoryPairs] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [saleData, setSaleData] = useState(null);
@@ -31,6 +35,62 @@ function EditSale() {
       date: null,
       reference: "",
     },
+  ]);
+  const recallOptions = [
+    { value: "3 month", label: "3 month" },
+    { value: "6 month", label: "6 month" },
+    { value: "9 month", label: "9 month" },
+    { value: "12 month", label: "12 month" },
+    { value: "other", label: "Other" },
+  ];
+
+  const loadRecallOptions = (inputValue, callback) => {
+    const filtered = recallOptions.filter((option) =>
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
+    callback(filtered);
+  };
+
+  const calculateTotals = () => {
+    let totalQuantity = 0;
+    let totalAmount = 0;
+    let taxAmount = 0;
+    let totalDiscount = 0;
+    let flatDiscount = Number(formData.flatDiscount) || 0;
+    let couponDiscount = Number(formData.couponDiscount) || 0;
+    let otherCharges = Number(formData.otherCharges) || 0;
+
+    inventoryData.forEach((pair) => {
+      if (pair.data) {
+        totalQuantity += 1;
+        totalAmount += pair.totalAmount || 0;
+        taxAmount += pair.taxAmount || 0;
+        totalDiscount += pair.discount || 0;
+      }
+    });
+
+    totalDiscount += flatDiscount + couponDiscount;
+    const netAmount =
+      totalAmount - flatDiscount + otherCharges - couponDiscount;
+
+    setFormData((prev) => ({
+      ...prev,
+      totalQuantity,
+      totalAmount,
+      totalTax: taxAmount,
+      netDiscount: totalDiscount,
+      netAmount,
+    }));
+  };
+
+
+  useEffect(() => {
+    calculateTotals();
+  }, [
+    inventoryData,
+    formData.flatDiscount,
+    formData.otherCharges,
+    formData.couponDiscount,
   ]);
 
   // Fetch sale data on mount and populate inventoryData
@@ -429,6 +489,7 @@ function EditSale() {
               setInventoryPairs={setInventoryPairs}
               onProductsSelected={handleProductsSelected}
             />
+            
             {!showProductSelector && (
               <button
                 type="button"
@@ -440,12 +501,78 @@ function EditSale() {
             )}
           </div>
 
+
+          <div className="col-md-6 col-12">
+                <label htmlFor="recallOption" className="custom-label">
+                  Recall Date <span className="text-danger">*</span>
+                </label>
+                {formData.recallOption !== "other" ? (
+                  <AsyncSelect
+                    cacheOptions
+                    defaultOptions={recallOptions}
+                    loadOptions={loadRecallOptions}
+                    value={
+                      recallOptions.find(
+                        (opt) => opt.value === formData.recallOption
+                      ) || null
+                    }
+                    onChange={(selected) => {
+                      setFormData({
+                        ...formData,
+                        recallOption: selected ? selected.value : "",
+                        recallDate: "",
+                      });
+                      if (errors.recallOption || errors.recallDate) {
+                        setErrors({
+                          ...errors,
+                          recallOption: "",
+                          recallDate: "",
+                        });
+                      }
+                    }}
+                    placeholder="Select..."
+                    className={errors.recallOption ? "is-invalid" : ""}
+                  />
+                ) : (
+                  <DatePicker
+                    selected={
+                      formData.recallDate ? new Date(formData.recallDate) : null
+                    }
+                    onChange={(date) => {
+                      setFormData({
+                        ...formData,
+                        recallDate: date
+                          ? date.toISOString().split("T")[0]
+                          : "",
+                      });
+                      if (errors.recallDate) {
+                        setErrors({ ...errors, recallDate: "" });
+                      }
+                    }}
+                    className={`form-control ${
+                      errors.recallDate ? "is-invalid" : ""
+                    }`}
+                    placeholderText="Select date"
+                    dateFormat="yyyy-MM-dd"
+                    required
+                  />
+                )}
+                {errors.recallOption && (
+                  <div className="invalid-feedback">{errors.recallOption}</div>
+                )}
+                {errors.recallDate && (
+                  <div className="invalid-feedback">{errors.recallDate}</div>
+                )}
+              </div>
+
           <InventoryData
             inventoryData={inventoryData}
             setInventoryData={setInventoryData}
             inventoryPairs={inventoryPairs}
             setInventoryPairs={setInventoryPairs}
           />
+
+          
 
           <div className="row g-3 mt-4">
             {[
