@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { dashBoardService } from '../../services/dashboardService';
 
 function DashBoardCard() {
   const cardStyle = {
@@ -34,6 +35,14 @@ function DashBoardCard() {
     fontSize: '1.125rem'
   }
 
+  const loaderStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    width: '100%'
+  }
+
   const [cardData, setCardData] = useState([
     { title: "Today's Sale", value: 0 },
     { title: "This Week's Sale", value: 0 },
@@ -41,51 +50,57 @@ function DashBoardCard() {
     { title: "Previous Month's Sale", value: 0 }
   ]);
 
+  const [salesData, setSalesData] = useState([]);
+  const [purchaseData, setPurchaseData] = useState([]);
+  const [vendorData, setVendorData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchDashboard() {
       try {
-        const userData = localStorage.getItem('user');
-        if (!userData) {
-          console.error('User data not found in localStorage');
-          return;
-        }
+        setLoading(true);
+        let dashboardResponse = await dashBoardService.getDashboard();
+        const mainData = dashboardResponse.data;
+        const apiData = mainData.data[0];
 
-        const user = JSON.parse(userData);
-        const userId = user._id;
-        // const userId = "64e30076c68b7b37a98b4b4c";
-
-        if (!userId) {
-          console.error('User ID not found in user data');
-          return;
-        }
-
-        const response = await fetch(`https://devnode.coderkubes.com/eyesdeal-api/dashboard?id=${userId}`);
-        const result = await response.json();
-
-        if (result.success && result.data && result.data.length > 0) {
-          const apiData = result.data[0];
-          setCardData([
-            { title: "Today's Sale", value: apiData.todaySales },
-            { title: "This Week's Sale", value: apiData.weekSales },
-            { title: "This Month's Sale", value: apiData.monthSales },
-            { title: "Previous Month's Sale", value: apiData.prevMonthSales }
-          ]);
-        }
+        setCardData([
+          { title: "Total Sales (Count)", value: mainData.totalSales },
+          { title: "Total Purchases (Count)", value: mainData.totalPurchases },
+          { title: "Active Vendors", value: mainData.totalVendorsActive },
+          { title: "Today's Sale (Amount)", value: apiData.todaySales },
+          { title: "This Week's Sale (Amount)", value: apiData.weekSales },
+          { title: "This Month's Sale (Amount)", value: apiData.monthSales },
+          { title: "Previous Month's Sale (Amount)", value: apiData.prevMonthSales }
+        ]);
+        setSalesData(mainData.salesData || []);
+        setPurchaseData(mainData.purchaseData || []);
+        setVendorData(mainData.vendorData || []);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
       }
-    };
-
-    fetchData();
+    }
+    fetchDashboard();
   }, []);
+
+  if (loading) {
+    return (
+      <div style={loaderStyle}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="containe1">
       <div className="row">
         {cardData.map((card, index) => (
-          <div key={index} className="col-12 col-sm-6 col-lg-3 d-flex">
+          <div key={index} className="col-12 col-sm-6 col-lg-3 d-flex mb-3">
             <div style={cardStyle} className="w-100">
-              <div className="px-3 mb-4">
+              <div className="px-3 mb ^{2}">
                 <header style={headerStyle}>{card.title}</header>
                 <div style={bodyStyle}>
                   <div>{card.value}</div>
@@ -94,6 +109,85 @@ function DashBoardCard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Sales Table */}
+      <h4>Recent Sales</h4>
+      <div className="py-3">
+        <table className="table table-striped table-bordered">
+          <thead className="table-light">
+            <tr>
+              <th scope="col" className='ps-3'>Customer</th>
+              <th scope="col" className='ps-3'>Phone</th>
+              <th scope="col" className='ps-3'>Total Amount</th>
+              <th scope="col" className='ps-3'>Net Amount</th>
+              <th scope="col" className='ps-3'>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {salesData.map((sale) => (
+              <tr key={sale._id}>
+                <td className="px-3">{sale.customerName}</td>
+                <td className="px-3">{sale.customerPhone}</td>
+                <td className="px-3">{sale.totalAmount}</td>
+                <td className="px-3">{sale.netAmount}</td>
+                <td className="px-3">{new Date(sale.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Purchases Table */}
+      <h4>Recent Purchases</h4>
+      <div className="py-3">
+        <table className="table table-striped table-bordered">
+          <thead className="table-light">
+            <tr>
+              <th scope="col" className='ps-3'>Vendor</th>
+              <th scope="col" className='ps-3'>Invoice</th>
+              <th scope="col" className='ps-3'>Total Amount</th>
+              <th scope="col" className='ps-3'>Net Amount</th>
+              <th scope="col" className='ps-3'>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {purchaseData.map((purchase) => (
+              <tr key={purchase._id}>
+                <td className="px-3">{purchase.vendor?.companyName}</td>
+                <td className="px-3">{purchase.invoiceNumber}</td>
+                <td className="px-3">{purchase.totalAmount}</td>
+                <td className="px-3">{purchase.netAmount}</td>
+                <td className="px-3">{new Date(purchase.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Vendors Table */}
+      <h4>Active Vendors</h4>
+      <div className="py-3">
+        <table className="table table-striped table-bordered">
+          <thead className="table-light">
+            <tr>
+              <th scope="col" className='ps-3'>Company Name</th>
+              <th scope="col" className='ps-3'>Phone</th>
+              <th scope="col" className='ps-3'>City</th>
+              <th scope="col" className='ps-3'>State</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vendorData.map((vendor) => (
+              <tr key={vendor._id}>
+                <td className="px-3">{vendor.companyName}</td>
+                <td className="px-3">{vendor.phone}</td>
+                <td className="px-3">{vendor.city}</td>
+                <td className="px-3">{vendor.state}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
