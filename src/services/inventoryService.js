@@ -13,7 +13,8 @@ const INVENTORY_ENDPOINTS = {
   BRAND: `master/brand`,
   INVENTORY: (params) => `/inventory?populate=true&${params}`,
   INVENTORYSTORE: (params) => `/inventory/store?populate=true&${params}`,
-  INVENTORYGETCOUNT: (params) => `/inventory/store/get-count?populate=true&${params}`,
+  INVENTORYGETCOUNT: (params) =>
+    `/inventory/store/get-count?populate=true&${params}`,
   INVENTORYGROUP: (params) =>
     `/inventory/get/group-wise?populate=true&${params}`,
   INVENTORYGROUPTOTAL: (params) =>
@@ -28,6 +29,7 @@ const INVENTORY_ENDPOINTS = {
   ADDSTOCKADJUSTMENT: `/stockAdjustment`,
   BULK_UPLOAD: "/products/upload/bulk-upload-3",
   UPDATE_INVENTORY: "/inventory/updateInventoryData",
+  INVENTORYFILEUPLOAD: "/inventory/upload",
 };
 
 const buildInventoryParams = (
@@ -161,8 +163,8 @@ const buildProductStoreParams = (productIds, page, limit, populate) => {
     params.append("limit", limit);
   }
 
-  if(populate){
-    params.append("populate",populate);
+  if (populate) {
+    params.append("populate", populate);
   }
   // Store IDs
   productIds.forEach((productIds, index) => {
@@ -541,7 +543,13 @@ export const inventoryService = {
     }
   },
 
-  getGroupStoreTotal: async (brandIds = [], storeIds = [], page, search, limit) => {
+  getGroupStoreTotal: async (
+    brandIds = [],
+    storeIds = [],
+    page,
+    search,
+    limit
+  ) => {
     try {
       let params = buildGroupStoreParams(
         brandIds,
@@ -733,6 +741,23 @@ export const inventoryService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error updating inventory",
+      };
+    }
+  },
+  uploadInventory: async (data) => {
+    try {
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.INVENTORYFILEUPLOAD,
+        data
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error Upload inventory",
       };
     }
   },

@@ -2,12 +2,14 @@ import React, { useEffect, useState, useMemo } from "react";
 import "../../assets/css/Sale/sale_style.css";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
+import * as XLSX from "xlsx";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import { purchaseService } from "../../services/purchaseService";
 import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { inventoryService } from "../../services/inventoryService";
 
 const AddPerchaseCom = () => {
   const [formData, setFormData] = useState({
@@ -28,6 +30,7 @@ const AddPerchaseCom = () => {
   });
 
   const [products, setProducts] = useState([]);
+  const [inventoryData, setInventoryData] = useState([]);
   const [errors, setErrors] = useState({
     vendor: "",
     invoiceNumber: "",
@@ -352,6 +355,64 @@ const AddPerchaseCom = () => {
     { value: "amount", label: "Amount" },
   ];
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate vendor and invoiceNumber
+    let validationErrors = {};
+    if (!formData.vendor || !formData.vendor.value) {
+      validationErrors.vendor = "Vendor is required";
+    }
+    if (!formData.invoiceNumber.trim()) {
+      validationErrors.invoiceNumber = "Invoice Number is required";
+    }
+    // Update errors state if there are validation issues
+    if (Object.keys(validationErrors).length > 0) {
+      event.target.value = null;
+      setErrors(validationErrors);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const binaryStr = e.target.result;
+      const workbook = XLSX.read(binaryStr, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      // Convert to JSON
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      setInventoryData(jsonData);
+      uploadInventoryFile(jsonData);
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const uploadInventoryFile = async (jsonData) => {
+    const payload = {
+      vendorId: formData.vendor.value,
+      invoiceNumber: formData.invoiceNumber,
+      date: formData.invoiceDate.getTime(),
+      store: formData.store?.value,
+      isDelivered: formData.isDelivered,
+      inventoryData: jsonData,
+    };
+
+    try {
+      const response = await inventoryService.uploadInventory(payload);
+      if (response.success) {
+        toast.success(response.data.message);
+        window.location.reload();
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Product error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container-fluid p-2">
       <form onSubmit={handleSubmit}>
@@ -439,6 +500,16 @@ const AddPerchaseCom = () => {
                     />
                     <label className="form-check-label">is Delivered</label>
                   </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="form-check">
+                  <input
+                    type="file"
+                    className="form-control-file"
+                    accept=".xls,.xlsx"
+                    onChange={handleFileUpload}
+                  />
                 </div>
               </div>
               <div className="mt-4">
