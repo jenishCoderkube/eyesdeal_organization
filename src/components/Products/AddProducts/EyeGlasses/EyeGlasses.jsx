@@ -32,6 +32,9 @@ const validationSchema = Yup.object({
   sellPrice: Yup.number()
     .required("Sell Price is required")
     .min(0, "Sell Price cannot be negative"),
+  wholeSalePrice: Yup.number()
+    .required("Whole Sale Price is required")
+    .min(0, "Whole Sale Price cannot be negative"),
   incentiveAmount: Yup.number()
     .required("Incentive Amount is required")
     .min(0, "Incentive Amount cannot be negative"),
@@ -62,6 +65,7 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
+  isB2B: Yup.boolean(),
   photos: Yup.array().of(Yup.string()).nullable(), // Updated to array
 });
 
@@ -207,6 +211,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     MRP: initialData?.MRP !== undefined ? String(initialData.MRP) : "",
     discount: initialData?.discount ?? "",
     sellPrice: initialData?.sellPrice ?? "",
+    wholeSalePrice: initialData?.wholeSalePrice ?? "",
     incentiveAmount: initialData?.incentiveAmount ?? 0,
     warranty: initialData?.warranty ?? "",
     oldBarcode: initialData?.oldBarcode ?? initialData?.barcode ?? "",
@@ -235,6 +240,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
+    isB2B: initialData?.isB2B ?? false,
     photos: Array.isArray(initialData?.photos)
       ? initialData.photos
       : initialData?.photos
@@ -304,6 +310,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         MRP: values.MRP || "",
         discount: parseFloat(values.discount) || 0,
         sellPrice: parseFloat(values.sellPrice) || 0,
+        wholeSalePrice: parseFloat(values.wholeSalePrice) || 0,
         manageStock: values.manageStock ?? true,
         inclusiveTax: values.inclusiveTax ?? true,
         incentiveAmount: parseFloat(values.incentiveAmount) || 0,
@@ -315,6 +322,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         __t: "eyeGlasses",
         activeInERP: values.activeInERP ?? true,
         activeInWebsite: values.activeInWebsite ?? false,
+        isB2B: values.isB2B ?? false,
         storeFront: initialData?.storeFront || [],
         seoDescription: values.seoDescription || "",
         seoImage: values.seoImage || "",
@@ -605,6 +613,24 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                 />
                 <ErrorMessage
                   name="sellPrice"
+                  component="div"
+                  className="text-danger text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  className="form-label font-weight-600 text-sm font-medium"
+                  htmlFor="wholeSalePrice"
+                >
+                  Whole Sale Price <span className="text-danger">*</span>
+                </label>
+                <Field
+                  type="number"
+                  name="wholeSalePrice"
+                  className="form-control"
+                />
+                <ErrorMessage
+                  name="wholeSalePrice"
                   component="div"
                   className="text-danger text-sm"
                 />
@@ -1308,6 +1334,16 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
                 />
                 <label className="form-check-label font-weight-600">
                   Active Website
+                </label>
+              </div>
+              <div className="form-check">
+                <Field
+                  type="checkbox"
+                  name="isB2B"
+                  className="form-check-input p-2"
+                />
+                <label className="form-check-label font-weight-600">
+                  IS B2B
                 </label>
               </div>
             </div>

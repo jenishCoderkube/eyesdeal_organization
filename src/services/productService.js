@@ -101,6 +101,7 @@ export const productService = {
       MRP: productData.MRP,
       discount: productData.discount,
       sellPrice: parseFloat(productData.sellPrice) || 0,
+      wholeSalePrice: parseFloat(productData.wholeSalePrice) || 0,
       manageStock:
         productData.manageStock === undefined ? true : productData.manageStock,
       inclusiveTax:
@@ -130,6 +131,7 @@ export const productService = {
         productData.activeInWebsite === undefined
           ? false
           : productData.activeInWebsite,
+      isB2B: productData.isB2B === undefined ? false : productData.isB2B,
       activeInERP:
         productData.activeInERP === undefined ? true : productData.activeInERP,
       seoTitle: productData.seoTitle,
