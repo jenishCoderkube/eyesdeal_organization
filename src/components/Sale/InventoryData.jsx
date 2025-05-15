@@ -392,7 +392,7 @@ export default function InventoryData({
                             Product Group {groupIndex + 1}
                           </span>
                           <button
-                            onClick={() => handleRemoveGroup()}
+                            onClick={() => handleRemoveGroup(groupId)}
                             className="text-red-500 hover:text-red-700">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
