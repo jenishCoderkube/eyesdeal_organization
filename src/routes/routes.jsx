@@ -66,6 +66,7 @@ import NewSales from "../pages/NewSales/NewSales";
 import RecallReportCom from "../pages/Recall/RecallReportCom";
 import RecallReport from "../pages/Reports/RecallReport";
 import EditSale from "../pages/Process/EditSale";
+import VendorInvoice from "../pages/Process/VendorInvoice";
 
 const routes = [
   {
@@ -137,7 +138,7 @@ const routes = [
     element: (
       <PrivateRoute>
         {/* <ShopProcessEdit /> */}
-        <EditSale/>
+        <EditSale />
       </PrivateRoute>
     ),
   },
@@ -156,6 +157,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <VendorListProcess />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "VendorInvoice",
+    path: "/process/vendorInvoice",
+    element: (
+      <PrivateRoute>
+        <VendorInvoice />
       </PrivateRoute>
     ),
   },
@@ -687,10 +697,9 @@ const routes = [
     element: (
       <PrivateRoute>
         <RecallReport />
-        
       </PrivateRoute>
     ),
-  }
+  },
 ];
 
 export default routes;

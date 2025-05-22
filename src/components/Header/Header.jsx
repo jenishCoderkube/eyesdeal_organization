@@ -26,6 +26,7 @@ const menuItems = [
       { label: "Shop Process", link: "/process/shop" },
       { label: "Workshop Process", link: "/process/Workshop" },
       { label: "Vendor List", link: "/process/vendorList" },
+      { label: "Vendor Invoice", link: "/process/vendorInvoice" },
     ],
   },
   {
@@ -136,7 +137,6 @@ const menuItems = [
       {
         label: "Recall Report",
         link: "/recall-report",
-        
       },
     ],
   },

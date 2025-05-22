@@ -10,7 +10,7 @@ const AUTH_ENDPOINTS = {
   USER: `/user/list`,
 };
 
-const  buildPurchaseLogParams = (
+const buildPurchaseLogParams = (
   invoiceDateGte,
   invoiceDateLte,
   storeIds = [],
@@ -103,7 +103,8 @@ export const shopProcessService = {
         //   ? filters.startDate.toISOString().split("T")[0]
         //   : null,
         // filters.endDate ? filters.endDate.toISOString().split("T")[0] : null,
-        "","",
+        "",
+        "",
         filters.stores,
         filters.status,
         filters.search,
@@ -142,9 +143,7 @@ export const shopProcessService = {
   getSaleReturn: async (filters) => {
     try {
       const params = buildSalesReturnParams(filters.stores, filters.search);
-      const response = await api.get(
-        `${AUTH_ENDPOINTS.SALE_RETURN}?${params}`
-      );
+      const response = await api.get(`${AUTH_ENDPOINTS.SALE_RETURN}?${params}`);
       return {
         success: true,
         data: response.data,
