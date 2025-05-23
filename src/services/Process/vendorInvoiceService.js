@@ -4,6 +4,7 @@ const AUTH_ENDPOINTS = {
   JOB_WORKS: `/jobWorks/get`,
   VENDORS: `/vendors`,
   STORES: `/stores`,
+  CREATE_INVOICE: `/vendors/invoice`,
 };
 
 const buildJobWorksParams = (
@@ -119,6 +120,26 @@ export const vendorInvoiceService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error fetching stores",
+      };
+    }
+  },
+
+  createVendorInvoice: async (payload) => {
+    try {
+      const response = await api.post(AUTH_ENDPOINTS.CREATE_INVOICE, payload);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error(
+        "Error creating vendor invoice:",
+        error.response?.data || error.message
+      );
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error creating vendor invoice",
       };
     }
   },

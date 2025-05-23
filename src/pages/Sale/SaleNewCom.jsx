@@ -414,7 +414,14 @@ const SaleForm = () => {
           const months = parseInt(formData.recallOption) || 0;
           recall = calculateRecallDate(months);
         }
+        let formattedRecall = null;
 
+        if (recall && /^\d{4}-\d{2}-\d{2}$/.test(recall)) {
+          const date = new Date(recall);
+          if (!isNaN(date)) {
+            formattedRecall = date.toISOString();
+          }
+        }
         const payload = {
           store: defaultStore?.value || "",
           customerId: formData.customerId,
@@ -444,7 +451,7 @@ const SaleForm = () => {
           note: formData.note,
           powerAtTime: {},
           attachments: documentsFiles,
-          recall,
+          recall: formattedRecall,
         };
 
         console.log("Submitting form with payload:", payload);
@@ -799,8 +806,9 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-100 ${field.readOnly ? "custom-disabled" : ""
-                      }`}
+                    className={`form-control w-100 ${
+                      field.readOnly ? "custom-disabled" : ""
+                    }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}

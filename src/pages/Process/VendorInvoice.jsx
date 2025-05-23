@@ -13,8 +13,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Button, Form, Card } from "react-bootstrap";
-import { vendorInvoiceService } from "../../services/Process/vendorInvoiceService";
 import { debounce } from "lodash";
+import VendorInvoiceModal from "../../components/Process/VendorInvoice/VendorInvoiceModal";
+import { vendorInvoiceService } from "../../services/Process/vendorInvoiceService";
 
 function VendorInvoice() {
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,7 @@ function VendorInvoice() {
   const [tableData, setTableData] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [showModal, setShowModal] = useState(false);
   const [pagination, setPagination] = useState({
     totalDocs: 0,
     limit: 50,
@@ -35,29 +37,17 @@ function VendorInvoice() {
     nextPage: null,
   });
 
-  const users = useMemo(
-    () =>
-      JSON.parse(localStorage.getItem("user")) || {
-        _id: "638b1a079f67a63ea1e1ba01",
-        phone: "917777900910",
-        name: "Rizwan",
-        role: "admin",
-        stores: ["64e30076c68b7b37a98b4b4c"],
-      },
-    []
-  );
+  const users = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const defaultStartDate = new Date("2024-12-01");
   const defaultEndDate = new Date("2024-12-31");
-  const defaultStores = ["64709e8b518c8594f121857b"];
-  const defaultVendors = ["64b253d43752a0dc06019207"];
 
   const formik = useFormik({
     initialValues: {
       startDate: defaultStartDate,
       endDate: defaultEndDate,
-      stores: [],
-      vendors: [],
+      store: null,
+      vendor: null,
       search: "",
     },
     validationSchema: Yup.object({
@@ -65,21 +55,23 @@ function VendorInvoice() {
       endDate: Yup.date()
         .required("End date is required")
         .min(Yup.ref("startDate"), "End date must be after start date"),
+      store: Yup.object().nullable().required("Store is required"),
+      vendor: Yup.object().nullable().required("Vendor is required"),
     }),
     onSubmit: (values) => {
       const filters = {
-        stores: values.stores.length
-          ? values.stores.map((store) => store.value)
-          : defaultStores,
-        vendors: values.vendors.length
-          ? values.vendors.map((vendor) => vendor.value)
-          : defaultVendors,
+        stores: values.store ? [values.store.value] : [],
+        vendors: values.vendor ? [values.vendor.value] : [],
         startDate: values.startDate,
         endDate: values.endDate,
         search: values.search,
         page: 1,
         limit: 50,
       };
+      if (!filters.stores.length || !filters.vendors.length) {
+        toast.error("Please select both a store and a vendor");
+        return;
+      }
       setSelectedRows([]);
       setExpandedRows([]);
       debouncedFetchJobWorks(filters);
@@ -117,8 +109,6 @@ function VendorInvoice() {
     setDataLoaded(false);
     try {
       const response = await vendorInvoiceService.getJobWorks(filters);
-      console.log("Full job works response:", response.data.data);
-
       if (response.success && response.data.data.data) {
         const jobWorks = response.data.data.data;
         setTableData(
@@ -154,13 +144,12 @@ function VendorInvoice() {
 
               return {
                 _id: job._id,
-                invoiceNumber: job.sale?.saleNumber?.toString() || "N/A",
-                invoiceDate: formattedInvoiceDate,
                 customerName: job.sale?.customerName || "N/A",
                 storeName: job.store?.name || "N/A",
                 status: job.status || "N/A",
                 selected: false,
                 fullJob: job,
+                ...job,
               };
             })
             .filter(Boolean)
@@ -223,21 +212,8 @@ function VendorInvoice() {
 
   useEffect(() => {
     const initialize = async () => {
-      setLoading(true);
-      setDataLoaded(false);
       await Promise.all([getStores(), getVendors()]);
-      const filters = {
-        stores: defaultStores,
-        vendors: defaultVendors,
-        startDate: defaultStartDate,
-        endDate: defaultEndDate,
-        search: "",
-        page: pagination.page,
-        limit: 50,
-      };
-      debouncedFetchJobWorks(filters);
     };
-
     initialize();
     return () => debouncedFetchJobWorks.cancel();
   }, [debouncedFetchJobWorks]);
@@ -246,18 +222,18 @@ function VendorInvoice() {
     (page) => {
       if (page) {
         const newFilters = {
-          stores: formik.values.stores.length
-            ? formik.values.stores.map((store) => store.value)
-            : defaultStores,
-          vendors: formik.values.vendors.length
-            ? formik.values.vendors.map((vendor) => vendor.value)
-            : defaultVendors,
+          stores: formik.values.store ? [formik.values.store.value] : [],
+          vendors: formik.values.vendor ? [formik.values.vendor.value] : [],
           startDate: formik.values.startDate,
           endDate: formik.values.endDate,
           search: formik.values.search,
           page,
           limit: 50,
         };
+        if (!newFilters.stores.length || !newFilters.vendors.length) {
+          toast.error("Please select both a store and a vendor");
+          return;
+        }
         debouncedFetchJobWorks(newFilters);
       }
     },
@@ -267,7 +243,7 @@ function VendorInvoice() {
   const storeOptions = useMemo(() => {
     return storeData.map((store) => ({
       value: store._id,
-      label: `${store.name} / ${store.storeNumber}`,
+      label: `${store.name}`,
     }));
   }, [storeData]);
 
@@ -278,27 +254,12 @@ function VendorInvoice() {
     }));
   }, [vendorData]);
 
-  const [hasSetDefaultStore, setHasSetDefaultStore] = useState(false);
-
-  useEffect(() => {
-    if (!hasSetDefaultStore && storeOptions.length > 0) {
-      const defaultOptions = storeOptions.filter((opt) =>
-        defaultStores.includes(opt.value)
-      );
-      if (defaultOptions.length > 0) {
-        formik.setFieldValue("stores", defaultOptions);
-        setHasSetDefaultStore(true);
-      }
-    }
-  }, [storeOptions, hasSetDefaultStore, formik]);
-
   const toggleSplit = useCallback((rowId) => {
-    setExpandedRows((prev) => {
-      console.log("Toggling row:", rowId, "Current expandedRows:", prev);
-      return prev.includes(rowId)
+    setExpandedRows((prev) =>
+      prev.includes(rowId)
         ? prev.filter((id) => id !== rowId)
-        : [...prev, rowId];
-    });
+        : [...prev, rowId]
+    );
   }, []);
 
   const handleSelect = useCallback((id) => {
@@ -313,12 +274,55 @@ function VendorInvoice() {
   }, []);
 
   const handleCreateVendorInvoice = useCallback(() => {
-    const selectedJobs = tableData
-      .filter((row) => row.selected)
-      .map((row) => row.fullJob);
-    console.log("Creating vendor invoice for:", selectedJobs);
-    toast.success("Vendor invoice creation initiated (check console)");
-  }, [tableData]);
+    if (selectedRows.length === 0) {
+      toast.error("Please select at least one job work");
+      return;
+    }
+    if (!formik.values.store || !formik.values.vendor) {
+      toast.error("Please select both a store and a vendor");
+      return;
+    }
+    setShowModal(true);
+  }, [selectedRows, formik.values]);
+
+  const handleModalSubmit = useCallback(
+    async (invoiceData) => {
+      try {
+        setLoading(true);
+        const selectedJobs = tableData
+          .filter((row) => row.selected)
+          .map((row) => row._id);
+        const payload = {
+          store: formik.values.store?.value || "",
+          vendor: formik.values.vendor?.value || "",
+          invoiceNumber: invoiceData.invoiceNumber,
+          invoiceDate: invoiceData.invoiceDate.toISOString().split("T")[0],
+          jobWork: selectedJobs,
+        };
+
+        if (!payload.store || !payload.vendor) {
+          toast.error("Please select both a store and a vendor");
+          return;
+        }
+
+        const response = await vendorInvoiceService.createVendorInvoice(
+          payload
+        );
+        if (response.success) {
+          toast.success("Vendor invoice created successfully");
+          setShowModal(false);
+          formik.handleSubmit(); // Refresh the table
+        } else {
+          toast.error(response.message || "Failed to create vendor invoice");
+        }
+      } catch (error) {
+        toast.error(error.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [formik, tableData]
+  );
 
   const columns = useMemo(
     () => [
@@ -333,16 +337,6 @@ function VendorInvoice() {
             className="fs-5"
           />
         ),
-      },
-      {
-        accessorKey: "invoiceNumber",
-        header: "Invoice Number",
-        cell: ({ getValue }) => <div>{getValue()}</div>,
-      },
-      {
-        accessorKey: "invoiceDate",
-        header: "Invoice Date",
-        cell: ({ getValue }) => <div>{getValue()}</div>,
       },
       {
         accessorKey: "customerName",
@@ -386,7 +380,7 @@ function VendorInvoice() {
 
   const renderTableContent = useMemo(
     () => () => {
-      if (loading || !dataLoaded) {
+      if (loading) {
         return (
           <div
             className="d-flex justify-content-center align-items-center"
@@ -432,6 +426,7 @@ function VendorInvoice() {
               {table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
                   <tr>
+                    {console.log("row<<<", row.original)}
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="py-3 px-4">
                         {flexRender(
@@ -456,14 +451,6 @@ function VendorInvoice() {
                     <tr>
                       <td colSpan={7} className="p-0">
                         <div className="table-responsive">
-                          {console.log(
-                            "Rendering expanded row for ID:",
-                            row.original._id,
-                            "ExpandedRows:",
-                            expandedRows,
-                            "FullJob:",
-                            row.original.fullJob
-                          )}
                           <table className="table mb-0 table-bordered">
                             <thead className="table-secondary small">
                               <tr>
@@ -621,30 +608,40 @@ function VendorInvoice() {
               <div className="col-md-6">
                 <div className="row g-3">
                   <div className="col-6">
-                    <label className="form-label fw-bold">Stores</label>
+                    <label className="form-label fw-bold">Store</label>
                     <Select
                       options={storeOptions}
-                      value={formik.values.stores}
+                      value={formik.values.store}
                       onChange={(selected) =>
-                        formik.setFieldValue("stores", selected || [])
+                        formik.setFieldValue("store", selected)
                       }
-                      isMulti
+                      onBlur={() => formik.setFieldTouched("store", true)}
                       classNamePrefix="react-select"
-                      placeholder="Select stores..."
+                      placeholder="Select store..."
                     />
+                    {formik.touched.store && formik.errors.store ? (
+                      <div className="text-danger small">
+                        {formik.errors.store}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="col-6">
-                    <label className="form-label fw-bold">Vendors</label>
+                    <label className="form-label fw-bold">Vendor</label>
                     <Select
                       options={vendorOptions}
-                      value={formik.values.vendors}
+                      value={formik.values.vendor}
                       onChange={(selected) =>
-                        formik.setFieldValue("vendors", selected || [])
+                        formik.setFieldValue("vendor", selected)
                       }
-                      isMulti
+                      onBlur={() => formik.setFieldTouched("vendor", true)}
                       classNamePrefix="react-select"
-                      placeholder="Select vendors..."
+                      placeholder="Select vendor..."
                     />
+                    {formik.touched.vendor && formik.errors.vendor ? (
+                      <div className="text-danger small">
+                        {formik.errors.vendor}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -659,7 +656,7 @@ function VendorInvoice() {
           {selectedRows.length > 0 && (
             <div className="mt-4">
               <Button
-                variant="success"
+                variant="primary"
                 onClick={handleCreateVendorInvoice}
                 disabled={loading}
               >
@@ -669,6 +666,13 @@ function VendorInvoice() {
           )}
 
           <div className="table-responsive mt-4">{renderTableContent()}</div>
+
+          <VendorInvoiceModal
+            show={showModal}
+            onHide={() => setShowModal(false)}
+            onSubmit={handleModalSubmit}
+            loading={loading}
+          />
         </Card.Body>
       </Card>
     </div>
