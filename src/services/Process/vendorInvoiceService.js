@@ -57,10 +57,10 @@ export const vendorInvoiceService = {
         filters.limit
       );
       const payload = {
-        vendors: filters.vendors,
-        stores: filters.stores,
-        startDate: filters.startDate.toISOString().split("T")[0],
-        endDate: filters.endDate.toISOString().split("T")[0],
+        vendor: filters.vendors,
+        store: filters.stores,
+        startDate: filters?.startDate?.toISOString().split("T")[0],
+        endDate: filters?.endDate?.toISOString().split("T")[0],
         page: filters.page,
         limit: filters.limit,
       };

@@ -51,10 +51,6 @@ function VendorInvoice() {
       search: "",
     },
     validationSchema: Yup.object({
-      startDate: Yup.date().required("Start date is required"),
-      endDate: Yup.date()
-        .required("End date is required")
-        .min(Yup.ref("startDate"), "End date must be after start date"),
       store: Yup.object().nullable().required("Store is required"),
       vendor: Yup.object().nullable().required("Vendor is required"),
     }),
@@ -155,10 +151,10 @@ function VendorInvoice() {
             .filter(Boolean)
         );
         setPagination({
-          totalDocs: response.data.data.total || 0,
+          totalDocs: response.data.data.totalRecords || 0,
           limit: response.data.data.limit || 50,
           page: response.data.data.page || 1,
-          totalPages: response.data.data.pages || 0,
+          totalPages: response.data.data.totalPages || 0,
           hasPrevPage: (response.data.data.page || 1) > 1,
           hasNextPage:
             (response.data.data.page || 1) < (response.data.data.pages || 0),
@@ -222,15 +218,15 @@ function VendorInvoice() {
     (page) => {
       if (page) {
         const newFilters = {
-          stores: formik.values.store ? [formik.values.store.value] : [],
-          vendors: formik.values.vendor ? [formik.values.vendor.value] : [],
+          store: formik.values.store ? [formik.values.store.value] : [],
+          vendor: formik.values.vendor ? [formik.values.vendor.value] : [],
           startDate: formik.values.startDate,
           endDate: formik.values.endDate,
           search: formik.values.search,
           page,
           limit: 50,
         };
-        if (!newFilters.stores.length || !newFilters.vendors.length) {
+        if (!newFilters.store.length || !newFilters.vendor.length) {
           toast.error("Please select both a store and a vendor");
           return;
         }

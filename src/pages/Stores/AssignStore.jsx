@@ -66,7 +66,6 @@ const AssignStore = () => {
         }
 
         toast.success(response?.data.message);
-        setSelectedStore(null); // Reset to no selection after submit
       }
     } catch (error) {
       console.log("err", error);
