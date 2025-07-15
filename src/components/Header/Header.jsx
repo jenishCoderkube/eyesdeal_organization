@@ -145,6 +145,11 @@ const menuItems = [
     icon: "bi bi-collection-play",
     link: "/re-call",
   },
+  {
+    label: "Packages Offer",
+    icon: "bi bi-cash-stack",
+    link: "/packages-offer",
+  },
   // {
   //   label: "New Sale",
   //   icon: "bi bi-cash-stack", // You can adjust the icon as needed

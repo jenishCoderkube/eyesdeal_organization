@@ -67,6 +67,7 @@ import RecallReportCom from "../pages/Recall/RecallReportCom";
 import RecallReport from "../pages/Reports/RecallReport";
 import EditSale from "../pages/Process/EditSale";
 import VendorInvoice from "../pages/Process/VendorInvoice";
+import PackagesOffers from "../pages/Packages/PackagesOffers";
 
 const routes = [
   {
@@ -697,6 +698,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <RecallReport />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "Packages Offer",
+    path: "/packages-offer",
+    element: (
+      <PrivateRoute>
+        <PackagesOffers />
       </PrivateRoute>
     ),
   },

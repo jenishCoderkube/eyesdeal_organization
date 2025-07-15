@@ -4,7 +4,7 @@ import RecallReportForm from "../../components/Reports/RecallReport/RecallReport
 const RecallReport = () => {
   return (
     <div>
-        <RecallReportForm />
+      <RecallReportForm />
     </div>
   );
 };
