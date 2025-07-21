@@ -6,10 +6,13 @@ import {
 } from "@tanstack/react-table";
 import { packageService } from "../../services/packageService";
 import productViewService from "../../services/Products/productViewService";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
 import Select from "react-select";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
+import AsyncSelect from "react-select/async";
+import debounce from "lodash.debounce";
+import { AsyncPaginate } from "react-select-async-paginate";
 
 const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
   const [packageName, setPackageName] = useState(
@@ -20,6 +23,7 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
   );
   const [isBogo, setIsBogo] = useState(initialData?.isBogo || false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
     setPackageName(initialData?.packageName || "");
@@ -42,6 +46,57 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
     setSubmitting(false);
   };
 
+  // AsyncPaginate loadOptions for infinite scroll
+  const loadProductOptions = async (inputValue, loadedOptions, { page }) => {
+    setLoadingProducts(true);
+    try {
+      // Only pass limit if not searching
+      const isSearching = !!inputValue;
+      const limit = isSearching ? undefined : 1000;
+      const res = await productViewService.getProducts(
+        "product",
+        isSearching ? { search: inputValue } : {},
+        page || 1,
+        limit
+      );
+      const docs = res.data?.docs || res.data || [];
+      const options = docs.map((p) => ({
+        value: p._id,
+        label: `${p.displayName} (${p.modelNumber || ""} ${
+          p.colorNumber || ""
+        })`,
+      }));
+      const hasMore =
+        !isSearching &&
+        (res.other?.hasNextPage || res.other?.page < res.other?.totalPages);
+      return {
+        options,
+        hasMore,
+        additional: {
+          page: (page || 1) + 1,
+        },
+      };
+    } catch (e) {
+      return {
+        options: [],
+        hasMore: false,
+        additional: {
+          page: (page || 1) + 1,
+        },
+      };
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  // Map selectedProducts to option objects for AsyncPaginate
+  const selectedProductOptions = products
+    .filter((p) => selectedProducts.includes(p._id))
+    .map((p) => ({
+      value: p._id,
+      label: `${p.displayName} (${p.modelNumber} ${p.colorNumber})`,
+    }));
+
   return (
     <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
@@ -62,20 +117,30 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Products</Form.Label>
-            <Select
+            <AsyncPaginate
               isMulti
-              options={products.map((p) => ({
-                value: p._id,
-                label: `${p.displayName} (${p.modelNumber} ${p.colorNumber})`,
-              }))}
-              value={products
-                .filter((p) => selectedProducts.includes(p._id))
-                .map((p) => ({
-                  value: p._id,
-                  label: `${p.displayName} (${p.modelNumber} ${p.colorNumber})`,
-                }))}
-              onChange={(opts) => setSelectedProducts(opts.map((o) => o.value))}
+              cacheOptions
+              defaultOptions
+              value={selectedProductOptions}
+              loadOptions={loadProductOptions}
+              onChange={(opts) =>
+                setSelectedProducts((opts || []).map((o) => o.value))
+              }
               classNamePrefix="react-select"
+              placeholder="Search and select products..."
+              additional={{ page: 1 }}
+              isLoading={loadingProducts}
+              loadingMessage={() => (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    style={{ marginRight: 6 }}
+                  />
+                  Loading products...
+                </span>
+              )}
             />
           </Form.Group>
           <Form.Group className="mb-3" controlId="isBogoCheckbox">
@@ -149,7 +214,7 @@ const PackagesOffers = () => {
 
   // Fetch products (eyeGlasses)
   const fetchProducts = async () => {
-    const res = await productViewService.getProducts("eyeGlasses", {}, 1, 1000);
+    const res = await productViewService.getProducts("product", {}, 1, 1000);
     if (res.success) {
       setProducts(res.data || []);
     } else {
