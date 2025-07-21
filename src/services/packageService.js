@@ -56,4 +56,21 @@ export const packageService = {
       };
     }
   },
+
+  // Delete a package by ID
+  deletePackage: async (id) => {
+    try {
+      const response = await api.delete(`${PACKAGE_ENDPOINT}/${id}`);
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error deleting package",
+      };
+    }
+  },
 };

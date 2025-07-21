@@ -9,6 +9,7 @@ import productViewService from "../../services/Products/productViewService";
 import { Modal, Button, Form } from "react-bootstrap";
 import { toast } from "react-toastify";
 import Select from "react-select";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
 
 const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
   const [packageName, setPackageName] = useState(
@@ -110,6 +111,9 @@ const PackagesOffers = () => {
     prevPage: null,
     nextPage: null,
   });
+  // Delete modal state
+  const [deleteModalShow, setDeleteModalShow] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Fetch packages
   const fetchPackages = async (page = 1, limit = 10) => {
@@ -201,32 +205,64 @@ const PackagesOffers = () => {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
-          <span
-            style={{ cursor: "pointer", color: "#007bff" }}
-            title="Edit"
-            onClick={() => {
-              setEditData(row.original);
-              setModalShow(true);
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="blue"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              viewBox="0 0 24 24"
+          <span style={{ display: "flex", gap: 12 }}>
+            <span
+              style={{ cursor: "pointer", color: "#007bff" }}
+              title="Edit"
+              onClick={() => {
+                setEditData(row.original);
+                setModalShow(true);
+              }}
             >
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-            </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="blue"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                viewBox="0 0 24 24"
+              >
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+            </span>
+            <span
+              style={{
+                cursor: loading ? "not-allowed" : "pointer",
+                color: "#dc3545",
+                opacity: loading ? 0.5 : 1,
+              }}
+              title="Delete"
+              onClick={() => {
+                if (loading) return;
+                setDeleteTarget(row.original);
+                setDeleteModalShow(true);
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="red"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                viewBox="0 0 24 24"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </span>
           </span>
         ),
       },
     ],
-    [pagination.page, pagination.limit]
+    [pagination.page, pagination.limit, loading]
   );
 
   const table = useReactTable({
@@ -514,6 +550,31 @@ const PackagesOffers = () => {
         onSubmit={handleModalSubmit}
         products={products}
         initialData={editData}
+      />
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        show={deleteModalShow}
+        onHide={() => {
+          setDeleteModalShow(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setLoading(true);
+          const res = await packageService.deletePackage(deleteTarget._id);
+          setLoading(false);
+          setDeleteModalShow(false);
+          setDeleteTarget(null);
+          if (res.success) {
+            toast.success(res.message || "Package deleted successfully");
+            fetchPackages(pagination.page, pagination.limit);
+          } else {
+            toast.error(res.message || "Failed to delete package");
+          }
+        }}
+        message={`Are you sure you want to delete the package "${
+          deleteTarget?.packageName || ""
+        }"?`}
       />
     </div>
   );
