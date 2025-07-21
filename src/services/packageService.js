@@ -3,13 +3,16 @@ import api from "./api";
 const PACKAGE_ENDPOINT = "/package";
 
 export const packageService = {
-  // Get all packages
-  getPackages: async () => {
+  // Get all packages (with pagination)
+  getPackages: async (page = 1, limit = 10) => {
     try {
-      const response = await api.get(PACKAGE_ENDPOINT);
+      const response = await api.get(
+        `${PACKAGE_ENDPOINT}?page=${page}&limit=${limit}`
+      );
+      // The actual data is in response.data.message
       return {
         success: response.data.success,
-        data: response.data.message.data,
+        data: response.data.message,
         message: response.data.message,
       };
     } catch (error) {

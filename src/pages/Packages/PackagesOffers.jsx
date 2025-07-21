@@ -17,6 +17,7 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
   const [selectedProducts, setSelectedProducts] = useState(
     initialData?.products?.map((p) => (typeof p === "string" ? p : p._id)) || []
   );
+  const [isBogo, setIsBogo] = useState(initialData?.isBogo || false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
       initialData?.products?.map((p) => (typeof p === "string" ? p : p._id)) ||
         []
     );
+    setIsBogo(initialData?.isBogo || false);
   }, [initialData, show]);
 
   const handleSubmit = async (e) => {
@@ -33,6 +35,7 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
     await onSubmit({
       packageName,
       products: selectedProducts,
+      isBogo,
       _id: initialData?._id,
     });
     setSubmitting(false);
@@ -74,6 +77,14 @@ const PackageModal = ({ show, onHide, onSubmit, products, initialData }) => {
               classNamePrefix="react-select"
             />
           </Form.Group>
+          <Form.Group className="mb-3" controlId="isBogoCheckbox">
+            <Form.Check
+              type="checkbox"
+              label="Is Bogo"
+              checked={isBogo}
+              onChange={(e) => setIsBogo(e.target.checked)}
+            />
+          </Form.Group>
           <Button type="submit" variant="primary" disabled={submitting}>
             {submitting ? "Saving..." : initialData ? "Update" : "Create"}
           </Button>
@@ -89,15 +100,45 @@ const PackagesOffers = () => {
   const [loading, setLoading] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [pagination, setPagination] = useState({
+    totalDocs: 0,
+    limit: 10,
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+    prevPage: null,
+    nextPage: null,
+  });
 
   // Fetch packages
-  const fetchPackages = async () => {
+  const fetchPackages = async (page = 1, limit = 10) => {
     setLoading(true);
-    const res = await packageService.getPackages();
+    const res = await packageService.getPackages(page, limit);
     if (res.success) {
-      setPackages(res.data || []);
+      // API returns { data, totalRecords, totalCount, currentPage, limit, totalPages }
+      setPackages(res.data?.data || []);
+      setPagination({
+        totalDocs: res.data?.totalRecords || 0,
+        limit: res.data?.limit || limit,
+        page: res.data?.currentPage || page,
+        totalPages: res.data?.totalPages || 1,
+        hasPrevPage: (res.data?.currentPage || page) > 1,
+        hasNextPage:
+          (res.data?.currentPage || page) < (res.data?.totalPages || 1),
+        prevPage:
+          (res.data?.currentPage || page) > 1
+            ? (res.data?.currentPage || page) - 1
+            : null,
+        nextPage:
+          (res.data?.currentPage || page) < (res.data?.totalPages || 1)
+            ? (res.data?.currentPage || page) + 1
+            : null,
+      });
     } else {
       toast.error(res.message);
+      setPackages([]);
+      setPagination((prev) => ({ ...prev, totalDocs: 0 }));
     }
     setLoading(false);
   };
@@ -113,9 +154,17 @@ const PackagesOffers = () => {
   };
 
   useEffect(() => {
-    fetchPackages();
+    fetchPackages(1, pagination.limit);
     fetchProducts();
+    // eslint-disable-next-line
   }, []);
+
+  // Pagination controls
+  const handlePageChange = (page) => {
+    if (page && page !== pagination.page) {
+      fetchPackages(page, pagination.limit);
+    }
+  };
 
   // Table columns
   const columns = useMemo(
@@ -123,7 +172,8 @@ const PackagesOffers = () => {
       {
         accessorKey: "srno",
         header: "SRNO",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          (pagination.page - 1) * pagination.limit + row.index + 1,
       },
       {
         accessorKey: "packageName",
@@ -176,13 +226,20 @@ const PackagesOffers = () => {
         ),
       },
     ],
-    []
+    [pagination.page, pagination.limit]
   );
 
   const table = useReactTable({
     data: packages,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit,
+      },
+    },
   });
 
   // Handle create/edit submit
@@ -300,23 +357,34 @@ const PackagesOffers = () => {
         _id: data._id,
         packageName: data.packageName,
         products: updatedProducts,
+        isBogo: data.isBogo,
       });
     } else {
       // Create: products is array of IDs
       res = await packageService.createPackage({
         packageName: data.packageName,
         products: data.products,
+        isBogo: data.isBogo,
       });
     }
     if (res.success) {
       toast.success(res.message || "Success");
       setModalShow(false);
       setEditData(null);
-      fetchPackages();
+      fetchPackages(pagination.page, pagination.limit);
     } else {
       toast.error(res.message);
     }
   };
+
+  // Pagination range
+  const startRow =
+    pagination.totalDocs > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
+  const endRow =
+    pagination.totalDocs > 0
+      ? Math.min(pagination.page * pagination.limit, pagination.totalDocs)
+      : 0;
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="container-fluid max-width-90 mx-auto mt-5">
@@ -380,6 +448,63 @@ const PackagesOffers = () => {
           </tbody>
         </table>
       </div>
+      {/* Pagination Controls */}
+      {totalRows > 0 && (
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+          <div className="text-muted mb-3 mb-md-0">
+            Showing <strong>{startRow}</strong> to <strong>{endRow}</strong> of{" "}
+            <strong>{totalRows}</strong> results
+          </div>
+          <nav>
+            <ul className="pagination mb-0">
+              <li
+                className={`page-item ${
+                  !pagination.hasPrevPage ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => handlePageChange(pagination.prevPage)}
+                  disabled={!pagination.hasPrevPage}
+                >
+                  Previous
+                </button>
+              </li>
+              {Array.from(
+                { length: pagination.totalPages },
+                (_, i) => i + 1
+              ).map((pageNum) => (
+                <li
+                  key={pageNum}
+                  className={`page-item ${
+                    pagination.page === pageNum ? "active" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                </li>
+              ))}
+              <li
+                className={`page-item ${
+                  !pagination.hasNextPage ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => handlePageChange(pagination.nextPage)}
+                  disabled={!pagination.hasNextPage}
+                >
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      )}
       <PackageModal
         show={modalShow}
         onHide={() => {
