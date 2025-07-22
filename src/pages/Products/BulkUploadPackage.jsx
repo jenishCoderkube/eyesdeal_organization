@@ -1,53 +1,68 @@
+// Route: /products/bulk-upload-package
 import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
-import { storeService } from "../../services/storeService";
-import { productOptions } from "../../utils/constants";
-import { uploadBulkProducts } from "../../services/bulkUpload";
+import { packageService } from "../../services/packageService";
 import { toast } from "react-toastify";
 
-// Validation schema
 const validationSchema = Yup.object({
+  package: Yup.object().required("Package is required"),
   bulkUploadFile: Yup.mixed().required("File is required"),
 });
 
-// Dummy store options (replace with actual data if available)
-// const storeOptions = [
-//   { value: "eyesdeal_adajan", label: "EYESDEAL ADAJAN" },
-//   { value: "eyesdeal_udhana", label: "EYESDEAL UDHANA" },
-//   { value: "safent", label: "SAFENT" },
-//   { value: "closed_nikol", label: "CLOSED NIKOL" },
-//   { value: "elite_hospital", label: "ELITE HOSPITAL" },
-// ];
+const BulkUploadPackage = () => {
+  const [packageOptions, setPackageOptions] = useState([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
 
-const BulkUploadProduct = () => {
-  // Formik setup
+  useEffect(() => {
+    const fetchPackages = async () => {
+      setLoadingPackages(true);
+      const res = await packageService.getPackages(1, 1000);
+      setLoadingPackages(false);
+      if (res.success) {
+        const options = (res.data?.data || res.data || []).map((pkg) => ({
+          value: pkg._id,
+          label: pkg.packageName,
+        }));
+        setPackageOptions(options);
+      } else {
+        toast.error(res.message || "Failed to fetch packages");
+      }
+    };
+    fetchPackages();
+  }, []);
+
   const formik = useFormik({
     initialValues: {
-      store: null,
+      package: null,
       bulkUploadFile: null,
     },
     validationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await uploadBulkProducts(
-          values.bulkUploadFile,
-          values.store.value
+        const res = await packageService.bulkUploadPackages(
+          values.package.value,
+          values.bulkUploadFile
         );
-        if (response?.success) {
-          toast.success(response.message);
-          formik.resetForm();
+        if (res.success) {
+          toast.success(res.message || "Bulk upload successful");
+          resetForm();
+        } else {
+          toast.error(res.message || "Bulk upload failed");
         }
       } catch (error) {
-        console.log("err", error);
+        toast.error("Bulk upload failed");
       }
     },
   });
 
-  // Handle file input change
   const handleFileChange = (event) => {
     const file = event.currentTarget.files[0];
+    if (file && file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+      toast.error("Please upload a CSV file.");
+      return;
+    }
     formik.setFieldValue("bulkUploadFile", file);
   };
 
@@ -55,7 +70,7 @@ const BulkUploadProduct = () => {
     <div className="container-fluid px-4 py-8">
       <div className="row justify-content-center">
         <div className="col-12 col-lg-10">
-          <h1 className="h2 text-dark fw-bold my-4">Bulk Upload Product</h1>
+          <h1 className="h2 text-dark fw-bold my-4">Bulk Upload Package</h1>
           <div className="card shadow-sm mb-4 border-0">
             <div className="card-body p-4">
               <form
@@ -64,25 +79,33 @@ const BulkUploadProduct = () => {
                 style={{ gap: "1rem" }}
               >
                 <div className="w-100">
-                  <label className="form-label font-weight-500" htmlFor="store">
-                    Product Type
+                  <label
+                    className="form-label font-weight-500"
+                    htmlFor="package"
+                  >
+                    Package
                   </label>
                   <Select
-                    options={productOptions}
-                    value={formik.values.store}
-                    onChange={(option) => formik.setFieldValue("store", option)}
-                    onBlur={() => formik.setFieldTouched("store", true)}
-                    placeholder="Select..."
+                    options={packageOptions}
+                    value={formik.values.package}
+                    onChange={(option) =>
+                      formik.setFieldValue("package", option)
+                    }
+                    onBlur={() => formik.setFieldTouched("package", true)}
+                    placeholder={
+                      loadingPackages ? "Loading packages..." : "Select..."
+                    }
+                    isLoading={loadingPackages}
                     classNamePrefix="react-select"
                     className={
-                      formik.touched.store && formik.errors.store
+                      formik.touched.package && formik.errors.package
                         ? "is-invalid"
                         : ""
                     }
                   />
-                  {formik.touched.store && formik.errors.store && (
+                  {formik.touched.package && formik.errors.package && (
                     <div className="text-danger mt-1">
-                      {formik.errors.store}
+                      {formik.errors.package}
                     </div>
                   )}
                 </div>
@@ -96,6 +119,7 @@ const BulkUploadProduct = () => {
                   <input
                     type="file"
                     name="bulkUploadFile"
+                    accept=".csv"
                     className={`form-control ${
                       formik.touched.bulkUploadFile &&
                       formik.errors.bulkUploadFile
@@ -130,4 +154,4 @@ const BulkUploadProduct = () => {
   );
 };
 
-export default BulkUploadProduct;
+export default BulkUploadPackage;

@@ -73,4 +73,27 @@ export const packageService = {
       };
     }
   },
+
+  // Bulk upload packages
+  bulkUploadPackages: async (packageId, bulkUploadFile) => {
+    try {
+      const formData = new FormData();
+      formData.append("packageId", packageId);
+      formData.append("bulkUploadFile", bulkUploadFile);
+      const response = await api.post("/package/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error bulk uploading packages",
+      };
+    }
+  },
 };

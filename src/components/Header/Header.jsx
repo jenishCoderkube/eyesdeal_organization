@@ -90,6 +90,7 @@ const menuItems = [
     submenu: [
       { label: "Add Product", link: "/products/add" },
       { label: "Bulk Upload", link: "/products/bulk-upload" },
+      { label: "Bulk Upload Package", link: "/products/bulk-upload-package" },
       { label: "Bulk Edit Product", link: "/products/bulk-edit" },
       { label: "View Products", link: "/products/view" },
       { label: "View Product Attributes", link: "/products/view-attributes" },

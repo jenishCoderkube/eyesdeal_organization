@@ -68,6 +68,7 @@ import RecallReport from "../pages/Reports/RecallReport";
 import EditSale from "../pages/Process/EditSale";
 import VendorInvoice from "../pages/Process/VendorInvoice";
 import PackagesOffers from "../pages/Packages/PackagesOffers";
+import BulkUploadPackage from "../pages/Products/BulkUploadPackage";
 
 const routes = [
   {
@@ -518,6 +519,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <BulkUploadProduct />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BulkUploadPackage",
+    path: "/products/bulk-upload-package",
+    element: (
+      <PrivateRoute>
+        <BulkUploadPackage />
       </PrivateRoute>
     ),
   },
