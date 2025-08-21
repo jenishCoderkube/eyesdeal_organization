@@ -93,7 +93,6 @@ const SaleForm = () => {
         }
       } catch (error) {
         console.error("Error fetching stores:", error);
-        toast.error("Failed to fetch stores");
       }
     };
 
@@ -189,7 +188,7 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error fetching customers:", error);
-      toast.error("Failed to fetch customers");
+
       return [];
     }
   };
@@ -204,7 +203,6 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error fetching customer sales:", error);
-      toast.error("Failed to fetch customer sales");
     }
   };
 
@@ -218,7 +216,6 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error fetching sales reps:", error);
-      toast.error("Failed to fetch sales reps");
     }
   };
 
@@ -312,7 +309,6 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error checking coupon:", error);
-      toast.error("Failed to check coupon");
     }
   };
 
@@ -353,7 +349,6 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error uploading document:", error);
-      toast.error("Error uploading document.");
     }
   };
 
@@ -397,7 +392,6 @@ const SaleForm = () => {
     e.preventDefault();
 
     if (!InventoryPairs || InventoryPairs.length === 0) {
-      toast.error("Please add at least one product to proceed.");
       return;
     }
 
@@ -422,6 +416,8 @@ const SaleForm = () => {
             formattedRecall = date.toISOString();
           }
         }
+        console.log("formattedRecall", formattedRecall);
+
         const payload = {
           store: defaultStore?.value || "",
           customerId: formData.customerId,
@@ -451,7 +447,7 @@ const SaleForm = () => {
           note: formData.note,
           powerAtTime: {},
           attachments: documentsFiles,
-          recall: formattedRecall,
+          recall: "12-07-2001",
         };
 
         console.log("Submitting form with payload:", payload);
@@ -464,7 +460,6 @@ const SaleForm = () => {
         }
       } catch (error) {
         console.error("Error submitting form:", error);
-        toast.error("Failed to submit sale");
       }
     }
   };

@@ -680,7 +680,7 @@ const InventoryForm = () => {
                 {inventory?.docs?.length > 0 ? (
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td>{item.product?.oldBarcode}</td>
+                      <td>{item.product?.newBarcode}</td>
                       <td>
                         <img
                           src={item.photo}

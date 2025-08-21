@@ -69,7 +69,7 @@ const StoreInventoryForm = () => {
     }),
     onSubmit: (values) => {
       getInventoryData(values);
-      getInventoryGetCount(values)
+      getInventoryGetCount(values);
     },
   });
 
@@ -648,7 +648,7 @@ const StoreInventoryForm = () => {
           <button
             type="submit"
             className="btn custom-button-bgcolor"
-          // disabled={formik.isSubmitting}
+            // disabled={formik.isSubmitting}
           >
             Submit
           </button>
@@ -715,8 +715,12 @@ const StoreInventoryForm = () => {
                 {inventory?.docs?.length > 0 ? (
                   inventory.docs.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td style={{ minWidth: "80px" }}>{item.product?.oldBarcode}</td>
-                      <td style={{ minWidth: "100px" }}>{moment(item.product?.createdAt).format("YYYY-MM-DD")}</td>
+                      <td style={{ minWidth: "80px" }}>
+                        {item.product?.newBarcode}
+                      </td>
+                      <td style={{ minWidth: "100px" }}>
+                        {moment(item.product?.createdAt).format("YYYY-MM-DD")}
+                      </td>
                       <td>
                         <img
                           style={{ minWidth: "100px" }}
@@ -726,10 +730,12 @@ const StoreInventoryForm = () => {
                           height="40"
                         />
                       </td>
-                      <td style={{minWidth:"200px"}}>{item.store?.name}</td>
-                      <td style={{minWidth:"210px"}}>{item.product?.sku}</td>
+                      <td style={{ minWidth: "200px" }}>{item.store?.name}</td>
+                      <td style={{ minWidth: "210px" }}>{item.product?.sku}</td>
 
-                      <td style={{minWidth:"200px"}}>{item.product?.brand?.name} {item.product?.__t}</td>
+                      <td style={{ minWidth: "200px" }}>
+                        {item.product?.brand?.name} {item.product?.__t}
+                      </td>
                       <td>{item.product?.MRP}</td>
                       <td>{item.quantity}</td>
                       <td>{item.sold}</td>

@@ -137,7 +137,7 @@ const ViewProductTable = () => {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "barcode",
+        accessorKey: "barcode.newBarcode",
         header: "Barcode",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },

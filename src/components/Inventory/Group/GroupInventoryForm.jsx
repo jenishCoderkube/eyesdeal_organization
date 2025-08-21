@@ -302,7 +302,7 @@ const GroupInventoryForm = () => {
             <table className="table table-sm">
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
-                  <th className="custom-perchase-th">Barcode</th>
+                  <th className="custom-perchase-th">Brand</th>
 
                   <th className="custom-perchase-th">Model</th>
 

@@ -76,14 +76,13 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
   ];
 
   const powerOptions = Array.from({ length: 193 }, (_, i) => {
-    const value = (i - 96) * 0.25; // -24.00 to +24.00 with 0.25 interval
+    const value = (i - 96) * 0.25; // Generates -24.00 to +24.00 with 0.25 intervals
     const formattedValue = value.toFixed(2);
     return {
       value: formattedValue,
       label: value >= 0 ? `+${formattedValue}` : formattedValue,
     };
   });
-
   const cylOptions = Array.from({ length: 65 }, (_, i) => {
     const value = (i - 32) * 0.25; // -8.00 to +8.00 with 0.25 interval
     const formattedValue = value.toFixed(2);
@@ -186,8 +185,12 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     setErrors({});
     onHide();
   };
-
+  const formatToLabel = (num) => {
+    const formatted = num.toFixed(2);
+    return num >= 0 ? `+${formatted}` : formatted;
+  };
   const handleInputChange = (field, value, nestedPath = null) => {
+    // Update the primary field
     if (nestedPath) {
       const [side, subField] = nestedPath.split(".");
       if (subField === "distance" || subField === "near") {
@@ -197,7 +200,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
             ...prev[side],
             [subField]: {
               ...prev[side][subField],
-              [field]: value, // Keep empty value as is
+              [field]: value,
             },
           },
         }));
@@ -206,7 +209,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
           ...prev,
           [side]: {
             ...prev[side],
-            [field]: value, // Keep empty value as is
+            [field]: value,
           },
         }));
       }
@@ -215,6 +218,123 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     }
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
+    }
+
+    // Auto-fill/copy logic
+    if (nestedPath) {
+      const side = nestedPath.split(".")[0]; // "right" or "left"
+      const section = nestedPath.split(".")[1]; // "distance" or "near"
+
+      // Logic for distance changes (SPH, ADD, CYL, AXIS, VS)
+      if (section === "distance") {
+        if (field === "sph" || field === "add") {
+          // Update near SPH based on distance SPH and ADD
+          const distSph =
+            field === "sph" ? value : formData[side].distance.sph || "";
+          const addVal =
+            field === "add" ? value : formData[side].distance.add || "";
+
+          if (distSph !== "" && addVal !== "") {
+            const distNum = parseFloat(distSph);
+            const addNum = parseFloat(addVal);
+            if (!isNaN(distNum) && !isNaN(addNum)) {
+              const nearNum = distNum + addNum;
+              const nearLabel = formatToLabel(nearNum);
+              setFormData((prev) => ({
+                ...prev,
+                [side]: {
+                  ...prev[side],
+                  near: {
+                    ...prev[side].near,
+                    sph: nearLabel,
+                  },
+                },
+              }));
+            }
+          } else if (field === "sph" && distSph !== "") {
+            // If ADD is empty, copy distance SPH to near SPH
+            setFormData((prev) => ({
+              ...prev,
+              [side]: {
+                ...prev[side],
+                near: {
+                  ...prev[side].near,
+                  sph: distSph,
+                },
+              },
+            }));
+          }
+        }
+
+        // Copy CYL from distance to near
+        if (field === "cyl") {
+          setFormData((prev) => ({
+            ...prev,
+            [side]: {
+              ...prev[side],
+              near: {
+                ...prev[side].near,
+                cyl: value,
+              },
+            },
+          }));
+        }
+
+        // Copy AXIS from distance to near
+        if (field === "axis") {
+          setFormData((prev) => ({
+            ...prev,
+            [side]: {
+              ...prev[side],
+              near: {
+                ...prev[side].near,
+                axis: value,
+              },
+            },
+          }));
+        }
+
+        // Transform VS from "6/X" to "N/X" for near
+        if (field === "vs" && value.startsWith("6/")) {
+          const numberPart = value.split("/")[1];
+          const nearVs = `N/${numberPart}`;
+          if (nearVisionOptions.some((opt) => opt.value === nearVs)) {
+            setFormData((prev) => ({
+              ...prev,
+              [side]: {
+                ...prev[side],
+                near: {
+                  ...prev[side].near,
+                  vs: nearVs,
+                },
+              },
+            }));
+          }
+        }
+      }
+
+      // Logic for near SPH changes: Update distance SPH
+      if (section === "near" && field === "sph") {
+        const addVal = formData[side].distance.add || "";
+        if (addVal !== "") {
+          const nearNum = parseFloat(value);
+          const addNum = parseFloat(addVal);
+          if (!isNaN(nearNum) && !isNaN(addNum)) {
+            const distNum = nearNum - addNum;
+            const distLabel = formatToLabel(distNum);
+            setFormData((prev) => ({
+              ...prev,
+              [side]: {
+                ...prev[side],
+                distance: {
+                  ...prev[side].distance,
+                  sph: distLabel,
+                },
+              },
+            }));
+          }
+        }
+      }
     }
   };
 
@@ -343,6 +463,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                   )
                                 }
                                 placeholder="Select..."
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 106;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                               />
                             </td>
                             <td>
@@ -359,6 +493,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "right.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 33;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -411,6 +559,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "right.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 0;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -429,6 +591,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 106;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -446,6 +622,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 33;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -463,6 +653,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 0;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -497,6 +701,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.distance"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 0;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -517,6 +735,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "right.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 106;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -534,6 +766,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "right.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 33;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -587,6 +833,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 106;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -604,6 +864,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 33;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -621,6 +895,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 0;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>
@@ -638,6 +926,20 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                                     "left.near"
                                   )
                                 }
+                                onMenuOpen={() => {
+                                  setTimeout(() => {
+                                    const menuList = document.querySelector(
+                                      ".react-select__menu-list"
+                                    );
+                                    if (menuList) {
+                                      const zeroIndex = 0;
+                                      const optionHeight = 35;
+                                      menuList.scrollTop =
+                                        zeroIndex * optionHeight;
+                                    }
+                                  }, 0);
+                                }}
+                                classNamePrefix="react-select"
                                 placeholder="Select..."
                               />
                             </td>

@@ -110,17 +110,32 @@ function transformPayload(frontendPayload) {
   };
 }
 
-const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
+const UserDetailForm = ({
+  onAddSpecs,
+  onAddContacts,
+  onEditSpecs,
+  onEditContacts,
+}) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { prescriptions } = useSelector((state) => state.specsPower);
   const [referenceOptions, setReferenceOptions] = useState([]);
-
+  const [geoLocation, setGeoLocation] = useState({
+    country: "",
+    state: "",
+    city: "",
+  });
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState(null);
   const handleEdit = (prescription) => {
-    onEditSpecs(prescription);
+    console.log("Editing prescription:", prescription);
+    if (prescription.type === "contacts") {
+      onEditContacts(prescription);
+    } else {
+      onEditSpecs(prescription);
+    }
   };
-
   const handleDelete = (id) => {
     dispatch(deletePrescription(id));
   };
@@ -157,7 +172,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
       if (response.success) {
         resetForm();
         toast.success(response.message);
-        // navigate("/");
+        navigate(-1); // Navigate back to the previous page
       } else {
         toast.error(response.message);
       }
@@ -197,11 +212,9 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
       console.error("Error fetching marketing references:", error);
     }
   };
-
   useEffect(() => {
     getMarketingReferences();
   }, []);
-
   return (
     <Formik
       initialValues={initialValues}
@@ -209,6 +222,44 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
       onSubmit={handleSubmit}
     >
       {({ values, errors, touched, setFieldValue, isSubmitting }) => {
+        // Move fetchLocationFromCoords inside Formik render prop
+        const fetchLocationFromCoords = async (latitude, longitude) => {
+          try {
+            setGeoLoading(true);
+            setGeoError(null);
+
+            // Use OpenStreetMap Nominatim API for reverse geocoding
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+            );
+            const data = await response.json();
+
+            if (data && data.address) {
+              const { country, state, city, town, village } = data.address;
+              const resolvedCity = city || town || village || "";
+
+              // Update state with geolocation data
+              setGeoLocation({
+                country: country || "",
+                state: state || "",
+                city: resolvedCity || "",
+              });
+
+              // Update Formik fields
+              setFieldValue("country", country || "");
+              setFieldValue("state", state || "");
+              setFieldValue("city", resolvedCity || "");
+            } else {
+              setGeoError("Unable to fetch location details.");
+            }
+          } catch (error) {
+            setGeoError("Error fetching location: " + error.message);
+            console.error("Geocoding error:", error);
+          } finally {
+            setGeoLoading(false);
+          }
+        };
+
         // Fetch states based on selected country
         const stateOptions = values.country
           ? State.getStatesOfCountry(
@@ -243,6 +294,27 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                 label: city.name,
               }))
             : [];
+
+        // Move geolocation logic inside Formik to access setFieldValue
+        useEffect(() => {
+          if (navigator.geolocation) {
+            setGeoLoading(true);
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const { latitude, longitude } = position.coords;
+                fetchLocationFromCoords(latitude, longitude);
+              },
+              (error) => {
+                setGeoError("Geolocation error: " + error.message);
+                setGeoLoading(false);
+                console.error("Geolocation error:", error);
+              },
+              { timeout: 10000, enableHighAccuracy: true }
+            );
+          } else {
+            setGeoError("Geolocation is not supported by this browser.");
+          }
+        }, [setFieldValue]); // Add setFieldValue to dependencies
 
         return (
           <Form>
@@ -351,10 +423,15 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                 </div>
               </div>
               <div className="row g-3 mt-3">
+                {geoLoading && (
+                  <div className="text-muted">Fetching location...</div>
+                )}
+                {geoError && <div className="text-danger">{geoError}</div>}
                 <div className="col-12 col-md-6 col-lg-3">
                   <label className="form-label font-weight-500">
                     Country <span className="text-danger">*</span>
                   </label>
+
                   <Select
                     options={countryOptions}
                     value={countryOptions.find(
@@ -366,6 +443,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                       setFieldValue("city", "");
                     }}
                     placeholder="Select Country..."
+                    isDisabled={geoLoading} // Disable while fetching
                   />
                   {touched.country && errors.country && (
                     <div className="invalid-feedback-color mt-1">
@@ -387,7 +465,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                       setFieldValue("city", "");
                     }}
                     placeholder="Select State..."
-                    isDisabled={!values.country}
+                    isDisabled={!values.country || geoLoading} // Disable while fetching
                   />
                   {touched.state && errors.state && (
                     <div className="invalid-feedback-color mt-1">
@@ -395,6 +473,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                     </div>
                   )}
                 </div>
+
                 <div className="col-12 col-md-6 col-lg-3">
                   <label className="form-label font-weight-500">
                     City <span className="text-danger">*</span>
@@ -404,7 +483,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                     value={cityOptions.find((opt) => opt.value === values.city)}
                     onChange={(option) => setFieldValue("city", option.value)}
                     placeholder="Select City..."
-                    isDisabled={!values.state}
+                    isDisabled={!values.state || geoLoading} // Disable while fetching
                   />
                   {touched.city && errors.city && (
                     <div className="invalid-feedback-color mt-1">
@@ -412,6 +491,7 @@ const UserDetailForm = ({ onAddSpecs, onAddContacts, onEditSpecs }) => {
                     </div>
                   )}
                 </div>
+
                 <div className="col-12 col-md-6 col-lg-3">
                   <label className="form-label font-weight-500">Pincode</label>
                   <Field

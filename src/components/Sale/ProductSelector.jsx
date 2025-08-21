@@ -1,7 +1,7 @@
-import React from 'react';
-import AsyncSelect from 'react-select/async';
-import { saleService } from '../../services/saleService';
-import { v4 as uuidv4 } from 'uuid';
+import React from "react";
+import AsyncSelect from "react-select/async";
+import { saleService } from "../../services/saleService";
+import { v4 as uuidv4 } from "uuid";
 
 export default function ProductSelector({
   showProductSelector,
@@ -23,7 +23,7 @@ export default function ProductSelector({
         console.error(response.data.message);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     }
   };
 
@@ -36,37 +36,57 @@ export default function ProductSelector({
           return newItem.product;
         }
         if (response.data.data.docs.length === 0) {
-          alert('Product out of stock');
+          alert("Product out of stock");
         }
       } else {
         console.error(response.data.message);
       }
     } catch (error) {
-      console.error('Error fetching inventory:', error);
+      console.error("Error fetching inventory:", error);
     }
   };
 
   const handleAddProduct = async (selectedProduct) => {
     if (!selectedProduct || !defaultStore || !defaultStore.value) {
-      console.warn('Selected product or default store is missing.');
+      console.warn("Selected product or default store is missing.");
       return;
     }
 
-    const productDetails = await fetchInventoryDetails(selectedProduct.value, defaultStore.value);
+    const productDetails = await fetchInventoryDetails(
+      selectedProduct.value,
+      defaultStore.value
+    );
     if (productDetails) {
       const pairId = uuidv4();
-      setInventoryData((prev) => [
-        ...prev,
-        { type: 'product', data: productDetails, pairId },
-        { type: 'lensDropdown', pairId },
-      ]);
+      if (productDetails.__t === "eyeGlasses") {
+        // Frame: Add product and lens dropdown
+        setInventoryData((prev) => [
+          ...prev,
+          { type: "product", data: productDetails, pairId },
+          { type: "lensDropdown", pairId },
+        ]);
 
-      const newPair = {
-        pairId,
-        product: productDetails,
-        lens: null,
-      };
-      setInventoryPairs((prev) => [...prev, newPair]);
+        const newPair = {
+          pairId,
+          product: productDetails,
+          lens: null, // Note: Original had lens: null, but for frames, it's right/left
+        };
+        setInventoryPairs((prev) => [...prev, newPair]);
+      } else if (productDetails.__t === "contactLens") {
+        // Lens: Auto-add right and left lenses with same data, no frame, no dropdown
+        setInventoryData((prev) => [
+          ...prev,
+          { type: "rightLens", data: productDetails, pairId, quantity: 1 },
+          { type: "leftLens", data: productDetails, pairId, quantity: 1 },
+        ]);
+
+        const newPair = {
+          pairId,
+          rightLens: productDetails,
+          leftLens: productDetails,
+        };
+        setInventoryPairs((prev) => [...prev, newPair]);
+      }
     }
     setShowProductSelector(false);
   };
