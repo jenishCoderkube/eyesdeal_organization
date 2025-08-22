@@ -114,7 +114,7 @@ const StoreInventoryForm = () => {
 
   useEffect(() => {
     getStores();
-    getCategoryData();
+    getBrand();
     getFrameTypeData();
     getFrameShapeData();
     getMaterialData();
@@ -139,12 +139,12 @@ const StoreInventoryForm = () => {
     }
   };
 
-  const getCategoryData = async () => {
+  const getBrand = async () => {
     setLoading(true);
     try {
-      const response = await inventoryService.getCategory();
+      const response = await inventoryService.getBrand();
       if (response.success) {
-        setCategoryData(response?.data?.data?.docs);
+        setCategoryData(response?.data?.data);
       } else {
         toast.error(response.message);
       }
