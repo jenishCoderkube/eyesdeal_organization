@@ -52,6 +52,7 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
+  isB2B: Yup.boolean(),
   photos: Yup.array().of(Yup.string()).nullable(),
   frameColor: Yup.string(),
   frameCollection: Yup.string(),
@@ -68,7 +69,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
   // State for toggle sections
   const [showSections, setShowSections] = useState({
     seoDetails: false,
-    productDetails: false,
+    productDetails: true,
   });
 
   // State for modal and selected image
@@ -191,6 +192,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
+    isB2B: initialData?.isB2B ?? false,
     photos: Array.isArray(initialData?.photos)
       ? initialData.photos
       : initialData?.photos
@@ -257,6 +259,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
         inclusiveTax: values.inclusiveTax ?? true,
         activeInERP: values.activeInERP ?? true,
         activeInWebsite: values.activeInWebsite ?? false,
+        isB2B: values.isB2B ?? false,
         photos: Array.isArray(values.photos)
           ? values.photos
           : values.photos
@@ -721,7 +724,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
                     className="form-label font-weight-600 text-sm font-medium"
                     htmlFor="prescriptionType"
                   >
-                    Prescription Type
+                    Prescription Type <span className="text-danger">*</span>
                   </label>
                   <Select
                     name="prescriptionType"
@@ -1055,6 +1058,16 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
                 />
                 <label className="form-check-label font-weight-600">
                   Active Website
+                </label>
+              </div>
+              <div className="form-check">
+                <Field
+                  type="checkbox"
+                  name="isB2B"
+                  className="form-check-input p-2"
+                />
+                <label className="form-check-label font-weight-600">
+                  IS B2B
                 </label>
               </div>
             </div>

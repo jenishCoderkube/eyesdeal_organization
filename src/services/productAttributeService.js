@@ -32,25 +32,25 @@ export const productAttributeService = {
   getAttributes: async (attributeType) => {
     try {
       console.log("Getting attributes for type:", attributeType);
-      
+
       // Convert to uppercase and remove any spaces or non-alphanumeric characters
       // This handles camelCase like frameStyle -> FRAMESTYLE
       const endpointKey = attributeType.toUpperCase().replace(/[^A-Z0-9]/g, '');
       console.log("Endpoint key:", endpointKey);
-      
+
       const endpoint = ATTRIBUTE_ENDPOINTS[endpointKey];
       if (!endpoint) {
         console.error(`Invalid attribute type: ${attributeType}, endpoint key: ${endpointKey}`);
         console.error("Available endpoint keys:", Object.keys(ATTRIBUTE_ENDPOINTS));
         throw new Error(`Invalid attribute type: ${attributeType}`);
       }
-      
+
       const apiUrl = endpoint;
       console.log(`Fetching ${attributeType} from endpoint:`, apiUrl);
-      
+
       const response = await api.get(apiUrl);
       console.log(`${attributeType} response:`, response);
-      
+
       // Handle nested response structure
       if (response.data && response.data.success) {
         return {
@@ -58,7 +58,7 @@ export const productAttributeService = {
           data: response.data.data,
         };
       }
-      
+
       return {
         success: false,
         message: response.data?.message || `Error fetching ${attributeType}`,
@@ -71,35 +71,27 @@ export const productAttributeService = {
       };
     }
   },
-  
-  // Update an attribute
-  updateAttribute: async (attributeType, id, data) => {
+  addAttribute: async (attributeType, data) => {
     try {
       // Convert to uppercase and remove any spaces or non-alphanumeric characters
       const endpointKey = attributeType.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      console.log(`Update operation - Attribute type: ${attributeType}, Endpoint key: ${endpointKey}`);
-      
+      console.log(`Add operation - Attribute type: ${attributeType}, Endpoint key: ${endpointKey}`);
+
       const endpoint = ATTRIBUTE_ENDPOINTS[endpointKey];
       if (!endpoint) {
         console.error(`Invalid attribute type: ${attributeType}, endpoint key: ${endpointKey}`);
         console.error("Available endpoint keys:", Object.keys(ATTRIBUTE_ENDPOINTS));
         throw new Error(`Invalid attribute type: ${attributeType}`);
       }
-      
-      // Prepare the update data - use the full object with _id for PATCH
-      const updateData = {
-        _id: id,
-        ...data
-      };
-      
+
       const apiUrl = endpoint;
-      console.log(`Updating ${attributeType} with URL: ${apiUrl}`);
-      console.log(`Update data:`, updateData);
-      
-      // Use PATCH instead of PUT as per the curl example
-      const response = await api.patch(apiUrl, updateData);
-      console.log(`Update response for ${attributeType}:`, response.data);
-      
+      console.log(`Adding ${attributeType} with URL: ${apiUrl}`);
+      console.log(`Add data:`, data);
+
+      // Use POST for creating new resources
+      const response = await api.post(apiUrl, data);
+      console.log(`Add response for ${attributeType}:`, response.data);
+
       // Handle nested response structure
       if (response.data && response.data.success) {
         return {
@@ -107,7 +99,55 @@ export const productAttributeService = {
           data: response.data.data,
         };
       }
-      
+
+      return {
+        success: false,
+        message: response.data?.message || `Error adding ${attributeType}`,
+      };
+    } catch (error) {
+      console.error(`Error adding ${attributeType}:`, error);
+      return {
+        success: false,
+        message: error.response?.data?.message || `Error adding ${attributeType}`,
+      };
+    }
+  },
+  // Update an attribute
+  updateAttribute: async (attributeType, id, data) => {
+    try {
+      // Convert to uppercase and remove any spaces or non-alphanumeric characters
+      const endpointKey = attributeType.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      console.log(`Update operation - Attribute type: ${attributeType}, Endpoint key: ${endpointKey}`);
+
+      const endpoint = ATTRIBUTE_ENDPOINTS[endpointKey];
+      if (!endpoint) {
+        console.error(`Invalid attribute type: ${attributeType}, endpoint key: ${endpointKey}`);
+        console.error("Available endpoint keys:", Object.keys(ATTRIBUTE_ENDPOINTS));
+        throw new Error(`Invalid attribute type: ${attributeType}`);
+      }
+
+      // Prepare the update data - use the full object with _id for PATCH
+      const updateData = {
+        _id: id,
+        ...data
+      };
+
+      const apiUrl = endpoint;
+      console.log(`Updating ${attributeType} with URL: ${apiUrl}`);
+      console.log(`Update data:`, updateData);
+
+      // Use PATCH instead of PUT as per the curl example
+      const response = await api.patch(apiUrl, updateData);
+      console.log(`Update response for ${attributeType}:`, response.data);
+
+      // Handle nested response structure
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          data: response.data.data,
+        };
+      }
+
       return {
         success: false,
         message: response.data?.message || `Error updating ${attributeType}`,
@@ -120,14 +160,14 @@ export const productAttributeService = {
       };
     }
   },
-  
+
   // Delete an attribute
   deleteAttribute: async (attributeType, id) => {
     try {
       // Convert to uppercase and remove any spaces or non-alphanumeric characters
       const endpointKey = attributeType.toUpperCase().replace(/[^A-Z0-9]/g, '');
       console.log(`Delete operation - Attribute type: ${attributeType}, Endpoint key: ${endpointKey}`);
-      
+
       const endpoint = ATTRIBUTE_ENDPOINTS[endpointKey];
       if (!endpoint) {
         console.error(`Invalid attribute type: ${attributeType}, endpoint key: ${endpointKey}`);
@@ -137,7 +177,7 @@ export const productAttributeService = {
           message: `Invalid attribute type: ${attributeType}`
         };
       }
-      
+
       if (!id) {
         console.error(`Delete operation failed: No ID provided for ${attributeType}`);
         return {
@@ -145,21 +185,21 @@ export const productAttributeService = {
           message: `No ID provided for deletion`
         };
       }
-      
+
       const deleteUrl = `${endpoint}/${id}`;
       console.log(`Deleting ${attributeType} with id: ${id}`);
       console.log(`Full delete URL: ${api.defaults.baseURL}${deleteUrl}`);
-      
+
       // Use DELETE with ID in the path, matching the curl example
       const response = await api.delete(deleteUrl);
       console.log(`Delete response for ${attributeType}:`, response.data);
-      
+
       // Handle nested response structure
       if (response.data && response.data.success) {
         // Always force a new fetch of the data to ensure it's fresh
         console.log(`Forcing refresh for ${attributeType} after deletion`);
         const refreshedData = await productAttributeService.getAttributes(attributeType);
-        
+
         return {
           success: true,
           data: response.data.data, // The deleted item details
@@ -168,7 +208,7 @@ export const productAttributeService = {
           updatedList: refreshedData.success ? refreshedData.data : []
         };
       }
-      
+
       return {
         success: false,
         message: response.data?.message || `Error deleting ${attributeType}`,
@@ -176,7 +216,7 @@ export const productAttributeService = {
     } catch (error) {
       console.error(`Error deleting ${attributeType}:`, error);
       let errorMessage = `Error deleting ${attributeType}`;
-      
+
       // Check for different types of errors
       if (error.response) {
         // The request was made and the server responded with a status code
@@ -193,7 +233,7 @@ export const productAttributeService = {
         console.error(`Error setting up request:`, error.message);
         errorMessage = `Request error: ${error.message}`;
       }
-      
+
       return {
         success: false,
         message: errorMessage,
@@ -201,7 +241,7 @@ export const productAttributeService = {
       };
     }
   },
-  
+
   // Refresh attribute data after operations
   refreshAttributeData: async (attributeType) => {
     try {

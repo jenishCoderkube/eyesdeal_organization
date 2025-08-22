@@ -67,6 +67,7 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
+  isB2B: Yup.boolean(),
   photos: Yup.array().of(Yup.string()).nullable(),
 });
 
@@ -195,6 +196,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
+    isB2B: initialData?.isB2B ?? false,
     photos: Array.isArray(initialData?.photos)
       ? initialData.photos
       : initialData?.photos
@@ -247,6 +249,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
         inclusiveTax: values.inclusiveTax ?? true,
         activeInERP: values.activeInERP ?? true,
         activeInWebsite: values.activeInWebsite ?? false,
+        isB2B: values.isB2B ?? false,
         photos: Array.isArray(values.photos)
           ? values.photos
           : values.photos
@@ -774,6 +777,16 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
                 />
                 <label className="form-check-label font-weight-600">
                   Active Website
+                </label>
+              </div>
+              <div className="form-check">
+                <Field
+                  type="checkbox"
+                  name="isB2B"
+                  className="form-check-input p-2"
+                />
+                <label className="form-check-label font-weight-600">
+                  IS B2B
                 </label>
               </div>
             </div>

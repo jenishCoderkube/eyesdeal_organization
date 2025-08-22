@@ -45,6 +45,7 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
+  isB2B: Yup.boolean(),
   photos: Yup.string(),
 });
 
@@ -174,6 +175,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
       initialData?.activeInWebsite !== undefined
         ? initialData.activeInWebsite
         : false,
+    isB2B: initialData?.isB2B ?? false,
     photos: Array.isArray(initialData?.photos)
       ? initialData.photos.length > 0
         ? initialData.photos[0]
@@ -219,6 +221,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
           ? [values.photos]
           : [],
         activeInWebsite: values.activeInWebsite ?? false,
+        isB2B: values.isB2B ?? false,
         activeInERP: values.activeInERP ?? true,
         __t: "accessories",
         storeFront: initialData?.storeFront || [],
@@ -687,6 +690,16 @@ function Accessories({ initialData = {}, mode = "add" }) {
                 />
                 <label className="form-check-label font-weight-600">
                   Active Website
+                </label>
+              </div>
+              <div className="form-check">
+                <Field
+                  type="checkbox"
+                  name="isB2B"
+                  className="form-check-input p-2"
+                />
+                <label className="form-check-label font-weight-600">
+                  IS B2B
                 </label>
               </div>
             </div>

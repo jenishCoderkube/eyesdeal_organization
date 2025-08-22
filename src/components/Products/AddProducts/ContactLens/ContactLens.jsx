@@ -57,6 +57,7 @@ const validationSchema = Yup.object({
   inclusiveTax: Yup.boolean(),
   activeInERP: Yup.boolean(),
   activeInWebsite: Yup.boolean(),
+  isB2B: Yup.boolean(),
   photos: Yup.array().of(Yup.string()).nullable(), // Changed to array to match payload
 });
 
@@ -129,17 +130,142 @@ function ContactLens({ initialData = {}, mode = "add" }) {
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState([]);
+  // Fetch attribute data from API
   useEffect(() => {
-    if (mode !== "add" && initialData?.photos) {
-      setSelectedImage(
-        Array.isArray(initialData.photos)
-          ? initialData.photos
-          : [initialData.photos]
-      );
-    } else {
-      setSelectedImage([]);
-    }
-  }, [mode, initialData]);
+    const fetchAttributes = async () => {
+      try {
+        setLoading(true);
+        const attributeData = {};
+
+        // Fetch brand
+        const brandResponse = await productAttributeService.getAttributes(
+          "brand"
+        );
+        console.log("Brand API response:", brandResponse);
+        if (brandResponse.success) {
+          attributeData.brands = brandResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
+        } else {
+          console.error("Brand API failed:", brandResponse.message);
+          toast.error("Failed to fetch brands");
+        }
+
+        // Fetch unit
+        const unitResponse = await productAttributeService.getAttributes(
+          "unit"
+        );
+        console.log("Unit API response:", unitResponse);
+        if (unitResponse.success) {
+          attributeData.units = unitResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
+        } else {
+          console.error("Unit API failed:", unitResponse.message);
+          toast.error("Failed to fetch units");
+        }
+
+        // Fetch disposability
+        const disposabilityResponse =
+          await productAttributeService.getAttributes("disposability");
+        console.log("Disposability API response:", disposabilityResponse);
+        if (disposabilityResponse.success) {
+          attributeData.disposability = disposabilityResponse.data.map(
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
+          );
+        } else {
+          console.error(
+            "Disposability API failed:",
+            disposabilityResponse.message
+          );
+          toast.error("Failed to fetch disposability options");
+        }
+
+        // Fetch lensTechnology
+        const lensTechnologyResponse =
+          await productAttributeService.getAttributes("lensTechnology");
+        console.log("Lens Technology API response:", lensTechnologyResponse);
+        if (lensTechnologyResponse.success) {
+          attributeData.lensTechnology = lensTechnologyResponse.data.map(
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
+          );
+        } else {
+          console.error(
+            "Lens Technology API failed:",
+            lensTechnologyResponse.message
+          );
+          toast.error("Failed to fetch lens technology options");
+        }
+
+        // Fetch prescriptionType
+        const prescriptionTypeResponse =
+          await productAttributeService.getAttributes("prescriptionType");
+        console.log(
+          "Prescription Type API response:",
+          prescriptionTypeResponse
+        );
+        if (prescriptionTypeResponse.success) {
+          attributeData.prescriptionType = prescriptionTypeResponse.data.map(
+            (item) => ({
+              value: item._id,
+              label: item.name,
+            })
+          );
+        } else {
+          console.error(
+            "Prescription Type API failed:",
+            prescriptionTypeResponse.message
+          );
+          toast.error("Failed to fetch prescription type options");
+        }
+
+        // Fetch features
+        const featuresResponse = await productAttributeService.getAttributes(
+          "feature"
+        ); // Changed to "feature"
+        console.log("Features API response:", featuresResponse);
+        if (featuresResponse.success && featuresResponse.data?.length > 0) {
+          attributeData.features = featuresResponse.data.map((item) => ({
+            value: item._id,
+            label: item.name,
+          }));
+        } else {
+          console.error(
+            "Features API failed or returned empty data:",
+            featuresResponse.message || "No data"
+          );
+          toast.error("Failed to fetch features");
+        }
+
+        // Update state
+        setAttributeOptions({
+          brands: attributeData.brands || brandOptions,
+          units: attributeData.units || unitOptions,
+          disposability: attributeData.disposability || disposabilityOptions,
+          lensTechnology: attributeData.lensTechnology || lensTechnologyOptions,
+          prescriptionType:
+            attributeData.prescriptionType || prescriptionTypeOptions,
+          features: attributeData.features || [],
+        });
+        console.log("Updated attributeOptions:", attributeData);
+      } catch (error) {
+        console.error("Error fetching attributes:", error);
+        toast.error("Failed to load form options");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
 
   // State for loading
   const [loading, setLoading] = useState(false);
@@ -289,6 +415,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     inclusiveTax: initialData?.inclusiveTax ?? true,
     activeInERP: initialData?.activeInERP ?? true,
     activeInWebsite: initialData?.activeInWebsite ?? false,
+    isB2B: initialData?.isB2B ?? false,
     photos: Array.isArray(initialData?.photos)
       ? initialData.photos
       : initialData?.photos
@@ -355,6 +482,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
         inclusiveTax: values.inclusiveTax ?? true,
         activeInERP: values.activeInERP ?? true,
         activeInWebsite: values.activeInWebsite ?? false,
+        isB2B: values.isB2B ?? false,
         photos: Array.isArray(values.photos)
           ? values.photos
           : values.photos
@@ -1118,6 +1246,16 @@ function ContactLens({ initialData = {}, mode = "add" }) {
                 />
                 <label className="form-check-label font-weight-600">
                   Active Website
+                </label>
+              </div>
+              <div className="form-check">
+                <Field
+                  type="checkbox"
+                  name="isB2B"
+                  className="form-check-input p-2"
+                />
+                <label className="form-check-label font-weight-600">
+                  IS B2B
                 </label>
               </div>
             </div>

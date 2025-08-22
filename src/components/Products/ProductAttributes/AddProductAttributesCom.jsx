@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { Container, Row, Col, Nav, Form, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { productAttributeService } from "../../../services/productAttributeService";
+import { toast } from "react-toastify";
 
 function AddProductAttributes() {
   const [activeTab, setActiveTab] = useState("brand");
   const [formData, setFormData] = useState({
     name: "",
-    value: "",
   });
 
+  const [loading, setLoading] = useState(false);
   // Attribute list for tabs
   const attributes = [
     "brand",
@@ -32,7 +34,7 @@ function AddProductAttributes() {
   // Handle tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setFormData({ name: "", value: "" }); // Reset form on tab change
+    setFormData({ name: "", value: "" });
   };
 
   // Handle input change
@@ -42,8 +44,9 @@ function AddProductAttributes() {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!formData.name.trim()) {
       alert("Name is required");
       return;
@@ -55,8 +58,26 @@ function AddProductAttributes() {
       alert("Value is required for this attribute");
       return;
     }
-    console.log("Submitted data:", { type: activeTab, ...formData });
-    setFormData({ name: "", value: "" }); // Reset form after submission
+
+    setLoading(true);
+    try {
+      // 👇 Call API
+      const response = await productAttributeService.addAttribute(
+        activeTab,
+        formData
+      );
+
+      if (response.success) {
+        toast.success(`${activeTab} added successfully`);
+        setFormData({ name: "" }); // Reset form after submission
+      } else {
+        toast.error(response.message || `Failed to add ${activeTab}`);
+      }
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
