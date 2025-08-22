@@ -211,6 +211,8 @@ const SaleForm = () => {
         const response = await saleService.listUsers(customerId);
         if (response.success && response.data.data.docs.length > 0) {
           const customer = response.data.data.docs[0];
+          console.log("customer", customer);
+
           setFormData({
             ...formData,
             customerId: customer._id || "",
@@ -245,6 +247,8 @@ const SaleForm = () => {
   };
 
   const transformInventoryPairs = (inventoryPairs) => {
+    console.log("jenish<<", inventoryPairs);
+
     return inventoryPairs.map((pair) => ({
       product: pair.product
         ? {
@@ -275,7 +279,10 @@ const SaleForm = () => {
         : null,
       rightLens: pair.rightLens
         ? {
-            product: pair.rightLens._id || pair.rightLens.item,
+            product:
+              pair.rightLens._id ||
+              pair.rightLens.item ||
+              pair.rightLens.product,
             quantity: pair.rightLens.quantity || 1,
             barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
             stock: pair.rightLens.stock || 0,
@@ -305,7 +312,8 @@ const SaleForm = () => {
         : null,
       leftLens: pair.leftLens
         ? {
-            product: pair.leftLens._id || pair.leftLens.item,
+            product:
+              pair.leftLens._id || pair.leftLens.item || pair.leftLens.product,
             quantity: pair.leftLens.quantity || 1,
             barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
             stock: pair.leftLens.stock || 0,

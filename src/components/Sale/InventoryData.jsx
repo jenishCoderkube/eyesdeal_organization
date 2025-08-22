@@ -129,7 +129,6 @@ export default function InventoryData({
       srp,
       taxRate
     );
-    console.log("selectedLens", selectedLens);
 
     const lensData = {
       product: selectedLens.data._id,
@@ -150,7 +149,7 @@ export default function InventoryData({
       unit: selectedLens.data.unit?.name || "Pieces",
       incentiveAmount: selectedLens.data.incentiveAmount || 0,
     };
-
+    console.log("selectedLens", selectedLens, lensData);
     setLensSelections((prev) => ({
       ...prev,
       [groupId]: {

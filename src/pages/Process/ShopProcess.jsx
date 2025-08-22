@@ -294,6 +294,7 @@ function ShopProcess() {
               fullSale: sale,
             }))
           );
+
           setProductTableData(
             sales.flatMap((sale, index) =>
               (sale.orders || [sale]).map((order, idx) => ({
@@ -301,7 +302,9 @@ function ShopProcess() {
                 saleId: sale._id,
                 selected: false,
                 productSku: order.product?.sku || "N/A",
-                lensSku: order.lens?.sku || "N/A",
+                leftLens: order?.leftLens?.sku || "N/A",
+                rightLens: order?.rightLens?.sku || "N/A",
+
                 status: order.status || "N/A",
                 barcode: order.product?.barcode || order.lens?.barcode || "N/A",
                 srp:
@@ -384,6 +387,8 @@ function ShopProcess() {
                   selected: false,
                   productSku: product.sku || "N/A",
                   lensSku: product.sku || "N/A",
+                  lensSku: product.sku || "N/A",
+
                   barcode: product.barcode || "N/A",
                   srp: product.purchaseRate || product.totalAmount || 0,
                   orderId: product._id || doc._id,
@@ -1341,7 +1346,11 @@ function ShopProcess() {
                           textDecoration: "underline",
                         }}
                         className="common-text-color"
-                        onClick={() => openBillModal(row)}
+                        onClick={() => {
+                          console.log("Opening bill for row:", row);
+
+                          openBillModal(row);
+                        }}
                       >
                         {row.billNumber}
                       </td>
@@ -1523,16 +1532,18 @@ function ShopProcess() {
                               {activeStatus !== "Returned" ? (
                                 <>
                                   <th className="py-3 px-2">Select</th>
-                                  <th className="py-3 px-2">Product Sku</th>
-                                  <th className="py-3 px-2">Lens Sku</th>
+                                  <th className="py-3 px-2">Product SKU</th>
+                                  <th className="py-3 px-2">Right Lens SKU</th>
+
+                                  <th className="py-3 px-2">Left Lens SKU</th>
                                   <th className="py-3 px-2">Status</th>
                                 </>
                               ) : (
                                 <>
                                   <th className="py-3 px-2">Sr No.</th>
-                                  <th className="py-3 px-2">Product Sku</th>
+                                  <th className="py-3 px-2">Product SKU</th>
                                   <th className="py-3 px-2">Barcode</th>
-                                  <th className="py-3 px-2">Srp</th>
+                                  <th className="py-3 px-2">SRP</th>
                                 </>
                               )}
                             </tr>
@@ -1543,51 +1554,68 @@ function ShopProcess() {
                               : salesReturnProductData
                             )
                               .filter((prod) => prod.saleId === row._id)
-                              .map((prodRow, prodIndex) => (
-                                <tr key={prodRow.id}>
-                                  {activeStatus !== "Returned" ? (
-                                    <>
-                                      <td>
-                                        <input
-                                          type="checkbox"
-                                          style={{
-                                            width: "20px",
-                                            height: "20px",
-                                          }}
-                                          checked={prodRow.selected}
-                                          onChange={() =>
-                                            handleSelect(prodRow.id)
-                                          }
-                                        />
-                                      </td>
-                                      <td style={{ minWidth: "110px" }}>
-                                        {prodRow.productSku}
-                                      </td>
-                                      <td style={{ minWidth: "200px" }}>
-                                        {prodRow.lensSku}
-                                      </td>
-                                      <td style={{ minWidth: "70px" }}>
-                                        {prodRow.status}
-                                      </td>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <td style={{ minWidth: "110px" }}>
-                                        {prodIndex + 1}
-                                      </td>
-                                      <td style={{ minWidth: "110px" }}>
-                                        {prodRow.productSku}
-                                      </td>
-                                      <td style={{ minWidth: "200px" }}>
-                                        {prodRow.barcode}
-                                      </td>
-                                      <td style={{ minWidth: "70px" }}>
-                                        {prodRow.srp}
-                                      </td>
-                                    </>
-                                  )}
-                                </tr>
-                              ))}
+                              .map((prodRow, prodIndex) => {
+                                return (
+                                  <tr key={prodRow.id}>
+                                    {activeStatus !== "Returned" ? (
+                                      <>
+                                        <td>
+                                          <input
+                                            type="checkbox"
+                                            style={{
+                                              width: "20px",
+                                              height: "20px",
+                                            }}
+                                            checked={prodRow.selected}
+                                            onChange={() =>
+                                              handleSelect(prodRow.id)
+                                            }
+                                          />
+                                        </td>
+                                        <td style={{ minWidth: "110px" }}>
+                                          {prodRow.productSku
+                                            ? prodRow.productSku
+                                            : "--"}
+                                        </td>
+                                        <td style={{ minWidth: "110px" }}>
+                                          {prodRow.rightLens
+                                            ? prodRow.rightLens
+                                            : "--"}
+                                        </td>
+                                        <td style={{ minWidth: "200px" }}>
+                                          {prodRow.leftLens
+                                            ? prodRow.leftLens
+                                            : "--"}
+                                        </td>
+                                        <td style={{ minWidth: "70px" }}>
+                                          {prodRow.status}
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td style={{ minWidth: "110px" }}>
+                                          {prodIndex + 1}
+                                        </td>
+                                        <td style={{ minWidth: "110px" }}>
+                                          {prodRow.product
+                                            ? prodRow.product.sku
+                                            : prodRow.rightLens?.sku}
+                                        </td>
+                                        <td style={{ minWidth: "200px" }}>
+                                          {prodRow.product
+                                            ? prodRow.product.barcode
+                                            : prodRow.rightLens?.barcode}
+                                        </td>
+                                        <td style={{ minWidth: "70px" }}>
+                                          {prodRow.product
+                                            ? prodRow.product.srp
+                                            : prodRow.rightLens?.srp}
+                                        </td>
+                                      </>
+                                    )}
+                                  </tr>
+                                );
+                              })}
                           </tbody>
                         </table>
                       </div>

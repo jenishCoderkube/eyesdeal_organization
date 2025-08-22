@@ -7,6 +7,7 @@ import "react-datepicker/dist/react-datepicker.css";
 
 const CustomerNameModal = ({ show, onHide, selectedRow }) => {
   const [activeTab, setActiveTab] = useState("specs");
+  console.log("Selected Row Data:", selectedRow);
 
   // Format date to DD/MM/YYYY
   const formatDate = (isoDate) => {
@@ -117,10 +118,11 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
             <Nav.Item className="me-4">
               <Nav.Link
                 eventKey="specs"
-                className={`pb-3 text-sm font-medium ${activeTab === "specs"
+                className={`pb-3 text-sm font-medium ${
+                  activeTab === "specs"
                     ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
                     : "text-slate-500 hover:text-slate-600"
-                  }`}
+                }`}
                 style={{
                   color: activeTab === "specs" ? "#6366f1" : "black",
                 }}
@@ -132,10 +134,11 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
               <Nav.Link
                 eventKey="contact"
                 // disabled
-                className={`pb-3 text-sm font-medium ${activeTab === "contact"
+                className={`pb-3 text-sm font-medium ${
+                  activeTab === "contact"
                     ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
                     : "text-slate-500 hover:text-slate-600"
-                  }`}
+                }`}
                 style={{
                   color: activeTab === "contact" ? "#6366f1" : "black",
                 }}
