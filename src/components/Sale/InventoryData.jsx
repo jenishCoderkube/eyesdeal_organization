@@ -84,6 +84,7 @@ export default function InventoryData({
       ...prev,
       ...updatedLensSelections,
     }));
+
     setInventoryData(updatedData);
   }, [inventoryData.length, setInventoryData]);
 
@@ -128,23 +129,26 @@ export default function InventoryData({
       srp,
       taxRate
     );
+    console.log("selectedLens", selectedLens);
 
     const lensData = {
-      item: selectedLens.data._id,
-      unit: selectedLens.data.unit?.name || "Pieces",
-      displayName: selectedLens.data.productName || "Lens",
+      product: selectedLens.data._id,
+      quantity: selectedLens.data.quantity || 1,
       barcode: selectedLens.data.oldBarcode,
+      stock: selectedLens.data.stock || 0,
       sku: selectedLens.data.sku,
-      mrp,
-      srp,
-      perPieceDiscount: discount,
+      photos: selectedLens.data.photos || [],
+      mrp: mrp,
+      srp: srp,
       taxRate: `${taxRate} (Inc)`,
-      perPieceTax: taxAmount,
-      perPieceAmount: totalAmount,
+      taxAmount: taxAmount,
+      discount: discount,
+      netAmount: totalAmount,
       inclusiveTax: selectedLens.data.inclusiveTax ?? true,
       manageStock: selectedLens.data.manageStock ?? false,
+      displayName: selectedLens.data.productName || "Lens",
+      unit: selectedLens.data.unit?.name || "Pieces",
       incentiveAmount: selectedLens.data.incentiveAmount || 0,
-      quantity: selectedLens.data.quantity || 1, // Use quantity from data
     };
 
     setLensSelections((prev) => ({

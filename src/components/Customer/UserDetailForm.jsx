@@ -172,7 +172,9 @@ const UserDetailForm = ({
       if (response.success) {
         resetForm();
         toast.success(response.message);
-        navigate(-1); // Navigate back to the previous page
+        navigate("/sale/new", {
+          state: { customerAdded: true, dataCustomer: response?.data?.data },
+        });
       } else {
         toast.error(response.message);
       }

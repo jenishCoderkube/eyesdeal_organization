@@ -29,6 +29,10 @@ function ProductFilterForm({ onSubmit }) {
     ], // Hardcoded as no API provided
     prescriptionTypeOptions: [],
     frameCollectionOptions: [],
+    statusOptions: [
+      { value: "active", label: "Active" },
+      { value: "inactive", label: "Inactive" },
+    ],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -144,6 +148,7 @@ function ProductFilterForm({ onSubmit }) {
         frameSize: "",
         prescriptionType: "",
         frameCollection: "",
+        status: "active",
       }}
       onSubmit={(values) => onSubmit(values)}
     >
@@ -334,6 +339,23 @@ function ProductFilterForm({ onSubmit }) {
                 }
                 value={options.frameCollectionOptions.find(
                   (option) => option.value === values.frameCollection
+                )}
+                placeholder="Select..."
+                classNamePrefix="react-select"
+              />
+            </div>
+            <div>
+              <label className="form-label text-sm font-weight-600">
+                Status
+              </label>
+              <Select
+                name="status"
+                options={options.statusOptions}
+                onChange={(option) =>
+                  setFieldValue("status", option ? option.value : "")
+                }
+                value={options.statusOptions.find(
+                  (option) => option.value === values.status
                 )}
                 placeholder="Select..."
                 classNamePrefix="react-select"

@@ -10,6 +10,7 @@ import { Country, State, City } from "country-state-city";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import axios from "axios"; // For reverse geocoding
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -62,22 +63,13 @@ const genderOptions = [
 
 function AddEmployee() {
   const [stores, setStores] = useState([]);
+  const navigate = useNavigate();
 
   const storeOptions = stores.map((store) => ({
     value: store?._id,
     label: store?.name,
   }));
 
-  useEffect(() => {
-    userService
-      .getStores()
-      .then((res) => {
-        setStores(res?.data?.data);
-      })
-      .catch((e) => console.log("failed to fetch stores: ", e));
-  }, []);
-
-  const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -95,7 +87,7 @@ function AddEmployee() {
       isActive: false,
     },
     validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
         const formattedData = {
           name: values.name,
@@ -117,7 +109,8 @@ function AddEmployee() {
 
         if (response.success) {
           toast.success(response.message);
-          navigate(`/employee/${response.data?.data?._id}`);
+          resetForm(); // Clear all form data
+          // navigate(`/employee/${response.data?.data?._id}`);
         } else {
           toast.error(response.message);
         }
@@ -129,7 +122,83 @@ function AddEmployee() {
     },
   });
 
-  // Fetch countries from country-state-city
+  // Fetch stores
+  useEffect(() => {
+    userService
+      .getStores()
+      .then((res) => {
+        setStores(res?.data?.data);
+      })
+      .catch((e) => console.log("failed to fetch stores: ", e));
+  }, []);
+
+  // Fetch user's location and set country, state, city
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            // Use a reverse geocoding API (e.g., OpenStreetMap's Nominatim)
+            const response = await axios.get(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            const { address } = response.data;
+
+            // Find country
+            const country = Country.getAllCountries().find(
+              (c) => c.name === address.country
+            );
+            if (country) {
+              formik.setFieldValue("country", {
+                value: country.isoCode,
+                label: country.name,
+              });
+
+              // Find state
+              const states = State.getStatesOfCountry(country.isoCode);
+              const state = states.find((s) => s.name === address.state);
+              if (state) {
+                formik.setFieldValue("state", {
+                  value: state.isoCode,
+                  label: state.name,
+                });
+
+                // Find city
+                const cities = City.getCitiesOfState(
+                  country.isoCode,
+                  state.isoCode
+                );
+                const city = cities.find(
+                  (c) =>
+                    c.name === address.city ||
+                    c.name === address.town ||
+                    c.name === address.village
+                );
+                if (city) {
+                  formik.setFieldValue("city", {
+                    value: city.name,
+                    label: city.name,
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch location data:", error);
+            toast.error("Could not detect location automatically.");
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast.error("Location access denied. Please select manually.");
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser.");
+    }
+  }, []);
+
+  // Fetch countries
   const countryOptions = Country.getAllCountries().map((country) => ({
     value: country.isoCode,
     label: country.name,
@@ -173,7 +242,7 @@ function AddEmployee() {
       <div className="mb-4">
         <h1 className="h2 fw-bold text-dark">Add Employee</h1>
       </div>
-      <div className=" p-0 mb-4">
+      <div className="p-0 mb-4">
         <div className="card-body">
           <form
             className="d-flex flex-column gap-3"
@@ -467,7 +536,7 @@ function AddEmployee() {
             {/* Submit Button */}
             <div>
               <button
-                className="btn custom-button-bgcolor "
+                className="btn custom-button-bgcolor"
                 type="submit"
                 disabled={formik.isSubmitting}
               >

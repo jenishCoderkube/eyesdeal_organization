@@ -137,7 +137,7 @@ const productViewService = {
       };
     }
   },
-  getProducts: async (model, filters, page = 1, limit) => {
+  getProducts: async (model, filters = {}, page = 1, limit) => {
     try {
       const baseUrl = `${ENDPOINTS.PRODUCTS(model)}`;
       const queryParams = new URLSearchParams();
@@ -146,17 +146,28 @@ const productViewService = {
       if (page > 1) {
         queryParams.append("page", page);
       }
+
+      // Set activeInWebsite=true by default
+      queryParams.append("activeInWebsite", true);
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value && key !== "model") {
             if (key === "search") {
               queryParams.append("search", value);
+            } else if (key === "status") {
+              // Override default activeInWebsite with the provided status
+              queryParams.set(
+                "activeInWebsite",
+                value === "active" ? true : false
+              );
             } else {
               queryParams.append(`optimize[${key}]`, value);
             }
           }
         });
       }
+
       const url = `${baseUrl}${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;

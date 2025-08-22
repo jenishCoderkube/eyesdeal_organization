@@ -9,6 +9,7 @@ import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { productService } from "../../../../services/productService"; // Import the service
 import { IoClose } from "react-icons/io5";
 import productViewService from "../../../../services/Products/productViewService";
+import { useNavigate } from "react-router-dom";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -53,6 +54,7 @@ const validationSchema = Yup.object({
 
 function Accessories({ initialData = {}, mode = "add" }) {
   // State for loading
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [attributeOptions, setAttributeOptions] = useState({
     brands: [],
@@ -241,7 +243,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
-          console.log("Update response:", response.data);
+          navigate("/products/view"); // Go back to the previous page
         } else {
           toast.error(response.message || "Failed to update product");
         }

@@ -9,6 +9,7 @@ import { productService } from "../../../../services/productService";
 import { defalutImageBasePath, uploadImage } from "../../../../utils/constants";
 import { IoClose } from "react-icons/io5";
 import productViewService from "../../../../services/Products/productViewService";
+import { useNavigate } from "react-router-dom";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -155,6 +156,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
       `Expected model "sunGlasses", but received "${initialData.model}". This data may be intended for another component (e.g., EyeGlasses).`
     );
   }
+  const navigate = useNavigate();
   // State for toggle sections
   const [showSections, setShowSections] = useState({
     seoDetails: false,
@@ -468,6 +470,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
+          navigate("/products/view");
         } else {
           toast.error(response.message || "Failed to update product");
         }

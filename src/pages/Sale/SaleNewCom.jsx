@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AsyncSelect from "react-select/async";
 import DatePicker from "react-datepicker";
 import "../../assets/css/Sale/sale_style.css";
@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 
 const SaleForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const [formData, setFormData] = useState({
@@ -188,7 +189,6 @@ const SaleForm = () => {
       }
     } catch (error) {
       console.error("Error fetching customers:", error);
-
       return [];
     }
   };
@@ -205,7 +205,32 @@ const SaleForm = () => {
       console.error("Error fetching customer sales:", error);
     }
   };
+  useEffect(() => {
+    const fetchCustomerById = async (customerId) => {
+      try {
+        const response = await saleService.listUsers(customerId);
+        if (response.success && response.data.data.docs.length > 0) {
+          const customer = response.data.data.docs[0];
+          setFormData({
+            ...formData,
+            customerId: customer._id || "",
+            customerName: customer.name || "",
+            customerPhone: customer.phone || "",
+            prescriptions: customer.prescriptions || [],
+          });
+          await loadCustomerSalesData(customer._id);
+        } else {
+          console.error("Customer not found:", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching customer by ID:", error);
+      }
+    };
 
+    if (location.state?.customerAdded && location.state?.dataCustomer?._id) {
+      fetchCustomerById(location.state?.dataCustomer?._id);
+    }
+  }, [location.state]);
   const fetchSalesRepData = async (storeId) => {
     try {
       const response = await saleService.getSalesRep(storeId);
@@ -242,7 +267,7 @@ const SaleForm = () => {
             displayName: pair.product.displayName,
             unit: pair.product.unit?.name || pair.product.unit,
             netAmount: pair.product.netAmount || pair.product.sellPrice || 0,
-            inclusiveTax: null,
+            inclusiveTax: pair.product.inclusiveTax ?? true,
             manageStock: pair.product.manageStock,
             resellerPrice: pair.product.resellerPrice || 0,
             incentiveAmount: pair.product.incentiveAmount || 0,
@@ -250,44 +275,60 @@ const SaleForm = () => {
         : null,
       rightLens: pair.rightLens
         ? {
-            product: pair.rightLens.item,
+            product: pair.rightLens._id || pair.rightLens.item,
             quantity: pair.rightLens.quantity || 1,
-            barcode: pair.rightLens.barcode,
+            barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
             stock: pair.rightLens.stock || 0,
             sku: pair.rightLens.sku,
             photos: pair.rightLens.photos || [],
-            mrp: pair.rightLens.mrp,
-            srp: pair.rightLens.srp,
-            taxRate: pair.rightLens.taxRate,
-            taxAmount: pair.rightLens.perPieceTax,
-            discount: pair.rightLens.perPieceDiscount,
-            netAmount: pair.rightLens.perPieceAmount,
-            inclusiveTax: pair.rightLens.inclusiveTax,
-            manageStock: pair.rightLens.manageStock,
-            displayName: pair.rightLens.displayName,
-            unit: pair.rightLens.unit,
-            incentiveAmount: pair.rightLens.incentiveAmount,
+            mrp: pair.rightLens.MRP || pair.rightLens.mrp || 0,
+            srp: pair.rightLens.sellPrice || pair.rightLens.srp || 0,
+            taxRate: pair.rightLens.taxRate || `${pair.rightLens.tax} (Inc)`,
+            taxAmount:
+              pair.rightLens.perPieceTax || pair.rightLens.taxAmount || 0,
+            discount:
+              pair.rightLens.perPieceDiscount || pair.rightLens.discount || 0,
+            netAmount:
+              pair.rightLens.perPieceAmount ||
+              pair.rightLens.netAmount ||
+              pair.rightLens.sellPrice ||
+              0,
+            inclusiveTax: pair.rightLens.inclusiveTax ?? true,
+            manageStock: pair.rightLens.manageStock ?? false,
+            displayName:
+              pair.rightLens.displayName ||
+              pair.rightLens.productName ||
+              "Lens",
+            unit: pair.rightLens.unit?.name || pair.rightLens.unit || "Pieces",
+            incentiveAmount: pair.rightLens.incentiveAmount || 0,
           }
         : null,
       leftLens: pair.leftLens
         ? {
-            product: pair.leftLens.item,
+            product: pair.leftLens._id || pair.leftLens.item,
             quantity: pair.leftLens.quantity || 1,
-            barcode: pair.leftLens.barcode,
+            barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
             stock: pair.leftLens.stock || 0,
             sku: pair.leftLens.sku,
             photos: pair.leftLens.photos || [],
-            mrp: pair.leftLens.mrp,
-            srp: pair.leftLens.srp,
-            taxRate: pair.leftLens.taxRate,
-            taxAmount: pair.leftLens.perPieceTax,
-            discount: pair.leftLens.perPieceDiscount,
-            netAmount: pair.leftLens.perPieceAmount,
-            inclusiveTax: pair.leftLens.inclusiveTax,
-            manageStock: pair.leftLens.manageStock,
-            displayName: pair.leftLens.displayName,
-            unit: pair.leftLens.unit,
-            incentiveAmount: pair.leftLens.incentiveAmount,
+            mrp: pair.leftLens.MRP || pair.leftLens.mrp || 0,
+            srp: pair.leftLens.sellPrice || pair.leftLens.srp || 0,
+            taxRate: pair.leftLens.taxRate || `${pair.leftLens.tax} (Inc)`,
+            taxAmount:
+              pair.leftLens.perPieceTax || pair.leftLens.taxAmount || 0,
+            discount:
+              pair.leftLens.perPieceDiscount || pair.leftLens.discount || 0,
+            netAmount:
+              pair.leftLens.perPieceAmount ||
+              pair.leftLens.netAmount ||
+              pair.leftLens.sellPrice ||
+              0,
+            inclusiveTax: pair.leftLens.inclusiveTax ?? true,
+            manageStock: pair.leftLens.manageStock ?? false,
+            displayName:
+              pair.leftLens.displayName || pair.leftLens.productName || "Lens",
+            unit: pair.leftLens.unit?.name || pair.leftLens.unit || "Pieces",
+            incentiveAmount: pair.leftLens.incentiveAmount || 0,
           }
         : null,
     }));
@@ -611,6 +652,20 @@ const SaleForm = () => {
                   }
                 }}
                 placeholder="Search or select customer..."
+                value={
+                  formData.customerId
+                    ? {
+                        value: formData.customerId,
+                        label: `${formData.customerName} / ${formData.customerPhone}`,
+                        data: {
+                          _id: formData.customerId,
+                          name: formData.customerName,
+                          phone: formData.customerPhone,
+                          prescriptions: formData.prescriptions,
+                        },
+                      }
+                    : null
+                }
               />
             </div>
 

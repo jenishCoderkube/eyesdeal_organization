@@ -9,6 +9,7 @@ import { productAttributeService } from "../../../../services/productAttributeSe
 import { productService } from "../../../../services/productService";
 import { IoClose } from "react-icons/io5";
 import productViewService from "../../../../services/Products/productViewService";
+import { useNavigate } from "react-router-dom";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -86,6 +87,7 @@ const frameSizeOptions = [
 function EyeGlasses({ initialData = {}, mode = "add" }) {
   console.log("Initial Data:", { mode, initialData });
 
+  const navigate = useNavigate();
   // State for toggle sections
   const [showSections, setShowSections] = useState({
     seoDetails: false,
@@ -344,6 +346,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
+          navigate("/products/view"); // Go back to the previous page
         } else {
           toast.error(response.message || "Failed to update product");
           setErrors({ submit: response.message || "Failed to update product" });

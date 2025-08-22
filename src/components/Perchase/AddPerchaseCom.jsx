@@ -51,10 +51,11 @@ const AddPerchaseCom = () => {
     value: vendor._id,
     label: vendor.companyName,
   }));
+  console.log("productData", productData);
 
   const productOptions = productData?.docs?.map((product) => ({
     value: product._id,
-    label: product.displayName,
+    label: `${product?.newBarcode} / ${product?.sku} / ${product?.displayName}`,
   }));
 
   const storeOptions = storeData
