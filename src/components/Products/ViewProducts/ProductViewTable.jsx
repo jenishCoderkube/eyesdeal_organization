@@ -13,6 +13,7 @@ import {
   defalutImageBasePath,
   productRangesByType,
 } from "../../../utils/constants";
+import { inventoryService } from "../../../services/inventoryService";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -43,10 +44,28 @@ function ProductTable({ filters }) {
   const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
   const [photoFetchProgress, setPhotoFetchProgress] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
+  const [range, setRange] = useState([]);
 
-  const productRanges = filters?.model
-    ? productRangesByType[filters?.model] || []
-    : [];
+  useEffect(() => {
+    getRange();
+  }, [filters.model]);
+
+  const getRange = async () => {
+    try {
+      const result = await inventoryService.getProductCount(
+        filters?.model ? filters?.model : "eyeGlasses",
+        filters?.status === "active" ? true : false
+      );
+      if (result.success) {
+        setRange(result?.data?.data);
+      } else {
+        console.error("Error:", result.message);
+      }
+    } catch (error) {
+      console.log("err", error);
+    }
+  };
+
   // Fetch products
   const fetchProducts = useMemo(
     () =>
@@ -400,8 +419,19 @@ function ProductTable({ filters }) {
   );
   const totalRows = paginationMeta.totalDocs;
 
-  const downloadExcel = (value, type) => {
-    console.log("value,type", value, type);
+  const downloadExcel = async (value, type) => {
+    console.log("value", value);
+    const result = value.split("-");
+    try {
+      await inventoryService.exportProductExcel(
+        type,
+        parseInt(result[0]),
+        parseInt(result[1]),
+        filters?.status === "active" ? true : false
+      );
+    } catch (error) {
+      console.log("err", error);
+    }
   };
 
   return (
@@ -412,9 +442,9 @@ function ProductTable({ filters }) {
           <div>
             {filters?.model && (
               <div className="d-flex flex-wrap gap-2">
-                {productRanges.map((range) => (
+                {range?.map((range) => (
                   <button
-                    key={range.value}
+                    key={range}
                     type="button"
                     className="btn text-white"
                     style={{
@@ -426,9 +456,9 @@ function ProductTable({ filters }) {
                     onMouseOut={(e) =>
                       (e.currentTarget.style.backgroundColor = "#6366f1")
                     }
-                    onClick={() => downloadExcel(range.value, filters?.model)}
+                    onClick={() => downloadExcel(range, filters?.model)}
                   >
-                    {range.label}
+                    {range}
                   </button>
                 ))}
               </div>
