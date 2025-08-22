@@ -30,6 +30,10 @@ const INVENTORY_ENDPOINTS = {
   BULK_UPLOAD: "/products/upload/bulk-upload-3",
   UPDATE_INVENTORY: "/inventory/updateInventoryData",
   INVENTORYFILEUPLOAD: "/inventory/upload",
+  PRODUCT_COUNT: (productType, params) =>
+    `/products/count/${productType}?${params}`,
+  PRODUCT_EXPORT: (productType, params) =>
+    `/products/${productType}/export?${params}`,
 };
 
 const buildInventoryParams = (
@@ -401,7 +405,82 @@ export const inventoryService = {
       };
     }
   },
+  getProductCount: async (productType, activeInWebsite = true) => {
+    try {
+      if (!productType) {
+        throw new Error("Product type is required");
+      }
 
+      const params = new URLSearchParams();
+      params.append("activeInWebsite", activeInWebsite);
+
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.PRODUCT_COUNT(productType, params.toString())
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          `Error fetching ${productType} count`,
+      };
+    }
+  },
+  exportProductExcel: async (
+    productType,
+    start = 0,
+    end = 200,
+    activeInWebsite = true
+  ) => {
+    try {
+      if (!productType) {
+        throw new Error("Product type is required");
+      }
+
+      const params = new URLSearchParams();
+      params.append("start", start);
+      params.append("end", end);
+      params.append("activeInWebsite", activeInWebsite);
+
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.PRODUCT_EXPORT(productType, params.toString()),
+        {
+          headers: {
+            Accept:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // For Excel files
+          },
+          responseType: "blob", // Handle binary response for file download
+        }
+      );
+
+      // Create a downloadable link for the Excel file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${productType}_export.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return {
+        success: true,
+        message: "Excel file downloaded successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          `Error downloading ${productType} Excel file`,
+      };
+    }
+  },
   getInventoryStore: async (
     _t,
     brand,
