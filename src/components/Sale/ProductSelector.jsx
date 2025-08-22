@@ -32,11 +32,17 @@ export default function ProductSelector({
       const response = await saleService.checkInventory(prodID, storeID);
       if (response.success) {
         const newItem = response?.data?.data?.docs?.[0];
+        console.log("Fetched inventory item:", newItem);
+        if (newItem?.quantity <= 0) {
+          alert("Product out of stock");
+          return null;
+        }
         if (newItem) {
           return newItem.product;
         }
         if (response.data.data.docs.length === 0) {
           alert("Product out of stock");
+          return null;
         }
       } else {
         console.error(response.data.message);
@@ -56,6 +62,7 @@ export default function ProductSelector({
       selectedProduct.value,
       defaultStore.value
     );
+
     if (productDetails) {
       const pairId = uuidv4();
       if (productDetails.__t === "eyeGlasses") {
@@ -72,6 +79,7 @@ export default function ProductSelector({
           lens: null, // Note: Original had lens: null, but for frames, it's right/left
         };
         setInventoryPairs((prev) => [...prev, newPair]);
+        setShowProductSelector(false);
       } else if (productDetails.__t === "contactLens") {
         // Lens: Auto-add right and left lenses with same data, no frame, no dropdown
         setInventoryData((prev) => [
@@ -86,9 +94,9 @@ export default function ProductSelector({
           leftLens: productDetails,
         };
         setInventoryPairs((prev) => [...prev, newPair]);
+        setShowProductSelector(false);
       }
     }
-    setShowProductSelector(false);
   };
 
   return (

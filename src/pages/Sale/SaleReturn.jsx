@@ -481,12 +481,12 @@ const SaleReturn = () => {
                         </button>
                       </div>
                     </>
-                    {PrescriptionModelVisible && selectedCust && (
+                    {/* {PrescriptionModelVisible && selectedCust && (
                       <PrescriptionModel
                         closePrescriptionModel={closePrescriptionModel}
                         selectedCust={selectedCust}
                       />
-                    )}
+                    )} */}
 
                     {OrderModelVisible && SalesOrderData && (
                       <OrdersModel

@@ -46,61 +46,49 @@ export default function InventoryData({
   // Initialize lensSelections from inventoryData
   useEffect(() => {
     const updatedLensSelections = {};
-    inventoryData.forEach((item) => {
-      const groupId = item.groupId || item.pairId;
-      if (["rightLens", "leftLens"].includes(item.type) && item.data) {
-        updatedLensSelections[groupId] = updatedLensSelections[groupId] || {};
-        updatedLensSelections[groupId][item.type] = {
-          barcode: item.data.oldBarcode,
-          sku: item.data.sku,
-          item: item.data._id,
-          productName: item.data.productName,
-        };
-      }
-    });
-
-    // Update lensSelections
-    setLensSelections((prev) => ({
-      ...prev,
-      ...updatedLensSelections,
-    }));
-
-    // Remove rightLens and leftLens from inventoryData
-    setInventoryData((prev) => prev.filter((item) => item.type === "product"));
-
-    // Update inventoryData with calculated values for products
     const updatedData = inventoryData.map((item) => {
-      if (item.type !== "product") return item;
+      const groupId = item.groupId || item.pairId;
       const data = item.data || {};
       const mrp = parseFloat(data?.MRP) || 0;
       const srp = parseFloat(data?.sellPrice) || 0;
       const taxRate = parseFloat(data?.tax) || 0;
 
+      // Calculate financial values for both frames and lenses
       const { taxAmount, discount, totalAmount } = calculateInvoiceValues(
         mrp,
         srp,
         taxRate
       );
+
+      // Update lensSelections for lenses
+      if (["rightLens", "leftLens"].includes(item.type)) {
+        updatedLensSelections[groupId] = updatedLensSelections[groupId] || {};
+        updatedLensSelections[groupId][item.type] = {
+          barcode: data.oldBarcode,
+          sku: data.sku,
+          item: data._id,
+          productName: data.productName,
+        };
+      }
+
       return {
         ...item,
+        quantity: data.quantity || 1, // Use quantity from data
         taxAmount,
         discount,
         totalAmount,
       };
     });
+
+    setLensSelections((prev) => ({
+      ...prev,
+      ...updatedLensSelections,
+    }));
     setInventoryData(updatedData);
   }, [inventoryData.length, setInventoryData]);
 
   const handleLensSelection = (selectedLens, lensType, groupId) => {
     const otherLensType = lensType === "rightLens" ? "leftLens" : "rightLens";
-    console.log(
-      "handleLensSelection - groupId:",
-      groupId,
-      "lensType:",
-      lensType,
-      "selectedLens:",
-      selectedLens
-    );
 
     if (!selectedLens) {
       setLensSelections((prev) => ({
@@ -119,6 +107,15 @@ export default function InventoryData({
           return pair;
         })
       );
+      setInventoryData((prev) =>
+        prev.filter(
+          (item) =>
+            !(
+              item.groupId === groupId &&
+              (item.type === lensType || item.type === otherLensType)
+            )
+        )
+      );
       return;
     }
 
@@ -131,6 +128,24 @@ export default function InventoryData({
       srp,
       taxRate
     );
+
+    const lensData = {
+      item: selectedLens.data._id,
+      unit: selectedLens.data.unit?.name || "Pieces",
+      displayName: selectedLens.data.productName || "Lens",
+      barcode: selectedLens.data.oldBarcode,
+      sku: selectedLens.data.sku,
+      mrp,
+      srp,
+      perPieceDiscount: discount,
+      taxRate: `${taxRate} (Inc)`,
+      perPieceTax: taxAmount,
+      perPieceAmount: totalAmount,
+      inclusiveTax: selectedLens.data.inclusiveTax ?? true,
+      manageStock: selectedLens.data.manageStock ?? false,
+      incentiveAmount: selectedLens.data.incentiveAmount || 0,
+      quantity: selectedLens.data.quantity || 1, // Use quantity from data
+    };
 
     setLensSelections((prev) => ({
       ...prev,
@@ -154,22 +169,6 @@ export default function InventoryData({
     setInventoryPairs((prev) =>
       prev.map((pair) => {
         if (pair.pairId === groupId) {
-          const lensData = {
-            item: selectedLens.data._id,
-            unit: selectedLens.data.unit?.name || "Pieces",
-            displayName: selectedLens.data.productName || "Lens",
-            barcode: selectedLens.data.oldBarcode,
-            sku: selectedLens.data.sku,
-            mrp,
-            srp,
-            perPieceDiscount: discount,
-            taxRate: `${taxRate} (Inc)`,
-            perPieceTax: taxAmount,
-            perPieceAmount: totalAmount,
-            inclusiveTax: selectedLens.data.inclusiveTax ?? true,
-            manageStock: selectedLens.data.manageStock ?? false,
-            incentiveAmount: selectedLens.data.incentiveAmount || 0,
-          };
           return {
             ...pair,
             rightLens: lensData,
@@ -179,20 +178,67 @@ export default function InventoryData({
         return pair;
       })
     );
+
+    setInventoryData((prev) => {
+      const newData = prev.filter(
+        (item) =>
+          !(
+            item.groupId === groupId &&
+            (item.type === lensType || item.type === otherLensType)
+          )
+      );
+      return [
+        ...newData,
+        {
+          groupId,
+          type: lensType,
+          data: {
+            ...selectedLens.data,
+            sellPrice: srp,
+            quantity: selectedLens.data.quantity || 1, // Use quantity from data
+          },
+          quantity: selectedLens.data.quantity || 1,
+          taxAmount,
+          discount,
+          totalAmount,
+        },
+        {
+          groupId,
+          type: otherLensType,
+          data: {
+            ...selectedLens.data,
+            sellPrice: srp,
+            quantity: selectedLens.data.quantity || 1, // Use quantity from data
+          },
+          quantity: selectedLens.data.quantity || 1,
+          taxAmount,
+          discount,
+          totalAmount,
+        },
+      ];
+    });
   };
 
   const handleRemoveGroup = (groupId) => {
     console.log("Removing group:", groupId);
+
+    // Update inventoryData: Remove all items with matching groupId or pairId
     setInventoryData((prev) => {
-      const newData = prev.filter((item) => item.pairId !== groupId);
+      const newData = prev.filter(
+        (item) => item.groupId !== groupId && item.pairId !== groupId
+      );
       console.log("Updated inventoryData:", newData);
       return newData;
     });
+
+    // Update inventoryPairs: Remove pairs with matching pairId
     setInventoryPairs((prev) => {
       const newPairs = prev.filter((pair) => pair.pairId !== groupId);
       console.log("Updated inventoryPairs:", newPairs);
       return newPairs;
     });
+
+    // Update lensSelections: Remove the group from lensSelections
     setLensSelections((prev) => {
       const newSelections = { ...prev };
       delete newSelections[groupId];
@@ -311,6 +357,8 @@ export default function InventoryData({
             gap: 1rem;
             align-items: flex-start;
             margin-top: 1rem;
+            z-index: 9999 !important;
+
           }
           .lens-dropdown {
             flex: 1;
@@ -619,6 +667,10 @@ export default function InventoryData({
                           onChange={(selected) =>
                             handleLensSelection(selected, lensType, groupId)
                           }
+                          menuPortalTarget={document.body} // Add this to render the dropdown in a portal
+                          styles={{
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }), // Ensure dropdown appears on top
+                          }}
                         />
                       </div>
                     );

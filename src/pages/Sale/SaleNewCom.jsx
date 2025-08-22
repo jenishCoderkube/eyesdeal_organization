@@ -408,15 +408,9 @@ const SaleForm = () => {
           const months = parseInt(formData.recallOption) || 0;
           recall = calculateRecallDate(months);
         }
-        let formattedRecall = null;
 
-        if (recall && /^\d{4}-\d{2}-\d{2}$/.test(recall)) {
-          const date = new Date(recall);
-          if (!isNaN(date)) {
-            formattedRecall = date.toISOString();
-          }
-        }
-        console.log("formattedRecall", formattedRecall);
+        const [day, month, year] = recall.split("-");
+        const newDateFormatate = new Date(`${year}-${month}-${day}`);
 
         const payload = {
           store: defaultStore?.value || "",
@@ -447,16 +441,49 @@ const SaleForm = () => {
           note: formData.note,
           powerAtTime: {},
           attachments: documentsFiles,
-          recall: "12-07-2001",
+          recall: newDateFormatate,
         };
 
         console.log("Submitting form with payload:", payload);
-
         const response = await saleService.addSales(payload);
         if (response.success) {
           toast.success("Sale submitted successfully");
+          setFormData({
+            customerId: "",
+            customerName: "",
+            customerPhone: "",
+            salesRep: "",
+            product: "",
+            store: defaultStore?.label || "ELITE HOSPITAL / 27",
+            totalQuantity: 0,
+            totalAmount: 0,
+            totalTax: 0,
+            flatDiscount: 0,
+            couponDiscount: 0,
+            otherCharges: 0,
+            netDiscount: 0,
+            coupon: "",
+            netAmount: 0,
+            note: "",
+            dueAmount: 0,
+            prescriptions: [],
+            recallOption: "",
+            recallDate: "",
+          });
+          setReceivedAmounts([]);
+          setInventoryData([]);
+          setInventoryPairs([]);
+          setDocuments([]);
+          setDocumentsFiles([]);
+          setErrors({});
+          setShowProductSelector(true); // Reset product selector visibility
+          setSalesData([]); // Clear sales data
         } else {
-          toast.error(response.message || "Failed to submit sale");
+          toast.error(
+            response?.message?.error?.message ||
+              response?.message?.message ||
+              "Failed to submit sale"
+          );
         }
       } catch (error) {
         console.error("Error submitting form:", error);
@@ -497,14 +524,52 @@ const SaleForm = () => {
   };
 
   useEffect(() => {
-    calculateTotals();
+    let totalQuantity = 0;
+    let totalAmount = 0;
+    let taxAmount = 0;
+    let totalDiscount = 0;
+    let flatDiscount = Number(formData.flatDiscount) || 0;
+    let couponDiscount = Number(formData.couponDiscount) || 0;
+    let otherCharges = Number(formData.otherCharges) || 0;
+
+    inventoryData.forEach((pair) => {
+      if (pair.data) {
+        totalQuantity += 1 || 0;
+        totalAmount += pair.totalAmount || 0;
+        taxAmount += pair.taxAmount || 0;
+        totalDiscount += pair.discount || 0;
+      }
+    });
+
+    totalDiscount += flatDiscount + couponDiscount;
+    const netAmount =
+      totalAmount - flatDiscount + otherCharges - couponDiscount;
+
+    // Calculate total received amount
+    const totalReceivedAmount = receivedAmounts.reduce(
+      (sum, amount) => sum + (Number(amount.amount) || 0),
+      0
+    );
+
+    // Calculate due amount
+    const dueAmount = netAmount - totalReceivedAmount;
+
+    setFormData((prev) => ({
+      ...prev,
+      totalQuantity,
+      totalAmount,
+      totalTax: taxAmount,
+      netDiscount: totalDiscount,
+      netAmount,
+      dueAmount, // Update dueAmount in formData
+    }));
   }, [
     inventoryData,
     formData.flatDiscount,
     formData.otherCharges,
     formData.couponDiscount,
+    receivedAmounts, // Add receivedAmounts as a dependency
   ]);
-  console.log("defaultStore<<<", defaultStore);
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
@@ -590,7 +655,7 @@ const SaleForm = () => {
               </div>
               <div className="col-md-4 col-12">
                 <label htmlFor="salesRep" className="custom-label">
-                  Sales Rep
+                  Sales Rep <span className="text-danger">*</span>
                 </label>
                 <select
                   className={`form-select w-100 ${
@@ -598,6 +663,7 @@ const SaleForm = () => {
                   }`}
                   id="salesRep"
                   name="salesRep"
+                  // required
                   value={formData.salesRep}
                   onChange={handleInputChange}
                   style={{ color: "#808080" }}
@@ -638,7 +704,7 @@ const SaleForm = () => {
                       View Orders
                     </button>
                   </div>
-                  <div className="btn-container">
+                  {/* <div className="btn-container">
                     <button
                       type="button"
                       className="btn border-secondary-subtle text-primary"
@@ -646,7 +712,7 @@ const SaleForm = () => {
                     >
                       Add Power
                     </button>
-                  </div>
+                  </div> */}
                 </>
               )}
             </div>
@@ -892,7 +958,8 @@ const SaleForm = () => {
           <div className="col-12 border-end col-md-6 p-0">
             <div className="p-3 bg-white">
               <div className="d-flex justify-content-end">
-                <span>Due Amount: {formData.netAmount}</span>
+                <span>Due Amount: {formData.dueAmount.toFixed(2)}</span>{" "}
+                {/* Use dueAmount */}
               </div>
               <div className="d-flex align-items-center gap-3">
                 <label className="custom-label">Received Amount</label>

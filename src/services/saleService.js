@@ -218,7 +218,7 @@ export const saleService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Error at Cheking CouponCode",
+        message: error.response?.data || "Error at Cheking CouponCode",
       };
     }
   },
