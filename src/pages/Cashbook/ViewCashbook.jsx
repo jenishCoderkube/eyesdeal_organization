@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AiOutlineDelete } from "react-icons/ai";
 import { FaSearch } from "react-icons/fa";
 import Select from "react-select";
@@ -8,13 +8,21 @@ import CommonButton from "../../components/CommonButton/CommonButton";
 import { cashbookService } from "../../services/cashbookService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
+import { debounce } from "lodash";
 
 const ViewCashbook = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [storeData, setStoreData] = useState([]);
-  const [cashBooks, setCashBook] = useState([]);
-  console.log("cashBooks", cashBooks?.docs);
+  const [cashBooks, setCashBook] = useState({
+    docs: [],
+    totalDocs: 0,
+    limit: 20,
+    page: 1,
+    totalPages: 1,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const today = new Date();
   const [formData, setFormData] = useState({
     mode: { label: "Cash", value: "cash" },
@@ -22,60 +30,6 @@ const ViewCashbook = () => {
     from: new Date(today.setHours(0, 0, 0, 0)),
     to: new Date(today.setHours(23, 59, 59, 999)),
   });
-
-  // Sample cashbook data (replace with API data)
-  const cashbooks = [
-    {
-      id: 20,
-      store: "EYESDEAL BHATAR",
-      expenseCategory: "SALE",
-      amount: 1350,
-      balance: 15165,
-      note: "254386",
-      date: "16/04/2025",
-      type: "credit",
-    },
-    {
-      id: 1,
-      store: "ELITE HOSPITAL",
-      expenseCategory: "RENT",
-      amount: 2000,
-      balance: 13165,
-      note: "Monthly rent",
-      date: "15/04/2025",
-      type: "debit",
-    },
-    {
-      id: 2,
-      store: "SAFENT",
-      expenseCategory: "UTILITIES",
-      amount: 500,
-      balance: 12665,
-      note: "Electricity bill",
-      date: "14/04/2025",
-      type: "debit",
-    },
-    {
-      id: 3,
-      store: "CLOSED NIKOL",
-      expenseCategory: "SALE",
-      amount: 1000,
-      balance: 13665,
-      note: "Product sale",
-      date: "13/04/2025",
-      type: "credit",
-    },
-    {
-      id: 4,
-      store: "EYESDEAL ADAJAN",
-      expenseCategory: "MAINTENANCE",
-      amount: 300,
-      balance: 13365,
-      note: "Equipment repair",
-      date: "12/04/2025",
-      type: "debit",
-    },
-  ];
 
   // Sample options for dropdowns
   const modeOptions = [
@@ -89,6 +43,20 @@ const ViewCashbook = () => {
     label: `${vendor.name}`,
   }));
 
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      cashBook(query, currentPage);
+    }, 300),
+    [formData, currentPage]
+  );
+
+  useEffect(() => {
+    if (cashBooks) {
+      console.log("cashBooks", cashBooks);
+    }
+  }, [cashBooks]);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -101,17 +69,9 @@ const ViewCashbook = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted:", formData?.from);
-    cashBook();
-    // Add API call here (e.g., axios.post)
+    setCurrentPage(1); // Reset to first page on form submit
+    cashBook(searchQuery, 1);
   };
-
-  const filteredCashbooks = cashbooks.filter((entry) =>
-    entry.store.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Sample balance data
-  const openingBalance = 5780;
-  const closingBalance = 15165;
 
   useEffect(() => {
     getStores();
@@ -134,10 +94,10 @@ const ViewCashbook = () => {
   };
 
   useEffect(() => {
-    cashBook();
-  }, []);
+    cashBook(searchQuery, currentPage);
+  }, [currentPage]);
 
-  const cashBook = async () => {
+  const cashBook = async (search = "", page = 1) => {
     const storeId = formData?.store?.map((option) => option.value);
     setLoading(true);
 
@@ -146,9 +106,10 @@ const ViewCashbook = () => {
         formData?.from?.getTime(),
         formData?.to?.getTime(),
         storeId,
-        1, // page
-        20, // limit,,
-        1
+        page,
+        limit,
+        1,
+        search
       );
       if (response.success) {
         console.log("response", response);
@@ -160,6 +121,21 @@ const ViewCashbook = () => {
       console.error("error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on search
+    debouncedSearch(query);
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= cashBooks.totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
@@ -255,21 +231,21 @@ const ViewCashbook = () => {
               </div>
             </div>
           </form>
-          <div className="d-flex flex-column flex-md-row gap-4  ">
+          {/* <div className="d-flex flex-column flex-md-row gap-4">
             <h6 className="fw-bold">
               Opening Balance: <span>{openingBalance}</span>
             </h6>
             <h6 className="fw-bold">
               Closing Balance: <span>{closingBalance}</span>
             </h6>
-          </div>
+          </div> */}
           <div className="card shadow-none border">
             <div className="card-header border-0 px-4 pt-3">
               <h5 className="fw-bold pt-3">Cashbooks</h5>
             </div>
             <div className="card-body p-0">
               <div className="mb-4 col-md-5">
-                <div className="input-group ">
+                <div className="input-group px-4">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch className="text-muted custom-search-icon" />
                   </span>
@@ -278,12 +254,12 @@ const ViewCashbook = () => {
                     className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchChange}
                   />
                 </div>
               </div>
               <div className="table-responsive px-2">
-                <table className="table  table-sm">
+                <table className="table table-sm">
                   <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
                     <tr>
                       <th className="px-4 py-3 text-left custom-perchase-th">
@@ -316,7 +292,9 @@ const ViewCashbook = () => {
                     {cashBooks?.docs?.length > 0 ? (
                       cashBooks.docs.map((entry, index) => (
                         <tr key={entry._id}>
-                          <td className="px-4 py-3">{index + 1}</td>
+                          <td className="px-4 py-3">
+                            {(currentPage - 1) * limit + index + 1}
+                          </td>
                           <td className="px-2 py-3">
                             {entry?.store?.companyName}
                           </td>
@@ -347,25 +325,44 @@ const ViewCashbook = () => {
               </div>
             </div>
           </div>
-          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
-            <div className="text-sm ">
-              Showing <span className="fw-bold ">{cashBooks.length}</span> of{" "}
-              <span className="fw-bold ">{cashBooks.length}</span> results
+          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4">
+            <div className="text-sm">
+              Showing <span className="fw-bold">{cashBooks.docs.length}</span>{" "}
+              of <span className="fw-bold">{cashBooks.totalDocs}</span> results
             </div>
             <nav aria-label="Navigation">
-              <ul className="d-flex list-unstyled">
+              <ul className="d-flex list-unstyled align-items-center">
                 <li className="me-2">
                   <button
                     className="btn border border-secondary text-muted"
-                    disabled
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!cashBooks.hasPrevPage}
                   >
                     &lt;- Previous
                   </button>
                 </li>
+                {Array.from(
+                  { length: cashBooks.totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
+                  <li key={page} className="me-2">
+                    <button
+                      className={`btn border border-secondary ${
+                        currentPage === page
+                          ? "bg-indigo-500 text-white"
+                          : "text-muted"
+                      }`}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  </li>
+                ))}
                 <li>
                   <button
                     className="btn border border-secondary text-muted"
-                    disabled
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!cashBooks.hasNextPage}
                   >
                     Next -&gt;
                   </button>

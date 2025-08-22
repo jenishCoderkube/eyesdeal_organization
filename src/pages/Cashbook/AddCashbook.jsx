@@ -110,6 +110,7 @@ const AddCashbook = () => {
       const response = await cashbookService.addExpense(body);
       if (response.success) {
         console.log("res", response);
+        toast.success(response?.data?.message);
         setFormData({
           store: null,
           expenseCategory: null,

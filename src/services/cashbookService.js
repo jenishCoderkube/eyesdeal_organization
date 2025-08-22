@@ -21,7 +21,8 @@ const buildViewCashBookParams = (
   storeIds = [],
   page,
   limit,
-  sort
+  sort,
+  search
 ) => {
   const params = new URLSearchParams();
 
@@ -44,6 +45,9 @@ const buildViewCashBookParams = (
 
   if (sort) {
     params.append("sort[createdAt]", sort);
+  }
+  if (search) {
+    params.append("search", search);
   }
 
   return params.toString();
@@ -147,7 +151,8 @@ export const cashbookService = {
     storeIds = [],
     page,
     limit,
-    sort
+    sort,
+    search
   ) => {
     try {
       let params = buildViewCashBookParams(
@@ -156,7 +161,8 @@ export const cashbookService = {
         storeIds,
         page,
         limit,
-        sort
+        sort,
+        search
       );
       const response = await api.get(CASHBOOK_ENDPOINTS.CASEBOOK(params));
 
