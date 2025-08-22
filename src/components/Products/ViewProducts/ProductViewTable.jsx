@@ -9,7 +9,10 @@ import ProductDetailsModal from "./ProductDetailsModal";
 import ImageSliderModalProduct from "./ImageSliderModalProduct";
 import productViewService from "../../../services/Products/productViewService";
 import { toast } from "react-toastify";
-import { defalutImageBasePath } from "../../../utils/constants";
+import {
+  defalutImageBasePath,
+  productRangesByType,
+} from "../../../utils/constants";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -41,6 +44,9 @@ function ProductTable({ filters }) {
   const [photoFetchProgress, setPhotoFetchProgress] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
 
+  const productRanges = filters?.model
+    ? productRangesByType[filters?.model] || []
+    : [];
   // Fetch products
   const fetchProducts = useMemo(
     () =>
@@ -394,11 +400,40 @@ function ProductTable({ filters }) {
   );
   const totalRows = paginationMeta.totalDocs;
 
+  const downloadExcel = (value, type) => {
+    console.log("value,type", value, type);
+  };
+
   return (
     <div className="card shadow-none border">
       <div className="card-body p-3">
         <div className="d-flex flex-column flex-md-row gap-3 mb-4">
           <h5>{filters?.model || "eyeGlasses"}</h5>
+          <div>
+            {filters?.model && (
+              <div className="d-flex flex-wrap gap-2">
+                {productRanges.map((range) => (
+                  <button
+                    key={range.value}
+                    type="button"
+                    className="btn text-white"
+                    style={{
+                      backgroundColor: "#6366f1",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#4f46e5")
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#6366f1")
+                    }
+                    onClick={() => downloadExcel(range.value, filters?.model)}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             className="btn custom-button-bgcolor ms-md-auto"
             onClick={exportToExcel}
@@ -406,6 +441,7 @@ function ProductTable({ filters }) {
           >
             Export Products
           </button>
+
           <button
             className="btn custom-button-bgcolor"
             onClick={handleFetchAllPhotos}

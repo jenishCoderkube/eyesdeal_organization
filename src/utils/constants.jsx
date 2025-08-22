@@ -43,3 +43,22 @@ export const productOptions = [
 
 export const defalutImageBasePath =
   "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
+
+// Dummy product ranges based on product type
+export const productRangesByType = {
+  sunGlasses: [
+    { label: "1 - 1000", value: "1-1000" },
+    { label: "1001 - 2000", value: "1001-2000" },
+    { label: "2001 - 3000", value: "2001-3000" },
+  ],
+  eyeGlasses: [
+    { label: "1 - 500", value: "1-500" },
+    { label: "501 - 1000", value: "501-1000" },
+    { label: "1001 - 1500", value: "1001-1500" },
+  ],
+  contactLenses: [
+    { label: "1 - 1500", value: "1-1500" },
+    { label: "1501 - 3000", value: "1501-3000" },
+    { label: "3001 - 4439", value: "3001-4439" },
+  ],
+};
