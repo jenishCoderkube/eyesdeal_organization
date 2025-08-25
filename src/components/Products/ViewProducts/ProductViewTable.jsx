@@ -15,6 +15,7 @@ import {
   productRangesByType,
 } from "../../../utils/constants";
 import { inventoryService } from "../../../services/inventoryService";
+import { Modal, Button } from "react-bootstrap";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -25,9 +26,9 @@ const debounce = (func, wait) => {
   };
 };
 
-function ProductTable({ filters }) {
+function ProductTable({ filters, isDownloadButtonVisible }) {
   const navigate = useNavigate();
-  const [filteredData, setFilteredData] = useState([]); // Store product docs
+  const [filteredData, setFilteredData] = useState([]);
   const [paginationMeta, setPaginationMeta] = useState({
     totalDocs: 0,
     limit: 100,
@@ -35,7 +36,7 @@ function ProductTable({ filters }) {
     hasPrevPage: false,
     hasNextPage: false,
   });
-  const [page, setPage] = useState(1); // Manage page state directly
+  const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -47,21 +48,27 @@ function ProductTable({ filters }) {
   const [completedCount, setCompletedCount] = useState(0);
   const [maxVal, setMaxVal] = useState(0);
   const [minVal, setMinVal] = useState(0);
-  const [startRange, setStartRange] = useState(0);
-  const [endRange, setEndRange] = useState(0);
+  // Update the state declarations
+  const [startRange, setStartRange] = useState(null); // Initialize as null
+  const [endRange, setEndRange] = useState(null);
   const [range, setRange] = useState([]);
+  const [showDownloadModal, setShowDownloadModal] = useState(false); // New state for download modal
+  // Add new state
 
+  // Existing useEffect and getRange functions unchanged
   useEffect(() => {
     getRange();
   }, [filters.model]);
 
+  // Update useEffect to set default startRange and endRange
   useEffect(() => {
     if (range?.length > 0) {
-      const firstRange = parseRange(range[0]); // e.g., { min: 1, max: 1000 }
+      const firstRange = parseRange(range[0]);
       const lastRange = parseRange(range[range.length - 1]);
-
       setMinVal(firstRange?.min);
       setMaxVal(lastRange?.max);
+      setStartRange(firstRange?.min); // Set default startRange
+      setEndRange(lastRange?.max); // Set default endRange
     }
   }, [range]);
 
@@ -72,8 +79,6 @@ function ProductTable({ filters }) {
         filters?.status === "active" ? true : false
       );
       if (result.success) {
-        setStartRange();
-        setEndRange();
         setRange(result?.data?.data);
       } else {
         console.error("Error:", result.message);
@@ -83,7 +88,7 @@ function ProductTable({ filters }) {
     }
   };
 
-  // Fetch products
+  // Existing fetchProducts, handleFetchSinglePhoto, handleFetchAllPhotos, handleDelete, handleViewMoreImages, and columns unchanged
   const fetchProducts = useMemo(
     () =>
       debounce(async (model, filters, page) => {
@@ -138,7 +143,6 @@ function ProductTable({ filters }) {
     []
   );
 
-  // Fetch products when filters or page changes
   useEffect(() => {
     const model = filters.model || "eyeGlasses";
     console.log("useEffect triggered with page:", page);
@@ -146,12 +150,10 @@ function ProductTable({ filters }) {
     return () => clearTimeout(fetchProducts.timeout);
   }, [filters, page, fetchProducts]);
 
-  // Fetch photos for a single product
   const handleFetchSinglePhoto = async (product) => {
     setIsFetchingPhotos(true);
     setPhotoFetchProgress(0);
     setCompletedCount(0);
-
     try {
       const response = await productViewService.fetchAndUpdateProductPhotos(
         product._id,
@@ -172,7 +174,6 @@ function ProductTable({ filters }) {
     } catch (err) {
       setError("An error occurred while fetching photos");
     }
-
     setIsFetchingPhotos(false);
     setPhotoFetchProgress(100);
     setCompletedCount(1);
@@ -180,15 +181,12 @@ function ProductTable({ filters }) {
     fetchProducts(model, filters, page);
   };
 
-  // Fetch photos for all products
   const handleFetchAllPhotos = async () => {
     setIsFetchingPhotos(true);
     setPhotoFetchProgress(0);
     setCompletedCount(0);
-
     const totalProducts = filteredData.length;
     let completed = 0;
-
     for (const product of filteredData) {
       try {
         const response = await productViewService.fetchAndUpdateProductPhotos(
@@ -207,19 +205,16 @@ function ProductTable({ filters }) {
       } catch (err) {
         console.error("Error fetching photos for product:", product._id, err);
       }
-
       completed += 1;
       setCompletedCount(completed);
       setPhotoFetchProgress((completed / totalProducts) * 100);
     }
-
     setIsFetchingPhotos(false);
     toast.success("Photos fetched and updated.");
     const model = filters.model || "eyeGlasses";
     fetchProducts(model, filters, page);
   };
 
-  // Handle delete
   const handleDelete = async (productId) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete this product (ID: ${productId})?`
@@ -242,7 +237,6 @@ function ProductTable({ filters }) {
     }
   };
 
-  // Handle View More click
   const handleViewMoreImages = (photos) => {
     const fullImageUrls = photos.map(
       (photo) => `${defalutImageBasePath}${photo}`
@@ -251,7 +245,6 @@ function ProductTable({ filters }) {
     setShowImageModal(true);
   };
 
-  // Table columns
   const columns = useMemo(
     () => [
       {
@@ -393,14 +386,12 @@ function ProductTable({ filters }) {
     [navigate]
   );
 
-  // Tanstack table setup
   const table = useReactTable({
     data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle Next and Previous clicks
   const handleNextPage = () => {
     console.log("Next clicked, current page:", page);
     if (paginationMeta.hasNextPage) {
@@ -423,12 +414,28 @@ function ProductTable({ filters }) {
     }
   };
 
-  // Export to Excel
   const exportToExcel = () => {
     navigate("/products/exportProducts");
   };
 
-  // Pagination info
+  // Update downloadExcel to handle default values
+  const downloadExcel = async () => {
+    try {
+      const effectiveStartRange = startRange !== null ? startRange : minVal;
+      const effectiveEndRange = endRange !== null ? endRange : maxVal;
+      await inventoryService.exportProductExcel(
+        filters?.model,
+        effectiveStartRange,
+        effectiveEndRange,
+        filters?.status === "active" ? true : false
+      );
+      toast.success("Excel download initiated successfully");
+    } catch (error) {
+      console.log("err", error);
+      toast.error("Failed to download Excel");
+    }
+  };
+
   const startRow = (page - 1) * paginationMeta.limit + 1;
   const endRow = Math.min(
     page * paginationMeta.limit,
@@ -436,56 +443,11 @@ function ProductTable({ filters }) {
   );
   const totalRows = paginationMeta.totalDocs;
 
-  const downloadExcel = async () => {
-    try {
-      await inventoryService.exportProductExcel(
-        filters?.model,
-        startRange,
-        endRange,
-        filters?.status === "active" ? true : false
-      );
-    } catch (error) {
-      console.log("err", error);
-    }
-  };
-
   return (
     <div className="card shadow-none border">
       <div className="card-body p-3">
         <div className="d-flex flex-column flex-md-row gap-3 mb-4">
           <h5>{filters?.model || "eyeGlasses"}</h5>
-          <div>
-            {filters?.model && (
-              <div className="d-flex flex-wrap gap-2">
-                <div>
-                  <span>Start Range: {startRange ? startRange : "-"}</span>
-                  <input
-                    type="range"
-                    class="form-range"
-                    min={minVal}
-                    max={maxVal}
-                    id="customRange1"
-                    onChange={(e) => {
-                      setStartRange(e.target.value);
-                    }}
-                  />
-                </div>
-                <div>
-                  <span>End Range: {endRange ? endRange : "-"}</span>
-                  <input
-                    type="range"
-                    class="form-range"
-                    min={minVal}
-                    max={maxVal}
-                    id="customRange2"
-                    onChange={(e) => {
-                      setEndRange(e.target.value);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
 
           <button
             className="btn custom-button-bgcolor ms-md-auto"
@@ -494,7 +456,6 @@ function ProductTable({ filters }) {
           >
             Export Products
           </button>
-
           <button
             className="btn custom-button-bgcolor"
             onClick={handleFetchAllPhotos}
@@ -502,10 +463,10 @@ function ProductTable({ filters }) {
           >
             Fetch Photos
           </button>
-          {startRange && endRange && (
+          {isDownloadButtonVisible && (
             <button
               className="btn custom-button-bgcolor"
-              onClick={downloadExcel}
+              onClick={() => setShowDownloadModal(true)} // Always show button, open modal
             >
               Download
             </button>
@@ -533,9 +494,9 @@ function ProductTable({ filters }) {
         ) : (
           <>
             {loading && (
-              <div className="w-full d-flex  justify-content-center align-items-center">
-                <div class="spinner-border" role="status">
-                  <span class="sr-only"></span>
+              <div className="w-full d-flex justify-content-center align-items-center">
+                <div className="spinner-border" role="status">
+                  <span className="sr-only"></span>
                 </div>
               </div>
             )}
@@ -614,6 +575,65 @@ function ProductTable({ filters }) {
           onHide={() => setShowImageModal(false)}
           images={selectedImages}
         />
+        <Modal
+          show={showDownloadModal}
+          onHide={() => setShowDownloadModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Select Download Range</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="d-flex flex-column gap-3">
+              <div>
+                <label className="form-label">
+                  Start Range: {startRange !== null ? startRange : "-"}
+                </label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={minVal}
+                  max={maxVal}
+                  id="modalStartRange"
+                  value={startRange !== null ? startRange : minVal}
+                  onChange={(e) => setStartRange(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="form-label">
+                  End Range: {endRange !== null ? endRange : "-"}
+                </label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min={minVal}
+                  max={maxVal}
+                  id="modalEndRange"
+                  value={endRange !== null ? endRange : maxVal}
+                  onChange={(e) => setEndRange(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowDownloadModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                downloadExcel();
+                setShowDownloadModal(false);
+                setIsDownloadButtonVisible(true);
+              }}
+            >
+              Submit
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     </div>
   );

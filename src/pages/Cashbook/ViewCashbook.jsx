@@ -296,9 +296,7 @@ const ViewCashbook = () => {
                           <td className="px-4 py-3">
                             {(currentPage - 1) * limit + index + 1}
                           </td>
-                          <td className="px-2 py-3">
-                            {entry?.store?.companyName}
-                          </td>
+                          <td className="px-2 py-3">{entry?.store?.name}</td>
                           <td className="px-2 py-3">
                             {entry?.expenseCategory}
                           </td>
