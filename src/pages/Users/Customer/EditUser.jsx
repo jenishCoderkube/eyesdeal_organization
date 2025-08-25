@@ -11,9 +11,32 @@ const EditCustomer = () => {
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [user, setUser] = useState(null);
   const { id } = useParams();
-
+  const [modal, setModal] = useState({
+    show: false,
+    type: null,
+    editData: null,
+  });
   const location = useLocation();
   // const user = location.state?.user || {};
+  // In EditCustomer.js
+  const handleAddSpecs = () => {
+    setModal({ show: true, type: "specs", editData: null });
+  };
+
+  const handleAddContacts = () => {
+    setModal({ show: true, type: "contacts", editData: null });
+  };
+
+  const handleEditPrescription = (prescription) => {
+    setModal({
+      show: true,
+      type: prescription.type || prescription.__t,
+      editData: prescription,
+    });
+  };
+  const handleCloseModal = () => {
+    setModal({ show: false, type: null, editData: null });
+  };
 
   useEffect(() => {
     if (id) fetchUserData(id);
@@ -38,30 +61,21 @@ const EditCustomer = () => {
     <div className="bg-white rounded-sm mb-8">
       <div className="px-4 py-8 w-full max-w-9xl mx-auto">
         <UserEditDetailForm
-          onAddSpecs={() => {
-            setShowSpecsModal(true);
-            // Reset the prescription data when opening the modal
-            setShowSpecsModal(firstPrescription);
-          }}
-          onAddContacts={() => {
-            setShowContactsModal(true);
-            // Reset the prescription data when opening the modal
-            setShowContactsModal(firstPrescription);
-          }}
+          onAddSpecs={handleAddSpecs}
+          onAddContacts={handleAddContacts}
+          onEditPrescription={handleEditPrescription}
           initialData={user}
           isEdit={true}
         />
-
         <SpecsPowerModal
-          show={showSpecsModal}
-          onHide={() => setShowSpecsModal(false)}
-          editData={firstPrescription}
+          show={modal.show && modal.type === "specs"}
+          onHide={handleCloseModal}
+          editData={modal.editData}
         />
-
         <ContactsPowerModal
-          show={showContactsModal}
-          onHide={() => setShowContactsModal(false)}
-          editData={firstPrescription}
+          show={modal.show && modal.type === "contacts"}
+          onHide={handleCloseModal}
+          editData={modal.editData}
         />
       </div>
     </div>

@@ -21,13 +21,30 @@ const PowerSlice = createSlice({
         state.prescriptions.push(prescription);
       }
     },
+    editPrescription: (state, action) => {
+      const index = state.prescriptions.findIndex(
+        (pres) => pres.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.prescriptions[index] = action.payload;
+      }
+    },
+
     deletePrescription: (state, action) => {
       state.prescriptions = state.prescriptions.filter(
         (p) => p.id !== action.payload
       );
     },
+    removeAllPrescriptions: (state) => {
+      state.prescriptions = [];
+    },
   },
 });
 
-export const { addPrescription, deletePrescription } = PowerSlice.actions;
+export const {
+  addPrescription,
+  editPrescription,
+  removeAllPrescriptions,
+  deletePrescription,
+} = PowerSlice.actions;
 export default PowerSlice.reducer;

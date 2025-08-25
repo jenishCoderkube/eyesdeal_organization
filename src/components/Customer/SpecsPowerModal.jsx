@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
 import { useDispatch } from "react-redux";
-import { addPrescription } from "../../store/Power/specsPowerSlice";
+import {
+  addPrescription,
+  editPrescription,
+} from "../../store/Power/specsPowerSlice";
 
 const SpecsPowerModal = ({ show, onHide, editData }) => {
   const [formData, setFormData] = useState({
@@ -32,10 +35,11 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     de: "",
   });
   const [errors, setErrors] = useState({});
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (editData) {
-      setFormData(editData);
+      setFormData({ ...editData, type: "specs" });
     } else {
       setFormData({
         doctorName: "",
@@ -67,8 +71,6 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
     }
   }, [editData]);
 
-  const dispatch = useDispatch();
-
   const prescribedByOptions = [
     { value: "doctor", label: "Doctor" },
     { value: "employee", label: "Employee" },
@@ -76,15 +78,16 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
   ];
 
   const powerOptions = Array.from({ length: 193 }, (_, i) => {
-    const value = (i - 96) * 0.25; // Generates -24.00 to +24.00 with 0.25 intervals
+    const value = (i - 96) * 0.25;
     const formattedValue = value.toFixed(2);
     return {
       value: formattedValue,
       label: value >= 0 ? `+${formattedValue}` : formattedValue,
     };
   });
+
   const cylOptions = Array.from({ length: 65 }, (_, i) => {
-    const value = (i - 32) * 0.25; // -8.00 to +8.00 with 0.25 interval
+    const value = (i - 32) * 0.25;
     const formattedValue = value.toFixed(2);
     return {
       value: formattedValue,
@@ -93,7 +96,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
   });
 
   const axisOptions = Array.from({ length: 37 }, (_, i) => ({
-    value: (i * 5).toString(), // 0 to 180 with 5 interval
+    value: (i * 5).toString(),
     label: (i * 5).toString(),
   }));
 
@@ -119,7 +122,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
   ];
 
   const addOptions = Array.from({ length: 13 }, (_, i) => {
-    const value = i * 0.25; // 0.00 to +3.00 with 0.25 interval
+    const value = i * 0.25;
     const formattedValue = value.toFixed(2);
     return {
       value: formattedValue,
@@ -144,9 +147,9 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
       return;
     }
 
-    // Keep empty values as empty strings
     const formattedData = {
       ...formData,
+      id: editData ? editData.id : Date.now().toString(),
       right: {
         ...formData.right,
         distance: {
@@ -179,18 +182,24 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
           vs: formData.left.near.vs || "",
         },
       },
+      createdAt: editData ? editData.createdAt : new Date().toISOString(),
     };
 
-    dispatch(addPrescription(formattedData));
+    if (editData) {
+      dispatch(editPrescription(formattedData));
+    } else {
+      dispatch(addPrescription(formattedData));
+    }
     setErrors({});
     onHide();
   };
+
   const formatToLabel = (num) => {
     const formatted = num.toFixed(2);
     return num >= 0 ? `+${formatted}` : formatted;
   };
+
   const handleInputChange = (field, value, nestedPath = null) => {
-    // Update the primary field
     if (nestedPath) {
       const [side, subField] = nestedPath.split(".");
       if (subField === "distance" || subField === "near") {
@@ -220,20 +229,16 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
       setErrors({ ...errors, [field]: "" });
     }
 
-    // Auto-fill/copy logic
     if (nestedPath) {
-      const side = nestedPath.split(".")[0]; // "right" or "left"
-      const section = nestedPath.split(".")[1]; // "distance" or "near"
+      const side = nestedPath.split(".")[0];
+      const section = nestedPath.split(".")[1];
 
-      // Logic for distance changes (SPH, ADD, CYL, AXIS, VS)
       if (section === "distance") {
         if (field === "sph" || field === "add") {
-          // Update near SPH based on distance SPH and ADD
           const distSph =
             field === "sph" ? value : formData[side].distance.sph || "";
           const addVal =
             field === "add" ? value : formData[side].distance.add || "";
-
           if (distSph !== "" && addVal !== "") {
             const distNum = parseFloat(distSph);
             const addNum = parseFloat(addVal);
@@ -244,57 +249,38 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                 ...prev,
                 [side]: {
                   ...prev[side],
-                  near: {
-                    ...prev[side].near,
-                    sph: nearLabel,
-                  },
+                  near: { ...prev[side].near, sph: nearLabel },
                 },
               }));
             }
           } else if (field === "sph" && distSph !== "") {
-            // If ADD is empty, copy distance SPH to near SPH
             setFormData((prev) => ({
               ...prev,
               [side]: {
                 ...prev[side],
-                near: {
-                  ...prev[side].near,
-                  sph: distSph,
-                },
+                near: { ...prev[side].near, sph: distSph },
               },
             }));
           }
         }
-
-        // Copy CYL from distance to near
         if (field === "cyl") {
           setFormData((prev) => ({
             ...prev,
             [side]: {
               ...prev[side],
-              near: {
-                ...prev[side].near,
-                cyl: value,
-              },
+              near: { ...prev[side].near, cyl: value },
             },
           }));
         }
-
-        // Copy AXIS from distance to near
         if (field === "axis") {
           setFormData((prev) => ({
             ...prev,
             [side]: {
               ...prev[side],
-              near: {
-                ...prev[side].near,
-                axis: value,
-              },
+              near: { ...prev[side].near, axis: value },
             },
           }));
         }
-
-        // Transform VS from "6/X" to "N/X" for near
         if (field === "vs" && value.startsWith("6/")) {
           const numberPart = value.split("/")[1];
           const nearVs = `N/${numberPart}`;
@@ -303,17 +289,12 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
               ...prev,
               [side]: {
                 ...prev[side],
-                near: {
-                  ...prev[side].near,
-                  vs: nearVs,
-                },
+                near: { ...prev[side].near, vs: nearVs },
               },
             }));
           }
         }
       }
-
-      // Logic for near SPH changes: Update distance SPH
       if (section === "near" && field === "sph") {
         const addVal = formData[side].distance.add || "";
         if (addVal !== "") {
@@ -326,10 +307,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
               ...prev,
               [side]: {
                 ...prev[side],
-                distance: {
-                  ...prev[side].distance,
-                  sph: distLabel,
-                },
+                distance: { ...prev[side].distance, sph: distLabel },
               },
             }));
           }
@@ -355,7 +333,9 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
             <div className="modal-dialog modal-dialog-centered modal-custom-size">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Add Power</h5>
+                  <h5 className="modal-title">
+                    {editData ? "Edit Specs Power" : "Add Specs Power"}
+                  </h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -372,7 +352,7 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                         <input
                           type="text"
                           className="form-control custom-disabled"
-                          value={editData?._id}
+                          value={editData?.id || ""}
                           readOnly
                         />
                       </div>
@@ -985,12 +965,12 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                     </div>
                     <div className="row g-3 mt-2 border p-2">
                       {[
-                        "aSize",
-                        "bSize",
+                        "asize",
+                        "bsize",
                         "dbl",
                         "fth",
-                        "pDesign",
-                        "ft",
+                        "pdesign",
+                        "ftype",
                         "de",
                       ].map((field) => (
                         <div className="col-6 col-md-3 col-lg-auto" key={field}>
@@ -1008,21 +988,12 @@ const SpecsPowerModal = ({ show, onHide, editData }) => {
                         </div>
                       ))}
                     </div>
-                    {editData ? (
-                      <button
-                        type="submit"
-                        className="btn custom-button-bgcolor mt-4"
-                      >
-                        OK
-                      </button>
-                    ) : (
-                      <button
-                        type="submit"
-                        className="btn custom-button-bgcolor mt-4"
-                      >
-                        Add
-                      </button>
-                    )}
+                    <button
+                      type="submit"
+                      className="btn custom-button-bgcolor mt-4"
+                    >
+                      {editData ? "Update" : "Add"}
+                    </button>
                   </form>
                 </div>
               </div>

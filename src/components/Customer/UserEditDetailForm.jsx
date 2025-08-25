@@ -7,9 +7,11 @@ import "react-phone-input-2/lib/style.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useDispatch, useSelector } from "react-redux";
-import { deletePrescription } from "../../store/Power/specsPowerSlice";
-import SpecsPowerModal from "./SpecsPowerModal";
-import ContactsPowerModal from "./ContactsPowerModal";
+import {
+  addPrescription,
+  deletePrescription,
+  removeAllPrescriptions,
+} from "../../store/Power/specsPowerSlice";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Country, State, City } from "country-state-city";
 import { saleService } from "../../services/saleService";
@@ -21,22 +23,68 @@ import { MdAdd } from "react-icons/md";
 const UserEditDetailForm = ({
   onAddSpecs,
   onAddContacts,
+  onEditPrescription,
   initialData,
   isEdit,
 }) => {
-  // const { prescriptions } = useSelector((state) => state.specsPower);
-  const [prescriptions, setPrescriptions] = useState([]);
+  console.log("initialData", initialData);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { prescriptions } = useSelector((state) => state.specsPower); // Use Redux state
+  const [referenceOptions, setReferenceOptions] = useState([]);
 
-  const [editModal, setEditModal] = useState({
-    show: false,
-    type: null,
-    data: null,
+  // Fetch marketing references
+  const getMarketingReferences = async () => {
+    try {
+      const response = await saleService.getMarketingReferences();
+      if (response.success) {
+        setReferenceOptions(
+          response.data.data.map((ref) => ({
+            value: ref.name,
+            label: ref.name,
+          }))
+        );
+      } else {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching marketing references:", error);
+    }
+  };
+  useEffect(() => {
+    getMarketingReferences();
+  }, []); // Empty dependency array to run only once
+
+  const validationSchema = Yup.object({
+    name: Yup.string().trim().required("Name is required"),
+
+    gender: Yup.object().nullable().required("Gender is required"),
+    country: Yup.object().nullable().required("Country is required"),
+    state: Yup.object().nullable().required("State is required"),
+    city: Yup.object().nullable().required("City is required"),
   });
 
-  // Fetch countries
+  // Initial form values
+  const initialValues = {
+    name: initialData?.name || "",
+    phone: initialData?.phone ? `+${initialData.phone}` : "",
+    customerReference: initialData?.customerReference || null,
+    gender: null,
+    country: null,
+    state: null,
+    city: null,
+    email: initialData?.email || "",
+    pincode: initialData?.pincode || "",
+    address: initialData?.address || "",
+    notes: initialData?.note || "",
+    birthDate: initialData?.birthDate ? new Date(initialData.birthDate) : null,
+    anniversaryDate: initialData?.anniversaryDate
+      ? new Date(initialData.anniversaryDate)
+      : null,
+  };
+
+  // Country, gender, and reference options
   const countryOptions = Country.getAllCountries().map((country) => ({
     value: country.isoCode,
     label: country.name,
@@ -49,94 +97,133 @@ const UserEditDetailForm = ({
     { value: "kids", label: "Kids" },
   ];
 
-  const [referenceOptions, setReferenceOptions] = useState([]);
-
-  const getMarketingReferences = async () => {
-    try {
-      const response = await saleService.getMarketingReferences();
-      if (response.success) {
-        const fetchedOptions = response.data.data.map((ref) => ({
-          value: ref.name,
-          label: ref.name,
-        }));
-        setReferenceOptions(fetchedOptions);
-      } else {
-        console.log(response.data.message);
-      }
-    } catch (error) {
-      console.error("Error fetching marketing references:", error);
-    }
-  };
-
-  useEffect(() => {
-    getMarketingReferences();
-  }, []);
-
-  // Formik validation schema (only for required fields)
-  const validationSchema = Yup.object({
-    name: Yup.string().trim().required("Name is required"),
-    phone: Yup.string()
-      .required("Phone number is required")
-      .test(
-        "min-digits",
-        "Phone number must be at least 10 digits",
-        (value) => {
-          if (!value) return false;
-          // Extract digits after the country code (e.g., remove "+91" and non-digits)
-          const phoneDigits = value
-            .replace(/^\+\d{1,3}/, "")
-            .replace(/\D/g, "");
-          return phoneDigits.length >= 10;
-        }
-      ),
-    customerReference: Yup.object()
-      .nullable()
-      .required("Customer Reference is required"),
-    gender: Yup.object().nullable().required("Gender is required"),
-    country: Yup.object().nullable().required("Country is required"),
-    state: Yup.object().nullable().required("State is required"),
-    city: Yup.object().nullable().required("City is required"),
-  });
-
-  // Initial form values (include all fields)
-  const initialValues = {
-    name: initialData?.Name,
-    phone: String(initialData?.Phone),
-    customerReference: initialData?.marketingReference,
-    gender: initialData?.gender,
-    country: initialData?.country,
-    state: initialData?.state,
-    city: initialData?.city,
-    email: initialData?.Email,
-    pincode: initialData?.pincode,
-    address: initialData?.address,
-    notes: initialData?.notes,
-    birthDate: initialData?.birthDate ? new Date(initialData.birthDate) : null,
-    anniversaryDate: initialData?.anniversaryDate
-      ? new Date(initialData.anniversaryDate)
-      : null,
-  };
-
   const handleEdit = (prescription) => {
-    setEditModal({
-      show: true,
-      type: prescription.__t,
-      data: prescription,
-    });
+    onEditPrescription(prescription); // Call the parent’s edit handler
   };
 
   const handleDelete = (id) => {
     dispatch(deletePrescription(id));
   };
 
-  const handleModalClose = () => {
-    setEditModal({ show: false, type: null, data: null });
-  };
-
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-GB"); // DD/MM/YYYY format
+    return new Date(dateString).toLocaleDateString("en-GB");
   };
 
+  // Transform payload for backend
+  const transformPayload = (values) => {
+    const transformDate = (date) =>
+      date instanceof Date ? date.getTime() : date;
+
+    const transformedPrescriptions = prescriptions.map((prescription) => {
+      const {
+        doctorName,
+        prescribedBy,
+        type,
+        id,
+        right,
+        left,
+        ipd,
+        asize,
+        bsize,
+        dbl,
+        fth,
+        pdesign,
+        ftype,
+        de,
+        k,
+        dia,
+        bc,
+      } = prescription;
+      return {
+        name: values.name || "",
+        relation: "",
+        gender: "",
+        doctorName,
+        prescribedBy,
+        __t: type || prescription.__t,
+        ipd: ipd || "",
+        aSize: asize || "",
+        bSize: bsize || "",
+        dbl: dbl || "",
+        fth: fth || "",
+        pDesign: pdesign || "",
+        ft: ftype || "",
+        de: de || "",
+        pres_id: id,
+        right: {
+          distance: {
+            sph: right?.distance?.sph || "",
+            cyl: right?.distance?.cyl || "",
+            axis: right?.distance?.axis || "",
+            vs: right?.distance?.vs || "",
+            add: right?.distance?.add || "",
+            _id: right?.distance?._id || undefined,
+          },
+          near: {
+            sph: right?.near?.sph || "",
+            cyl: right?.near?.cyl || "",
+            axis: right?.near?.axis || "",
+            vs: right?.near?.vs || "",
+            _id: right?.near?._id || undefined,
+          },
+          psm: right?.psm || "",
+          pd: right?.pd || "",
+          fh: right?.fh || "",
+          k: k || "",
+          dia: dia || "",
+          bc: bc || "",
+        },
+        left: {
+          distance: {
+            sph: left?.distance?.sph || "",
+            cyl: left?.distance?.cyl || "",
+            axis: left?.distance?.axis || "",
+            vs: left?.distance?.vs || "",
+            add: left?.distance?.add || "",
+            _id: left?.distance?._id || undefined,
+          },
+          near: {
+            sph: left?.near?.sph || "",
+            cyl: left?.near?.cyl || "",
+            axis: left?.near?.axis || "",
+            vs: left?.near?.vs || "",
+            _id: left?.near?._id || undefined,
+          },
+          psm: left?.psm || "",
+          pd: left?.pd || "",
+          fh: left?.fh || "",
+          k: k || "",
+          dia: dia || "",
+          bc: bc || "",
+        },
+        phone: values.phone.replace(/^\+/, ""),
+      };
+    });
+
+    return {
+      _id: initialData._id,
+      name: values.name,
+      phone: values.phone.replace(/^\+/, ""),
+      role: "customer",
+      email: values.email,
+      gender: values.gender?.value,
+      customerReference: values.customerReference || { value: "", label: "" },
+      birthDate: transformDate(values.birthDate),
+      anniversaryDate: transformDate(values.anniversaryDate),
+      address: values.address,
+      note: values.notes,
+      country: values.country?.label,
+      state: values.state?.label,
+      city: values.city?.label,
+      pincode: values.pincode,
+      prescriptions: transformedPrescriptions,
+      verified: initialData?.verified || false,
+      isMigrated: initialData?.isMigrated || false,
+      isActive: initialData?.isActive || true,
+      stores: initialData?.stores || [],
+      storesData: initialData?.storesData || [],
+    };
+  };
   return (
     <div className="container">
       <h3 className="mb-4 user_main_title mt-4">Edit User</h3>
@@ -144,35 +231,39 @@ const UserEditDetailForm = ({
         initialValues={initialValues}
         validationSchema={validationSchema}
         enableReinitialize={true}
-        onSubmit={async (values) => {
-          console.log("Updating user:", values);
-          const data = {
-            ...values,
-            country: values.country?.label,
-            state: values?.state?.label,
-            city: values?.city?.label,
-            role: values.role?.value,
-            gender: values.gender?.value,
-          };
-          const response = await userService.updateCustomer(data);
-          if (response.success) {
-            toast.success(response.message);
-            navigate("/sale/new");
-          } else {
-            toast.error(response.message);
+        onSubmit={async (values, { setSubmitting }) => {
+          try {
+            const formattedData = transformPayload(values);
+            const response = await userService.updateCustomer(formattedData);
+            if (response.success) {
+              dispatch(removeAllPrescriptions());
+              toast.success(response.message);
+              navigate("/sale/new");
+            } else {
+              toast.error(response.message || "User not found!");
+            }
+          } catch (error) {
+            toast.error(error.message || "Failed to update customer!");
+          } finally {
+            setSubmitting(false);
           }
         }}
       >
-        {({ values, setFieldValue, setValues, errors, touched }) => {
-          // Fetch states based on selected country
+        {({
+          values,
+          setFieldValue,
+          setValues,
+          errors,
+          touched,
+          isSubmitting,
+        }) => {
+          // Fetch states and cities
           const stateOptions = values.country
             ? State.getStatesOfCountry(values.country.value).map((state) => ({
                 value: state.isoCode,
                 label: state.name,
               }))
             : [];
-
-          // Fetch cities based on selected country and state
           const cityOptions =
             values.country && values.state
               ? City.getCitiesOfState(
@@ -184,51 +275,93 @@ const UserEditDetailForm = ({
                 }))
               : [];
 
-          // Set values when initialData changes
+          // Initialize form with initialData
+          // Inside UserEditDetailForm component
           useEffect(() => {
-            if (initialData) {
-              const reference = referenceOptions.find(
-                (ref) => ref.label === initialData?.marketingReference
-              );
-              const gender = genderOptions.find(
-                (gen) => gen.value === initialData?.gender
-              );
-              const country = countryOptions.find(
-                (con) => con.label.toLowerCase() === initialData?.country
-              );
-              const stateOptions = State.getStatesOfCountry(country.value).map(
-                (state) => ({
-                  value: state.isoCode,
-                  label: state.name,
-                })
-              );
-              const state = stateOptions.find(
-                (state) => state.label.toLowerCase() === initialData?.state
-              );
-              const cityOptions = City.getCitiesOfState(
-                country?.value,
-                state?.value
-              ).map((city) => ({
-                value: city.name,
-                label: city.name,
-              }));
-              const city = cityOptions.find(
-                (city) => city.label.toLowerCase() === initialData?.city
-              );
+            if (initialData && referenceOptions.length > 0) {
+              const reference =
+                initialData.customerReference ||
+                referenceOptions.find(
+                  (ref) => ref.label === initialData?.marketingReference
+                ) ||
+                null;
+              const gender =
+                genderOptions.find(
+                  (gen) => gen.value === initialData?.gender
+                ) || null;
+              const country =
+                countryOptions.find(
+                  (con) =>
+                    con.label.toLowerCase() ===
+                    initialData?.country?.toLowerCase()
+                ) || null;
+              const stateOptions = country
+                ? State.getStatesOfCountry(country.value).map((state) => ({
+                    value: state.isoCode,
+                    label: state.name,
+                  }))
+                : [];
+              const state =
+                stateOptions.find(
+                  (state) =>
+                    state.label.toLowerCase() ===
+                    initialData?.state?.toLowerCase()
+                ) || null;
+              const cityOptions =
+                country && state
+                  ? City.getCitiesOfState(country.value, state.value).map(
+                      (city) => ({
+                        value: city.name,
+                        label: city.name,
+                      })
+                    )
+                  : [];
+              const city =
+                cityOptions.find(
+                  (city) =>
+                    city.label.toLowerCase() ===
+                    initialData?.city?.toLowerCase()
+                ) || null;
+
+              // Set form values
               setValues({
-                ...initialData,
+                ...initialValues,
+                name: initialData.name || "",
+                phone: initialData.phone ? `+${initialData.phone}` : "",
                 customerReference: reference,
                 gender: gender,
                 country: country,
                 state: state,
                 city: city,
+                email: initialData.email || "",
+                pincode: initialData.pincode || "",
+                address: initialData.address || "",
+                notes: initialData.note || "",
+                birthDate: initialData.birthDate
+                  ? new Date(initialData.birthDate)
+                  : null,
+                anniversaryDate: initialData.anniversaryDate
+                  ? new Date(initialData.anniversaryDate)
+                  : null,
               });
 
-              if (initialData?.prescriptions) {
-                setPrescriptions(initialData?.prescriptions);
+              // Initialize prescriptions in Redux store
+              if (
+                initialData.prescriptions &&
+                initialData.prescriptions.length > 0
+              ) {
+                initialData.prescriptions.forEach((prescription) => {
+                  dispatch(
+                    addPrescription({
+                      ...prescription,
+                      id: prescription._id, // Use _id as the unique identifier
+                      type: prescription.__t, // Map __t to type for consistency
+                    })
+                  );
+                });
               }
             }
-          }, [initialData]);
+          }, [initialData, referenceOptions, dispatch, setValues]);
 
           return (
             <Form>
@@ -240,13 +373,15 @@ const UserEditDetailForm = ({
                   <Field
                     type="text"
                     name="name"
-                    className="form-control"
+                    className={`form-control ${
+                      touched.name && errors.name ? "is-invalid" : ""
+                    }`}
                     placeholder="Name"
                   />
                   <ErrorMessage
                     name="name"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -257,12 +392,14 @@ const UserEditDetailForm = ({
                     country={"in"}
                     value={values.phone}
                     onChange={(phone) => setFieldValue("phone", phone)}
-                    inputClass="form-control w-100"
+                    inputClass={`form-control w-100 ${
+                      touched.phone && errors.phone ? "is-invalid" : ""
+                    }`}
                   />
                   <ErrorMessage
                     name="phone"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -276,11 +413,16 @@ const UserEditDetailForm = ({
                       setFieldValue("customerReference", option)
                     }
                     placeholder="Select..."
+                    className={
+                      touched.customerReference && errors.customerReference
+                        ? "is-invalid"
+                        : ""
+                    }
                   />
                   <ErrorMessage
                     name="customerReference"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
               </div>
@@ -294,11 +436,14 @@ const UserEditDetailForm = ({
                     value={values.gender}
                     onChange={(option) => setFieldValue("gender", option)}
                     placeholder="Select..."
+                    className={
+                      touched.gender && errors.gender ? "is-invalid" : ""
+                    }
                   />
                   <ErrorMessage
                     name="gender"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -306,13 +451,15 @@ const UserEditDetailForm = ({
                   <Field
                     type="email"
                     name="email"
-                    className="form-control"
+                    className={`form-control ${
+                      touched.email && errors.email ? "is-invalid" : ""
+                    }`}
                     placeholder="Email"
                   />
                   <ErrorMessage
                     name="email"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-4">
@@ -339,11 +486,14 @@ const UserEditDetailForm = ({
                       setFieldValue("city", null);
                     }}
                     placeholder="Select Country..."
+                    className={
+                      touched.country && errors.country ? "is-invalid" : ""
+                    }
                   />
                   <ErrorMessage
                     name="country"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
@@ -359,11 +509,14 @@ const UserEditDetailForm = ({
                     }}
                     placeholder="Select State..."
                     isDisabled={!values.country}
+                    className={
+                      touched.state && errors.state ? "is-invalid" : ""
+                    }
                   />
                   <ErrorMessage
                     name="state"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
@@ -376,22 +529,29 @@ const UserEditDetailForm = ({
                     onChange={(option) => setFieldValue("city", option)}
                     placeholder="Select City..."
                     isDisabled={!values.state}
+                    className={touched.city && errors.city ? "is-invalid" : ""}
                   />
                   <ErrorMessage
                     name="city"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
                 <div className="col-12 col-md-6 col-lg-3">
                   <label className="form-label custom-label_user">
                     Pincode
                   </label>
-                  <Field type="text" name="pincode" className="form-control" />
+                  <Field
+                    type="text"
+                    name="pincode"
+                    className={`form-control ${
+                      touched.pincode && errors.pincode ? "is-invalid" : ""
+                    }`}
+                  />
                   <ErrorMessage
                     name="pincode"
                     component="div"
-                    className="text-danger mt-1"
+                    className="invalid-feedback"
                   />
                 </div>
               </div>
@@ -406,11 +566,6 @@ const UserEditDetailForm = ({
                     className="form-control"
                     placeholderText="Select date"
                   />
-                  <ErrorMessage
-                    name="birthDate"
-                    component="div"
-                    className="text-danger mt-1"
-                  />
                 </div>
                 <div className="col-12 col-md-3">
                   <label className="form-label custom-label_user">
@@ -421,11 +576,6 @@ const UserEditDetailForm = ({
                     onChange={(date) => setFieldValue("anniversaryDate", date)}
                     className="form-control"
                     placeholderText="Select date"
-                  />
-                  <ErrorMessage
-                    name="anniversaryDate"
-                    component="div"
-                    className="text-danger mt-1"
                   />
                 </div>
               </div>
@@ -440,11 +590,6 @@ const UserEditDetailForm = ({
                     className="form-control"
                     rows="5"
                   />
-                  <ErrorMessage
-                    name="address"
-                    component="div"
-                    className="text-danger mt-1"
-                  />
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label custom-label_user">Notes</label>
@@ -453,11 +598,6 @@ const UserEditDetailForm = ({
                     name="notes"
                     className="form-control"
                     rows="5"
-                  />
-                  <ErrorMessage
-                    name="notes"
-                    component="div"
-                    className="text-danger mt-1"
                   />
                 </div>
               </div>
@@ -468,7 +608,7 @@ const UserEditDetailForm = ({
                     <button
                       type="button"
                       className="btn custom-button-bgcolor mb-2 mb-sm-0 me-sm-2"
-                      onClick={onAddSpecs}
+                      onClick={() => onAddSpecs()}
                     >
                       <MdAdd />
                       <span className="ms-2">Add Specs Power</span>
@@ -476,7 +616,7 @@ const UserEditDetailForm = ({
                     <button
                       type="button"
                       className="btn custom-button-bgcolor"
-                      onClick={onAddContacts}
+                      onClick={() => onAddContacts()}
                     >
                       <MdAdd />
                       <span className="ms-2">Add Contacts Power</span>
@@ -506,30 +646,28 @@ const UserEditDetailForm = ({
                       </thead>
                       <tbody>
                         {prescriptions?.map((prescription) => (
-                          <tr key={prescription._id} className="text-center">
+                          <tr key={prescription.id} className="text-center">
                             <td className="px-3 py-2">
                               {formatDate(prescription.createdAt)}
                             </td>
-                            <td className="px-3 py-2">{prescription.__t}</td>
                             <td className="px-3 py-2">
-                              ({prescription.prescribedBy})
+                              {prescription.type || prescription.__t}
+                            </td>
+                            <td className="px-3 py-2">
+                              {prescription.prescribedBy}
                             </td>
                             <td className="px-3 py-2">
                               <button
+                                type="button"
                                 className="btn p-0 me-2"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  handleEdit(prescription);
-                                }}
+                                onClick={() => handleEdit(prescription)}
                               >
                                 <FaEdit color="blue" />
                               </button>
                               <button
+                                type="button"
                                 className="btn p-0"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  handleDelete(prescription.id);
-                                }}
+                                onClick={() => handleDelete(prescription.id)}
                               >
                                 <FaTrash color="red" />
                               </button>
@@ -543,26 +681,19 @@ const UserEditDetailForm = ({
               </div>
               <div className="row mt-3 pb-5">
                 <div>
-                  <button type="submit" className="btn custom-button-bgcolor">
-                    Update
+                  <button
+                    type="submit"
+                    className="btn custom-button-bgcolor"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Updating..." : "Update"}
                   </button>
                 </div>
               </div>
-              <hr />
             </Form>
           );
         }}
       </Formik>
-      <SpecsPowerModal
-        show={editModal.show && editModal.type === "specs"}
-        onHide={handleModalClose}
-        editData={editModal.data}
-      />
-      <ContactsPowerModal
-        show={editModal.show && editModal.type === "contacts"}
-        onHide={handleModalClose}
-        editData={editModal.data}
-      />
     </div>
   );
 };
