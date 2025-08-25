@@ -62,3 +62,8 @@ export const productRangesByType = {
     { label: "3001 - 4439", value: "3001-4439" },
   ],
 };
+
+export const parseRange = (range) => {
+  const [min, max] = range.split("-").map(Number);
+  return { min, max };
+};

@@ -11,6 +11,7 @@ import productViewService from "../../../services/Products/productViewService";
 import { toast } from "react-toastify";
 import {
   defalutImageBasePath,
+  parseRange,
   productRangesByType,
 } from "../../../utils/constants";
 import { inventoryService } from "../../../services/inventoryService";
@@ -44,11 +45,25 @@ function ProductTable({ filters }) {
   const [isFetchingPhotos, setIsFetchingPhotos] = useState(false);
   const [photoFetchProgress, setPhotoFetchProgress] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
+  const [maxVal, setMaxVal] = useState(0);
+  const [minVal, setMinVal] = useState(0);
+  const [startRange, setStartRange] = useState(0);
+  const [endRange, setEndRange] = useState(0);
   const [range, setRange] = useState([]);
 
   useEffect(() => {
     getRange();
   }, [filters.model]);
+
+  useEffect(() => {
+    if (range?.length > 0) {
+      const firstRange = parseRange(range[0]); // e.g., { min: 1, max: 1000 }
+      const lastRange = parseRange(range[range.length - 1]);
+
+      setMinVal(firstRange?.min);
+      setMaxVal(lastRange?.max);
+    }
+  }, [range]);
 
   const getRange = async () => {
     try {
@@ -57,6 +72,8 @@ function ProductTable({ filters }) {
         filters?.status === "active" ? true : false
       );
       if (result.success) {
+        setStartRange();
+        setEndRange();
         setRange(result?.data?.data);
       } else {
         console.error("Error:", result.message);
@@ -419,14 +436,12 @@ function ProductTable({ filters }) {
   );
   const totalRows = paginationMeta.totalDocs;
 
-  const downloadExcel = async (value, type) => {
-    console.log("value", value);
-    const result = value.split("-");
+  const downloadExcel = async () => {
     try {
       await inventoryService.exportProductExcel(
-        type,
-        parseInt(result[0]),
-        parseInt(result[1]),
+        filters?.model,
+        startRange,
+        endRange,
         filters?.status === "active" ? true : false
       );
     } catch (error) {
@@ -442,28 +457,36 @@ function ProductTable({ filters }) {
           <div>
             {filters?.model && (
               <div className="d-flex flex-wrap gap-2">
-                {range?.map((range) => (
-                  <button
-                    key={range}
-                    type="button"
-                    className="btn text-white"
-                    style={{
-                      backgroundColor: "#6366f1",
+                <div>
+                  <span>Start Range: {startRange ? startRange : "-"}</span>
+                  <input
+                    type="range"
+                    class="form-range"
+                    min={minVal}
+                    max={maxVal}
+                    id="customRange1"
+                    onChange={(e) => {
+                      setStartRange(e.target.value);
                     }}
-                    onMouseOver={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#4f46e5")
-                    }
-                    onMouseOut={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#6366f1")
-                    }
-                    onClick={() => downloadExcel(range, filters?.model)}
-                  >
-                    {range}
-                  </button>
-                ))}
+                  />
+                </div>
+                <div>
+                  <span>End Range: {endRange ? endRange : "-"}</span>
+                  <input
+                    type="range"
+                    class="form-range"
+                    min={minVal}
+                    max={maxVal}
+                    id="customRange2"
+                    onChange={(e) => {
+                      setEndRange(e.target.value);
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>
+
           <button
             className="btn custom-button-bgcolor ms-md-auto"
             onClick={exportToExcel}
@@ -479,6 +502,14 @@ function ProductTable({ filters }) {
           >
             Fetch Photos
           </button>
+          {startRange && endRange && (
+            <button
+              className="btn custom-button-bgcolor"
+              onClick={downloadExcel}
+            >
+              Download
+            </button>
+          )}
         </div>
         {isFetchingPhotos ? (
           <div className="card shadow-sm p-4 text-center">
