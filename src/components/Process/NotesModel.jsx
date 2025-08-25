@@ -30,6 +30,7 @@ function NotesModel({ closeNotesModal, selectedNotes, refreshSalesData }) {
 
     setIsSubmitting(true);
     const payload = {
+      ...selectedNotes?.fullSale,
       note: notes,
     };
 

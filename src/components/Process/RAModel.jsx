@@ -8,6 +8,8 @@ import { IoMdClose, IoIosSave } from "react-icons/io";
 import { MdEdit } from "react-icons/md";
 
 function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
+  console.log("Selected RA:", selectedRA);
+
   const [payments, setPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const modalRef = useRef(null); // Ref to track the modal content
@@ -39,6 +41,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
           amount: payment.amount.toString(),
           date: payment.date ? new Date(payment.date) : null,
           reference: payment.reference || "",
+          isEditing: true, // Set Amount field as editable by default
         })
       );
       setPayments(initialPayments);
@@ -49,7 +52,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
           amount: "",
           date: null,
           reference: "",
-          isEditing: true,
+          isEditing: true, // Set Amount field as editable by default
         },
       ]);
     }
@@ -119,6 +122,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
     );
 
     const payload = {
+      ...selectedRA.fullSale,
       billNumber: selectedRA.billNumber,
       receivedAmount: formattedPayments,
       finalAmount: selectedRA.netAmount || 0,
@@ -263,7 +267,10 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                 Add
               </button>
               {payments.map((payment, index) => (
-                <div className="row g-3 my-3 align-items-end d-flex align-items-top" key={index}>
+                <div
+                  className="row g-3 my-3 align-items-end d-flex align-items-top"
+                  key={index}
+                >
                   <div className="col-2">
                     <label className="form-label mb-1 fw-semibold">
                       Method
@@ -290,7 +297,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                       onChange={(e) =>
                         handleChange(index, "amount", e.target.value)
                       }
-                      disabled={!payment.isEditing}
+                      // disabled={!payment.isEditing}
                     />
                   </div>
                   <div className="col-3">
@@ -335,13 +342,15 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                   </div>
                 </div>
               ))}
-              <button
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </button>
+              <div>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -11,20 +11,16 @@ const AUTH_ENDPOINTS = {
 };
 
 const buildPurchaseLogParams = (
-  invoiceDateGte,
-  invoiceDateLte,
+  startDate,
+  endDate,
   storeIds = [],
   status,
-  search = "",
-  createdAtGte,
-  createdAtLte
+  search = ""
 ) => {
   const params = new URLSearchParams();
 
-  if (invoiceDateGte) params.append("invoiceDate[$gte]", invoiceDateGte);
-  if (invoiceDateLte) params.append("invoiceDate[$lte]", invoiceDateLte);
-  if (createdAtGte) params.append("createdAt[$gte]", createdAtGte);
-  if (createdAtLte) params.append("createdAt[$lte]", createdAtLte);
+  if (startDate) params.append("createdAt[$gte]", startDate);
+  if (endDate) params.append("createdAt[$lte]", endDate);
 
   storeIds.forEach((storeId, index) => {
     params.append(`optimize[store][$in][${index}]`, storeId);
@@ -45,7 +41,7 @@ const buildPurchaseLogParams = (
   return params.toString();
 };
 
-const buildCountParams = (storeIds = [], search = "") => {
+const buildCountParams = (storeIds = [], search = "", startDate, endDate) => {
   const params = new URLSearchParams();
 
   storeIds.forEach((storeId, index) => {
@@ -54,12 +50,20 @@ const buildCountParams = (storeIds = [], search = "") => {
 
   if (search) params.append("search", search);
 
+  if (startDate) params.append("createdAt[$gte]", startDate);
+  if (endDate) params.append("createdAt[$lte]", endDate);
+
   params.append("populate", "true");
 
   return params.toString();
 };
 
-const buildSalesReturnParams = (storeIds = [], search = "") => {
+const buildSalesReturnParams = (
+  storeIds = [],
+  search = "",
+  startDate,
+  endDate
+) => {
   const params = new URLSearchParams();
 
   storeIds.forEach((storeId, index) => {
@@ -67,6 +71,9 @@ const buildSalesReturnParams = (storeIds = [], search = "") => {
   });
 
   if (search) params.append("search", search);
+
+  if (startDate) params.append("createdAt[$gte]", startDate);
+  if (endDate) params.append("createdAt[$lte]", endDate);
 
   params.append("populate", "true");
 
@@ -99,17 +106,11 @@ export const shopProcessService = {
   getSales: async (filters) => {
     try {
       const params = buildPurchaseLogParams(
-        // filters.startDate
-        //   ? filters.startDate.toISOString().split("T")[0]
-        //   : null,
-        // filters.endDate ? filters.endDate.toISOString().split("T")[0] : null,
-        "",
-        "",
+        filters.startDate ? filters.startDate : null,
+        filters.endDate ? filters.endDate : null,
         filters.stores,
         filters.status,
-        filters.search,
-        filters.createdAtGte,
-        filters.createdAtLte
+        filters.search
       );
       const response = await api.get(`${AUTH_ENDPOINTS.SALES}?${params}`);
       return {
@@ -126,7 +127,12 @@ export const shopProcessService = {
 
   getOrderCount: async (filters) => {
     try {
-      const params = buildCountParams(filters.stores, filters.search);
+      const params = buildCountParams(
+        filters.stores,
+        filters.search,
+        filters.startDate ? filters.startDate : null,
+        filters.endDate ? filters.endDate : null
+      );
       const response = await api.get(`${AUTH_ENDPOINTS.ORDER_COUNT}?${params}`);
       return {
         success: true,
@@ -142,7 +148,12 @@ export const shopProcessService = {
 
   getSaleReturn: async (filters) => {
     try {
-      const params = buildSalesReturnParams(filters.stores, filters.search);
+      const params = buildSalesReturnParams(
+        filters.stores,
+        filters.search,
+        filters.startDate ? filters.startDate : null,
+        filters.endDate ? filters.endDate : null
+      );
       const response = await api.get(`${AUTH_ENDPOINTS.SALE_RETURN}?${params}`);
       return {
         success: true,
@@ -158,7 +169,12 @@ export const shopProcessService = {
   },
   getSaleReturnCount: async (filters) => {
     try {
-      const params = buildCountParams(filters.stores, filters.search);
+      const params = buildCountParams(
+        filters.stores,
+        filters.search,
+        filters.startDate ? filters.startDate : null,
+        filters.endDate ? filters.endDate : null
+      );
       const response = await api.get(
         `${AUTH_ENDPOINTS.SALE_RETURN_COUNT}?${params}`
       );

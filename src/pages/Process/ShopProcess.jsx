@@ -73,6 +73,7 @@ function ShopProcess() {
     delivered: 0,
     returned: 0,
   });
+
   const [pagination, setPagination] = useState({
     totalDocs: 0,
     limit: 100,
@@ -86,6 +87,7 @@ function ShopProcess() {
   const [selectedRows, setSelectedRows] = useState([]);
 
   const navigate = useNavigate();
+  const localStoreId = localStorage.getItem("store");
   const users = useMemo(
     () =>
       JSON.parse(localStorage.getItem("user")) || {
@@ -93,7 +95,7 @@ function ShopProcess() {
         phone: "917777900910",
         name: "Rizwan",
         role: "admin",
-        stores: ["64e30076c68b7b37a98b4b4c"],
+        stores: [localStoreId],
       },
     []
   );
@@ -207,14 +209,6 @@ function ShopProcess() {
         search: filters.search,
         startDate: filters.startDate?.toISOString(),
         endDate: filters.endDate?.toISOString(),
-        createdAtGte:
-          filters.status === "delivered"
-            ? Math.floor(filters.startDate.getTime())
-            : undefined,
-        createdAtLte:
-          filters.status === "delivered"
-            ? Math.floor(filters.endDate.getTime())
-            : undefined,
         page: filters.page,
         limit: filters.limit,
         populate: true,
@@ -232,16 +226,12 @@ function ShopProcess() {
         const params = {
           status: filters.status,
           search: filters.search || "",
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-          createdAtGte:
-            filters.status === "delivered"
-              ? Math.floor(filters.startDate.getTime())
-              : undefined,
-          createdAtLte:
-            filters.status === "delivered"
-              ? Math.floor(filters.endDate.getTime())
-              : undefined,
+          startDate: filters.startDate
+            ? Math.floor(filters.startDate.getTime())
+            : undefined,
+          endDate: filters.endDate
+            ? Math.floor(filters.endDate.getTime())
+            : undefined,
           page: filters.page,
           limit: filters.limit,
           populate: true,
@@ -253,15 +243,7 @@ function ShopProcess() {
         }
 
         let response;
-        if (["inWorkshop", "inFitting"].includes(filters.status)) {
-          response = await workshopService.getSales({
-            ...params,
-            startDate: null,
-            endDate: null,
-          });
-        } else {
-          response = await shopProcessService.getSales(params);
-        }
+        response = await shopProcessService.getSales(params); // Use shopProcessService for all statuses
 
         if (response.success && response.data.data) {
           const sales = response.data.data.docs || [];
@@ -304,7 +286,6 @@ function ShopProcess() {
                 productSku: order.product?.sku || "N/A",
                 leftLens: order?.leftLens?.sku || "N/A",
                 rightLens: order?.rightLens?.sku || "N/A",
-
                 status: order.status || "N/A",
                 barcode: order.product?.barcode || order.lens?.barcode || "N/A",
                 srp:
@@ -351,6 +332,12 @@ function ShopProcess() {
         const params = {
           stores: filters.stores.length ? filters.stores : users.stores,
           search: filters.search || "",
+          startDate: filters.startDate
+            ? Math.floor(filters.startDate.getTime())
+            : undefined,
+          endDate: filters.endDate
+            ? Math.floor(filters.endDate.getTime())
+            : undefined,
         };
 
         if (filters.status === "returned") {
@@ -370,6 +357,9 @@ function ShopProcess() {
                 (orderCounts.inWorkshopCount || 0) +
                 (orderCounts.inLabCount || 0) +
                 (orderCounts.inFittingCount || 0),
+              newOrder: orderCounts.inWorkshopCount || 0,
+              inFitting: orderCounts.inFittingCount || 0,
+              ready: orderCounts.readyCount || 0,
               delivered: orderCounts.deliveredCount || 0,
             }));
           }
@@ -387,8 +377,6 @@ function ShopProcess() {
                   selected: false,
                   productSku: product.sku || "N/A",
                   lensSku: product.sku || "N/A",
-                  lensSku: product.sku || "N/A",
-
                   barcode: product.barcode || "N/A",
                   srp: product.purchaseRate || product.totalAmount || 0,
                   orderId: product._id || doc._id,
@@ -404,15 +392,10 @@ function ShopProcess() {
             }));
           }
         } else {
-          const [orderResponse, returnResponse, workshopOrderResponse] =
-            await Promise.all([
-              shopProcessService.getOrderCount(params),
-              shopProcessService.getSaleReturnCount(params),
-              workshopService.getOrderCount({
-                ...params,
-                statuses: ["inWorkshop", "inLab", "inFitting", "ready"],
-              }),
-            ]);
+          const [orderResponse, returnResponse] = await Promise.all([
+            shopProcessService.getOrderCount(params),
+            shopProcessService.getSaleReturnCount(params),
+          ]);
 
           if (orderResponse.success && orderResponse.data.data.docs[0]) {
             const orderCounts = orderResponse.data.data.docs[0];
@@ -423,20 +406,10 @@ function ShopProcess() {
                 (orderCounts.inWorkshopCount || 0) +
                 (orderCounts.inLabCount || 0) +
                 (orderCounts.inFittingCount || 0),
+              newOrder: orderCounts.inWorkshopCount || 0,
+              inFitting: orderCounts.inFittingCount || 0,
               delivered: orderCounts.deliveredCount || 0,
-            }));
-          }
-
-          if (
-            workshopOrderResponse.success &&
-            workshopOrderResponse.data.data.docs[0]
-          ) {
-            const workshopCounts = workshopOrderResponse.data.data.docs[0];
-            setStatusCounts((prev) => ({
-              ...prev,
-              newOrder: workshopCounts.inWorkshopCount || 0,
-              inFitting: workshopCounts.inFittingCount || 0,
-              ready: workshopCounts.readyCount || 0,
+              ready: orderCounts.readyCount || 0,
             }));
           }
 

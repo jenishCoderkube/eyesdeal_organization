@@ -62,6 +62,8 @@ const AssignStore = () => {
         let user = JSON.parse(localStorage.getItem("user"));
         if (user) {
           user.stores = [newStoreId]; // Replace the stores array with the new store ID
+          console.log("user", newStoreId, user);
+
           localStorage.setItem("user", JSON.stringify(user));
         }
 
@@ -79,7 +81,7 @@ const AssignStore = () => {
         <div className="col-12 col-lg-12">
           <div className="mb-4">
             <h1 className="h2 text-dark fw-bold text-2xl md-text-3xl">
-              Add Stores
+              Assign Stores
             </h1>
           </div>
           <div className="shadow-sm">
