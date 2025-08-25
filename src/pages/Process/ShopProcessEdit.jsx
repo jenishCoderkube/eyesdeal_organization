@@ -173,6 +173,7 @@ function ShopProcessEdit() {
           otherCharges: payload.otherCharges.toString(),
           note: payload.note || "",
         });
+        navigate(-1); // Go back to the previous page
       } else {
         toast.error(response.message || "Failed to update sale");
       }

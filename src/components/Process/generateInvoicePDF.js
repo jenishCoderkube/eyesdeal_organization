@@ -29,24 +29,63 @@ const generateInvoicePDF = (saleData) => {
   const cgst = totalTax / 2;
   const sgst = totalTax / 2;
 
-  // Prepare table data for orders
-  const tableData = saleData.orders.map((order, index) => {
+  // Prepare table data for orders, including product (if exists), right lens, and left lens as separate rows
+  const tableData = [];
+  saleData.orders.forEach((order, index) => {
     const product = order.product || {};
-    const mrp = product.mrp || 0;
-    const discount = product.perPieceDiscount || 0;
-    const amount = product.perPieceAmount || 0;
+    const rightLens = order.rightLens || {};
+    const leftLens = order.leftLens || {};
 
-    return [
-      index + 1, // Sr
-      product.displayName || "N/A", // Particulars
-      1, // Qty
-      formatCurrency(mrp), // MRP
-      formatCurrency(discount), // DIS
-      product.unit || "1Pcs", // Unit
-      formatCurrency(cgst / saleData.orders.length), // CGST
-      formatCurrency(sgst / saleData.orders.length), // SGST
-      formatCurrency(amount), // Amount
-    ];
+    // Calculate number of items (product + lenses) for tax distribution
+    const itemCount =
+      (product.displayName ? 1 : 0) +
+      (rightLens.displayName ? 1 : 0) +
+      (leftLens.displayName ? 1 : 0);
+
+    // Add product row only if it exists
+    if (product.displayName) {
+      tableData.push([
+        tableData.length + 1, // Sr
+        product.displayName, // Particulars
+        1, // Qty
+        formatCurrency(product.mrp || 0), // MRP
+        formatCurrency(product.perPieceDiscount || 0), // DIS
+        product.unit || "1Pcs", // Unit
+        formatCurrency(cgst / (saleData.orders.length * itemCount)), // CGST
+        formatCurrency(sgst / (saleData.orders.length * itemCount)), // SGST
+        formatCurrency(product.perPieceAmount || 0), // Amount
+      ]);
+    }
+
+    // Add right lens row
+    if (rightLens.displayName) {
+      tableData.push([
+        tableData.length + 1, // Sr
+        rightLens.displayName + " (Right Lens)", // Particulars
+        1, // Qty
+        formatCurrency(rightLens.mrp || 0), // MRP
+        formatCurrency(rightLens.perPieceDiscount || 0), // DIS
+        rightLens.unit || "1Pcs", // Unit
+        formatCurrency(cgst / (saleData.orders.length * itemCount)), // CGST
+        formatCurrency(sgst / (saleData.orders.length * itemCount)), // SGST
+        formatCurrency(rightLens.perPieceAmount || 0), // Amount
+      ]);
+    }
+
+    // Add left lens row
+    if (leftLens.displayName) {
+      tableData.push([
+        tableData.length + 1, // Sr
+        leftLens.displayName + " (Left Lens)", // Particulars
+        1, // Qty
+        formatCurrency(leftLens.mrp || 0), // MRP
+        formatCurrency(leftLens.perPieceDiscount || 0), // DIS
+        leftLens.unit || "1Pcs", // Unit
+        formatCurrency(cgst / (saleData.orders.length * itemCount)), // CGST
+        formatCurrency(sgst / (saleData.orders.length * itemCount)), // SGST
+        formatCurrency(leftLens.perPieceAmount || 0), // Amount
+      ]);
+    }
   });
 
   // Add Logo
@@ -84,7 +123,7 @@ const generateInvoicePDF = (saleData) => {
   doc.text(`Bill No: ${saleData.saleNumber || "N/A"}`, 150, 50);
   doc.text(`Date: ${formatDate(saleData.createdAt)}`, 150, 56);
 
-  // Table Headers (Define headers here)
+  // Table Headers
   const headers = [
     "Sr",
     "Particulars",

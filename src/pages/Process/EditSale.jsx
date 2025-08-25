@@ -1,18 +1,18 @@
 // EditSale.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Select from 'react-select';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { toast } from 'react-toastify';
-import { shopProcessService } from '../../services/Process/shopProcessService';
-import ProductSelector from '../../components/Sale/ProductSelector';
-import InventoryData from '../../components/Sale/InventoryData';
-import AsyncSelect from 'react-select/async';
-import { v4 as uuidv4 } from 'uuid';
-import { saleService } from '../../services/saleService';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
+import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "react-toastify";
+import { shopProcessService } from "../../services/Process/shopProcessService";
+import ProductSelector from "../../components/Sale/ProductSelector";
+import InventoryData from "../../components/Sale/InventoryData";
+import AsyncSelect from "react-select/async";
+import { v4 as uuidv4 } from "uuid";
+import { saleService } from "../../services/saleService";
 
 function EditSale() {
   const { id } = useParams();
@@ -25,41 +25,41 @@ function EditSale() {
   const [submitting, setSubmitting] = useState(false);
   const [saleData, setSaleData] = useState(null);
   const [formData, setFormData] = useState({
-    flatDiscount: '0',
-    deliveryCharges: '0',
-    otherCharges: '0',
-    note: '',
+    flatDiscount: "0",
+    deliveryCharges: "0",
+    otherCharges: "0",
+    note: "",
   });
   const [payments, setPayments] = useState([
     {
       method: null,
-      amount: '',
+      amount: "",
       date: null,
-      reference: '',
+      reference: "",
     },
   ]);
   const recallOptions = [
-    { value: '3 month', label: '3 month' },
-    { value: '6 month', label: '6 month' },
-    { value: '9 month', label: '9 month' },
-    { value: '12 month', label: '12 month' },
-    { value: 'other', label: 'Other' },
+    { value: "3 month", label: "3 month" },
+    { value: "6 month", label: "6 month" },
+    { value: "9 month", label: "9 month" },
+    { value: "12 month", label: "12 month" },
+    { value: "other", label: "Other" },
   ];
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
     if (user && user.stores && user.stores.length > 0) {
       const storeId = user.stores[0];
       setDefaultStore({ value: storeId, label: storeId });
     } else {
-      console.error('No store found in localStorage user data');
-      toast.error('No store found in user data');
+      console.error("No store found in localStorage user data");
+      toast.error("No store found in user data");
     }
   }, []);
 
   const loadRecallOptions = (inputValue, callback) => {
     const filtered = recallOptions.filter((option) =>
-      option.label.toLowerCase().includes(inputValue.toLowerCase()),
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
     callback(filtered);
   };
@@ -71,14 +71,14 @@ function EditSale() {
       !defaultStore ||
       !defaultStore.value
     ) {
-      console.warn('Selected product or default store is missing.');
-      toast.error('Please select a product and ensure a store is selected.');
+      console.warn("Selected product or default store is missing.");
+      toast.error("Please select a product and ensure a store is selected.");
       return;
     }
 
     const productDetails = await fetchInventoryDetails(
       selectedProduct.value,
-      defaultStore.value,
+      defaultStore.value
     );
     if (productDetails) {
       const pairId = uuidv4();
@@ -87,7 +87,7 @@ function EditSale() {
       setInventoryData((prev) => [
         ...prev,
         {
-          type: 'product',
+          type: "product",
           data: productDetails,
           pairId,
           groupId,
@@ -96,7 +96,7 @@ function EditSale() {
           discount: 0,
           totalAmount: parseFloat(productDetails.sellPrice) || 0,
         },
-        { type: 'lensDropdown', pairId, groupId },
+        { type: "lensDropdown", pairId, groupId },
       ]);
 
       const newPair = {
@@ -104,7 +104,7 @@ function EditSale() {
         groupId,
         product: {
           item: productDetails._id,
-          unit: productDetails.unit?.name || 'Pieces',
+          unit: productDetails.unit?.name || "Pieces",
           displayName: productDetails.productName,
           barcode: productDetails.oldBarcode,
           sku: productDetails.sku,
@@ -123,7 +123,7 @@ function EditSale() {
       };
       setInventoryPairs((prev) => [...prev, newPair]);
     } else {
-      toast.error('Failed to fetch product details or product out of stock.');
+      toast.error("Failed to fetch product details or product out of stock.");
     }
   };
 
@@ -136,17 +136,17 @@ function EditSale() {
           return newItem.product;
         }
         if (response.data.data.docs.length === 0) {
-          toast.error('Product out of stock');
+          toast.error("Product out of stock");
           return null;
         }
       } else {
         console.error(response.data.message);
-        toast.error(response.data.message || 'Error fetching inventory');
+        toast.error(response.data.message || "Error fetching inventory");
         return null;
       }
     } catch (error) {
-      console.error('Error fetching inventory:', error);
-      toast.error('Error fetching inventory');
+      console.error("Error fetching inventory:", error);
+      toast.error("Error fetching inventory");
       return null;
     }
   };
@@ -161,7 +161,7 @@ function EditSale() {
     let otherCharges = Number(formData.otherCharges) || 0;
 
     inventoryData.forEach((item) => {
-      if (item.type !== 'lensDropdown' && item.data) {
+      if (item.type !== "lensDropdown" && item.data) {
         totalQuantity += item.quantity || 1;
         totalAmount += item.totalAmount || 0;
         taxAmount += item.taxAmount || 0;
@@ -212,12 +212,12 @@ function EditSale() {
           const sale = response.data.data.docs[0];
           setSaleData(sale);
           setFormData({
-            flatDiscount: sale.flatDiscount?.toString() || '0',
-            deliveryCharges: sale.deliveryCharges?.toString() || '0',
-            otherCharges: sale.otherCharges?.toString() || '0',
-            note: sale.note || '',
-            recallOption: sale.recallOption || '',
-            recallDate: sale.recallDate || '',
+            flatDiscount: sale.flatDiscount?.toString() || "0",
+            deliveryCharges: sale.deliveryCharges?.toString() || "0",
+            otherCharges: sale.otherCharges?.toString() || "0",
+            note: sale.note || "",
+            recallOption: sale.recallOption || "",
+            recallDate: sale.recallDate || "",
           });
 
           if (sale.receivedAmount?.length > 0) {
@@ -226,10 +226,10 @@ function EditSale() {
                 method:
                   methodoptions.find((opt) => opt.value === payment.method) ||
                   null,
-                amount: payment.amount?.toString() || '',
+                amount: payment.amount?.toString() || "",
                 date: payment.date ? new Date(payment.date) : null,
-                reference: payment.reference || '',
-              })),
+                reference: payment.reference || "",
+              }))
             );
           }
 
@@ -241,7 +241,7 @@ function EditSale() {
 
             if (order.product) {
               newInventoryData.push({
-                type: 'product',
+                type: "product",
                 data: {
                   _id: order.product.item,
                   oldBarcode: order.product.barcode,
@@ -266,7 +266,7 @@ function EditSale() {
 
             if (order.rightLens) {
               newInventoryData.push({
-                type: 'rightLens',
+                type: "rightLens",
                 data: {
                   _id: order.rightLens.item,
                   oldBarcode: order.rightLens.barcode,
@@ -291,7 +291,7 @@ function EditSale() {
 
             if (order.leftLens) {
               newInventoryData.push({
-                type: 'leftLens',
+                type: "leftLens",
                 data: {
                   _id: order.leftLens.item,
                   oldBarcode: order.leftLens.barcode,
@@ -315,7 +315,7 @@ function EditSale() {
             }
 
             newInventoryData.push({
-              type: 'lensDropdown',
+              type: "lensDropdown",
               pairId,
               groupId,
             });
@@ -331,11 +331,11 @@ function EditSale() {
           setInventoryData(newInventoryData);
           setInventoryPairs(newInventoryPairs);
         } else {
-          toast.error(response.message || 'Sale not found');
+          toast.error(response.message || "Sale not found");
         }
       } catch (error) {
-        toast.error('Failed to fetch sale data');
-        console.error('getSaleById API Error:', error);
+        toast.error("Failed to fetch sale data");
+        console.error("getSaleById API Error:", error);
       } finally {
         setLoading(false);
       }
@@ -345,9 +345,9 @@ function EditSale() {
   }, [id]);
 
   const methodoptions = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'card', label: 'Card' },
-    { value: 'upi', label: 'UPI' },
+    { value: "cash", label: "Cash" },
+    { value: "card", label: "Card" },
+    { value: "upi", label: "UPI" },
   ];
 
   const handleProductsSelected = (selectedProducts) => {
@@ -357,7 +357,7 @@ function EditSale() {
       return {
         product: {
           item: product._id,
-          unit: product.unit?._id || 'Pieces',
+          unit: product.unit?._id || "Pieces",
           displayName: product.productName,
           barcode: product.newBarcode || product.oldBarcode,
           sku: product.sku,
@@ -386,13 +386,13 @@ function EditSale() {
         (prev.totalAmount || 0) +
         newOrders.reduce(
           (sum, order) => sum + (order.product.perPieceAmount || 0),
-          0,
+          0
         ),
       totalTax:
         (prev.totalTax || 0) +
         newOrders.reduce(
           (sum, order) => sum + (order.product.perPieceTax || 0),
-          0,
+          0
         ),
       netAmount:
         (prev.netAmount || 0) +
@@ -401,12 +401,12 @@ function EditSale() {
             sum +
             (order.product.perPieceAmount || 0) +
             (order.product.perPieceTax || 0),
-          0,
+          0
         ),
     }));
 
     const newInventoryData = newOrders.map((order) => ({
-      type: 'product',
+      type: "product",
       data: {
         _id: order.product.item,
         oldBarcode: order.product.barcode,
@@ -432,7 +432,7 @@ function EditSale() {
       ...prev,
       ...newInventoryData,
       ...newOrders.map((order) => ({
-        type: 'lensDropdown',
+        type: "lensDropdown",
         pairId: order.pairId,
         groupId: order.groupId,
       })),
@@ -457,9 +457,9 @@ function EditSale() {
       ...payments,
       {
         method: null,
-        amount: '',
+        amount: "",
         date: null,
-        reference: '',
+        reference: "",
       },
     ]);
   };
@@ -489,13 +489,13 @@ function EditSale() {
           payment.method &&
           payment.amount &&
           !isNaN(payment.amount) &&
-          parseFloat(payment.amount) > 0,
+          parseFloat(payment.amount) > 0
       )
       .map((payment) => ({
         method: payment.method.value,
         amount: parseFloat(payment.amount),
         date: payment.date ? payment.date.toISOString() : null,
-        reference: payment.reference || '',
+        reference: payment.reference || "",
       }));
 
     // Construct orders from inventoryData and inventoryPairs
@@ -503,21 +503,22 @@ function EditSale() {
       .map((pair) => {
         // Find corresponding inventoryData items
         const groupItems = inventoryData.filter(
-          (item) => item.groupId === pair.groupId,
+          (item) => item.groupId === pair.groupId
         );
 
-        let product = pair.product;
-        let rightLens = pair.rightLens;
-        let leftLens = pair.leftLens;
+        let product = null; // Initialize product as null
+        let rightLens = null;
+        let leftLens = null;
 
-        // Update product details
-        const productItem = groupItems.find((item) => item.type === 'product');
+        // Update product details if it exists
+        const productItem = groupItems.find((item) => item.type === "product");
         if (productItem && productItem.data) {
           product = {
             item: productItem.data._id,
-            unit: productItem.data.unit?.name || 'Pieces',
-            displayName: productItem.data.productName,
-            barcode: productItem.data.oldBarcode,
+            unit: productItem.data.unit?.name || "Pieces",
+            displayName:
+              productItem.data.productName || productItem.data.displayName,
+            barcode: productItem.data.oldBarcode || productItem.data.newBarcode,
             sku: productItem.data.sku,
             mrp: parseFloat(productItem.data.MRP) || 0,
             srp: parseFloat(productItem.data.sellPrice) || 0,
@@ -533,14 +534,16 @@ function EditSale() {
 
         // Update rightLens details
         const rightLensItem = groupItems.find(
-          (item) => item.type === 'rightLens',
+          (item) => item.type === "rightLens"
         );
         if (rightLensItem && rightLensItem.data) {
           rightLens = {
             item: rightLensItem.data._id,
-            unit: rightLensItem.data.unit?.name || 'Pieces',
-            displayName: rightLensItem.data.productName,
-            barcode: rightLensItem.data.oldBarcode,
+            unit: rightLensItem.data.unit?.name || "Pieces",
+            displayName:
+              rightLensItem.data.productName || rightLensItem.data.displayName,
+            barcode:
+              rightLensItem.data.oldBarcode || rightLensItem.data.newBarcode,
             sku: rightLensItem.data.sku,
             mrp: parseFloat(rightLensItem.data.MRP) || 0,
             srp: parseFloat(rightLensItem.data.sellPrice) || 0,
@@ -549,19 +552,23 @@ function EditSale() {
             perPieceTax: rightLensItem.taxAmount || 0,
             perPieceAmount: rightLensItem.totalAmount || 0,
             inclusiveTax: rightLensItem.data.inclusiveTax ?? true,
-            manageStock: rightLensItem.data.manageStock ?? true,
+            manageStock: rightLensItem.data.manageStock ?? false,
             incentiveAmount: rightLensItem.data.incentiveAmount || 0,
           };
         }
 
         // Update leftLens details
-        const leftLensItem = groupItems.find((item) => item.type === 'leftLens');
+        const leftLensItem = groupItems.find(
+          (item) => item.type === "leftLens"
+        );
         if (leftLensItem && leftLensItem.data) {
           leftLens = {
             item: leftLensItem.data._id,
-            unit: leftLensItem.data.unit?.name || 'Pieces',
-            displayName: leftLensItem.data.productName,
-            barcode: leftLensItem.data.oldBarcode,
+            unit: leftLensItem.data.unit?.name || "Pieces",
+            displayName:
+              leftLensItem.data.productName || leftLensItem.data.displayName,
+            barcode:
+              leftLensItem.data.oldBarcode || leftLensItem.data.newBarcode,
             sku: leftLensItem.data.sku,
             mrp: parseFloat(leftLensItem.data.MRP) || 0,
             srp: parseFloat(leftLensItem.data.sellPrice) || 0,
@@ -570,22 +577,22 @@ function EditSale() {
             perPieceTax: leftLensItem.taxAmount || 0,
             perPieceAmount: leftLensItem.totalAmount || 0,
             inclusiveTax: leftLensItem.data.inclusiveTax ?? true,
-            manageStock: leftLensItem.data.manageStock ?? true,
+            manageStock: leftLensItem.data.manageStock ?? false,
             incentiveAmount: leftLensItem.data.incentiveAmount || 0,
           };
         }
 
-        // Only include orders with at least one item
+        // Only include orders with at least one item (product, rightLens, or leftLens)
         if (product || rightLens || leftLens) {
           return {
-            _id: pair.pairId.includes('pair-new-')
+            _id: pair.pairId.includes("pair-new-")
               ? undefined
-              : pair.pairId.split('-')[2],
+              : pair.pairId.split("-")[2],
             product,
             rightLens,
             leftLens,
             store: saleData?.store?._id,
-            status: 'pending',
+            status: "pending",
             attachments: [],
             sale: id,
             billNumber: saleData?.saleNumber?.toString(),
@@ -603,7 +610,8 @@ function EditSale() {
     const couponDiscount = parseFloat(formData.couponDiscount) || 0;
     const otherCharges = parseFloat(formData.otherCharges) || 0;
     const deliveryCharges = parseFloat(formData.deliveryCharges) || 0;
-    const totalDiscount = (formData.netDiscount || 0) - flatDiscount - couponDiscount;
+    const totalDiscount =
+      (formData.netDiscount || 0) - flatDiscount - couponDiscount;
     const netDiscount = formData.netDiscount || 0;
     const netAmount = formData.netAmount || 0;
 
@@ -638,7 +646,7 @@ function EditSale() {
     try {
       const response = await shopProcessService.updateSale(id, payload);
       if (response.success) {
-        toast.success('Sale updated successfully');
+        toast.success("Sale updated successfully");
         setSaleData((prev) => ({
           ...prev,
           ...payload,
@@ -648,18 +656,18 @@ function EditSale() {
           flatDiscount: payload.flatDiscount.toString(),
           deliveryCharges: payload.deliveryCharges.toString(),
           otherCharges: payload.otherCharges.toString(),
-          note: payload.note || '',
-          recallOption: payload.recallOption || '',
-          recallDate: payload.recallDate || '',
+          note: payload.note || "",
+          recallOption: payload.recallOption || "",
+          recallDate: payload.recallDate || "",
         });
-        navigate(`/process/shopedit/${id}`);
- // Optionally navigate back to sales list
+        navigate("/process/shop");
+        // Optionally navigate back to sales list
       } else {
-        toast.error(response.message || 'Failed to update sale');
+        toast.error(response.message || "Failed to update sale");
       }
     } catch (error) {
-      toast.error('Error updating sale');
-      console.error('updateSale API Error:', error);
+      toast.error("Error updating sale");
+      console.error("updateSale API Error:", error);
     } finally {
       setSubmitting(false);
     }
@@ -669,11 +677,11 @@ function EditSale() {
     return (
       <div
         style={{
-          width: '100%',
-          height: '300px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          width: "100%",
+          height: "300px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
         <div className="spinner-border" role="status">
@@ -698,7 +706,7 @@ function EditSale() {
             type="text"
             id="name"
             className="form-control"
-            value={saleData?.customerName || ''}
+            value={saleData?.customerName || ""}
             disabled
           />
         </div>
@@ -710,7 +718,7 @@ function EditSale() {
             type="text"
             id="phone"
             className="form-control"
-            value={saleData?.customerPhone || ''}
+            value={saleData?.customerPhone || ""}
             disabled
           />
         </div>
@@ -739,32 +747,32 @@ function EditSale() {
             <label htmlFor="recallOption" className="custom-label">
               Recall Date <span className="text-danger">*</span>
             </label>
-            {formData.recallOption !== 'other' ? (
+            {formData.recallOption !== "other" ? (
               <AsyncSelect
                 cacheOptions
                 defaultOptions={recallOptions}
                 loadOptions={loadRecallOptions}
                 value={
                   recallOptions.find(
-                    (opt) => opt.value === formData.recallOption,
+                    (opt) => opt.value === formData.recallOption
                   ) || null
                 }
                 onChange={(selected) => {
                   setFormData({
                     ...formData,
-                    recallOption: selected ? selected.value : '',
-                    recallDate: '',
+                    recallOption: selected ? selected.value : "",
+                    recallDate: "",
                   });
                   if (errors.recallOption || errors.recallDate) {
                     setErrors({
                       ...errors,
-                      recallOption: '',
-                      recallDate: '',
+                      recallOption: "",
+                      recallDate: "",
                     });
                   }
                 }}
                 placeholder="Select..."
-                className={errors.recallOption ? 'is-invalid' : ''}
+                className={errors.recallOption ? "is-invalid" : ""}
               />
             ) : (
               <DatePicker
@@ -774,16 +782,14 @@ function EditSale() {
                 onChange={(date) => {
                   setFormData({
                     ...formData,
-                    recallDate: date
-                      ? date.toISOString().split('T')[0]
-                      : '',
+                    recallDate: date ? date.toISOString().split("T")[0] : "",
                   });
                   if (errors.recallDate) {
-                    setErrors({ ...errors, recallDate: '' });
+                    setErrors({ ...errors, recallDate: "" });
                   }
                 }}
                 className={`form-control ${
-                  errors.recallDate ? 'is-invalid' : ''
+                  errors.recallDate ? "is-invalid" : ""
                 }`}
                 placeholderText="Select date"
                 dateFormat="yyyy-MM-dd"
@@ -809,67 +815,67 @@ function EditSale() {
         <div className="row g-3 mt-4">
           {[
             {
-              label: 'Total Quantity',
-              id: 'TotalQuantity',
-              value: formData.totalQuantity || '0',
+              label: "Total Quantity",
+              id: "TotalQuantity",
+              value: formData.totalQuantity || "0",
               disabled: true,
             },
             {
-              label: 'Total Amount',
-              id: 'TotalAmount',
-              value: formData.totalAmount || '0',
+              label: "Total Amount",
+              id: "TotalAmount",
+              value: formData.totalAmount || "0",
               disabled: true,
             },
             {
-              label: 'Total Tax',
-              id: 'TotalTax',
-              value: formData.totalTax || '0',
+              label: "Total Tax",
+              id: "TotalTax",
+              value: formData.totalTax || "0",
               disabled: true,
             },
             {
-              label: 'Total Discount',
-              id: 'TotalDiscount',
-              value: formData.netDiscount || '0',
+              label: "Total Discount",
+              id: "TotalDiscount",
+              value: formData.netDiscount || "0",
               disabled: true,
             },
             {
-              label: 'Coupon Discount',
-              id: 'CouponDiscount',
-              value: formData.couponDiscount || '0',
+              label: "Coupon Discount",
+              id: "CouponDiscount",
+              value: formData.couponDiscount || "0",
               disabled: true,
             },
             {
-              label: 'Flat Discount',
-              id: 'FlatDiscount',
+              label: "Flat Discount",
+              id: "FlatDiscount",
               value: formData.flatDiscount,
               disabled: false,
-              onChange: (e) => handleFormChange('flatDiscount', e.target.value),
+              onChange: (e) => handleFormChange("flatDiscount", e.target.value),
             },
             {
-              label: 'Net Discount',
-              id: 'NetDiscount',
-              value: formData.netDiscount || '0',
+              label: "Net Discount",
+              id: "NetDiscount",
+              value: formData.netDiscount || "0",
               disabled: true,
             },
             {
-              label: 'Delivery Charges',
-              id: 'DeliveryCharges',
+              label: "Delivery Charges",
+              id: "DeliveryCharges",
               value: formData.deliveryCharges,
               disabled: false,
               onChange: (e) =>
-                handleFormChange('deliveryCharges', e.target.value),
+                handleFormChange("deliveryCharges", e.target.value),
             },
             {
-              label: 'Other Charges',
-              id: 'OtherCharges',
+              label: "Other Charges",
+              id: "OtherCharges",
               value: formData.otherCharges,
               disabled: false,
-              onChange: (e) => handleFormChange('otherCharges', e.target.value),
+              onChange: (e) => handleFormChange("otherCharges", e.target.value),
             },
             {
-              label: 'Net Amount',
-              id: 'NetAmount',
-              value: formData.netAmount || '0',
+              label: "Net Amount",
+              id: "NetAmount",
+              value: formData.netAmount || "0",
               disabled: true,
             },
           ].map((item, idx) => (
@@ -878,7 +884,7 @@ function EditSale() {
                 <label
                   htmlFor={item.id}
                   className="form-label mb-0 me-2 fw-semibold"
-                  style={{ width: '50%' }}
+                  style={{ width: "50%" }}
                 >
                   {item.label}
                 </label>
@@ -904,7 +910,7 @@ function EditSale() {
             id="notes"
             className="form-control"
             value={formData.note}
-            onChange={(e) => handleFormChange('note', e.target.value)}
+            onChange={(e) => handleFormChange("note", e.target.value)}
           />
         </div>
 
@@ -914,6 +920,7 @@ function EditSale() {
               Received Amount
             </label>
             <button
+              type="button" // Added type="button" to prevent form submission
               className="btn text-primary border-secondary-subtle ms-2"
               onClick={handleAddPayment}
               disabled={submitting}
@@ -932,7 +939,7 @@ function EditSale() {
                         options={methodoptions}
                         value={payment.method}
                         onChange={(selectedOption) =>
-                          handleChange(index, 'method', selectedOption)
+                          handleChange(index, "method", selectedOption)
                         }
                         className="react-select-container"
                         classNamePrefix="react-select"
@@ -946,7 +953,7 @@ function EditSale() {
                         placeholder="Amount"
                         value={payment.amount}
                         onChange={(e) =>
-                          handleChange(index, 'amount', e.target.value)
+                          handleChange(index, "amount", e.target.value)
                         }
                         disabled={submitting}
                       />
@@ -954,7 +961,7 @@ function EditSale() {
                     <div className="col-4 col-md-3">
                       <DatePicker
                         selected={payment.date}
-                        onChange={(date) => handleChange(index, 'date', date)}
+                        onChange={(date) => handleChange(index, "date", date)}
                         className="form-control"
                         dateFormat="yyyy-MM-dd"
                         isClearable
@@ -972,7 +979,7 @@ function EditSale() {
                     placeholder="Reference"
                     value={payment.reference}
                     onChange={(e) =>
-                      handleChange(index, 'reference', e.target.value)
+                      handleChange(index, "reference", e.target.value)
                     }
                     disabled={submitting}
                   />
@@ -982,7 +989,7 @@ function EditSale() {
                 <div className="w-100 text-center my-2">
                   <hr
                     style={{
-                      borderTop: '1px solid #ced4da',
+                      borderTop: "1px solid #ced4da",
                       opacity: 0.6,
                       margin: 0,
                     }}
@@ -997,7 +1004,7 @@ function EditSale() {
             className="btn btn-primary"
             disabled={submitting}
           >
-            {submitting ? 'Submitting...' : 'Submit'}
+            {submitting ? "Submitting..." : "Submit"}
           </button>
         </div>
       </form>

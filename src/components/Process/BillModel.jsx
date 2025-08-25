@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from "react";
 
 function BillModel({ selectedBill, closeBillModal }) {
+  console.log("Selected Bill Data:", selectedBill); // Debugging line
+
   const modalRef = useRef(null);
 
   // Calculate financial details

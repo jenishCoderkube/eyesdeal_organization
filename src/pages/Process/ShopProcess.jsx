@@ -551,7 +551,8 @@ function ShopProcess() {
       saleId: order.saleId,
       selected: order.selected,
       productSku: order.productSku,
-      lensSku: order.lensSku,
+      leftLens: order.leftLens,
+      rightLens: order.rightLens,
       status: order.status,
       vendor: order.vendor,
       orderId: order.orderId,
@@ -878,21 +879,24 @@ function ShopProcess() {
         ),
       },
       {
-        accessorKey: "lensSku",
-        header: "Lens SKU",
-        cell: ({ getValue }) => (
+        accessorKey: "rightLens",
+        header: "Right Lens SKU",
+        cell: ({ row }) => (
           <div className="table-vendor-data-size" style={{ maxWidth: "200px" }}>
-            {getValue()}
+            {row.original.rightLens || "N/A"}
           </div>
         ),
       },
       {
-        accessorKey: "vendor",
-        header: "Vendor",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        accessorKey: "leftLens",
+        header: "Left Lens SKU",
+        cell: ({ row }) => (
+          <div className="table-vendor-data-size" style={{ maxWidth: "200px" }}>
+            {row.original.leftLens || "N/A"}
+          </div>
         ),
       },
+
       {
         accessorKey: "notes",
         header: "Note",
@@ -905,19 +909,21 @@ function ShopProcess() {
     ],
     [localProductTableData]
   );
+  console.log("newOrderTableData", newOrderTableData);
 
   const combinedData = useMemo(() => {
-    return newOrderTableData.map((order) => ({
-      ...order,
-      productSku:
-        localProductTableData.find((p) => p.saleId === order.id)?.productSku ||
-        "N/A",
-      lensSku:
-        localProductTableData.find((p) => p.saleId === order.id)?.lensSku ||
-        "N/A",
-      vendor:
-        localProductTableData.find((p) => p.saleId === order.id)?.vendor || "",
-    }));
+    return newOrderTableData.map((order) => {
+      const matchingProduct = localProductTableData.find(
+        (p) => p.saleId === order.id
+      );
+      return {
+        ...order,
+        productSku: matchingProduct?.productSku || "N/A",
+        rightLens: matchingProduct?.rightLens || "",
+        leftLens: matchingProduct?.leftLens || "",
+        vendor: matchingProduct?.vendor || "",
+      };
+    });
   }, [newOrderTableData, localProductTableData]);
 
   const table = useReactTable({
