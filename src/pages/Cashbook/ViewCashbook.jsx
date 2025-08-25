@@ -34,7 +34,7 @@ const ViewCashbook = () => {
   // Sample options for dropdowns
   const modeOptions = [
     { value: "cash", label: "Cash" },
-    { value: "upi", label: "UPI" },
+    { value: "card", label: "UPI" },
     { value: "bank", label: "Bank" },
   ];
 
@@ -109,7 +109,8 @@ const ViewCashbook = () => {
         page,
         limit,
         1,
-        search
+        search,
+        formData?.mode?.value
       );
       if (response.success) {
         console.log("response", response);

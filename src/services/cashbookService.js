@@ -12,7 +12,7 @@ const CASHBOOK_ENDPOINTS = {
   CREATEEXPENSE: "/expenseCategory",
   DELETEEXPENSE: (id) => `/expenseCategory/${id}`,
   VIEWCASHBOOK: `/stores?populate=true`,
-  CASEBOOK: (params) => `cashbook/cash?populate=true&${params}`,
+  CASEBOOK: (mode, params) => `cashbook/${mode}?populate=true&${params}`,
 };
 
 const buildViewCashBookParams = (
@@ -152,7 +152,8 @@ export const cashbookService = {
     page,
     limit,
     sort,
-    search
+    search,
+    mode
   ) => {
     try {
       let params = buildViewCashBookParams(
@@ -162,9 +163,10 @@ export const cashbookService = {
         page,
         limit,
         sort,
-        search
+        search,
+        mode
       );
-      const response = await api.get(CASHBOOK_ENDPOINTS.CASEBOOK(params));
+      const response = await api.get(CASHBOOK_ENDPOINTS.CASEBOOK(mode, params));
 
       return {
         success: true,
