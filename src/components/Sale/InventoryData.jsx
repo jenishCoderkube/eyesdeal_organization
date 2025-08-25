@@ -97,13 +97,17 @@ export default function InventoryData({
         [groupId]: {
           ...prev[groupId],
           [lensType]: null,
-          [otherLensType]: null,
+          ...(lensType === "rightLens" && { [otherLensType]: null }), // Only clear other lens if rightLens is cleared
         },
       }));
       setInventoryPairs((prev) =>
         prev.map((pair) => {
           if (pair.pairId === groupId) {
-            return { ...pair, [lensType]: null, [otherLensType]: null };
+            return {
+              ...pair,
+              [lensType]: null,
+              ...(lensType === "rightLens" && { [otherLensType]: null }), // Only clear other lens if rightLens is cleared
+            };
           }
           return pair;
         })
@@ -111,9 +115,11 @@ export default function InventoryData({
       setInventoryData((prev) =>
         prev.filter(
           (item) =>
+            !(item.groupId === groupId && item.type === lensType) &&
             !(
+              lensType === "rightLens" &&
               item.groupId === groupId &&
-              (item.type === lensType || item.type === otherLensType)
+              item.type === otherLensType
             )
         )
       );
@@ -149,7 +155,7 @@ export default function InventoryData({
       unit: selectedLens.data.unit?.name || "Pieces",
       incentiveAmount: selectedLens.data.incentiveAmount || 0,
     };
-    console.log("selectedLens", selectedLens, lensData);
+
     setLensSelections((prev) => ({
       ...prev,
       [groupId]: {
@@ -160,12 +166,14 @@ export default function InventoryData({
           item: selectedLens.data._id,
           productName: selectedLens.data.productName,
         },
-        [otherLensType]: {
-          barcode: selectedLens.data.oldBarcode,
-          sku: selectedLens.data.sku,
-          item: selectedLens.data._id,
-          productName: selectedLens.data.productName,
-        },
+        ...(lensType === "rightLens" && {
+          [otherLensType]: {
+            barcode: selectedLens.data.oldBarcode,
+            sku: selectedLens.data.sku,
+            item: selectedLens.data._id,
+            productName: selectedLens.data.productName,
+          },
+        }), // Only autofill other lens if rightLens is selected
       },
     }));
 
@@ -174,8 +182,8 @@ export default function InventoryData({
         if (pair.pairId === groupId) {
           return {
             ...pair,
-            rightLens: lensData,
-            leftLens: lensData,
+            [lensType]: lensData,
+            ...(lensType === "rightLens" && { [otherLensType]: lensData }), // Only autofill other lens if rightLens is selected
           };
         }
         return pair;
@@ -184,13 +192,9 @@ export default function InventoryData({
 
     setInventoryData((prev) => {
       const newData = prev.filter(
-        (item) =>
-          !(
-            item.groupId === groupId &&
-            (item.type === lensType || item.type === otherLensType)
-          )
+        (item) => !(item.groupId === groupId && item.type === lensType)
       );
-      return [
+      const updatedData = [
         ...newData,
         {
           groupId,
@@ -198,20 +202,7 @@ export default function InventoryData({
           data: {
             ...selectedLens.data,
             sellPrice: srp,
-            quantity: selectedLens.data.quantity || 1, // Use quantity from data
-          },
-          quantity: selectedLens.data.quantity || 1,
-          taxAmount,
-          discount,
-          totalAmount,
-        },
-        {
-          groupId,
-          type: otherLensType,
-          data: {
-            ...selectedLens.data,
-            sellPrice: srp,
-            quantity: selectedLens.data.quantity || 1, // Use quantity from data
+            quantity: selectedLens.data.quantity || 1,
           },
           quantity: selectedLens.data.quantity || 1,
           taxAmount,
@@ -219,6 +210,24 @@ export default function InventoryData({
           totalAmount,
         },
       ];
+
+      if (lensType === "rightLens") {
+        updatedData.push({
+          groupId,
+          type: otherLensType,
+          data: {
+            ...selectedLens.data,
+            sellPrice: srp,
+            quantity: selectedLens.data.quantity || 1,
+          },
+          quantity: selectedLens.data.quantity || 1,
+          taxAmount,
+          discount,
+          totalAmount,
+        });
+      }
+
+      return updatedData;
     });
   };
 

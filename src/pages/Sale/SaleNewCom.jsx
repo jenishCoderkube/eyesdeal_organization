@@ -488,16 +488,18 @@ const SaleForm = () => {
           coupons: formData.coupon ? [formData.coupon] : [],
           incentiveAmount: "",
           note: formData.note,
-          powerAtTime: {
-            specs:
-              formData.prescriptions?.find(
-                (p) => p.__t.toLowerCase() === "specs"
-              )?._id || "",
-            contacts:
-              formData.prescriptions?.find(
-                (p) => p.__t.toLowerCase() === "contacts"
-              )?._id || "",
-          },
+          powerAtTime: formData.prescriptions?.length
+            ? {
+                specs:
+                  formData.prescriptions.find(
+                    (p) => p.__t.toLowerCase() === "specs"
+                  )?._id || "",
+                contacts:
+                  formData.prescriptions.find(
+                    (p) => p.__t.toLowerCase() === "contacts"
+                  )?._id || "",
+              }
+            : {},
           attachments: documentsFiles,
           recall: newDateFormatate,
         };
