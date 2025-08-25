@@ -29,7 +29,7 @@ const ViewCustomer = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ specs: null, contacts: null });
   const [activeTab, setActiveTab] = useState("specs");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -636,64 +636,74 @@ const ViewCustomer = () => {
                   />
                 </div>
               </div>
-              <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-3 text-left custom-perchase-th"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
+              {loading ? (
+                <div className="text-center my-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="table-responsive">
+                    <table className="table table-sm">
+                      <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
+                        {table.getHeaderGroups().map((headerGroup) => (
+                          <tr key={headerGroup.id}>
+                            {headerGroup.headers.map((header) => (
+                              <th
+                                key={header.id}
+                                className="p-3 text-left custom-perchase-th"
+                              >
+                                {header.isPlaceholder
+                                  ? null
+                                  : flexRender(
+                                      header.column.columnDef.header,
+                                      header.getContext()
+                                    )}
+                              </th>
+                            ))}
+                          </tr>
+                        ))}
+                      </thead>
+                      <tbody className="text-sm">
+                        {table.getRowModel().rows.map((row) => (
+                          <tr key={row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="p-3">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
                                 )}
-                          </th>
+                              </td>
+                            ))}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className="text-sm">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="p-3">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mt-3 px-3">
-                <div>
-                  Showing {startRow} to {endRow} of {totalRows} results
-                </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage() || loading}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage() || loading}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                    <div>
+                      Showing {startRow} to {endRow} of {totalRows} results
+                    </div>
+                    <div className="btn-group">
+                      <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage() || loading}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage() || loading}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

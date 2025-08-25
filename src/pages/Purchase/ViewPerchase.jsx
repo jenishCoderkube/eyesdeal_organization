@@ -13,7 +13,11 @@ import CommonButton from "../../components/CommonButton/CommonButton";
 function ViewPurchase() {
   const [vendor, setVendor] = useState(null);
   const [store, setStore] = useState(null);
-  const [fromDate, setFromDate] = useState(new Date());
+  const [fromDate, setFromDate] = useState(() => {
+    const previousDate = new Date();
+    previousDate.setDate(previousDate.getDate() - 1);
+    return previousDate;
+  });
   const [toDate, setToDate] = useState(new Date());
   const [search, setSearch] = useState("");
   const [vendorData, setVendorData] = useState([]);
@@ -33,7 +37,24 @@ function ViewPurchase() {
   useEffect(() => {
     getVendor();
     getStores();
-  }, []);
+  }, []); // run only once when component mounts
+
+  useEffect(() => {
+    const storedStoreId = JSON.parse(localStorage.getItem("user"))?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        setStore([
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]); // run when storeData updates
 
   const getPurchaseLogs = async () => {
     const vendorId = vendor.map((option) => option.value);

@@ -15,7 +15,7 @@ const AddPerchaseCom = () => {
   const [formData, setFormData] = useState({
     vendor: null,
     invoiceNumber: "",
-    invoiceDate: new Date("2025-03-31"),
+    invoiceDate: new Date(),
     isDelivered: true,
     product: null,
     store: null,
@@ -233,12 +233,11 @@ const AddPerchaseCom = () => {
     e.preventDefault();
     setLoadBaseSubmit(true);
     if (validateForm()) {
-      // Format the payload to match the API structure
       const payload = {
         store: formData.store?.value || "",
         vendor: formData.vendor?.value || "",
         invoiceNumber: formData.invoiceNumber,
-        invoiceDate: formData.invoiceDate.getTime(), // Convert Date to timestamp
+        invoiceDate: formData.invoiceDate.getTime(),
         notes: formData.notes || null,
         isDelivered: formData.isDelivered,
         totalAmount: formData.totalAmount.toString(),
@@ -246,8 +245,8 @@ const AddPerchaseCom = () => {
         totalTax: formData.totalTax.toString(),
         totalDiscount: formData.totalDiscount.toString(),
         flatDiscount: formData.flatDiscount.toString(),
-        netDiscount: formData.totalDiscount.toString(), // Assuming netDiscount is same as totalDiscount
-        deliveryCharges: "0.00", // As per your sample payload
+        netDiscount: formData.totalDiscount.toString(),
+        deliveryCharges: "0.00",
         otherCharges: formData.otherCharges.toString(),
         netAmount: formData.netAmount.toString(),
         products: products.map((product) => ({
@@ -271,16 +270,44 @@ const AddPerchaseCom = () => {
         const response = await purchaseService.addInventory(payload);
         if (response.success) {
           toast.success("Inventory added successfully!");
+          // Reset form data
+          setFormData({
+            vendor: null,
+            invoiceNumber: "",
+            invoiceDate: new Date(),
+            isDelivered: true,
+            product: null,
+            store: null,
+            totalQuantity: 0,
+            totalAmount: 0,
+            totalTax: 0,
+            totalDiscount: 0,
+            flatDiscount: 0,
+            otherCharges: 0,
+            netAmount: 0,
+            notes: "",
+          });
+          setProducts([]);
+          setInventoryData([]);
+          setErrors({
+            vendor: "",
+            invoiceNumber: "",
+            invoiceDate: "",
+            product: "",
+            store: "",
+          });
+          navigate("/purchase/list");
         } else {
           toast.error(response.message);
         }
       } catch (error) {
-        console.error("Error adding inventory<<<<<:", response);
-
+        console.error("Error adding inventory:", error);
         toast.error("Failed to add inventory");
       } finally {
         setLoadBaseSubmit(false);
       }
+    } else {
+      setLoadBaseSubmit(false);
     }
   };
 
