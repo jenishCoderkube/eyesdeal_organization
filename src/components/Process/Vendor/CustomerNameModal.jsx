@@ -60,6 +60,41 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
         },
       },
     },
+    contactData: {
+      doctorName: selectedRow?.powerAtTime?.contacts?.doctorName || "",
+      prescribeBy: selectedRow?.powerAtTime?.contacts?.prescribedBy || "",
+      type: selectedRow?.powerAtTime?.contacts?.__t || "contacts",
+      power: {
+        right: {
+          distance: {
+            sph: selectedRow?.powerAtTime?.contacts?.right?.distance?.sph || "",
+            cyl: selectedRow?.powerAtTime?.contacts?.right?.distance?.cyl || "",
+            axis:
+              selectedRow?.powerAtTime?.contacts?.right?.distance?.axis || "",
+            add: selectedRow?.powerAtTime?.contacts?.right?.distance?.add || "",
+          },
+          near: {
+            sph: selectedRow?.powerAtTime?.contacts?.right?.near?.sph || "",
+            cyl: selectedRow?.powerAtTime?.contacts?.right?.near?.cyl || "",
+            axis: selectedRow?.powerAtTime?.contacts?.right?.near?.axis || "",
+          },
+        },
+        left: {
+          distance: {
+            sph: selectedRow?.powerAtTime?.contacts?.left?.distance?.sph || "",
+            cyl: selectedRow?.powerAtTime?.contacts?.left?.distance?.cyl || "",
+            axis:
+              selectedRow?.powerAtTime?.contacts?.left?.distance?.axis || "",
+            add: selectedRow?.powerAtTime?.contacts?.left?.distance?.add || "",
+          },
+          near: {
+            sph: selectedRow?.powerAtTime?.contacts?.left?.near?.sph || "",
+            cyl: selectedRow?.powerAtTime?.contacts?.left?.near?.cyl || "",
+            axis: selectedRow?.powerAtTime?.contacts?.left?.near?.axis || "",
+          },
+        },
+      },
+    },
     additionalFields: {
       right: {
         psm: selectedRow?.powerAtTime?.specs?.right?.psm || "",
@@ -85,7 +120,10 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
   };
 
   // Options for react-select
-  const typeOptions = [{ value: "specs", label: "Specs" }];
+  const typeOptions = [
+    { value: "specs", label: "Specs" },
+    { value: "contacts", label: "Contacts" },
+  ];
   const prescribeByOptions = [
     { value: "employee", label: "Employee" },
     { value: "doctor", label: "Doctor" },
@@ -404,10 +442,238 @@ const CustomerNameModal = ({ show, onHide, selectedRow }) => {
                 </div>
               </div>
             </Tab.Pane>
-            <Tab.Pane eventKey="contact">
-              <p className="p-4">
-                Contact lens details will be displayed here.
-              </p>
+            <Tab.Pane eventKey="contact" className="overflow-auto">
+              <div className="p-4">
+                <div className="d-flex flex-column flex-md-row gap-4 mb-3">
+                  <div className="flex-grow-1">
+                    <label className="d-block text-sm font-medium mb-1">
+                      Date
+                    </label>
+                    <DatePicker
+                      selected={
+                        selectedRow?.createdAt
+                          ? new Date(selectedRow.createdAt)
+                          : null
+                      }
+                      dateFormat="dd/MM/yyyy"
+                      className="form-control"
+                      readOnly
+                    />
+                  </div>
+                  <div className="flex-grow-1">
+                    <label className="d-block text-sm font-medium mb-1">
+                      Doctor Name
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={
+                        selectedRow?.powerAtTime?.contacts?.doctorName || ""
+                      }
+                      readOnly
+                    />
+                  </div>
+                  <div className="flex-grow-1">
+                    <label className="d-block text-sm font-medium mb-1">
+                      Type
+                    </label>
+                    <Select
+                      options={typeOptions}
+                      value={typeOptions.find(
+                        (opt) =>
+                          opt.value ===
+                          (selectedRow?.powerAtTime?.contacts?.__t ||
+                            "contacts")
+                      )}
+                      isDisabled
+                    />
+                  </div>
+                  <div className="flex-grow-1">
+                    <label className="d-block text-sm font-medium mb-1">
+                      Prescribe By
+                    </label>
+                    <Select
+                      options={prescribeByOptions}
+                      value={prescribeByOptions.find(
+                        (opt) =>
+                          opt.value ===
+                          (selectedRow?.powerAtTime?.contacts?.prescribedBy ||
+                            "")
+                      )}
+                      isDisabled
+                    />
+                  </div>
+                </div>
+                <h4
+                  className="mt-2 mb-3 fw-normal"
+                  style={{ fontSize: "17px" }}
+                >
+                  Contact Lens Power
+                </h4>
+                <table className="table table-bordered table-sm w-100">
+                  <thead className="text-xs text-uppercase text-slate-500 bg-light">
+                    <tr>
+                      <th className="border border-slate-300 px-2 py-3"></th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        RESPH
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        RECYL
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        RAXIS
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        ADD
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        ||
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        LESPH
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        LECYL
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        LAXIS
+                      </th>
+                      <th className="border custom-perchase-th px-2 py-3">
+                        ADD
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-300 text-center max-w-20px">
+                        D
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.distance
+                          ?.sph || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.distance
+                          ?.cyl || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.distance
+                          ?.axis || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.distance
+                          ?.add || ""}
+                      </td>
+                      <td className="border border-slate-300"></td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.distance
+                          ?.sph || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.distance
+                          ?.cyl || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.distance
+                          ?.axis || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.distance
+                          ?.add || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-300 text-center max-w-20px">
+                        N
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.near?.sph ||
+                          ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.near?.cyl ||
+                          ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.right?.near
+                          ?.axis || ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px"></td>
+                      <td className="border border-slate-300"></td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.near?.sph ||
+                          ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.near?.cyl ||
+                          ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px">
+                        {selectedRow?.powerAtTime?.contacts?.left?.near?.axis ||
+                          ""}
+                      </td>
+                      <td className="border border-slate-300 p-2 max-w-70px"></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="mt-2 border p-2">
+                  <div className="d-flex justify-content-around flex-wrap gap-3">
+                    {[
+                      {
+                        label: "K(R)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.right?.k || "",
+                      },
+                      {
+                        label: "Dia(R)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.right?.dia || "",
+                      },
+                      {
+                        label: "BC(R)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.right?.bc || "",
+                      },
+                      {
+                        label: "K(L)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.left?.k || "",
+                      },
+                      {
+                        label: "Dia(L)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.left?.dia || "",
+                      },
+                      {
+                        label: "BC(L)",
+                        value:
+                          selectedRow?.powerAtTime?.contacts?.left?.bc || "",
+                      },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="text-sm text-slate-600">
+                        {label}: {value || "-"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4">
+                  <div className="text-sm text-slate-500 mb-3 mb-sm-0">
+                    Showing{" "}
+                    <span className="font-medium text-slate-600">1</span> to{" "}
+                    <span className="font-medium text-slate-600">1</span> of{" "}
+                    <span className="font-medium text-slate-600">1</span>{" "}
+                    results
+                  </div>
+                  <div className="btn-group">
+                    <Button variant="outline-primary" className="me-2" disabled>
+                      Previous
+                    </Button>
+                    <Button variant="outline-primary" disabled>
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </Tab.Pane>
           </Tab.Content>
         </Tab.Container>

@@ -167,7 +167,7 @@ function ShopProcess() {
       case "New Order":
         return "inWorkshop";
       case "In Process":
-        return ["inWorkshop", "inLab", "inFitting"];
+        return ["inWorkshop", "inLab"];
       case "In Fitting":
         return "inFitting";
       case "Ready":
@@ -584,32 +584,72 @@ function ShopProcess() {
   };
 
   const handleCustomerNoteClick = (row) => {
-    setSelectedRow(row);
+    setSelectedRow(row?.fullOrder);
     setShowCustomerModal(true);
   };
 
-  const handleProcessOrder = () => {
-    const selectedOrders = localProductTableData.filter((row) => row.selected);
+  const handleProcessOrder = async () => {
+    const selectedOrders = localProductTableData
+      .filter((row) => row.selected)
+      .map((row) => ({
+        id: row.id,
+        orderId: row.orderId,
+        fullOrder: row.fullOrder,
+      }));
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
       return;
     }
 
-    const invalidOrders = selectedOrders.filter(
-      (row) => !row.fullOrder.lens || row.lensSku === "N/A"
-    );
+    setLoading(true);
+    let successCount = 0;
+    const failedOrders = [];
 
-    if (invalidOrders.length > 0) {
-      toast.error(
-        `One or more selected products do not have a lens available: ${invalidOrders
-          .map((order) => order.orderId)
-          .join(", ")}`
-      );
-      return;
+    for (const order of selectedOrders) {
+      try {
+        const response = await workshopService.updateOrderStatus(
+          order.orderId,
+          "inLab"
+        );
+        if (response.data.success && response.data.data.modifiedCount > 0) {
+          successCount++;
+          setLocalProductTableData((prev) =>
+            prev.map((row) =>
+              row.id === order.id
+                ? { ...row, status: "inLab", selected: false }
+                : row
+            )
+          );
+        } else {
+          failedOrders.push({
+            orderId: order.orderId,
+            message: response.message || "Failed to update status",
+          });
+        }
+      } catch (error) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: error.message || "Error updating order status",
+        });
+      }
     }
 
-    setShowVendorModal(true);
+    setSelectedRows([]);
+    setLoading(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} order(s) sent for fitting successfully`);
+      await refreshSalesData();
+    }
+
+    if (failedOrders.length > 0) {
+      failedOrders.forEach(({ orderId, message }) => {
+        toast.error(`Failed to send order ${orderId} for fitting: ${message}`);
+      });
+    }
+
+    // setShowVendorModal(true);
   };
 
   const handleSendForFitting = async () => {
@@ -737,13 +777,18 @@ function ShopProcess() {
   };
 
   const handleRevertOrder = async () => {
-    const selectedOrders = localProductTableData
+    const selectedOrders = (
+      localProductTableData && localProductTableData.length > 0
+        ? localProductTableData
+        : productTableData
+    )
       .filter((row) => row.selected)
       .map((row) => ({
         id: row.id,
         orderId: row.orderId,
         fullOrder: row.fullOrder,
       }));
+    console.log("selectedOrders", selectedOrders, productTableData);
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
@@ -756,7 +801,10 @@ function ShopProcess() {
 
     for (const order of selectedOrders) {
       try {
-        const targetStatus = activeStatus === "New Order" ? "pending" : "inLab";
+        const targetStatus =
+          activeStatus === "New Order" || activeStatus === "In Process"
+            ? "pending"
+            : "inLab";
         const response = await workshopService.updateOrderStatus(
           order.orderId,
           targetStatus
@@ -1798,7 +1846,20 @@ function ShopProcess() {
             )}
           </div>
         )}
-
+      {hasSelectedProducts && activeStatus === "In Process" && (
+        <div className="mb-4 col-12">
+          <div>
+            <button
+              className="btn custom-hover-border me-2"
+              type="button"
+              onClick={handleRevertOrder}
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Revert Order"}
+            </button>
+          </div>
+        </div>
+      )}
       {(activeStatus === "New Order" || activeStatus === "In Fitting") && (
         <div className="mb-4 col-12">
           {selectedRows.length > 0 && (

@@ -8,15 +8,15 @@ function PrescriptionModel({
   const [activeCustomer, setActiveCustomer] = useState(null);
   const [activeCustStatus, setActiveCustStatus] = useState("Specs");
   const [currentIndex, setCurrentIndex] = useState(0); // Track current prescription
-  const custstatus = ["Specs", "Contact"];
+  const custstatus = ["Specs", "Contacts"];
 
   useEffect(() => {
-    console.log("selectedCust:", selectedCust);
     if (selectedCust && selectedCust.length > 0) {
       // Find the first prescription matching the activeCustStatus
       const matchingPrescription = selectedCust.find(
         (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
       );
+
       if (matchingPrescription) {
         setActiveCustomer(matchingPrescription);
         setCurrentIndex(selectedCust.indexOf(matchingPrescription));
@@ -384,7 +384,7 @@ function PrescriptionModel({
                       </div>
                     </div>
                   </>
-                ) : activeCustStatus === "Contact" &&
+                ) : activeCustStatus === "Contacts" &&
                   activeCustomer.__t === "contacts" ? (
                   <>
                     <div className="px-3 pb-4">
