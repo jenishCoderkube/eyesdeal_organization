@@ -200,7 +200,7 @@ const AddPackageProducts = () => {
         header: "Action",
         cell: ({ row }) => (
           <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <span
+            {/* <span
               style={{ cursor: "pointer", color: "#007bff" }}
               title="Edit"
               onClick={() => {
@@ -228,7 +228,7 @@ const AddPackageProducts = () => {
               >
                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
               </svg>
-            </span>
+            </span> */}
             <span
               style={{
                 cursor: loading ? "not-allowed" : "pointer",
