@@ -22,11 +22,44 @@ export const packageService = {
       };
     }
   },
-
+  getPackagesProducs: async (page = 1, limit = 10, packageId) => {
+    try {
+      const response = await api.get(`packageOffer/${packageId}`);
+      // The actual data is in response.data.message
+      return {
+        success: response.data.success,
+        data: response.data.message,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching packages",
+      };
+    }
+  },
   // Create a new package
   createPackage: async (formData) => {
     try {
       const response = await api.post(PACKAGE_ENDPOINT, formData, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error creating package",
+      };
+    }
+  },
+  // Create a new package
+  createPackageProduct: async (formData) => {
+    try {
+      const response = await api.post("/packageOffer", formData, {
         headers: { "Content-Type": "application/json" },
       });
       return {
@@ -88,7 +121,31 @@ export const packageService = {
       };
     }
   },
+  // Update an existing package
+  updatePackageOffers: async (formData) => {
+    try {
+      const response = await api.patch(
+        `packageOffer/${formData._id}`,
+        formData,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.log("error", error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error updating package",
+      };
+    }
+  },
   // Delete a package by ID
   deletePackage: async (id) => {
     try {
@@ -105,7 +162,37 @@ export const packageService = {
       };
     }
   },
-
+  // Delete a package by ID
+  deletePackageProduct: async (id) => {
+    try {
+      const response = await api.delete(`packageOffer/${id}`);
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error deleting package",
+      };
+    }
+  },
+  getLenses: async () => {
+    try {
+      const response = await api.get("/products/spectacleLens");
+      return {
+        success: response.data.success,
+        data: response.data?.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching lenses",
+      };
+    }
+  },
   // Bulk upload packages
   bulkUploadPackages: async (packageId, bulkUploadFile) => {
     try {

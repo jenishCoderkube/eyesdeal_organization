@@ -11,6 +11,7 @@ import AsyncSelect from "react-select/async";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal"; // Adjust path as needed
 import { productService } from "../../services/productService"; // Adjust path as needed
 import { packageService } from "../../services/packageService"; // Adjust path as needed
+import api from "../../services/api"; // Adjust path as needed
 const PackageProductsModal = ({
   show,
   onHide,
@@ -18,14 +19,30 @@ const PackageProductsModal = ({
   initialData,
   packageId,
 }) => {
+  console.log("initialData", initialData);
+
   const [selectedProducts, setSelectedProducts] = useState(
-    initialData?.products || []
+    initialData?.product ? [initialData.product] : []
   );
   const [submitting, setSubmitting] = useState(false);
 
   // Reset form when initialData or show changes
   useEffect(() => {
-    setSelectedProducts(initialData?.products || []);
+    setSelectedProducts(initialData?.product ? [initialData.product] : []);
+  }, [initialData, show]);
+  useEffect(() => {
+    if (initialData?.product) {
+      const prod = initialData.product;
+      setSelectedProducts([
+        {
+          value: prod._id,
+          label: prod.sku || prod.displayName,
+          ...prod,
+        },
+      ]);
+    } else {
+      setSelectedProducts([]);
+    }
   }, [initialData, show]);
 
   const loadProductOptions = async (inputValue) => {
@@ -120,12 +137,12 @@ const AddPackageProducts = () => {
     setLoading(true);
     try {
       // Assuming you have an API to fetch package products
-      const res = await handleApiRequest(
-        "GET",
-        `/package/products/${packageId}?page=${page}&limit=${limit}`
+      const res = await api.get(
+        `/package/product/${packageId}?page=${page}&limit=${limit}`
       );
-      if (res.success) {
-        setProducts(res.data?.data || []);
+      console.log("res.data?.data?.docs", res?.data?.message?.data);
+      if (res?.data?.success) {
+        setProducts(res?.data?.message?.data || []);
         setPagination({
           totalDocs: res.data?.totalRecords || 0,
           limit: res.data?.limit || limit,
@@ -177,11 +194,7 @@ const AddPackageProducts = () => {
           <span>{row.original.product?.displayName || "N/A"}</span>
         ),
       },
-      {
-        accessorKey: "offerName",
-        header: "Offer Name",
-        cell: ({ row }) => <span>{row.original.package?.name || "N/A"}</span>,
-      },
+
       {
         id: "action",
         header: "Action",
@@ -268,14 +281,26 @@ const AddPackageProducts = () => {
 
   const handleModalSubmit = async (payload) => {
     try {
-      const res = await packageService.addPackageProducts(payload);
-      if (res.success) {
-        toast.success(res.message || "Products added successfully");
-        setModalShow(false);
-        setEditData(null);
-        fetchPackageProducts(pagination.page, pagination.limit);
+      if (payload?._id) {
+        const res = await packageService.addPackageProducts(payload);
+        if (res.success) {
+          toast.success(res.message || "Products added successfully");
+          setModalShow(false);
+          setEditData(null);
+          fetchPackageProducts(pagination.page, pagination.limit);
+        } else {
+          toast.error(res.message || "Failed to add products");
+        }
       } else {
-        toast.error(res.message || "Failed to add products");
+        const res = await packageService.addPackageProducts(payload);
+        if (res.success) {
+          toast.success(res.message || "Products added successfully");
+          setModalShow(false);
+          setEditData(null);
+          fetchPackageProducts(pagination.page, pagination.limit);
+        } else {
+          toast.error(res.message || "Failed to add products");
+        }
       }
     } catch (error) {
       toast.error("Error adding products");
@@ -286,11 +311,10 @@ const AddPackageProducts = () => {
     if (!deleteTarget) return;
     setLoading(true);
     try {
-      const res = await handleApiRequest(
-        "DELETE",
-        `/package/products/${deleteTarget._id}`
-      );
-      if (res.success) {
+      const res = await api.delete(`/package/product/${deleteTarget._id}`);
+      console.log("res", res);
+
+      if (res?.data.success) {
         toast.success(res.message || "Product removed successfully");
         fetchPackageProducts(pagination.page, pagination.limit);
       } else {

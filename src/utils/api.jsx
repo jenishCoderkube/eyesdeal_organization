@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 // railway url
 
 // export const base_url = 'http://192.168.29.231:8443/api/v1/';
 
-export const base_url = 'https://transectra.com:8443/api/v1/';
+export const base_url = "https://transectra.com:8443/api/v1/";
 
 // export const base_url = 'http://192.168.0.199:8443/api/v1/';
 // export const base_url = 'http://192.168.0.148:8443/api/v1/';
@@ -28,14 +28,14 @@ export const fetchDataFromAPI = (url, method, data, token) =>
 
     if (token != null) {
       headers = {
-        Accept: 'application/json',
+        Accept: "application/json",
         Authorization: `Bearer ${token}`,
-        type: 'admin',
+        type: "admin",
       };
     } else {
       headers = {
-        Accept: 'application/json',
-        type: 'admin',
+        Accept: "application/json",
+        type: "admin",
       };
     }
     if (data) {

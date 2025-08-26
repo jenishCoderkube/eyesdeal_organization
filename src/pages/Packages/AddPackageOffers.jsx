@@ -9,8 +9,11 @@ import { toast } from "react-toastify";
 import AsyncSelect from "react-select/async";
 import { packageService } from "../../services/packageService"; // Adjust path as needed
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal"; // Adjust path as needed
+import { useParams } from "react-router-dom";
 
-const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
+const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
+  console.log(":initialData", initialData);
+
   const [lens, setLens] = useState(initialData?.lens || null);
   const [pairNumber, setPairNumber] = useState(initialData?.pairNumber || 1);
   const [lensPrice, setLensPrice] = useState(initialData?.lensPrice || "");
@@ -27,19 +30,43 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
 
   // Reset form when initialData or show changes
   useEffect(() => {
-    setLens(initialData?.lens || null);
-    setPairNumber(initialData?.pairNumber || 1);
+    if (initialData?.lens) {
+      if (typeof initialData.lens === "string") {
+        // Case: lens is just an ID
+        setLens({ value: initialData.lens, label: initialData.lens });
+      } else if (typeof initialData.lens === "object") {
+        // Case: lens is populated object
+        setLens({
+          value: initialData.lens._id,
+          label: initialData.lens.sku || initialData.lens.productName,
+          ...initialData.lens,
+        });
+      }
+    } else {
+      setLens(null);
+    }
+
+    setPairNumber(initialData?.quantity || 1);
     setLensPrice(initialData?.lensPrice || "");
     setFramePrice(initialData?.framePrice || "");
     setTotalPrice(initialData?.totalPrice || "");
   }, [initialData, show]);
 
-  // Async lens options loader (mocked for demonstration, replace with actual API)
+  // Async lens options loader
   const loadLensOptions = async (inputValue) => {
     try {
-      // Replace with actual API call to fetch lenses
-      const response = await packageService.getLenses(inputValue); // Assume this returns { success: true, data: [{ value, label }, ...] }
-      return response.success ? response.data : [];
+      const response = await packageService.getLenses(inputValue);
+
+      // API returns docs as array of product objects
+      const docs = response.data?.docs || [];
+      console.log("docs", docs);
+
+      // Map to { value, label } format
+      return docs?.map((lens) => ({
+        value: lens._id,
+        label: lens.sku || lens?.productName, // 👈 label is sku
+        ...lens, // keep full object if you need later (price, brand, etc.)
+      }));
     } catch (error) {
       toast.error("Error loading lenses");
       return [];
@@ -50,15 +77,22 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const payload = new FormData();
-    payload.append("lens", JSON.stringify(lens));
-    payload.append("pairNumber", pairNumber);
-    payload.append("lensPrice", parseFloat(lensPrice) || 0);
-    payload.append("framePrice", parseFloat(framePrice) || 0);
-    payload.append("totalPrice", parseFloat(totalPrice) || 0);
-    if (initialData?._id) payload.append("_id", initialData._id);
+    // Build plain JSON payload
+    const payload = {
+      package: packageId, // 👈 make sure you have this from props/state
+      lens: lens?.value || lens, // lens._id if from react-select
+      quantity: Number(pairNumber) || 0,
+      framePrice: Number(framePrice) || 0,
+      lensPrice: Number(lensPrice) || 0,
+      totalPrice: Number(totalPrice) || 0,
+    };
 
-    await onSubmit(payload);
+    // If updating an existing record
+    if (initialData?._id) {
+      payload._id = initialData._id;
+    }
+
+    await onSubmit(payload); // send JSON
     setSubmitting(false);
   };
 
@@ -66,7 +100,7 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
     <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
-          {initialData ? "Edit Package" : "Create Package"}
+          {initialData ? "Edit Package" : "Create Package Offer"}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -85,13 +119,16 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Pair Number (1-5)</Form.Label>
+            <Form.Label>Pair (1-5)</Form.Label>
             <Form.Control
               type="number"
               min="1"
               max="5"
               value={pairNumber}
-              onChange={(e) => setPairNumber(parseInt(e.target.value) || 1)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPairNumber(val === "" ? "" : parseInt(val));
+              }}
               required
             />
           </Form.Group>
@@ -150,10 +187,10 @@ const AddPackageOffers = () => {
   });
   const [deleteModalShow, setDeleteModalShow] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-
+  const { id: packageId } = useParams(); // Get package ID from URL
   const fetchPackages = async (page = 1, limit = 10) => {
     setLoading(true);
-    const res = await packageService.getPackages(page, limit);
+    const res = await packageService.getPackagesProducs(page, limit, packageId);
     if (res.success) {
       setPackages(res.data?.data || []);
       setPagination({
@@ -202,11 +239,11 @@ const AddPackageOffers = () => {
       {
         accessorKey: "lens",
         header: "Lens",
-        cell: ({ getValue }) => <span>{getValue()?.label || "N/A"}</span>,
+        cell: ({ getValue }) => <span>{getValue()?.sku || "N/A"}</span>,
       },
       {
-        accessorKey: "pairNumber",
-        header: "Pair Number",
+        accessorKey: "quantity",
+        header: "Pair",
         cell: ({ getValue }) => <span>{getValue() || "N/A"}</span>,
       },
       {
@@ -318,10 +355,10 @@ const AddPackageOffers = () => {
 
   const handleModalSubmit = async (formData) => {
     let res;
-    if (formData.get("_id")) {
-      res = await packageService.updatePackage(formData);
+    if (formData._id) {
+      res = await packageService.updatePackageOffers(formData);
     } else {
-      res = await packageService.createPackage(formData);
+      res = await packageService.createPackageProduct(formData);
     }
     if (res.success) {
       toast.success(res.message || "Success");
@@ -467,6 +504,7 @@ const AddPackageOffers = () => {
         }}
         onSubmit={handleModalSubmit}
         initialData={editData}
+        packageId={packageId}
       />
       <DeleteConfirmationModal
         show={deleteModalShow}
@@ -477,7 +515,9 @@ const AddPackageOffers = () => {
         onConfirm={async () => {
           if (!deleteTarget) return;
           setLoading(true);
-          const res = await packageService.deletePackage(deleteTarget._id);
+          const res = await packageService.deletePackageProduct(
+            deleteTarget._id
+          );
           setLoading(false);
           setDeleteModalShow(false);
           setDeleteTarget(null);
@@ -488,9 +528,9 @@ const AddPackageOffers = () => {
             toast.error(res.message || "Failed to delete package");
           }
         }}
-        message={`Are you sure you want to delete the package with lens "${
+        message={`Are you sure you want to delete the package with lens ${
           deleteTarget?.lens?.label || ""
-        }"?`}
+        }?`}
       />
     </div>
   );
