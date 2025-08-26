@@ -280,28 +280,32 @@ function ContactLens({ initialData = {}, mode = "add" }) {
     prescriptionType: prescriptionTypeOptions,
     features: featuresOptions,
   });
-
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        const brandResponse = await productAttributeService.getAttributes(
-          "brand"
-        );
-        const unitResponse = await productAttributeService.getAttributes(
-          "unit"
-        );
-        const disposabilityResponse =
-          await productAttributeService.getAttributes("disposability");
-        const lensTechnologyResponse =
-          await productAttributeService.getAttributes("lensTechnology");
-        const prescriptionTypeResponse =
-          await productAttributeService.getAttributes("prescriptionType");
-        const featuresResponse = await productAttributeService.getAttributes(
-          "features"
-        );
 
+        // Define all API calls
+        const apiCalls = [
+          productAttributeService.getAttributes("brand"),
+          productAttributeService.getAttributes("unit"),
+          productAttributeService.getAttributes("disposability"),
+          productAttributeService.getAttributes("lensTechnology"),
+          productAttributeService.getAttributes("prescriptionType"),
+          productAttributeService.getAttributes("features"),
+        ];
+
+        // Execute all API calls concurrently
+        const [
+          brandResponse,
+          unitResponse,
+          disposabilityResponse,
+          lensTechnologyResponse,
+          prescriptionTypeResponse,
+          featuresResponse,
+        ] = await Promise.all(apiCalls);
+
+        // Update state for each response
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,

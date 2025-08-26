@@ -195,38 +195,38 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
   // State for loading
   const [loading, setLoading] = useState(false);
 
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
-        const brandResponse = await productAttributeService.getAttributes(
-          "brand"
-        );
-        const unitResponse = await productAttributeService.getAttributes(
-          "unit"
-        );
-        const colorResponse = await productAttributeService.getAttributes(
-          "color"
-        );
-        const materialResponse = await productAttributeService.getAttributes(
-          "material"
-        );
-        const frameTypeResponse = await productAttributeService.getAttributes(
-          "frameType"
-        );
-        const frameShapeResponse = await productAttributeService.getAttributes(
-          "frameShape"
-        );
-        const frameStyleResponse = await productAttributeService.getAttributes(
-          "frameStyle"
-        );
-        const prescriptionTypeResponse =
-          await productAttributeService.getAttributes("prescriptionType");
-        const collectionResponse = await productAttributeService.getAttributes(
-          "collection"
-        );
 
+        // Define all API calls
+        const apiCalls = [
+          productAttributeService.getAttributes("brand"),
+          productAttributeService.getAttributes("unit"),
+          productAttributeService.getAttributes("color"),
+          productAttributeService.getAttributes("material"),
+          productAttributeService.getAttributes("frameType"),
+          productAttributeService.getAttributes("frameShape"),
+          productAttributeService.getAttributes("frameStyle"),
+          productAttributeService.getAttributes("prescriptionType"),
+          productAttributeService.getAttributes("collection"),
+        ];
+
+        // Execute all API calls concurrently
+        const [
+          brandResponse,
+          unitResponse,
+          colorResponse,
+          materialResponse,
+          frameTypeResponse,
+          frameShapeResponse,
+          frameStyleResponse,
+          prescriptionTypeResponse,
+          collectionResponse,
+        ] = await Promise.all(apiCalls);
+
+        // Update state for each response
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,

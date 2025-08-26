@@ -49,35 +49,42 @@ const VendorReportsTable = ({ storesNames, data }) => {
       search,
       ...(stores && stores.length && { stores }),
     };
-    reportService.getJobWorksData(payload)
-      .then(res => {
+    reportService
+      .getJobWorksData(payload)
+      .then((res) => {
         setFilteredData(res.data?.data?.docs);
       })
-      .catch(e => console.log("Failed to get jobWorks: ", e))
-  }
+      .catch((e) => console.log("Failed to get jobWorks: ", e));
+  };
 
   const columns = useMemo(
     () => [
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "store",
         header: "Store Name",
         size: 230,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "vendor",
         header: "Vendor Name",
         size: 320,
         cell: ({ row }) => {
-          const vendor = row.original.vendor.companyName || "";
-          const lens = row.original.lens.item.__t || "";
+          const vendor = row?.original?.vendor?.companyName || "";
+          const lens = row?.original?.lens?.item?.__t || "";
 
-          return <div className="text-left">{vendor} {lens}</div>;
+          return (
+            <div className="text-left">
+              {vendor} {lens}
+            </div>
+          );
         },
       },
       {
@@ -94,14 +101,18 @@ const VendorReportsTable = ({ storesNames, data }) => {
         accessorKey: "order",
         header: "Bill No",
         size: 80,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.billNumber}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.billNumber}</div>
+        ),
       },
       {
         id: "Sku",
         accessorKey: "lens",
         header: "SKU",
         size: 600,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.sku}</div>
+        ),
       },
       {
         accessorKey: "status",
@@ -114,7 +125,9 @@ const VendorReportsTable = ({ storesNames, data }) => {
         accessorKey: "lens",
         header: "Cost Price",
         size: 110,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.item.costPrice}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.item?.costPrice}</div>
+        ),
       },
     ],
     []
@@ -198,14 +211,13 @@ const VendorReportsTable = ({ storesNames, data }) => {
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
                     style={{ minWidth: `${header.getSize()}px` }}
-
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

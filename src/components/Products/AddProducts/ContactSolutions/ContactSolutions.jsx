@@ -118,18 +118,20 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
     units: unitOptions,
   });
 
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const attributeData = {};
+        // Define all API calls
+        const apiCalls = [
+          productAttributeService.getAttributes("brand"),
+          productAttributeService.getAttributes("unit"),
+        ];
 
-        const brandResponse = await productAttributeService.getAttributes(
-          "brand"
-        );
-        const unitResponse = await productAttributeService.getAttributes(
-          "unit"
-        );
+        // Execute all API calls concurrently
+        const [brandResponse, unitResponse] = await Promise.all(apiCalls);
+
+        // Map responses to attributeData
+        const attributeData = {};
 
         if (brandResponse.success) {
           attributeData.brands = brandResponse.data.map((item) => ({
@@ -137,6 +139,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
             label: item.name,
           }));
         }
+
         if (unitResponse.success) {
           attributeData.units = unitResponse.data.map((item) => ({
             value: item._id,
@@ -144,6 +147,7 @@ function ContactSolutions({ initialData = {}, mode = "add" }) {
           }));
         }
 
+        // Update state with all attributes
         setAttributeOptions({
           brands: attributeData.brands || brandOptions,
           units: attributeData.units || unitOptions,

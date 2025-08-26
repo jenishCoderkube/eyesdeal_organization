@@ -233,57 +233,55 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
     features: featuresOptions,
     gender: genderOptions,
   });
+  console.log("attributeOptions", attributeOptions);
 
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
         const attributeData = {};
 
-        const brandResponse = await productAttributeService.getAttributes(
-          "brand"
-        );
-        const unitResponse = await productAttributeService.getAttributes(
-          "unit"
-        );
-        const lensTechnologyResponse =
-          await productAttributeService.getAttributes("lensTechnology");
-        const readingPowerResponse =
-          await productAttributeService.getAttributes("readingPower");
-        const frameTypeResponse = await productAttributeService.getAttributes(
-          "frameType"
-        );
-        const frameShapeResponse = await productAttributeService.getAttributes(
-          "frameShape"
-        );
-        const frameStyleResponse = await productAttributeService.getAttributes(
-          "frameStyle"
-        );
-        const templeMaterialResponse =
-          await productAttributeService.getAttributes("material");
-        const frameMaterialResponse =
-          await productAttributeService.getAttributes("material");
-        const frameColorResponse = await productAttributeService.getAttributes(
-          "color"
-        );
-        const templeColorResponse = await productAttributeService.getAttributes(
-          "color"
-        );
-        const prescriptionTypeResponse =
-          await productAttributeService.getAttributes("prescriptionType");
-        const frameCollectionResponse =
-          await productAttributeService.getAttributes("collection");
-        const frameSizeResponse = await productAttributeService.getAttributes(
-          "frameSize"
-        );
-        const featuresResponse = await productAttributeService.getAttributes(
-          "feature"
-        );
-        const genderResponse = await productAttributeService.getAttributes(
-          "gender"
-        );
+        // Define all API calls
+        const apiCalls = [
+          productAttributeService.getAttributes("brand"),
+          productAttributeService.getAttributes("unit"),
+          productAttributeService.getAttributes("lensTechnology"),
+          productAttributeService.getAttributes("readingPower"),
+          productAttributeService.getAttributes("frameType"),
+          productAttributeService.getAttributes("frameShape"),
+          productAttributeService.getAttributes("frameStyle"),
+          productAttributeService.getAttributes("material"), // templeMaterial
+          productAttributeService.getAttributes("material"), // frameMaterial
+          productAttributeService.getAttributes("color"), // frameColor
+          productAttributeService.getAttributes("color"), // templeColor
+          productAttributeService.getAttributes("prescriptionType"),
+          productAttributeService.getAttributes("collection"),
+          productAttributeService.getAttributes("frameSize"),
+          productAttributeService.getAttributes("feature"),
+          productAttributeService.getAttributes("gender"),
+        ];
 
+        // Execute all API calls concurrently
+        const [
+          brandResponse,
+          unitResponse,
+          lensTechnologyResponse,
+          readingPowerResponse,
+          frameTypeResponse,
+          frameShapeResponse,
+          frameStyleResponse,
+          templeMaterialResponse,
+          frameMaterialResponse,
+          frameColorResponse,
+          templeColorResponse,
+          prescriptionTypeResponse,
+          frameCollectionResponse,
+          frameSizeResponse,
+          featuresResponse,
+          genderResponse,
+        ] = await Promise.all(apiCalls);
+
+        // Map responses to attributeData
         if (brandResponse.success) {
           attributeData.brand = brandResponse.data.map((item) => ({
             value: item._id,

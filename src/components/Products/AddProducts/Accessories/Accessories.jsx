@@ -61,20 +61,21 @@ function Accessories({ initialData = {}, mode = "add" }) {
     units: [],
   });
 
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
         setLoading(true);
 
-        // Fetch brands and units
-        const brandResponse = await productAttributeService.getAttributes(
-          "brand"
-        );
-        const unitResponse = await productAttributeService.getAttributes(
-          "unit"
-        );
+        // Define all API calls
+        const apiCalls = [
+          productAttributeService.getAttributes("brand"),
+          productAttributeService.getAttributes("unit"),
+        ];
 
+        // Execute all API calls concurrently
+        const [brandResponse, unitResponse] = await Promise.all(apiCalls);
+
+        // Update state for each response
         if (brandResponse.success) {
           setAttributeOptions((prev) => ({
             ...prev,

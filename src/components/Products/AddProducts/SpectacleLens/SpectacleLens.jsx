@@ -104,7 +104,6 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
     lensTechnology: [],
   });
 
-  // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
@@ -119,9 +118,18 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
           "lensTechnology",
         ];
 
+        // Define all API calls
+        const apiCalls = attributeTypes.map((type) =>
+          productAttributeService.getAttributes(type)
+        );
+
+        // Execute all API calls concurrently
+        const responses = await Promise.all(apiCalls);
+
+        // Map responses to attributeData
         const attributeData = {};
-        for (const type of attributeTypes) {
-          const response = await productAttributeService.getAttributes(type);
+        responses.forEach((response, index) => {
+          const type = attributeTypes[index];
           if (response.success && response.data) {
             attributeData[type] = response.data.map((item) => ({
               value: item._id,
@@ -131,8 +139,9 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
             console.error(`Failed to fetch ${type} data:`, response.message);
             toast.error(`Failed to fetch ${type} data`);
           }
-        }
+        });
 
+        // Update state with all attributes
         setAttributeOptions({
           brands: attributeData.brand || [],
           units: attributeData.unit || [],
