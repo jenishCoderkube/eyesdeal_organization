@@ -4,56 +4,59 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { packageService } from "../../services/packageService";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
-import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
-import { useNavigate } from "react-router-dom";
-import { IoClose } from "react-icons/io5";
-import AssetSelector from "../../components/Products/AddProducts/EyeGlasses/AssetSelector"; // Adjust path as needed
-
-const BASE_URL =
-  "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
+import AsyncSelect from "react-select/async";
+import { packageService } from "../../services/packageService"; // Adjust path as needed
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal"; // Adjust path as needed
 
 const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
-  const [packageName, setPackageName] = useState(
-    initialData?.packageName || ""
-  );
-  const [description, setDescription] = useState(
-    initialData?.Description || ""
-  );
-  const [isBogo, setIsBogo] = useState(initialData?.isBogo || false);
-  const [selectedLogo, setSelectedLogo] = useState(
-    initialData?.logoImage || ""
-  );
-  const [selectedBanner, setSelectedBanner] = useState(
-    initialData?.bannerImage || ""
-  );
-  const [showLogoModal, setShowLogoModal] = useState(false);
-  const [showBannerModal, setShowBannerModal] = useState(false);
+  const [lens, setLens] = useState(initialData?.lens || null);
+  const [pairNumber, setPairNumber] = useState(initialData?.pairNumber || 1);
+  const [lensPrice, setLensPrice] = useState(initialData?.lensPrice || "");
+  const [framePrice, setFramePrice] = useState(initialData?.framePrice || "");
+  const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice || "");
   const [submitting, setSubmitting] = useState(false);
 
+  // Calculate total price whenever lensPrice or framePrice changes
   useEffect(() => {
-    setPackageName(initialData?.packageName || "");
-    setDescription(initialData?.Description || "");
-    setIsBogo(initialData?.isBogo || false);
-    setSelectedLogo(initialData?.logoImage || "");
-    setSelectedBanner(initialData?.bannerImage || "");
+    const lens = parseFloat(lensPrice) || 0;
+    const frame = parseFloat(framePrice) || 0;
+    setTotalPrice((lens + frame).toFixed(2));
+  }, [lensPrice, framePrice]);
+
+  // Reset form when initialData or show changes
+  useEffect(() => {
+    setLens(initialData?.lens || null);
+    setPairNumber(initialData?.pairNumber || 1);
+    setLensPrice(initialData?.lensPrice || "");
+    setFramePrice(initialData?.framePrice || "");
+    setTotalPrice(initialData?.totalPrice || "");
   }, [initialData, show]);
+
+  // Async lens options loader (mocked for demonstration, replace with actual API)
+  const loadLensOptions = async (inputValue) => {
+    try {
+      // Replace with actual API call to fetch lenses
+      const response = await packageService.getLenses(inputValue); // Assume this returns { success: true, data: [{ value, label }, ...] }
+      return response.success ? response.data : [];
+    } catch (error) {
+      toast.error("Error loading lenses");
+      return [];
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const payload = {
-      packageName,
-      Description: description,
-      isBogo,
-      logoImage: selectedLogo,
-      bannerImage: selectedBanner,
-    };
-
-    if (initialData?._id) payload._id = initialData._id;
+    const payload = new FormData();
+    payload.append("lens", JSON.stringify(lens));
+    payload.append("pairNumber", pairNumber);
+    payload.append("lensPrice", parseFloat(lensPrice) || 0);
+    payload.append("framePrice", parseFloat(framePrice) || 0);
+    payload.append("totalPrice", parseFloat(totalPrice) || 0);
+    if (initialData?._id) payload.append("_id", initialData._id);
 
     await onSubmit(payload);
     setSubmitting(false);
@@ -69,127 +72,56 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
       <Modal.Body>
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
-            <Form.Label>Package Name</Form.Label>
-            <Form.Control
-              type="text"
-              value={packageName}
-              onChange={(e) => setPackageName(e.target.value)}
+            <Form.Label>Lens</Form.Label>
+            <AsyncSelect
+              cacheOptions
+              defaultOptions
+              loadOptions={loadLensOptions}
+              value={lens}
+              onChange={setLens}
+              placeholder="Select lens..."
+              isClearable
               required
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Package Description</Form.Label>
+            <Form.Label>Pair Number (1-5)</Form.Label>
             <Form.Control
-              as="textarea"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              type="number"
+              min="1"
+              max="5"
+              value={pairNumber}
+              onChange={(e) => setPairNumber(parseInt(e.target.value) || 1)}
+              required
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Logo Image</Form.Label>
-            <div className="row">
-              <div className="col-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="py-2 px-3"
-                  onClick={() => setShowLogoModal(true)}
-                >
-                  Select Logo
-                </Button>
-              </div>
-              <div className="col-10">
-                <Form.Control
-                  type="text"
-                  value={selectedLogo}
-                  disabled
-                  placeholder="e.g. /eyesdeal/EyesO_1.png"
-                />
-                <small className="form-text text-muted">
-                  Use the Select Logo button to choose an image from the media
-                  library.
-                </small>
-              </div>
-            </div>
-            {selectedLogo && (
-              <div className="row mt-4 g-3">
-                <div className="col-12 col-md-6 col-lg-3">
-                  <div className="position-relative border text-center border-black rounded p-2">
-                    <img
-                      src={`${BASE_URL}${selectedLogo}`}
-                      alt="Logo"
-                      className="img-fluid rounded w-50 h-auto object-fit-cover"
-                      style={{ maxHeight: "100px", objectFit: "cover" }}
-                    />
-                    <button
-                      className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => setSelectedLogo("")}
-                      aria-label="Remove logo"
-                    >
-                      <IoClose size={16} className="text-dark" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <Form.Label>Lens Price</Form.Label>
+            <Form.Control
+              type="number"
+              step="0.01"
+              value={lensPrice}
+              onChange={(e) => setLensPrice(e.target.value)}
+              required
+            />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Banner Image</Form.Label>
-            <div className="row">
-              <div className="col-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="py-2 px-3"
-                  onClick={() => setShowBannerModal(true)}
-                >
-                  Select Banner
-                </Button>
-              </div>
-              <div className="col-10">
-                <Form.Control
-                  type="text"
-                  value={selectedBanner}
-                  disabled
-                  placeholder="e.g. /eyesdeal/EyesO_1.png"
-                />
-                <small className="form-text text-muted">
-                  Use the Select Banner button to choose an image from the media
-                  library.
-                </small>
-              </div>
-            </div>
-            {selectedBanner && (
-              <div className="row mt-4 g-3">
-                <div className="col-12 col-md-6 col-lg-3">
-                  <div className="position-relative border text-center border-black rounded p-2">
-                    <img
-                      src={`${BASE_URL}${selectedBanner}`}
-                      alt="Banner"
-                      className="img-fluid rounded w-50 h-auto object-fit-cover"
-                      style={{ maxHeight: "100px", objectFit: "cover" }}
-                    />
-                    <button
-                      className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => setSelectedBanner("")}
-                      aria-label="Remove banner"
-                    >
-                      <IoClose size={16} className="text-dark" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <Form.Label>Frame Price</Form.Label>
+            <Form.Control
+              type="number"
+              step="0.01"
+              value={framePrice}
+              onChange={(e) => setFramePrice(e.target.value)}
+              required
+            />
           </Form.Group>
-          <Form.Group className="mb-3" controlId="isBogoCheckbox">
-            <Form.Check
-              type="checkbox"
-              label="Is Bogo"
-              checked={isBogo}
-              onChange={(e) => setIsBogo(e.target.checked)}
+          <Form.Group className="mb-3">
+            <Form.Label>Total Price</Form.Label>
+            <Form.Control
+              type="number"
+              step="0.01"
+              value={totalPrice}
+              readOnly
             />
           </Form.Group>
           <Button type="submit" variant="primary" disabled={submitting}>
@@ -197,27 +129,11 @@ const PackageModal = ({ show, onHide, onSubmit, initialData }) => {
           </Button>
         </Form>
       </Modal.Body>
-      <AssetSelector
-        show={showLogoModal}
-        onHide={() => setShowLogoModal(false)}
-        onSelectImage={(imageSrc) => {
-          setSelectedLogo(imageSrc[0]);
-          setShowLogoModal(false);
-        }}
-      />
-      <AssetSelector
-        show={showBannerModal}
-        onHide={() => setShowBannerModal(false)}
-        onSelectImage={(imageSrc) => {
-          setSelectedBanner(imageSrc[0]);
-          setShowBannerModal(false);
-        }}
-      />
     </Modal>
   );
 };
 
-const PackagesOffers = () => {
+const AddPackageOffers = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalShow, setModalShow] = useState(false);
@@ -234,7 +150,6 @@ const PackagesOffers = () => {
   });
   const [deleteModalShow, setDeleteModalShow] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const navigate = useNavigate();
 
   const fetchPackages = async (page = 1, limit = 10) => {
     setLoading(true);
@@ -276,23 +191,6 @@ const PackagesOffers = () => {
     }
   };
 
-  const handleModalSubmit = async (payload) => {
-    let res;
-    if (payload._id) {
-      res = await packageService.updatePackage(payload);
-    } else {
-      res = await packageService.createPackage(payload);
-    }
-    if (res.success) {
-      toast.success(res.message || "Success");
-      setModalShow(false);
-      setEditData(null);
-      fetchPackages(pagination.page, pagination.limit);
-    } else {
-      toast.error(res.message);
-    }
-  };
-
   const columns = useMemo(
     () => [
       {
@@ -302,71 +200,50 @@ const PackagesOffers = () => {
           (pagination.page - 1) * pagination.limit + row.index + 1,
       },
       {
-        accessorKey: "packageName",
-        header: "Package Name",
-        cell: ({ getValue }) => <span>{getValue()}</span>,
+        accessorKey: "lens",
+        header: "Lens",
+        cell: ({ getValue }) => <span>{getValue()?.label || "N/A"}</span>,
       },
       {
-        accessorKey: "Description",
-        header: "Package Description",
-        cell: ({ getValue }) => <span>{getValue()}</span>,
+        accessorKey: "pairNumber",
+        header: "Pair Number",
+        cell: ({ getValue }) => <span>{getValue() || "N/A"}</span>,
       },
       {
-        accessorKey: "logoImage",
-        header: "Logo Image",
-        cell: ({ getValue }) =>
-          getValue() ? (
-            <img
-              src={`${BASE_URL}${getValue()}`}
-              alt="logo"
-              style={{ width: 50, height: "auto" }}
-            />
-          ) : (
-            "No image"
-          ),
+        accessorKey: "lensPrice",
+        header: "Lens Price",
+        cell: ({ getValue }) => {
+          const value = getValue();
+          return (
+            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
+          );
+        },
       },
       {
-        accessorKey: "bannerImage",
-        header: "Banner Image",
-        cell: ({ getValue }) =>
-          getValue() ? (
-            <img
-              src={`${BASE_URL}${getValue()}`}
-              alt="banner"
-              style={{ width: 50, height: "auto" }}
-            />
-          ) : (
-            "No image"
-          ),
+        accessorKey: "framePrice",
+        header: "Frame Price",
+        cell: ({ getValue }) => {
+          const value = getValue();
+          return (
+            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
+          );
+        },
       },
       {
-        accessorKey: "isBogo",
-        header: "Is Bogo",
-        cell: ({ getValue }) => <span>{getValue() ? "Yes" : "No"}</span>,
+        accessorKey: "totalPrice",
+        header: "Total Price",
+        cell: ({ getValue }) => {
+          const value = getValue();
+          return (
+            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
+          );
+        },
       },
       {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
           <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                navigate(`/products/add-package-product/${row.original._id}`);
-              }}
-            >
-              Add Product
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                navigate(`/products/add-package-offers/${row.original._id}`);
-              }}
-            >
-              Add Offer
-            </Button>
             <span
               style={{ cursor: "pointer", color: "#007bff" }}
               title="Edit"
@@ -439,6 +316,23 @@ const PackagesOffers = () => {
     },
   });
 
+  const handleModalSubmit = async (formData) => {
+    let res;
+    if (formData.get("_id")) {
+      res = await packageService.updatePackage(formData);
+    } else {
+      res = await packageService.createPackage(formData);
+    }
+    if (res.success) {
+      toast.success(res.message || "Success");
+      setModalShow(false);
+      setEditData(null);
+      fetchPackages(pagination.page, pagination.limit);
+    } else {
+      toast.error(res.message);
+    }
+  };
+
   const startRow =
     pagination.totalDocs > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
   const endRow =
@@ -450,7 +344,7 @@ const PackagesOffers = () => {
   return (
     <div className="container-fluid max-width-90 mx-auto mt-5">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Packages</h2>
+        <h2>Package Offers List</h2>
         <Button
           variant="primary"
           onClick={() => {
@@ -594,12 +488,12 @@ const PackagesOffers = () => {
             toast.error(res.message || "Failed to delete package");
           }
         }}
-        message={`Are you sure you want to delete the package "${
-          deleteTarget?.packageName || ""
+        message={`Are you sure you want to delete the package with lens "${
+          deleteTarget?.lens?.label || ""
         }"?`}
       />
     </div>
   );
 };
 
-export default PackagesOffers;
+export default AddPackageOffers;

@@ -24,9 +24,11 @@ export const packageService = {
   },
 
   // Create a new package
-  createPackage: async (payload) => {
+  createPackage: async (formData) => {
     try {
-      const response = await api.post(PACKAGE_ENDPOINT, payload);
+      const response = await api.post(PACKAGE_ENDPOINT, formData, {
+        headers: { "Content-Type": "application/json" },
+      });
       return {
         success: response.data.success,
         data: response.data.data,
@@ -39,17 +41,47 @@ export const packageService = {
       };
     }
   },
-
-  // Update an existing package
-  updatePackage: async (payload) => {
+  addPackageProducts: async (payload) => {
     try {
-      const response = await api.patch(PACKAGE_ENDPOINT, payload);
+      const response = await api.post(`/package/productsAdd`, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
       return {
         success: response.data.success,
         data: response.data.data,
         message: response.data.message,
       };
     } catch (error) {
+      console.log("error", error);
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error adding package products",
+      };
+    }
+  },
+  // Update an existing package
+  updatePackage: async (formData) => {
+    try {
+      const response = await api.patch(
+        `${PACKAGE_ENDPOINT}/${formData._id}`,
+        formData,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      console.log("jenish<<<", response);
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.log("error", error);
+
       return {
         success: false,
         message: error.response?.data?.message || "Error updating package",

@@ -69,6 +69,8 @@ import EditSale from "../pages/Process/EditSale";
 import VendorInvoice from "../pages/Process/VendorInvoice";
 import PackagesOffers from "../pages/Packages/PackagesOffers";
 import BulkUploadPackage from "../pages/Products/BulkUploadPackage";
+import AddPackageOffers from "../pages/Packages/AddPackageOffers";
+import AddPackageProducts from "../pages/Packages/AddPackageProducts";
 
 const routes = [
   {
@@ -528,6 +530,24 @@ const routes = [
     element: (
       <PrivateRoute>
         <BulkUploadPackage />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddPackageOffers",
+    path: "/products/add-package-offers/:id",
+    element: (
+      <PrivateRoute>
+        <AddPackageOffers />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddPackageProducts",
+    path: "/products/add-package-product/:id",
+    element: (
+      <PrivateRoute>
+        <AddPackageProducts />
       </PrivateRoute>
     ),
   },

@@ -151,6 +151,12 @@ export const productService = {
     return await handleApiRequest("GET", endpoint);
   },
 
+  getProducts1: async (productType, params = {}) => {
+    const endpoint = PRODUCT_ENDPOINTS[productType.toUpperCase()];
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+    return await handleApiRequest("GET", url);
+  },
   // Get a single product by ID
   getProductById: async (productType, id) => {
     const endpoint =
