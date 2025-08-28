@@ -778,7 +778,7 @@ const SaleForm = () => {
                       View Orders
                     </button>
                   </div>
-                  {/* <div className="btn-container">
+                  <div className="btn-container">
                     <button
                       type="button"
                       className="btn border-secondary-subtle text-primary"
@@ -786,7 +786,7 @@ const SaleForm = () => {
                     >
                       Add Power
                     </button>
-                  </div> */}
+                  </div>
                 </>
               )}
             </div>

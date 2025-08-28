@@ -9,44 +9,38 @@ function PrescriptionModel({
   const [activeCustStatus, setActiveCustStatus] = useState("Specs");
   const [currentIndex, setCurrentIndex] = useState(0); // Track current prescription
   const custstatus = ["Specs", "Contacts"];
-
+  console.log("selectedCust", selectedCust);
+  const filteredPrescriptions =
+    selectedCust?.filter(
+      (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
+    ) || [];
   useEffect(() => {
-    if (selectedCust && selectedCust.length > 0) {
-      // Find the first prescription matching the activeCustStatus
-      const matchingPrescription = selectedCust.find(
-        (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
+    if (filteredPrescriptions.length > 0) {
+      setActiveCustomer(
+        filteredPrescriptions[currentIndex] || filteredPrescriptions[0]
       );
-
-      if (matchingPrescription) {
-        setActiveCustomer(matchingPrescription);
-        setCurrentIndex(selectedCust.indexOf(matchingPrescription));
-      } else {
-        setActiveCustomer(selectedCust[0]);
-        setCurrentIndex(0);
-      }
     } else {
       setActiveCustomer(null);
     }
-  }, [selectedCust, activeCustStatus]);
+  }, [filteredPrescriptions, currentIndex]);
+
+  // Reset to first when tab changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeCustStatus]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("en-GB"); // DD/MM/YYYY format
   };
-
-  // Handle Previous/Next navigation
+  // Navigation
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setActiveCustomer(selectedCust[currentIndex - 1]);
-    }
+    if (currentIndex > 0) setCurrentIndex((prev) => prev - 1);
   };
 
   const handleNext = () => {
-    if (currentIndex < selectedCust.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setActiveCustomer(selectedCust[currentIndex + 1]);
-    }
+    if (currentIndex < filteredPrescriptions.length - 1)
+      setCurrentIndex((prev) => prev + 1);
   };
 
   // console.log(
@@ -350,37 +344,32 @@ function PrescriptionModel({
                           </tr>
                         </thead>
                       </table>
-
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <p>
-                            Showing <strong>{currentIndex + 1}</strong> to{" "}
-                            <strong>{currentIndex + 1}</strong> of{" "}
-                            <strong>{selectedCust.length}</strong> results
-                          </p>
-                        </div>
-                        <div className="d-flex gap-2">
-                          <div>
-                            <button
-                              className="btn border"
-                              onClick={handlePrevious}
-                              disabled={currentIndex === 0}
-                            >
-                              Previous
-                            </button>
-                          </div>
-                          <div>
-                            <button
-                              className="btn border"
-                              onClick={handleNext}
-                              disabled={
-                                currentIndex === selectedCust.length - 1
-                              }
-                            >
-                              Next
-                            </button>
-                          </div>
-                        </div>
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center mt-3">
+                      <div>
+                        <p className="mb-0 small text-muted">
+                          Showing <strong>{currentIndex + 1}</strong> of{" "}
+                          <strong>{filteredPrescriptions.length}</strong>{" "}
+                          {activeCustStatus}
+                        </p>
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button
+                          className="btn border"
+                          onClick={handlePrevious}
+                          disabled={currentIndex === 0}
+                        >
+                          Previous
+                        </button>
+                        <button
+                          className="btn border"
+                          onClick={handleNext}
+                          disabled={
+                            currentIndex === filteredPrescriptions.length - 1
+                          }
+                        >
+                          Next
+                        </button>
                       </div>
                     </div>
                   </>
@@ -603,6 +592,33 @@ function PrescriptionModel({
                           </div>
                         </div>
                       </div> */}
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center mt-3">
+                      <div>
+                        <p className="mb-0 small text-muted">
+                          Showing <strong>{currentIndex + 1}</strong> of{" "}
+                          <strong>{filteredPrescriptions.length}</strong>{" "}
+                          {activeCustStatus}
+                        </p>
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button
+                          className="btn border"
+                          onClick={handlePrevious}
+                          disabled={currentIndex === 0}
+                        >
+                          Previous
+                        </button>
+                        <button
+                          className="btn border"
+                          onClick={handleNext}
+                          disabled={
+                            currentIndex === filteredPrescriptions.length - 1
+                          }
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (

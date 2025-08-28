@@ -238,7 +238,12 @@ const UserEditDetailForm = ({
             if (response.success) {
               dispatch(removeAllPrescriptions());
               toast.success(response.message);
-              navigate("/sale/new");
+              navigate("/sale/new", {
+                state: {
+                  customerAdded: true,
+                  dataCustomer: response?.data?.data,
+                },
+              });
             } else {
               toast.error(response.message || "User not found!");
             }
