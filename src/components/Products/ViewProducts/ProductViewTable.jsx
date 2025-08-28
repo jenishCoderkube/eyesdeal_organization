@@ -56,9 +56,6 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
   // Add new state
 
   // Existing useEffect and getRange functions unchanged
-  useEffect(() => {
-    getRange();
-  }, [filters.model]);
 
   // Update useEffect to set default startRange and endRange
   useEffect(() => {
@@ -76,7 +73,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
     try {
       const result = await inventoryService.getProductCount(
         filters?.model ? filters?.model : "eyeGlasses",
-        filters?.status === "active" ? true : false
+        filters?.status !== "active" ? true : false
       );
       if (result.success) {
         setRange(result?.data?.data);
@@ -236,7 +233,9 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
       }
     }
   };
-
+  useEffect(() => {
+    getRange();
+  }, [filters.model]);
   const handleViewMoreImages = (photos) => {
     const fullImageUrls = photos.map(
       (photo) => `${defalutImageBasePath}${photo}`

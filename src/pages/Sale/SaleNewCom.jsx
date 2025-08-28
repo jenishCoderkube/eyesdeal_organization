@@ -63,7 +63,7 @@ const SaleForm = () => {
     { value: "12 month", label: "12 month" },
     { value: "other", label: "Other" },
   ];
-
+  console.log("formData", inventoryData);
   const loadRecallOptions = (inputValue, callback) => {
     const filtered = recallOptions.filter((option) =>
       option.label.toLowerCase().includes(inputValue.toLowerCase())
@@ -551,38 +551,6 @@ const SaleForm = () => {
     }
   };
 
-  const calculateTotals = () => {
-    let totalQuantity = 0;
-    let totalAmount = 0;
-    let taxAmount = 0;
-    let totalDiscount = 0;
-    let flatDiscount = Number(formData.flatDiscount) || 0;
-    let couponDiscount = Number(formData.couponDiscount) || 0;
-    let otherCharges = Number(formData.otherCharges) || 0;
-
-    inventoryData.forEach((pair) => {
-      if (pair.data) {
-        totalQuantity += pair.quantity || 1 || 0;
-        totalAmount += pair.totalAmount || 0;
-        taxAmount += pair.taxAmount || 0;
-        totalDiscount += pair.discount || 0;
-      }
-    });
-
-    totalDiscount += flatDiscount + couponDiscount;
-    const netAmount =
-      totalAmount - flatDiscount + otherCharges - couponDiscount;
-
-    setFormData((prev) => ({
-      ...prev,
-      totalQuantity,
-      totalAmount,
-      totalTax: taxAmount,
-      netDiscount: totalDiscount,
-      netAmount,
-    }));
-  };
-
   useEffect(() => {
     let totalQuantity = 0;
     let totalAmount = 0;
@@ -810,6 +778,7 @@ const SaleForm = () => {
                 <ProductSelector
                   showProductSelector={showProductSelector}
                   defaultStore={defaultStore}
+                  inventoryData={inventoryData}
                   setInventoryData={setInventoryData}
                   setShowProductSelector={setShowProductSelector}
                   setInventoryPairs={setInventoryPairs}

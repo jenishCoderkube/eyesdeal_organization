@@ -49,13 +49,6 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("handleSubmit called with:", {
-      rightSelected,
-      leftSelected,
-      rightVendor,
-      leftVendor,
-      selectedRows,
-    }); // Debug log
 
     if (!rightSelected && !leftSelected) {
       toast.warning("Please select at least one side (Right or Left).");
@@ -65,156 +58,102 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
     let successCount = 0;
 
     for (const row of selectedRows) {
-      const { _id: orderId, product, lens, sale, store, powerAtTime } = row;
-      console.log("Processing row:", row); // Debug log
-
-      // Validate required fields, allowing empty product.item
-      if (
-        !orderId ||
-        (product?.item &&
-          Object.keys(product.item).length > 0 &&
-          (!product.item._id ||
-            !product.barcode ||
-            !product.sku ||
-            !product.mrp ||
-            !product.srp)) ||
-        !lens?.item?._id ||
-        !lens?.barcode ||
-        !lens?.sku ||
-        !lens?.mrp ||
-        !lens?.srp ||
-        !sale?._id ||
-        !store?._id ||
-        !powerAtTime?.specs?._id
-      ) {
-        toast.error(
-          `Missing required fields for order ${orderId || "unknown"}`
-        );
-        continue;
-      }
-
-      // Prepare common payload data
-      const basePayload = {
-        product:
-          product?.item && Object.keys(product.item).length > 0
-            ? {
-                item: product.item._id,
-                barcode: product.barcode,
-                sku: product.sku,
-                mrp: product.mrp,
-                srp: product.srp,
-              }
-            : null, // Allow null product if not present
-        lens: {
-          item: lens.item._id,
-          barcode: lens.barcode,
-          sku: lens.sku,
-          mrp: lens.mrp,
-          srp: lens.srp,
-        },
-        sale: sale._id,
-        order: orderId,
-        store: store._id,
-        powerAtTime: {
-          specs: powerAtTime.specs._id,
-        },
-      };
-
       try {
-        // Handle Left Side
-        if (leftSelected && leftVendor) {
+        const {
+          orderId,
+          saleId,
+          fullOrder: { store, powerAtTime, leftLens, rightLens },
+        } = row;
+
+        // common data
+        const basePayload = {
+          sale: saleId,
+          order: orderId,
+          store,
+          powerAtTime: {
+            specs: powerAtTime?.specs,
+            contacts: powerAtTime?.contacts,
+          },
+        };
+
+        // ---- LEFT SIDE ----
+        if (leftSelected && leftVendor && leftLens) {
           const leftPayload = {
             ...basePayload,
+            lens: {
+              item: leftLens.item,
+              barcode: leftLens.barcode,
+              sku: leftLens.sku,
+              mrp: leftLens.mrp,
+              srp: leftLens.srp,
+            },
             side: "left",
             vendor: leftVendor.value,
           };
-          console.log("Creating left job work with payload:", leftPayload); // Debug log
 
-          // Create job work for left side
-          const jobWorkResponse = await workshopService.createJobWork(
-            leftPayload
-          );
-          console.log("Left job work response:", jobWorkResponse); // Debug log
+          console.log("Creating Left JobWork:", leftPayload);
+          const jobWorkRes = await workshopService.createJobWork(leftPayload);
 
-          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
-            const jobWorkId = jobWorkResponse.data.data.id;
+          if (jobWorkRes?.success && jobWorkRes.data?.data?.id) {
+            const jobWorkId = jobWorkRes.data.data.id;
 
-            // Update order with left job work
-            const orderPayload = {
+            const updatePayload = {
               _id: orderId,
               currentLeftJobWork: jobWorkId,
               status: "inLab",
               vendorNote: vendorNote || null,
             };
-            console.log("Updating order with payload:", orderPayload); // Debug log
-            const orderResponse = await workshopService.updateOrderJobWork(
-              orderId,
-              orderPayload
-            );
-            console.log("Order update response:", orderResponse); // Debug log
 
-            if (orderResponse.success) {
-              successCount++;
-            } else {
-              toast.error(
-                `Failed to update order ${orderId} for left side: ${orderResponse.message}`
-              );
-            }
-          } else {
-            toast.error(
-              `Failed to create job work for left side of order ${orderId}: ${jobWorkResponse.message}`
+            console.log("Updating order (Left):", updatePayload);
+            const updateRes = await workshopService.updateOrderJobWork(
+              orderId,
+              updatePayload
             );
+
+            if (updateRes.success) successCount++;
           }
         }
 
-        // Handle Right Side
-        if (rightSelected && rightVendor) {
+        // ---- RIGHT SIDE ----
+        if (rightSelected && rightVendor && rightLens) {
           const rightPayload = {
             ...basePayload,
+            lens: {
+              item: rightLens.item,
+              barcode: rightLens.barcode,
+              sku: rightLens.sku,
+              mrp: rightLens.mrp,
+              srp: rightLens.srp,
+            },
             side: "right",
             vendor: rightVendor.value,
           };
-          console.log("Creating right job work with payload:", rightPayload); // Debug log
 
-          // Create job work for right side
-          const jobWorkResponse = await workshopService.createJobWork(
-            rightPayload
-          );
-          console.log("Right job work response:", jobWorkResponse); // Debug log
+          console.log("Creating Right JobWork:", rightPayload);
+          const jobWorkRes = await workshopService.createJobWork(rightPayload);
 
-          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
-            const jobWorkId = jobWorkResponse.data.data.id;
+          if (jobWorkRes?.success && jobWorkRes.data?.data?.id) {
+            const jobWorkId = jobWorkRes.data.data.id;
 
-            // Update order with right job work
-            const orderPayload = {
+            const updatePayload = {
               _id: orderId,
               currentRightJobWork: jobWorkId,
               status: "inLab",
               vendorNote: vendorNote || null,
             };
-            console.log("Updating order with payload:", orderPayload); // Debug log
-            const orderResponse = await workshopService.updateOrderJobWork(
-              orderId,
-              orderPayload
-            );
-            console.log("Order update response:", orderResponse); // Debug log
 
-            if (orderResponse.success) {
-              successCount++;
-            } else {
-              toast.error(
-                `Failed to update order ${orderId} for right side: ${orderResponse.message}`
-              );
-            }
-          } else {
-            toast.error(
-              `Failed to create job work for right side of order ${orderId}: ${jobWorkResponse.message}`
+            console.log("Updating order (Right):", updatePayload);
+            const updateRes = await workshopService.updateOrderJobWork(
+              orderId,
+              updatePayload
             );
+
+            if (updateRes.success) successCount++;
           }
         }
-      } catch (error) {
-        console.error(`Error processing order ${orderId}:`, error); // Debug log
-        toast.error(`Error processing order ${orderId}: ${error.message}`);
+      } catch (err) {
+        console.error("Error processing order:", err);
+        toast.error("Error while processing order.");
       }
     }
 

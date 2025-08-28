@@ -64,6 +64,7 @@ function ShopProcess() {
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [salesReturn, setSalesReturn] = useState({ returned: [] });
+  const [pendingprocessOrder, setPendingVendorData] = useState(null);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
     newOrder: 0,
@@ -1098,7 +1099,13 @@ function ShopProcess() {
       await fetchSalesAndCounts(currentFilters.current, true);
     }
   };
-
+  const handleSendToPending = async () => {
+    const selectedOrders = productTableData
+      .filter((row) => row.selected)
+      .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
+    setPendingVendorData(selectedOrders);
+    setShowVendorModal(true);
+  };
   const handleSendToReady = async () => {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
@@ -1822,12 +1829,22 @@ function ShopProcess() {
             {activeStatus === "Pending" && (
               <button
                 className="btn me-2 custom-hover-border"
+                onClick={handleSendToPending}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Process Order"}
+              </button>
+            )}
+            {activeStatus === "Pending" && (
+              <button
+                className="btn me-2 custom-hover-border"
                 onClick={handleSendToWorkshop}
                 disabled={loading}
               >
                 {loading ? "Processing..." : "Send To Workshop"}
               </button>
             )}
+
             <button
               className="btn custom-hover-border mx-2"
               onClick={handleDeliver}
@@ -1967,13 +1984,11 @@ function ShopProcess() {
           selectedRow={selectedRow}
         />
       )}
-      {showVendorModal && (
+      {showVendorModal && pendingprocessOrder && (
         <SelectVendorModal
           show={showVendorModal}
           onHide={() => setShowVendorModal(false)}
-          selectedRows={localProductTableData
-            .filter((row) => selectedRows.includes(row.id))
-            .map((row) => row.fullOrder)}
+          selectedRows={pendingprocessOrder}
           onSubmit={handleVendorSubmit}
         />
       )}

@@ -157,10 +157,7 @@ const productViewService = {
               queryParams.append("search", value);
             } else if (key === "status") {
               // Override default activeInWebsite with the provided status
-              queryParams.set(
-                "activeInWebsite",
-                value === "active" ? true : false
-              );
+              queryParams.set("activeInERP", value === "active" ? true : false);
             } else {
               queryParams.append(`optimize[${key}]`, value);
             }

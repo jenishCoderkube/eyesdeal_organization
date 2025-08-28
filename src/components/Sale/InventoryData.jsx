@@ -9,6 +9,8 @@ export default function InventoryData({
   setInventoryData,
   setInventoryPairs,
 }) {
+  console.log("Rendering InventoryData with inventoryData:", inventoryData);
+
   const [lensSelections, setLensSelections] = useState({});
 
   const fetchLensData = async (inputValue) => {
@@ -74,9 +76,7 @@ export default function InventoryData({
 
       return {
         ...item,
-        quantity: ["rightLens", "leftLens"].includes(item.type)
-          ? data?.inventory?.totalQuantity
-          : data?.quantity || 0, // Use quantity from data
+        quantity: item?.quantity || 0, // Use quantity from data
         taxAmount,
         discount,
         totalAmount,
@@ -93,6 +93,13 @@ export default function InventoryData({
   }, [inventoryData.length, setInventoryData]);
 
   const handleLensSelection = (selectedLens, lensType, groupId) => {
+    console.log(
+      "Selected lens:",
+      selectedLens,
+      lensType,
+      groupId,
+      inventoryData
+    );
     const otherLensType = lensType === "rightLens" ? "leftLens" : "rightLens";
 
     if (!selectedLens) {
@@ -413,7 +420,254 @@ export default function InventoryData({
                       </svg>
                     </button>
                   </div>
-                  {hasFrame && (
+                  {hasFrame ? (
+                    <table className="table table-auto w-100">
+                      <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+                        <tr>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "80px" }}
+                            >
+                              Barcode
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "160px" }}
+                            >
+                              SKU
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "80px" }}
+                            >
+                              Photos
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "20px" }}
+                            >
+                              Stock
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "80px" }}
+                            >
+                              MRP
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "80px" }}
+                            >
+                              SRP
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "80px" }}
+                            >
+                              Tax Rate
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "20px" }}
+                            >
+                              Tax Amount
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "20px" }}
+                            >
+                              Discount
+                            </div>
+                          </th>
+                          <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <div
+                              className="font-semibold text-left break-words"
+                              style={{ minWidth: "50px" }}
+                            >
+                              Total Amount
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {items
+                          .filter(
+                            (item) =>
+                              item.type === "product" ||
+                              item.type === "rightLens" ||
+                              item.type === "leftLens"
+                          )
+                          .map((item, index) => {
+                            console.log("item", item);
+
+                            const data = item.data || {};
+
+                            const handleSellPriceChange = (e) => {
+                              const updated = [...inventoryData];
+                              const itemIndex = inventoryData.findIndex(
+                                (i) =>
+                                  i.groupId === groupId && i.type === item.type
+                              );
+                              const newSRP = parseFloat(e.target.value) || 0;
+                              const mrp = parseFloat(data?.MRP) || 0;
+                              const taxRate = parseFloat(data?.tax) || 0;
+
+                              updated[itemIndex].data.sellPrice = newSRP;
+
+                              const { taxAmount, discount, totalAmount } =
+                                calculateInvoiceValues(mrp, newSRP, taxRate);
+
+                              updated[itemIndex].taxAmount = taxAmount;
+                              updated[itemIndex].discount = discount;
+                              updated[itemIndex].totalAmount = totalAmount;
+
+                              setInventoryData(updated);
+
+                              setInventoryPairs((prev) =>
+                                prev.map((pair) => {
+                                  if (pair.pairId === groupId) {
+                                    return {
+                                      ...pair,
+                                      product: {
+                                        ...pair.product,
+                                        srp: newSRP,
+                                        perPieceDiscount: discount,
+                                        perPieceTax: taxAmount,
+                                        perPieceAmount: totalAmount,
+                                      },
+                                    };
+                                  }
+                                  return pair;
+                                })
+                              );
+                            };
+
+                            return (
+                              <tr key={`item-${groupId}-${index}`}>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <div className="d-flex align-items-center">
+                                    {data?.newBarcode || data?.oldBarcode || ""}
+                                  </div>
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <textarea
+                                    className="form-input w-70"
+                                    rows="1"
+                                    cols="5"
+                                    type="text"
+                                    readOnly
+                                    value={data?.sku || ""}
+                                    style={{ height: "50px" }}
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-1 last:pr-1 py-3 whitespace-nowrap">
+                                  <div className="border border-bottom-0 position-relative">
+                                    {data?.photos?.length > 0 ? (
+                                      <>
+                                        <img
+                                          src={data?.photos[0]}
+                                          alt="Product"
+                                          style={{
+                                            width: "50px",
+                                            height: "50px",
+                                          }}
+                                        />
+                                        <div
+                                          style={{
+                                            textDecoration: "underline",
+                                            color: "blue",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          View More
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <p style={{ width: 50, height: 50 }}>
+                                        No image
+                                      </p>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={item?.quantity || 0}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="number"
+                                    value={data?.MRP || ""}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="number"
+                                    value={data?.sellPrice || ""}
+                                    className="form-input w-100"
+                                    onChange={handleSellPriceChange}
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={`${data?.tax || 0} (Inc)`}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="number"
+                                    value={item?.taxAmount || 0}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="number"
+                                    value={item?.discount || 0}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                                <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="number"
+                                    value={item?.totalAmount || 0}
+                                    readOnly
+                                    className="form-input w-100"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  ) : (
                     <table className="table table-auto w-100">
                       <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
                         <tr>
@@ -664,6 +918,8 @@ export default function InventoryData({
                   <div className="lens-dropdown-container">
                     {["rightLens", "leftLens"].map((lensType) => {
                       const lensData = lensSelections[groupId]?.[lensType];
+                      console.log("lensData", lensSelections);
+
                       return (
                         <div key={lensType} className="lens-dropdown">
                           <label className="d-block text-sm font-medium mb-1">
@@ -671,6 +927,7 @@ export default function InventoryData({
                               ? "Right Lens"
                               : "Left Lens"}
                           </label>
+
                           <AsyncSelect
                             cacheOptions
                             loadOptions={fetchLensData}

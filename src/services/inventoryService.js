@@ -405,14 +405,14 @@ export const inventoryService = {
       };
     }
   },
-  getProductCount: async (productType, activeInWebsite = true) => {
+  getProductCount: async (productType, activeInWebsite = false) => {
     try {
       if (!productType) {
         throw new Error("Product type is required");
       }
 
       const params = new URLSearchParams();
-      params.append("activeInWebsite", activeInWebsite);
+      params.append("activeInERP", activeInWebsite);
 
       const response = await api.get(
         INVENTORY_ENDPOINTS.PRODUCT_COUNT(productType, params.toString())

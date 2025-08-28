@@ -9,7 +9,10 @@ export default function ProductSelector({
   setInventoryData,
   setShowProductSelector,
   setInventoryPairs,
+  inventoryData,
 }) {
+  console.log("jenish<<", inventoryData);
+
   const fetchProductData = async (inputValue) => {
     try {
       const response = await saleService.listProducts(inputValue);
@@ -87,6 +90,12 @@ export default function ProductSelector({
         setShowProductSelector(false);
       } else if (productDetails.__t === "contactLens") {
         // Lens: Auto-add right and left lenses with same data, no frame, no dropdown
+
+        console.log(
+          "Adding contact lens with details:",
+          productDetails?.quantity
+        );
+
         setInventoryData((prev) => [
           ...prev,
           {
