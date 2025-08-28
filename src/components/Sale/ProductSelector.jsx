@@ -16,7 +16,7 @@ export default function ProductSelector({
       if (response.success) {
         return response.data.data.docs.map((prod) => ({
           value: prod._id,
-          label: `${prod.oldBarcode} / ${prod.sku}`,
+          label: `${prod.newBarcode} / ${prod.sku}`,
           data: prod,
         }));
       } else {
@@ -38,7 +38,7 @@ export default function ProductSelector({
           return null;
         }
         if (newItem) {
-          return newItem.product;
+          return { ...newItem.product, quantity: newItem.quantity };
         }
         if (response.data.data.docs.length === 0) {
           alert("Product out of stock");

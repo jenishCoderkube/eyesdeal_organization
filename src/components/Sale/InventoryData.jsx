@@ -52,6 +52,7 @@ export default function InventoryData({
       const mrp = parseFloat(data?.MRP) || 0;
       const srp = parseFloat(data?.sellPrice) || 0;
       const taxRate = parseFloat(data?.tax) || 0;
+      console.log("item1", data);
 
       // Calculate financial values for both frames and lenses
       const { taxAmount, discount, totalAmount } = calculateInvoiceValues(
@@ -496,6 +497,8 @@ export default function InventoryData({
                       {items
                         .filter((item) => item.type === "product")
                         .map((item, index) => {
+                          console.log("item", item);
+
                           const data = item.data || {};
 
                           const handleSellPriceChange = (e) => {
