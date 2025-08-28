@@ -69,7 +69,12 @@ export default function ProductSelector({
         // Frame: Add product and lens dropdown
         setInventoryData((prev) => [
           ...prev,
-          { type: "product", data: productDetails, pairId },
+          {
+            type: "product",
+            data: productDetails,
+            pairId,
+            quantity: productDetails.quantity || 0,
+          },
           { type: "lensDropdown", pairId },
         ]);
 
@@ -84,8 +89,18 @@ export default function ProductSelector({
         // Lens: Auto-add right and left lenses with same data, no frame, no dropdown
         setInventoryData((prev) => [
           ...prev,
-          { type: "rightLens", data: productDetails, pairId, quantity: 1 },
-          { type: "leftLens", data: productDetails, pairId, quantity: 1 },
+          {
+            type: "rightLens",
+            data: productDetails,
+            pairId,
+            quantity: productDetails.quantity || 0,
+          },
+          {
+            type: "leftLens",
+            data: productDetails,
+            pairId,
+            quantity: productDetails.quantity || 0,
+          },
         ]);
 
         const newPair = {
