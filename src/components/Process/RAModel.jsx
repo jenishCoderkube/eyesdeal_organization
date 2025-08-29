@@ -303,7 +303,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                   <div className="col-3">
                     <label className="form-label mb-1 fw-semibold">Date</label>
                     <DatePicker
-                      selected={payment.date}
+                      selected={payment.date || new Date()} // if no date, fallback to today
                       onChange={(date) => handleChange(index, "date", date)}
                       className="form-control"
                       dateFormat="yyyy-MM-dd"
@@ -325,13 +325,13 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                     />
                   </div>
                   <div className="d-flex gap-2 col-2">
-                    <button
+                    {/* <button
                       className="btn btn-sm btn-outline-primary rounded shadow-sm"
                       onClick={() => handleToggleEdit(index)}
                       title={payment.isEditing ? "Save" : "Edit"}
                     >
                       {payment.isEditing ? <IoIosSave /> : <MdEdit />}
-                    </button>
+                    </button> */}
                     <button
                       className="btn btn-sm btn-outline-danger rounded shadow-sm"
                       onClick={() => handleRemovePayment(index)}

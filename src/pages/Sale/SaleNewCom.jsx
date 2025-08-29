@@ -254,7 +254,7 @@ const SaleForm = () => {
         ? {
             product: pair.product._id || pair.product.product,
             productObject: pair.product.productObject || pair.product,
-            quantity: pair.product.quantity || 1,
+            quantity: 1,
             barcode:
               pair.product.barcode ||
               pair.product.newBarcode ||
@@ -283,7 +283,7 @@ const SaleForm = () => {
               pair.rightLens._id ||
               pair.rightLens.item ||
               pair.rightLens.product,
-            quantity: pair.rightLens.quantity || 1,
+            quantity: 1,
             barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
             stock: pair.rightLens.stock || 0,
             sku: pair.rightLens.sku,
@@ -314,7 +314,7 @@ const SaleForm = () => {
         ? {
             product:
               pair.leftLens._id || pair.leftLens.item || pair.leftLens.product,
-            quantity: pair.leftLens.quantity || 1,
+            quantity: 1,
             barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
             stock: pair.leftLens.stock || 0,
             sku: pair.leftLens.sku,
@@ -538,6 +538,7 @@ const SaleForm = () => {
           setErrors({});
           setShowProductSelector(true); // Reset product selector visibility
           setSalesData([]); // Clear sales data
+          navigate("/process/shop");
         } else {
           toast.error(
             response?.message?.error?.message ||

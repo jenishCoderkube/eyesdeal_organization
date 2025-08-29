@@ -32,6 +32,8 @@ import {
 import { Button, Form } from "react-bootstrap";
 import { SiWhatsapp } from "react-icons/si";
 import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
+import OrderImageTemplate from "../../components/Process/WorkshopProcess/OrderImageTemplate";
+import html2canvas from "html2canvas";
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -67,7 +69,8 @@ function ShopProcess() {
   const [salesReturn, setSalesReturn] = useState({ returned: [] });
   const [pendingprocessOrder, setPendingVendorData] = useState(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // New state for WhatsApp modal
-
+  const [downloadOrder, setDownloadOrder] = useState(null);
+  const downloadRef = useRef(null);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
     newOrder: 0,
@@ -300,6 +303,7 @@ function ShopProcess() {
                 orderId: order._id || sale._id,
                 vendor: sale.vendor || "",
                 fullOrder: order,
+                sale: sale,
               }))
             )
           );
@@ -857,6 +861,7 @@ function ShopProcess() {
       // Implement your vendor submission logic here
       console.log("Vendor data submitted:", data);
       toast.success("Vendor assigned successfully");
+      handleDownloadImage(data);
       await refreshSalesData();
     } catch (error) {
       toast.error("Failed to assign vendor: " + error.message);
@@ -1219,7 +1224,38 @@ function ShopProcess() {
     const pdfUrl = generateInvoicePDF(row.fullSale);
     window.open(pdfUrl, "_blank");
   };
+  const handleDownloadImage = async (order) => {
+    try {
+      setDownloadOrder({
+        order: order?.selectedRows[0]?.sale,
+        orderDetails: order,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const element = downloadRef.current;
+      if (!element) {
+        throw new Error("Template element not found");
+      }
 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `order_${order.billNumber || order._id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Image downloaded successfully");
+      setDownloadOrder(null);
+    } catch (error) {
+      setDownloadOrder(null);
+      toast.error("Error downloading image");
+    }
+  };
   // Centralized rendering function for table content
   const renderTableContent = () => {
     if (loading || !dataLoaded) {
@@ -2072,6 +2108,23 @@ function ShopProcess() {
           selectedRow={selectedRow}
         />
       )}
+      <div
+        style={{
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+          width: "800px",
+        }}
+      >
+        {downloadOrder && (
+          <div ref={downloadRef}>
+            <OrderImageTemplate
+              order={downloadOrder?.order}
+              details={downloadOrder?.orderDetails}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

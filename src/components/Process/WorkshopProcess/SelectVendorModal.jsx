@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import Select from "react-select";
 import { FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { workshopService } from "../../../services/Process/workshopService";
+import html2canvas from "html2canvas";
 
 const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [rightSelected, setRightSelected] = useState(false);
@@ -49,7 +50,6 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!rightSelected && !leftSelected) {
       toast.warning("Please select at least one side (Right or Left).");
       return;

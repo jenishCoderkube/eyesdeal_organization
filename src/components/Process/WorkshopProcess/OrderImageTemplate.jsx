@@ -2,7 +2,13 @@ import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logoUrl from "../../../assets/Logo-small.png";
 
-const OrderImageTemplate = ({ order }) => {
+const OrderImageTemplate = ({ order, details }) => {
+  // Check if orders array exists and has at least one item
+  console.log("details<<<", details);
+
+  const orderItem =
+    order.orders && order.orders.length > 0 ? order.orders[0] : {};
+
   return (
     <div
       className="container p-3"
@@ -40,41 +46,49 @@ const OrderImageTemplate = ({ order }) => {
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Vendor Note</td>
-            <td>{order.vendorNote || "N/A"}</td>
+            <td>{details?.vendorNote || order.vendorNote || "N/A"}</td>
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Store Note</td>
-            <td>{order.sale?.note || "N/A"}</td>
+            <td>{order.note || "N/A"}</td>
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0", width: "30%" }}>
               Customer Name
             </td>
-            <td style={{ width: "30%" }}>
-              {order.sale?.customerName || "N/A"}
-            </td>
+            <td style={{ width: "30%" }}>{order.customerName || "N/A"}</td>
             <td style={{ backgroundColor: "#e0e0e0", width: "20%" }}>
               Order Number
             </td>
-            <td style={{ width: "20%" }}>{order.billNumber || "N/A"}</td>
+            <td style={{ width: "20%" }}>{orderItem.billNumber || "N/A"}</td>
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Frame SKU</td>
-            <td style={{ width: "30%" }}>{order.product?.sku || "N/A"}</td>
+            <td style={{ width: "30%" }}>{orderItem.product?.sku || "N/A"}</td>
             <td style={{ backgroundColor: "#e0e0e0" }}>Order Date</td>
             <td>
-              {new Date(order.createdAt).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
+              {order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "N/A"}
             </td>
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Right Vendor</td>
-            <td>{order.currentRightJobWork?.vendor?.companyName || "N/A"}</td>
+            <td>
+              {details?.rightVendor?.label ||
+                orderItem.currentRightJobWork?.vendor?.companyName ||
+                "N/A"}
+            </td>
             <td style={{ backgroundColor: "#e0e0e0" }}>Left Vendor</td>
-            <td>{order.currentLeftJobWork?.vendor?.companyName || "N/A"}</td>
+            <td>
+              {details?.leftVendor?.label ||
+                orderItem.currentLeftJobWork?.vendor?.companyName ||
+                "N/A"}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -100,9 +114,9 @@ const OrderImageTemplate = ({ order }) => {
         <tbody>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Lens SKU</td>
-            <td colSpan={4}>{order.lens?.sku || "N/A"}</td>
+            <td colSpan={4}>{orderItem.rightLens?.sku || "N/A"}</td>
             <td style={{ backgroundColor: "#e0e0e0" }}></td>
-            <td colSpan={4}>{order.lens?.sku || "N/A"}</td>
+            <td colSpan={4}>{orderItem.leftLens?.sku || "N/A"}</td>
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Specs</td>
@@ -142,15 +156,15 @@ const OrderImageTemplate = ({ order }) => {
           </tr>
           <tr>
             <td style={{ backgroundColor: "#e0e0e0" }}>Contact</td>
-            <td>{order.powerAtTime?.specs?.right?.contact?.sph || "0"}</td>
-            <td>{order.powerAtTime?.specs?.right?.contact?.cyl || "0"}</td>
-            <td>{order.powerAtTime?.specs?.right?.contact?.axis || "0"}</td>
-            <td>{order.powerAtTime?.specs?.right?.contact?.add || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.right?.distance?.sph || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.right?.distance?.cyl || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.right?.distance?.axis || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.right?.distance?.add || "0"}</td>
             <td style={{ backgroundColor: "#e0e0e0" }}></td>
-            <td>{order.powerAtTime?.specs?.left?.contact?.sph || "0"}</td>
-            <td>{order.powerAtTime?.specs?.left?.contact?.cyl || "0"}</td>
-            <td>{order.powerAtTime?.specs?.left?.contact?.axis || "0"}</td>
-            <td>{order.powerAtTime?.specs?.left?.contact?.add || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.left?.distance?.sph || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.left?.distance?.cyl || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.left?.distance?.axis || "0"}</td>
+            <td>{order.powerAtTime?.contacts?.left?.distance?.add || "0"}</td>
           </tr>
         </tbody>
       </table>
@@ -205,6 +219,15 @@ const OrderImageTemplate = ({ order }) => {
             <td style={{ backgroundColor: "#e0e0e0" }}>K(L)</td>
             <td style={{ backgroundColor: "#e0e0e0" }}>Dia(L)</td>
             <td style={{ backgroundColor: "#e0e0e0" }}>Bc(L)</td>
+          </tr>
+          <tr>
+            <td>{order.powerAtTime?.contacts?.right?.k || ""}</td>
+            <td>{order.powerAtTime?.contacts?.right?.dia || ""}</td>
+            <td>{order.powerAtTime?.contacts?.right?.bc || ""}</td>
+            <td></td>
+            <td>{order.powerAtTime?.contacts?.left?.k || ""}</td>
+            <td>{order.powerAtTime?.contacts?.left?.dia || ""}</td>
+            <td>{order.powerAtTime?.contacts?.left?.bc || ""}</td>
           </tr>
         </tbody>
       </table>
