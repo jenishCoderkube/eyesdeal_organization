@@ -172,6 +172,22 @@ export const workshopService = {
       };
     }
   },
+  updateOrder: async (payload) => {
+    try {
+      const response = await api.patch(AUTH_ENDPOINTS.ORDERS, payload);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          `Error updating order ${payload._id}`,
+      };
+    }
+  },
 
   createJobWork: async (payload) => {
     try {

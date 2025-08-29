@@ -20,7 +20,7 @@ const VendorListCom = () => {
   });
   const user = JSON.parse(localStorage.getItem("user"));
   const [defaultStore, setDefaultStore] = useState(null);
-
+  const [currentFilters, setCurrentFilters] = useState(null);
   // Fetch stores, vendors, and initial table data on mount
   useEffect(() => {
     const fetchInitialData = async () => {

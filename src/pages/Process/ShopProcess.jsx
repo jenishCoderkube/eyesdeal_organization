@@ -35,6 +35,7 @@ import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import OrderImageTemplate from "../../components/Process/WorkshopProcess/OrderImageTemplate";
 import html2canvas from "html2canvas";
 import EditVendorModal from "../../components/Process/WorkshopProcess/EditVendorModal";
+import AddDamagedModal from "../../components/Process/WorkshopProcess/AddDamagedModal";
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -72,6 +73,7 @@ function ShopProcess() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // New state for WhatsApp modal
   const [downloadOrder, setDownloadOrder] = useState(null);
   const [showEditVendorModal, setShowEditVendorModal] = useState(false);
+  const [showAddDamage, setShowAddDamage] = useState(false);
   const downloadRef = useRef(null);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
@@ -1098,10 +1100,30 @@ function ShopProcess() {
     setSelectedRow(selectedOrders);
     setShowEditVendorModal(true);
   };
+  const handleAddDamagePiece = () => {
+    const selectedOrders = localProductTableData
+      .filter((row) => row.selected)
+      .map((row) => ({
+        id: row.id,
+        orderId: row.orderId,
+        fullOrder: row.fullOrder,
+      }));
+
+    if (selectedOrders.length === 0) {
+      toast.warning("No orders selected");
+      return;
+    }
+    setSelectedRow(selectedOrders);
+    setShowAddDamage(true);
+  };
   // Handle EditVendorModal submit
   const handleEditVendorSubmit = async (data) => {
     console.log("Edit vendor data submitted:", data);
     setShowEditVendorModal(false);
+    refreshSalesData();
+  };
+  const handleAddDamageSubmit = async (data) => {
+    setShowAddDamage(false);
     refreshSalesData();
   };
   const handleSendToWorkshop = async () => {
@@ -1600,6 +1622,8 @@ function ShopProcess() {
                     <td className="text-center align-middle">
                       {(activeStatus === "Pending" ||
                         activeStatus === "Ready" ||
+                        activeStatus === "In Process" ||
+                        activeStatus === "In Fitting" ||
                         activeStatus === "Delivered") && (
                         <div className="d-flex flex-column align-items-center justify-content-center">
                           <button
@@ -1619,14 +1643,16 @@ function ShopProcess() {
                               >
                                 {loading ? "Deleting..." : "Delete"}
                               </button>
-                              <button
-                                className="btn btn-sm border py-2 mb-2"
-                                style={{ minWidth: "80px" }}
-                                onClick={() => openAPModal(row)}
-                              >
-                                Assign Power
-                              </button>
                             </>
+                          )}
+                          {activeStatus !== "Returned" && (
+                            <button
+                              className="btn btn-sm border py-2 mb-2"
+                              style={{ minWidth: "80px" }}
+                              onClick={() => openAPModal(row)}
+                            >
+                              Assign Power
+                            </button>
                           )}
                           <button
                             className="btn btn-sm border px-2 py-2"
@@ -1636,15 +1662,6 @@ function ShopProcess() {
                             View Bill
                           </button>
                         </div>
-                      )}
-                      {activeStatus === "In Process" && (
-                        <button
-                          className="btn btn-sm border px-2 py-2"
-                          style={{ minWidth: "60px", width: "80px" }}
-                          onClick={() => openBillInNewTab(row)}
-                        >
-                          View Bill
-                        </button>
                       )}
                     </td>
                   )}
@@ -1719,9 +1736,11 @@ function ShopProcess() {
                                           {prodRow.rightLens ? (
                                             <p
                                               className={`${
-                                                prodRow?.fullOrder
-                                                  ?.currentRightJobWork
-                                                  ?.status === "pending"
+                                                ["pending", "damaged"].includes(
+                                                  prodRow?.fullOrder
+                                                    ?.currentRightJobWork
+                                                    ?.status
+                                                )
                                                   ? "text-danger"
                                                   : "text-success"
                                               }`}
@@ -1746,9 +1765,10 @@ function ShopProcess() {
                                           {prodRow.rightLens ? (
                                             <p
                                               className={`${
-                                                prodRow?.fullOrder
-                                                  ?.currentLeftJobWork
-                                                  ?.status === "pending"
+                                                ["pending", "damaged"].includes(
+                                                  prodRow?.fullOrder
+                                                    ?.currentLeftJobWork?.status
+                                                )
                                                   ? "text-danger"
                                                   : "text-success"
                                               }`}
@@ -2070,16 +2090,26 @@ function ShopProcess() {
                 </div>
               )}
               {activeStatus === "In Fitting" && (
-                <div>
-                  <button
-                    className="btn custom-hover-border"
-                    type="button"
-                    onClick={handleMarkAsReady}
-                    disabled={loading}
-                  >
-                    {loading ? "Processing..." : "Mark as Ready"}
-                  </button>
-                </div>
+                <>
+                  <div>
+                    <button
+                      className="btn custom-hover-border"
+                      type="button"
+                      onClick={handleMarkAsReady}
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : "Mark as Ready"}
+                    </button>
+                    <button
+                      className="btn custom-hover-border"
+                      type="button"
+                      onClick={handleAddDamagePiece}
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : "Add Damaged"}
+                    </button>
+                  </div>
+                </>
               )}
               <div>
                 <button
@@ -2166,6 +2196,14 @@ function ShopProcess() {
           onHide={() => setShowEditVendorModal(false)}
           selectedRows={selectedRow}
           onSubmit={handleEditVendorSubmit}
+        />
+      )}
+      {showAddDamage && (
+        <AddDamagedModal
+          show={showAddDamage}
+          onHide={() => setShowAddDamage(false)}
+          selectedRows={selectedRow}
+          onSubmit={handleAddDamageSubmit}
         />
       )}
       {showWhatsAppModal && selectedRow && (
