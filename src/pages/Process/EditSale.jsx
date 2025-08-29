@@ -498,17 +498,41 @@ function EditSale() {
         reference: payment.reference || "",
       }));
 
+    console.log("inventoryData:", inventoryData);
+    console.log("inventoryPairs:", inventoryPairs);
+
     // Construct orders from inventoryData and inventoryPairs
     const updatedOrders = inventoryPairs
       .map((pair) => {
-        // Find corresponding inventoryData items
+        // Find corresponding inventoryData items for the pair
         const groupItems = inventoryData.filter(
           (item) => item.groupId === pair.groupId
         );
 
-        let product = null; // Initialize product as null
+        let product = null;
         let rightLens = null;
         let leftLens = null;
+
+        // Log for debugging
+        console.log(`Processing pair: ${pair.groupId}`, groupItems);
+
+        // Check for multiple rightLens or leftLens items
+        const rightLensItems = groupItems.filter(
+          (item) => item.type === "rightLens"
+        );
+        const leftLensItems = groupItems.filter(
+          (item) => item.type === "leftLens"
+        );
+        if (rightLensItems.length > 1) {
+          console.warn(
+            `Multiple rightLens items found for groupId: ${pair.groupId}`
+          );
+        }
+        if (leftLensItems.length > 1) {
+          console.warn(
+            `Multiple leftLens items found for groupId: ${pair.groupId}`
+          );
+        }
 
         // Update product details if it exists
         const productItem = groupItems.find((item) => item.type === "product");
@@ -533,34 +557,35 @@ function EditSale() {
         }
 
         // Update rightLens details
-        const rightLensItem = groupItems.find(
-          (item) => item.type === "rightLens"
-        );
-        if (rightLensItem && rightLensItem.data) {
+        // Update rightLens details
+        console.log("rightLensItems<<<", rightLensItems);
+
+        const rightLensItem = rightLensItems[0];
+        if (rightLensItem) {
+          const lensData = rightLensItem.data || rightLensItem; // <-- fallback
           rightLens = {
-            item: rightLensItem.data._id,
-            unit: rightLensItem.data.unit?.name || "Pieces",
-            displayName:
-              rightLensItem.data.productName || rightLensItem.data.displayName,
-            barcode:
-              rightLensItem.data.oldBarcode || rightLensItem.data.newBarcode,
-            sku: rightLensItem.data.sku,
-            mrp: parseFloat(rightLensItem.data.MRP) || 0,
-            srp: parseFloat(rightLensItem.data.sellPrice) || 0,
-            perPieceDiscount: rightLensItem.discount || 0,
-            taxRate: `${rightLensItem.data.tax || 0} (Inc)`,
+            item: lensData._id,
+            unit: lensData.unit?.name || lensData.unit || "Pieces",
+            displayName: lensData.productName || lensData.displayName,
+            barcode: lensData.oldBarcode || lensData.newBarcode,
+            sku: lensData.sku,
+            mrp: parseFloat(lensData.MRP) || 0,
+            srp: parseFloat(lensData.sellPrice) || 0,
+            perPieceDiscount: rightLensItem.discount || lensData.discount || 0,
+            taxRate: `${lensData.tax || 0} (Inc)`,
             perPieceTax: rightLensItem.taxAmount || 0,
-            perPieceAmount: rightLensItem.totalAmount || 0,
-            inclusiveTax: rightLensItem.data.inclusiveTax ?? true,
-            manageStock: rightLensItem.data.manageStock ?? false,
-            incentiveAmount: rightLensItem.data.incentiveAmount || 0,
+            perPieceAmount:
+              rightLensItem.totalAmount || lensData.sellPrice || 0,
+            inclusiveTax: lensData.inclusiveTax ?? true,
+            manageStock: lensData.manageStock ?? false,
+            incentiveAmount: lensData.incentiveAmount || 0,
           };
         }
 
+        // Same adjustment for leftLens
+
         // Update leftLens details
-        const leftLensItem = groupItems.find(
-          (item) => item.type === "leftLens"
-        );
+        const leftLensItem = leftLensItems[0];
         if (leftLensItem && leftLensItem.data) {
           leftLens = {
             item: leftLensItem.data._id,
@@ -582,12 +607,27 @@ function EditSale() {
           };
         }
 
+        // Validate lens pairs (optional: enforce both lenses if one exists)
+        if ((rightLens && !leftLens) || (!rightLens && leftLens)) {
+          console.warn(
+            `Incomplete lens pair for groupId: ${pair.groupId}. RightLens: ${
+              rightLens ? "present" : "missing"
+            }, LeftLens: ${leftLens ? "present" : "missing"}`
+          );
+          // Optionally skip incomplete pairs
+          // return null;
+        }
+
         // Only include orders with at least one item (product, rightLens, or leftLens)
         if (product || rightLens || leftLens) {
+          const pairIdParts = pair.pairId.split("-");
+          const orderId =
+            pairIdParts.length === 3 && !pair.pairId.includes("pair-new-")
+              ? pairIdParts[2]
+              : undefined;
+
           return {
-            _id: pair.pairId.includes("pair-new-")
-              ? undefined
-              : pair.pairId.split("-")[2],
+            _id: orderId,
             product,
             rightLens,
             leftLens,
@@ -601,6 +641,8 @@ function EditSale() {
         return null;
       })
       .filter((order) => order !== null);
+
+    console.log("updatedOrders:", updatedOrders);
 
     // Calculate totals for payload
     const totalQuantity = formData.totalQuantity || 0;
@@ -661,7 +703,6 @@ function EditSale() {
           recallDate: payload.recallDate || "",
         });
         navigate("/process/shop");
-        // Optionally navigate back to sales list
       } else {
         toast.error(response.message || "Failed to update sale");
       }

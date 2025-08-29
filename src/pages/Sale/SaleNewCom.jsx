@@ -493,13 +493,13 @@ const SaleForm = () => {
                 specs:
                   formData.prescriptions.find(
                     (p) => p.__t.toLowerCase() === "specs"
-                  )?._id || {},
+                  )?._id || null,
                 contacts:
                   formData.prescriptions.find(
                     (p) => p.__t.toLowerCase() === "contacts"
-                  )?._id || {},
+                  )?._id || null,
               }
-            : {},
+            : null,
           attachments: documentsFiles,
           recall: newDateFormatate,
         };

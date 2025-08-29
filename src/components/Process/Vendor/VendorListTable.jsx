@@ -152,7 +152,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
         status: "pending",
       };
       const response = await vendorshopService.getJobWorks(filters);
-      if (response.success && response.data.data.docs) {
+      if (response?.data?.success) {
         setFilteredData(response.data.data.docs);
         setPagination({
           totalDocs: response.data.data.totalDocs,
@@ -170,7 +170,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
       }
     } catch (error) {
       console.error("Error during receive all:", error);
-      toast.error("An error occurred during receive all.");
+      // toast.error("An error occurred during receive all.");
     }
   };
 

@@ -236,15 +236,16 @@ function ShopProcess() {
           status: filters.status,
           search: filters.search || "",
           startDate: filters.startDate
-            ? Math.floor(filters.startDate.getTime())
+            ? new Date(filters.startDate).setUTCHours(0, 0, 0, 0) // start of day UTC
             : undefined,
           endDate: filters.endDate
-            ? Math.floor(filters.endDate.getTime())
+            ? new Date(filters.endDate).setUTCHours(23, 59, 59, 999) // end of day UTC
             : undefined,
           page: filters.page,
           limit: filters.limit,
           populate: true,
         };
+
         if (!isInitialLoad.current && filters.stores.length) {
           params.stores = filters.stores;
         } else if (users.stores.length) {
@@ -342,11 +343,12 @@ function ShopProcess() {
         const params = {
           stores: filters.stores.length ? filters.stores : users.stores,
           search: filters.search || "",
+
           startDate: filters.startDate
-            ? Math.floor(filters.startDate.getTime())
+            ? new Date(filters.startDate).setUTCHours(0, 0, 0, 0) // start of day UTC
             : undefined,
           endDate: filters.endDate
-            ? Math.floor(filters.endDate.getTime())
+            ? new Date(filters.endDate).setUTCHours(23, 59, 59, 999) // end of day UTC
             : undefined,
         };
 
@@ -663,16 +665,21 @@ function ShopProcess() {
   };
 
   const handleSendForFitting = async () => {
-    const selectedOrders = localProductTableData
+    const selectedOrders = productTableData
       .filter((row) => row.selected)
-      .map((row) => ({
-        id: row.id,
-        orderId: row.orderId,
-        fullOrder: row.fullOrder,
-      }));
+      .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
+    console.log("selectedOrders<<");
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
+      return;
+    }
+
+    if (
+      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
+      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
+    ) {
+      toast.warning("Please first Receive Left and Right vendor list");
       return;
     }
 
@@ -735,6 +742,13 @@ function ShopProcess() {
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
+      return;
+    }
+    if (
+      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
+      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
+    ) {
+      toast.warning("Please first Receive Left and Right vendor list");
       return;
     }
 
@@ -1144,10 +1158,18 @@ function ShopProcess() {
   const handleSendToReady = async () => {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
-      .map((row) => ({ id: row.id, orderId: row.orderId }));
+      .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
+      return;
+    }
+
+    if (
+      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
+      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
+    ) {
+      toast.warning("Please first Receive Left and Right vendor list");
       return;
     }
 
@@ -1185,10 +1207,18 @@ function ShopProcess() {
   const handleDeliver = async () => {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
-      .map((row) => ({ id: row.id, orderId: row.orderId }));
+      .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
+      return;
+    }
+
+    if (
+      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
+      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
+    ) {
+      toast.warning("Please first Receive Left and Right vendor list");
       return;
     }
 
@@ -1693,7 +1723,7 @@ function ShopProcess() {
                                                   ?.currentRightJobWork
                                                   ?.status === "pending"
                                                   ? "text-danger"
-                                                  : "text-primary"
+                                                  : "text-success"
                                               }`}
                                             >
                                               {
@@ -1720,7 +1750,7 @@ function ShopProcess() {
                                                   ?.currentLeftJobWork
                                                   ?.status === "pending"
                                                   ? "text-danger"
-                                                  : "text-primary"
+                                                  : "text-success"
                                               }`}
                                             >
                                               {
@@ -1974,21 +2004,13 @@ function ShopProcess() {
                 {loading ? "Processing..." : "Send To Workshop"}
               </button>
             )}
-
-            <button
-              className="btn custom-hover-border mx-2"
-              onClick={handleDeliver}
-              disabled={loading}
-            >
-              {loading ? "Processing..." : "Deliver"}
-            </button>
-            {activeStatus === "Ready" && (
+            {activeStatus !== "Delivered" && (
               <button
-                className="btn custom-hover-border me-2"
-                onClick={handleSendToReady}
+                className="btn custom-hover-border mx-2"
+                onClick={handleDeliver}
                 disabled={loading}
               >
-                {loading ? "Processing..." : "Ready"}
+                {loading ? "Processing..." : "Deliver"}
               </button>
             )}
           </div>

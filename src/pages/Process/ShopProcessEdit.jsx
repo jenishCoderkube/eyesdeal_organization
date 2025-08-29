@@ -256,130 +256,93 @@ function ShopProcessEdit() {
             </span>
           </div>
 
-          {saleData.orders?.map((order, index) => (
-            <div className="d-flex gap-2 raw col-12 flex-wrap mb-3" key={index}>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`ProductSKU-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Product SKU
-                </label>
-                <input
-                  type="text"
-                  id={`ProductSKU-${index}`}
-                  className="form-control"
-                  value={order.product?.sku || order.lens?.sku || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`Barcode-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Barcode
-                </label>
-                <input
-                  type="text"
-                  id={`Barcode-${index}`}
-                  className="form-control"
-                  value={order.product?.barcode || order.lens?.barcode || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`MRP-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  MRP
-                </label>
-                <input
-                  type="text"
-                  id={`MRP-${index}`}
-                  className="form-control"
-                  value={order.product?.mrp || order.lens?.mrp || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`SRP-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  SRP
-                </label>
-                <input
-                  type="text"
-                  id={`SRP-${index}`}
-                  className="form-control"
-                  value={order.perPieceAmount || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`Discount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Discount
-                </label>
-                <input
-                  type="text"
-                  id={`Discount-${index}`}
-                  className="form-control"
-                  value={order.perPieceDiscount || "0"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TaxRate-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Tax Rate
-                </label>
-                <input
-                  type="text"
-                  id={`TaxRate-${index}`}
-                  className="form-control"
-                  value={order.taxRate || "N/A"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TaxAmount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Tax Amount
-                </label>
-                <input
-                  type="text"
-                  id={`TaxAmount-${index}`}
-                  className="form-control"
-                  value={order.perPieceTax || "0"}
-                  disabled
-                />
-              </div>
-              <div className="col-5 col-md-2">
-                <label
-                  htmlFor={`TotalAmount-${index}`}
-                  className="form-label mb-1 fw-semibold"
-                >
-                  Total Amount
-                </label>
-                <input
-                  type="text"
-                  id={`TotalAmount-${index}`}
-                  className="form-control"
-                  value={order.perPieceAmount || "N/A"}
-                  disabled
-                />
-              </div>
-            </div>
-          ))}
+          <div className="table-responsive mt-3">
+            <table className="table table-bordered table-sm align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>Type</th>
+                  <th>SKU</th>
+                  <th>Barcode</th>
+                  <th>MRP</th>
+                  <th>SRP (Editable)</th>
+                  <th>Discount</th>
+                  <th>Tax Rate</th>
+                  <th>Tax Amount</th>
+                  <th>Total Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {saleData.orders?.map((order, orderIndex) => {
+                  const rows = [];
+
+                  // Helper: push a row for product, rightLens, leftLens
+                  const pushRow = (label, item) => {
+                    if (!item) return;
+                    rows.push(
+                      <tr key={`${orderIndex}-${label}`}>
+                        <td>{label}</td>
+                        <td>{item.sku || "N/A"}</td>
+                        <td>{item.barcode || "N/A"}</td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={item.mrp || "N/A"}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={item.srp || item.perPieceAmount || ""}
+                            onChange={(e) => {
+                              const updatedOrders = [...saleData.orders];
+                              const newSRP = parseFloat(e.target.value) || 0;
+
+                              // update in correct place
+                              if (label === "Product") {
+                                updatedOrders[orderIndex].product = {
+                                  ...item,
+                                  srp: newSRP,
+                                };
+                              } else if (label === "Right Lens") {
+                                updatedOrders[orderIndex].rightLens = {
+                                  ...item,
+                                  srp: newSRP,
+                                };
+                              } else if (label === "Left Lens") {
+                                updatedOrders[orderIndex].leftLens = {
+                                  ...item,
+                                  srp: newSRP,
+                                };
+                              }
+
+                              setSaleData((prev) => ({
+                                ...prev,
+                                orders: updatedOrders,
+                              }));
+                            }}
+                          />
+                        </td>
+                        <td>{item.perPieceDiscount || 0}</td>
+                        <td>{item.taxRate || "N/A"}</td>
+                        <td>{item.perPieceTax || 0}</td>
+                        <td>{item.perPieceAmount || item.srp || 0}</td>
+                      </tr>
+                    );
+                  };
+
+                  // add rows for this order
+                  pushRow("Product", order.product);
+                  pushRow("Right Lens", order.rightLens);
+                  pushRow("Left Lens", order.leftLens);
+
+                  return rows;
+                })}
+              </tbody>
+            </table>
+          </div>
 
           <div className="row g-3 mt-4">
             {[
