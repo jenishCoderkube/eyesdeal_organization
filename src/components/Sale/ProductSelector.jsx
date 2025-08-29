@@ -102,12 +102,14 @@ export default function ProductSelector({
             type: "rightLens",
             data: productDetails,
             pairId,
+            groupId: pairId,
             quantity: productDetails.quantity || 0,
           },
           {
             type: "leftLens",
             data: productDetails,
             pairId,
+            groupId: pairId,
             quantity: productDetails.quantity || 0,
           },
         ]);
