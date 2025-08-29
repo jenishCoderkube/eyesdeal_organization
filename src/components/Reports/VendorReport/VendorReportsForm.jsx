@@ -12,6 +12,7 @@ const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [vendorData, setVendorData] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
@@ -28,6 +29,23 @@ const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
     { value: "damaged", label: "Damaged" },
     { value: "pending", label: "Pending" },
   ];
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   useEffect(() => {
     getStores();
@@ -72,7 +90,7 @@ const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
       vendorName: [],
       status: [
         { value: "damaged", label: "Damaged" },
-        { value: "received", label: "Received" }
+        { value: "received", label: "Received" },
       ],
       from: new Date(),
       to: new Date(),
@@ -83,10 +101,10 @@ const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
   });
 
   useEffect(() => {
-    const ids = formik.values.store.map(s => s.value);
+    const ids = formik.values.store.map((s) => s.value);
     setstoresNames(ids);
   }, [formik.values.store]);
-  
+
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((item) => ({
@@ -195,11 +213,7 @@ const VendorReportsForm = ({ onSubmit, data, setstoresNames }) => {
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

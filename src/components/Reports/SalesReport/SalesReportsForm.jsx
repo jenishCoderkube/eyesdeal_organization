@@ -10,13 +10,14 @@ import { reportService } from "../../../services/reportService";
 const SalesReportsForm = ({ onSubmit, data }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
     label: `${store.name}`,
   }));
 
-  useEffect(() => { 
+  useEffect(() => {
     getStores();
   }, []);
 
@@ -46,6 +47,23 @@ const SalesReportsForm = ({ onSubmit, data }) => {
       onSubmit(values);
     },
   });
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -119,11 +137,7 @@ const SalesReportsForm = ({ onSubmit, data }) => {
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

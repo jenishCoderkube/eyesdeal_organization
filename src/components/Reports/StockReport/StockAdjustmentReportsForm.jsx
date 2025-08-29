@@ -6,9 +6,15 @@ import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
 import { reportService } from "../../../services/reportService";
 
-const StockAdjustmentReportsForm = ({ onSubmit, data, setFilteredData, setStoresIdsData }) => {
+const StockAdjustmentReportsForm = ({
+  onSubmit,
+  data,
+  setFilteredData,
+  setStoresIdsData,
+}) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
@@ -39,7 +45,7 @@ const StockAdjustmentReportsForm = ({ onSubmit, data, setFilteredData, setStores
   const fetchStockReport = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getStockReport()
+      const response = await reportService.getStockReport();
       if (response.success) {
         setFilteredData(response?.data?.data?.docs);
       } else {
@@ -50,7 +56,7 @@ const StockAdjustmentReportsForm = ({ onSubmit, data, setFilteredData, setStores
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -67,6 +73,23 @@ const StockAdjustmentReportsForm = ({ onSubmit, data, setFilteredData, setStores
     const ids = formik.values.store;
     setStoresIdsData(ids);
   }, [formik.values.store]);
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -140,11 +163,7 @@ const StockAdjustmentReportsForm = ({ onSubmit, data, setFilteredData, setStores
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

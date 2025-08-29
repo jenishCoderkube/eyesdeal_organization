@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
+import { inventoryService } from "../../../services/inventoryService";
+import { toast } from "react-toastify";
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -19,6 +21,9 @@ const storeOptions = [
 ];
 
 const BulkUploadCustomers = () => {
+  const [storeData, setStoreData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
   // Formik setup
   const formik = useFormik({
     initialValues: {
@@ -40,6 +45,42 @@ const BulkUploadCustomers = () => {
     const file = event.currentTarget.files[0];
     formik.setFieldValue("bulkUploadFile", file);
   };
+
+  const getStores = async () => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.getStores();
+      if (response.success) {
+        setStoreData(response?.data?.data);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error(" error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    getStores();
+  }, []);
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   return (
     <div className="container-fluid px-4 py-8">

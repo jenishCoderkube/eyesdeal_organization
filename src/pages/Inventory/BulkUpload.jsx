@@ -17,6 +17,7 @@ const BulkUploadInventory = () => {
   const [showLoader, setShowLoader] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const formik = useFormik({
     initialValues: {
@@ -131,6 +132,23 @@ const BulkUploadInventory = () => {
     value: vendor._id,
     label: `${vendor.name}`,
   }));
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   // Calculate progress percentage
   const progressPercentage =

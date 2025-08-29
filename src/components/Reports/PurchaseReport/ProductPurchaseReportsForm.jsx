@@ -10,6 +10,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [vendorData, setVendorData] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
@@ -56,6 +57,23 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const formik = useFormik({
     initialValues: {
@@ -139,11 +157,7 @@ const ProductPurchaseReportsForm = ({ onSubmit }) => {
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

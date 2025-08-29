@@ -36,6 +36,7 @@ function VendorInvoice() {
     prevPage: null,
     nextPage: null,
   });
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const users = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
@@ -242,6 +243,18 @@ function VendorInvoice() {
       label: `${store.name}`,
     }));
   }, [storeData]);
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeOptions.find(
+        (option) => option.value === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", defaultStore);
+      }
+    }
+  }, [storeData, storeOptions, user]);
 
   const vendorOptions = useMemo(() => {
     return vendorData.map((vendor) => ({

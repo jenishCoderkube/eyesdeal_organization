@@ -5,10 +5,20 @@ import DatePicker from "react-datepicker";
 import * as XLSX from "xlsx";
 import "react-datepicker/dist/react-datepicker.css";
 import { reportService } from "../../../services/reportService";
+import { toast } from "react-toastify";
 
-const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreFrom, setStoreTo, setFilteredData }) => {
+const TransferReportsForm = ({
+  onSubmit,
+  data,
+  setFromDate,
+  setToDate,
+  setStoreFrom,
+  setStoreTo,
+  setFilteredData,
+}) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
@@ -31,7 +41,13 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
     }
   };
 
-  const fetchTransferStockData = async ({ fromDate, toDate, page, storeFromid, storeToid }) => {
+  const fetchTransferStockData = async ({
+    fromDate,
+    toDate,
+    page,
+    storeFromid,
+    storeToid,
+  }) => {
     setLoading(true);
     try {
       const payload = {
@@ -41,7 +57,7 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
         ...(storeFromid && storeFromid.length && { storeFromid }),
         ...(storeToid && storeToid.length && { storeToid }),
       };
-      const response = await reportService.getTransferStock(payload)
+      const response = await reportService.getTransferStock(payload);
       if (response.success) {
         setFilteredData(response?.data?.data?.docs);
       } else {
@@ -52,7 +68,7 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -67,6 +83,23 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
   });
 
   useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        const defaultStoreOption = {
+          value: defaultStore._id,
+          label: defaultStore.name,
+        };
+        formik.setFieldValue("storeFrom", [defaultStoreOption]); // Set storeFrom as array
+        // Optionally set storeTo if needed: formik.setFieldValue("storeTo", [defaultStoreOption]);
+      }
+    }
+  }, [storeData, formik]);
+
+  useEffect(() => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -76,8 +109,12 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
     const payload = {
       fromDate: yesterday.getTime(),
       toDate: today.getTime(),
-      ...(formik.values.storeFrom?.length && { storeFromid: formik.values.storeFrom[0] }),
-      ...(formik.values.storeTo?.length && { storeToid: formik.values.storeTo[0] }),
+      ...(formik.values.storeFrom?.length && {
+        storeFromid: formik.values.storeFrom[0],
+      }),
+      ...(formik.values.storeTo?.length && {
+        storeToid: formik.values.storeTo[0],
+      }),
       page: 1,
     };
     fetchTransferStockData(payload);
@@ -177,11 +214,7 @@ const TransferReportsForm = ({ onSubmit, data, setFromDate, setToDate, setStoreF
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

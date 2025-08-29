@@ -35,8 +35,16 @@ const SalesReportsTable = ({ data, amountData }) => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (debouncedQuery.trim()) {
-      fetchSalesData({ search: debouncedQuery, fromDate: yesterday.getTime(), toDate: today.getTime() });
-      fetchAmount({ search: debouncedQuery, fromDate: yesterday.getTime(), toDate: today.getTime() });
+      fetchSalesData({
+        search: debouncedQuery,
+        fromDate: yesterday.getTime(),
+        toDate: today.getTime(),
+      });
+      fetchAmount({
+        search: debouncedQuery,
+        fromDate: yesterday.getTime(),
+        toDate: today.getTime(),
+      });
     }
   }, [debouncedQuery]);
 
@@ -48,40 +56,44 @@ const SalesReportsTable = ({ data, amountData }) => {
     const payload = {
       search,
       fromDate,
-      toDate
+      toDate,
     };
-    reportService.getSalesData(payload)
-      .then(res => {
+    reportService
+      .getSalesData(payload)
+      .then((res) => {
         setFilteredData(res.data?.data?.docs);
       })
-      .catch(e => console.log("Failed to get pruchaselog: ", e))
-  }
+      .catch((e) => console.log("Failed to get pruchaselog: ", e));
+  };
 
   const fetchAmount = ({ search, fromDate, toDate }) => {
     const payload = {
       search,
       fromDate,
-      toDate
+      toDate,
     };
-    reportService.getAmount(payload)
-      .then(res => {
+    reportService
+      .getAmount(payload)
+      .then((res) => {
         //  setAmountData(res.data?.data?.docs);
       })
-      .catch(e => console.log("Failed to get amount: ", e))
-  }
+      .catch((e) => console.log("Failed to get amount: ", e));
+  };
 
   const columns = useMemo(
     () => [
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "store",
         header: "Store Name",
         size: 250,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "customerName",
@@ -93,7 +105,9 @@ const SalesReportsTable = ({ data, amountData }) => {
         accessorKey: "salesRep",
         header: "Salesman Name",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "createdAt",
@@ -105,11 +119,29 @@ const SalesReportsTable = ({ data, amountData }) => {
           </div>
         ),
       },
+      // {
+      //   accessorKey: "orders",
+      //   header: "Bill No",
+      //   size: 100,
+      //   cell: ({ getValue }) => (
+      //     <div className="text-left">{getValue()?.[0].billNumber}</div>
+      //   ),
+      // },
+
       {
         accessorKey: "orders",
         header: "Bill No",
         size: 100,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.[0].billNumber}</div>,
+        cell: ({ getValue }) => {
+          const orders = getValue();
+          return (
+            <div className="text-left">
+              {Array.isArray(orders) && orders.length > 0
+                ? orders[0]?.billNumber || "-"
+                : "-"}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "totalAmount",
@@ -124,7 +156,10 @@ const SalesReportsTable = ({ data, amountData }) => {
           const total = row.original.totalAmount || 0;
           const receivedArray = row.original.receivedAmount || [];
 
-          const receivedTotal = receivedArray.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+          const receivedTotal = receivedArray.reduce(
+            (sum, entry) => sum + (entry.amount || 0),
+            0
+          );
           const pending = total - receivedTotal;
 
           return <div className="text-left">{pending}</div>;
@@ -151,14 +186,17 @@ const SalesReportsTable = ({ data, amountData }) => {
     const transformedData = data.map((item, index) => {
       const total = item.totalAmount || 0;
       const receivedList = item.receivedAmount || [];
-      const receivedTotal = receivedList.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+      const receivedTotal = receivedList.reduce(
+        (sum, entry) => sum + (entry.amount || 0),
+        0
+      );
       const pending = total - receivedTotal;
-  
+
       const billNumbers = (item.orders || [])
-        .map(order => order.billNumber)
+        .map((order) => order.billNumber)
         .filter(Boolean)
         .join(", ");
-  
+
       return {
         SRNO: index + 1,
         Store_Name: item.store?.name || "-",
@@ -238,9 +276,9 @@ const SalesReportsTable = ({ data, amountData }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

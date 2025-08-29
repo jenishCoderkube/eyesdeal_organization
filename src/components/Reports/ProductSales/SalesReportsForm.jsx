@@ -12,6 +12,7 @@ const SalesReportsForm = ({ onSubmit }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [brandData, setBrandData] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
@@ -59,6 +60,23 @@ const SalesReportsForm = ({ onSubmit }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const formik = useFormik({
     initialValues: {

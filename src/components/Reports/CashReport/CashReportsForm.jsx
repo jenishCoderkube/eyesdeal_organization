@@ -18,9 +18,9 @@ const TYPE_OPTIONS = [
 ];
 
 const CashReportsForm = ({ onSubmit, data }) => {
-
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((store) => ({
     value: store._id,
@@ -46,18 +46,33 @@ const CashReportsForm = ({ onSubmit, data }) => {
       setLoading(false);
     }
   };
-  
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
+
   const formik = useFormik({
     initialValues: {
       mode: [
         { value: "cash", label: "Cash" },
         { value: "bank", label: "UPI" },
-        { value: "card", label: "Card" }
+        { value: "card", label: "Card" },
       ],
       store: [],
-      type: [
-        { value: "credit", label: "Credit(+)" }
-      ],
+      type: [{ value: "credit", label: "Credit(+)" }],
       from: new Date(),
       to: new Date(),
     },
@@ -171,11 +186,7 @@ const CashReportsForm = ({ onSubmit, data }) => {
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

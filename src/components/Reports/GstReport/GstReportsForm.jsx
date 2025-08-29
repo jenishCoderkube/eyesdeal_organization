@@ -9,6 +9,7 @@ import { reportService } from "../../../services/reportService";
 const GstReportsForm = ({ onSubmit, data, setStoresIdsData }) => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
@@ -48,9 +49,26 @@ const GstReportsForm = ({ onSubmit, data, setStoresIdsData }) => {
 
   useEffect(() => {
     const ids = formik.values.store;
-    const transformed = ids.map(item => (item.value));
+    const transformed = ids.map((item) => item.value);
     setStoresIdsData(transformed);
   }, [formik.values.store]);
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const exportToExcel = (data, filename) => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -131,11 +149,7 @@ const GstReportsForm = ({ onSubmit, data, setStoresIdsData }) => {
         </div>
 
         <div className="col-12 d-flex gap-2 mt-3">
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             Submit
           </button>
         </div>

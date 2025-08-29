@@ -9,6 +9,7 @@ import { cashbookService } from "../../services/cashbookService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
 import { debounce } from "lodash";
+import { useFormik } from "formik";
 
 const ViewCashbook = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +22,7 @@ const ViewCashbook = () => {
     page: 1,
     totalPages: 1,
   });
+  const user = JSON.parse(localStorage.getItem("user"));
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const today = new Date();
@@ -29,6 +31,12 @@ const ViewCashbook = () => {
     store: null,
     from: new Date(today.setHours(0, 0, 0, 0)),
     to: new Date(today.setHours(23, 59, 59, 999)),
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      store: null,
+    },
   });
 
   // Sample options for dropdowns
@@ -96,7 +104,22 @@ const ViewCashbook = () => {
   useEffect(() => {
     cashBook(searchQuery, currentPage);
   }, [currentPage]);
-
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
   const cashBook = async (search = "", page = 1) => {
     const storeId = formData?.store?.map((option) => option.value);
     setLoading(true);
@@ -183,16 +206,16 @@ const ViewCashbook = () => {
                   id="store"
                   options={storeOptions}
                   isMulti
-                  value={formData.store}
+                  value={formik.values.store}
                   onChange={(option) => handleInputChange("store", option)}
                   placeholder="Select..."
                   classNamePrefix="react-select"
                 />
-                <input
+                {/* <input
                   name="store"
                   type="hidden"
                   value={formData.store ? formData.store.value : ""}
-                />
+                /> */}
               </div>
               <div className="col-12 col-md-6 col-lg-3">
                 <label

@@ -113,6 +113,23 @@ const StoreInventoryForm = () => {
   }));
 
   useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
+
+  useEffect(() => {
     getStores();
     getBrand();
     getFrameTypeData();

@@ -1,13 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useFormik } from "formik";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const VendorListForm = ({ onSubmit, stores, vendors, loading }) => {
+const VendorListForm = ({
+  onSubmit,
+  stores,
+  vendors,
+  loading,
+  initialStore,
+}) => {
   const formik = useFormik({
     initialValues: {
-      store: null,
+      store: initialStore || null,
       vendor: null,
       from: null,
       to: null,
@@ -16,6 +22,17 @@ const VendorListForm = ({ onSubmit, stores, vendors, loading }) => {
       onSubmit(values);
     },
   });
+
+  // Update formik.values.store when initialStore changes
+  useEffect(() => {
+    if (initialStore && formik.values.store !== initialStore) {
+      formik.setFieldValue("store", initialStore);
+    }
+  }, [initialStore, formik]);
+
+  console.log("formik.values.store:", formik.values.store);
+  console.log("stores prop:", stores);
+  console.log("initialStore prop:", initialStore);
 
   return (
     <form onSubmit={formik.handleSubmit}>
@@ -32,7 +49,7 @@ const VendorListForm = ({ onSubmit, stores, vendors, loading }) => {
             placeholder="Select..."
             classNamePrefix="react-select"
             id="vendor"
-            // isDisabled={loading}
+            isDisabled={loading}
           />
         </div>
         <div className="col-12">
@@ -47,7 +64,7 @@ const VendorListForm = ({ onSubmit, stores, vendors, loading }) => {
             placeholder="Select..."
             classNamePrefix="react-select"
             id="store"
-            // isDisabled={loading}
+            isDisabled={loading}
           />
         </div>
         <div className="col-12 d-flex gap-2 mt-3">

@@ -41,6 +41,7 @@ function WorkshopProcessCom() {
   });
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const isInitialLoad = useRef(true);
   const currentFilters = useRef({
@@ -324,6 +325,32 @@ function WorkshopProcessCom() {
     }
   }, [activeStatus, getStatusForTab, clearOrders, fetchSalesData]);
 
+  // Automatically set default store from localStorage
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    console.log("User:", user);
+    console.log("Stored Store ID:", storedStoreId);
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      console.log("Default Store:", defaultStore);
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+        console.log("Formik Stores Value Set:", formik.values.stores);
+      } else {
+        console.log("No matching store found for ID:", storedStoreId);
+      }
+    } else {
+      console.log("No stored store ID or storeData is empty");
+    }
+  }, [storeData]);
+
   const storeOptions = storeData.map((store) => ({
     value: store._id,
     label: store.name,
@@ -354,6 +381,8 @@ function WorkshopProcessCom() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                   placeholder="Select stores..."
+                  isLoading={loading}
+                  isDisabled={loading}
                 />
                 {formik.touched.stores && formik.errors.stores && (
                   <div className="text-danger">{formik.errors.stores}</div>

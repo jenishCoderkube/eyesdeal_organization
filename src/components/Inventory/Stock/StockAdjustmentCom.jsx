@@ -9,6 +9,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import debounce from "lodash/debounce";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
+import { useFormik } from "formik";
 
 const StockAdjustmentCom = () => {
   const [to, setTo] = useState(null);
@@ -19,6 +20,7 @@ const StockAdjustmentCom = () => {
   const [productData, setProductData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     getStores();
@@ -56,6 +58,23 @@ const StockAdjustmentCom = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [storeData]);
 
   const debouncedGetProduct = useCallback(
     debounce((value) => {
@@ -166,12 +185,18 @@ const StockAdjustmentCom = () => {
       getRandomLetter(), // Final two letters
     ].join("");
   }
+  const formik = useFormik({
+    initialValues: {
+      stores: [],
+      brand: [],
+    },
+  });
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const data = {
-      store: to?.value,
+      store: values.stores[0]?.value,
       product: product?.value,
       newQuantity: products[0]?.quantityToUpdate,
       adjustmentId: generateAdjustmentId(),
@@ -215,12 +240,20 @@ const StockAdjustmentCom = () => {
                     Select Store
                   </label>
                   <Select
-                    id="Select Store"
-                    value={to}
-                    onChange={setTo}
+                    id="stores"
+                    value={formik.values.stores}
+                    onChange={(option) =>
+                      formik.setFieldValue("stores", option)
+                    }
+                    onBlur={() => formik.setFieldTouched("stores", true)}
                     options={storeOptions}
                     placeholder="Select..."
-                    className="w-100"
+                    className={`w-100 ${
+                      formik.touched.stores && formik.errors.stores
+                        ? "is-invalid"
+                        : ""
+                    }`}
+                    isMulti
                   />
                 </div>
               </div>

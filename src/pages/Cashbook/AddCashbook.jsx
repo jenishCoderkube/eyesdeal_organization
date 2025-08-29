@@ -3,6 +3,7 @@ import Select from "react-select";
 import { cashbookService } from "../../services/cashbookService";
 import { toast } from "react-toastify";
 import CommonButton from "../../components/CommonButton/CommonButton";
+import { useFormik } from "formik";
 
 const AddCashbook = () => {
   const [formData, setFormData] = useState({
@@ -18,9 +19,14 @@ const AddCashbook = () => {
   const [categoryData, setCategoryData] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   // Sample store options (replace with actual data from API)
-
+  const formik = useFormik({
+    initialValues: {
+      store: null,
+    },
+  });
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
@@ -85,6 +91,21 @@ const AddCashbook = () => {
     }
     return newErrors;
   };
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("store", {
+          value: defaultStore._id,
+          label: defaultStore.name,
+        });
+      }
+    }
+  }, [storeData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -192,17 +213,22 @@ const AddCashbook = () => {
                     <Select
                       id="store"
                       options={storeOptions}
-                      value={formData.store}
-                      onChange={(option) => handleInputChange("store", option)}
+                      value={formik.values.store}
+                      onChange={(option) =>
+                        formik.setFieldValue("store", option || [])
+                      }
+                      onBlur={() => formik.setFieldTouched("store", true)}
                       placeholder="Select..."
                       classNamePrefix="react-select"
+                      isMulti
+                      isDisabled={loading}
                       aria-describedby="storeError"
                     />
-                    <input
+                    {/* <input
                       name="store"
                       type="hidden"
                       value={formData.store ? formData.store.value : ""}
-                    />
+                    /> */}
                     {errors.store && (
                       <div id="storeError" className="text-danger text-xs mt-1">
                         {errors.store}

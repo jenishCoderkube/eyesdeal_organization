@@ -18,16 +18,8 @@ const VendorListCom = () => {
     prevPage: null,
     nextPage: null,
   });
-
-  // Current filters state to track pagination and form values
-  const [currentFilters, setCurrentFilters] = useState({
-    populate: true,
-    status: "pending",
-    stores: [],
-    vendors: [],
-    page: 1,
-    limit: 100,
-  });
+  const user = JSON.parse(localStorage.getItem("user"));
+  const [defaultStore, setDefaultStore] = useState(null);
 
   // Fetch stores, vendors, and initial table data on mount
   useEffect(() => {
@@ -37,12 +29,21 @@ const VendorListCom = () => {
         // Fetch stores
         const storesResponse = await vendorshopService.getStores();
         if (storesResponse.data?.success) {
-          setStores(
-            storesResponse.data?.data.map((store) => ({
-              value: store._id,
-              label: store.name,
-            }))
-          );
+          const storeOptions = storesResponse.data?.data.map((store) => ({
+            value: store._id,
+            label: store.name,
+          }));
+          setStores(storeOptions);
+
+          // Set default store based on user.stores[0]
+          if (user?.stores?.[0]) {
+            const defaultStoreOption = storeOptions.find(
+              (option) => option.value === user.stores[0]
+            );
+            if (defaultStoreOption) {
+              setDefaultStore(defaultStoreOption);
+            }
+          }
         }
 
         // Fetch vendors
@@ -199,6 +200,7 @@ const VendorListCom = () => {
               stores={stores}
               vendors={vendors}
               loading={loading}
+              initialStore={defaultStore} // Pass default store to form
             />
           </div>
           <div className="card shadow-none border p-0 mt-3">

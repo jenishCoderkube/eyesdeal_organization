@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
@@ -63,6 +63,7 @@ const genderOptions = [
 
 function AddEmployee() {
   const [stores, setStores] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
   const storeOptions = stores.map((store) => ({
@@ -129,8 +130,29 @@ function AddEmployee() {
       .then((res) => {
         setStores(res?.data?.data);
       })
-      .catch((e) => console.log("failed to fetch stores: ", e));
+      .catch((e) => console.error("Failed to fetch stores:", e));
   }, []);
+
+  // Set default store
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    console.log("user.stores:", user?.stores); // Debug log
+    console.log("stores:", stores); // Debug log
+    console.log("storeOptions:", storeOptions); // Debug log
+    console.log("formik.values.stores:", formik.values.stores); // Debug log
+    if (storedStoreId && stores.length > 0) {
+      const defaultStore = stores.find((store) => store._id === storedStoreId);
+      console.log("defaultStore:", defaultStore); // Debug log
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+      }
+    }
+  }, [stores, formik]);
 
   // Fetch user's location and set country, state, city
   useEffect(() => {
