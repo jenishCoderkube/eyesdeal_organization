@@ -493,11 +493,11 @@ const SaleForm = () => {
                 specs:
                   formData.prescriptions.find(
                     (p) => p.__t.toLowerCase() === "specs"
-                  )?._id || "",
+                  )?._id || {},
                 contacts:
                   formData.prescriptions.find(
                     (p) => p.__t.toLowerCase() === "contacts"
-                  )?._id || "",
+                  )?._id || {},
               }
             : {},
           attachments: documentsFiles,

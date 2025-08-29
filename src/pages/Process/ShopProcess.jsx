@@ -34,6 +34,7 @@ import { SiWhatsapp } from "react-icons/si";
 import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import OrderImageTemplate from "../../components/Process/WorkshopProcess/OrderImageTemplate";
 import html2canvas from "html2canvas";
+import EditVendorModal from "../../components/Process/WorkshopProcess/EditVendorModal";
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -70,6 +71,7 @@ function ShopProcess() {
   const [pendingprocessOrder, setPendingVendorData] = useState(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // New state for WhatsApp modal
   const [downloadOrder, setDownloadOrder] = useState(null);
+  const [showEditVendorModal, setShowEditVendorModal] = useState(false);
   const downloadRef = useRef(null);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
@@ -1069,7 +1071,25 @@ function ShopProcess() {
     setAPModalVisible(false);
     setSelectedAP(null);
   };
+  // Handle Edit Vendor
+  const handleEditVendor = () => {
+    const selectedOrders = productTableData
+      .filter((row) => row.selected)
+      .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
 
+    if (selectedOrders.length === 0) {
+      toast.warning("No orders selected");
+      return;
+    }
+    setSelectedRow(selectedOrders);
+    setShowEditVendorModal(true);
+  };
+  // Handle EditVendorModal submit
+  const handleEditVendorSubmit = async (data) => {
+    console.log("Edit vendor data submitted:", data);
+    setShowEditVendorModal(false);
+    refreshSalesData();
+  };
   const handleSendToWorkshop = async () => {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
@@ -1976,13 +1996,29 @@ function ShopProcess() {
       {hasSelectedProducts && activeStatus === "In Process" && (
         <div className="mb-4 col-12">
           <div>
+            {activeStatus === "In Process" && (
+              <button
+                className="btn me-1 custom-hover-border"
+                onClick={handleEditVendor}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Edit Vendor"}
+              </button>
+            )}
             <button
-              className="btn custom-hover-border me-2"
+              className="btn custom-hover-border ms-2"
               type="button"
-              onClick={handleRevertOrder}
+              onClick={handleSendForFitting}
               disabled={loading}
             >
-              {loading ? "Processing..." : "Revert Order"}
+              {loading ? "Processing..." : "Send for Fitting"}
+            </button>
+            <button
+              className="btn custom-hover-border ms-2"
+              onClick={handleSendToReady}
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Ready"}
             </button>
           </div>
         </div>
@@ -2100,6 +2136,14 @@ function ShopProcess() {
           onHide={() => setShowVendorModal(false)}
           selectedRows={pendingprocessOrder}
           onSubmit={handleVendorSubmit}
+        />
+      )}
+      {showEditVendorModal && (
+        <EditVendorModal
+          show={showEditVendorModal}
+          onHide={() => setShowEditVendorModal(false)}
+          selectedRows={selectedRow}
+          onSubmit={handleEditVendorSubmit}
         />
       )}
       {showWhatsAppModal && selectedRow && (

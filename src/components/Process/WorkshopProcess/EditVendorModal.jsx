@@ -12,6 +12,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [loadingVendors, setLoadingVendors] = useState(false);
   const [previousRightVendor, setPreviousRightVendor] = useState(null);
   const [previousLeftVendor, setPreviousLeftVendor] = useState(null);
+  console.log("EditVendorModal", selectedRows);
 
   // Fetch vendors when the modal opens
   useEffect(() => {
@@ -31,8 +32,8 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             // Set previous vendors based on the first selected row
             if (selectedRows.length > 0) {
               const firstRow = selectedRows[0];
-              const rightJobWork = firstRow.currentRightJobWork;
-              const leftJobWork = firstRow.currentLeftJobWork;
+              const rightJobWork = firstRow?.fullOrder?.currentRightJobWork;
+              const leftJobWork = firstRow?.fullOrder?.currentLeftJobWork;
 
               // Find previous vendors from job work data
               if (rightJobWork?.vendor?._id) {
@@ -74,33 +75,31 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
     let successCount = 0;
 
     for (const row of selectedRows) {
+      const order = row.fullOrder || row;
+
       const {
         _id: orderId,
         product,
-        lens,
+        rightLens,
+        leftLens,
         sale,
         store,
         powerAtTime,
         currentRightJobWork,
         currentLeftJobWork,
-      } = row;
+      } = order;
 
       // Validate required fields
       if (
         !orderId ||
-        !product?.item?._id ||
+        !product?.item ||
         !product?.barcode ||
         !product?.sku ||
         !product?.mrp ||
         !product?.srp ||
-        !lens?.item?._id ||
-        !lens?.barcode ||
-        !lens?.sku ||
-        !lens?.mrp ||
-        !lens?.srp ||
-        !sale?._id ||
-        !store?._id ||
-        !powerAtTime?.specs?._id
+        !sale ||
+        !store ||
+        !powerAtTime?.specs
       ) {
         toast.error(
           `Missing required fields for order ${orderId || "unknown"}`
@@ -108,109 +107,100 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
         continue;
       }
 
-      // Prepare common payload data
+      // Base payload (common parts)
       const basePayload = {
         product: {
-          item: product.item._id,
+          item: product.item,
           barcode: product.barcode,
           sku: product.sku,
           mrp: product.mrp,
           srp: product.srp,
         },
-        lens: {
-          item: lens.item._id,
-          barcode: lens.barcode,
-          sku: lens.sku,
-          mrp: lens.mrp,
-          srp: lens.srp,
-        },
-        sale: sale._id,
+        sale,
         order: orderId,
-        store: store._id,
-        powerAtTime: {
-          specs: powerAtTime.specs._id,
-        },
+        store,
+        powerAtTime,
       };
 
       let newRightJobWorkId = null;
       let newLeftJobWorkId = null;
 
       try {
-        // Step 1: Cancel existing right job work if it exists and a new right vendor is selected
+        // 1. Cancel existing right job work
         if (rightVendor && currentRightJobWork?._id) {
-          const cancelResponse = await workshopService.updateJobWorkStatus(
+          await workshopService.updateJobWorkStatus(
             currentRightJobWork._id,
             "canceled"
           );
-          if (
-            !cancelResponse.success ||
-            cancelResponse.data.modifiedCount === 0
-          ) {
-            toast.error(
-              `Failed to cancel existing right job work for order ${orderId}: ${cancelResponse.message}`
-            );
-            continue;
-          }
         }
 
-        // Step 2: Cancel existing left job work if it exists and a new left vendor is selected
+        // 2. Cancel existing left job work
         if (leftVendor && currentLeftJobWork?._id) {
-          const cancelResponse = await workshopService.updateJobWorkStatus(
+          await workshopService.updateJobWorkStatus(
             currentLeftJobWork._id,
             "canceled"
           );
-          if (
-            !cancelResponse.success ||
-            cancelResponse.data.modifiedCount === 0
-          ) {
-            toast.error(
-              `Failed to cancel existing left job work for order ${orderId}: ${cancelResponse.message}`
-            );
-            continue;
-          }
         }
 
-        // Step 3: Create new job work for right side if selected
+        // 3. Create new Right job work
         if (rightVendor) {
+          console.log("come in right part");
+
           const rightPayload = {
             ...basePayload,
+            lens: {
+              item: rightLens.item,
+              barcode: rightLens.barcode,
+              sku: rightLens.sku,
+              mrp: rightLens.mrp,
+              srp: rightLens.srp,
+            },
             side: "right",
             vendor: rightVendor.value,
           };
+
           const jobWorkResponse = await workshopService.createJobWork(
             rightPayload
           );
-          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
-            newRightJobWorkId = jobWorkResponse.data.data.id;
+
+          if (jobWorkResponse?.data?.success) {
+            newRightJobWorkId = jobWorkResponse?.data?.data?._id;
           } else {
             toast.error(
-              `Failed to create job work for right side of order ${orderId}: ${jobWorkResponse.message}`
+              `Failed to create job work for right side of order ${orderId}`
             );
             continue;
           }
         }
 
-        // Step 4: Create new job work for left side if selected
+        // 4. Create new Left job work
         if (leftVendor) {
           const leftPayload = {
             ...basePayload,
+            lens: {
+              item: leftLens.item,
+              barcode: leftLens.barcode,
+              sku: leftLens.sku,
+              mrp: leftLens.mrp,
+              srp: leftLens.srp,
+            },
             side: "left",
             vendor: leftVendor.value,
           };
+
           const jobWorkResponse = await workshopService.createJobWork(
             leftPayload
           );
-          if (jobWorkResponse.data?.success && jobWorkResponse.data.data.id) {
-            newLeftJobWorkId = jobWorkResponse.data.data.id;
+          if (jobWorkResponse?.data?.success) {
+            newLeftJobWorkId = jobWorkResponse?.data?.data?._id;
           } else {
             toast.error(
-              `Failed to create job work for left side of order ${orderId}: ${jobWorkResponse.message}`
+              `Failed to create job work for left side of order ${orderId}`
             );
             continue;
           }
         }
-
-        // Step 5: Update order with new job work IDs
+        // 5. Update order with new job works
         if (newRightJobWorkId || newLeftJobWorkId) {
           const orderPayload = {
             _id: orderId,
@@ -219,18 +209,18 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             currentLeftJobWork:
               newLeftJobWorkId || currentLeftJobWork?._id || null,
             status: "inLab",
-            vendorNote: row.vendorNote || null,
           };
+
           const orderResponse = await workshopService.updateOrderJobWork(
             orderId,
             orderPayload
           );
+          console.log("orderResponse", orderResponse);
+
           if (orderResponse.success) {
             successCount++;
           } else {
-            toast.error(
-              `Failed to update order ${orderId}: ${orderResponse.message}`
-            );
+            toast.error(`Failed to update order ${orderId}`);
           }
         }
       } catch (error) {
@@ -240,11 +230,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
     if (successCount > 0) {
       toast.success(`${successCount} order(s) updated successfully`);
-      onSubmit({
-        rightVendor,
-        leftVendor,
-        selectedRows,
-      });
+      onSubmit({ rightVendor, leftVendor, selectedRows });
       onHide();
     } else {
       toast.error("No orders were updated successfully.");
