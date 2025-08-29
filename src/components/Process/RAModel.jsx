@@ -60,8 +60,8 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
 
   const methodOptions = [
     { value: "cash", label: "Cash" },
-    { value: "card", label: "Card" },
-    { value: "upi", label: "UPI" },
+    { value: "bank", label: "Card" },
+    { value: "card", label: "UPI" },
   ];
 
   const handleAddPayment = () => {
@@ -303,7 +303,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
                   <div className="col-3">
                     <label className="form-label mb-1 fw-semibold">Date</label>
                     <DatePicker
-                      selected={payment.date || new Date()} // if no date, fallback to today
+                      selected={payment.date} // if no date, fallback to today
                       onChange={(date) => handleChange(index, "date", date)}
                       className="form-control"
                       dateFormat="yyyy-MM-dd"
