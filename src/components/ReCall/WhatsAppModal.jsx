@@ -3,7 +3,9 @@ import { Modal, Button, Form } from "react-bootstrap";
 import { toast } from "react-toastify";
 
 function WhatsAppModal({ closeModal, selectedRow }) {
-  const [phone, setPhone] = useState(selectedRow?.customerNumber || "");
+  console.log("whatassappp<<", selectedRow);
+
+  const [phone, setPhone] = useState(selectedRow?.phone || "");
   const [message, setMessage] = useState(
     `Hi ${
       selectedRow?.customerName || ""
@@ -11,26 +13,27 @@ function WhatsAppModal({ closeModal, selectedRow }) {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!phone.trim() || !message.trim()) {
       toast.error("Phone number and message cannot be empty");
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // Placeholder for WhatsApp API call
-      // Replace with actual API integration when available
-      console.log("Sending WhatsApp message:", { phone, message });
-      toast.success("Message sent successfully");
-      closeModal();
-    } catch (error) {
-      toast.error("Failed to send message");
-      console.error("WhatsApp API Error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Clean phone number (remove spaces, dashes, plus signs)
+    const cleanedPhone = phone.replace(/[^0-9]/g, "");
+
+    // Encode the message for the URL
+    const encodedMessage = encodeURIComponent(message);
+
+    // Construct WhatsApp URL
+    const whatsappURL = `https://wa.me/${cleanedPhone}?text=${encodedMessage}`;
+
+    // Open WhatsApp in new tab or redirect
+    window.open(whatsappURL, "_blank");
+
+    // Optionally close modal
+    closeModal();
   };
 
   return (

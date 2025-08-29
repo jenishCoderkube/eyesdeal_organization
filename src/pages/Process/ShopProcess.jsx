@@ -30,7 +30,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Button, Form } from "react-bootstrap";
-
+import { SiWhatsapp } from "react-icons/si";
+import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -65,6 +66,8 @@ function ShopProcess() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [salesReturn, setSalesReturn] = useState({ returned: [] });
   const [pendingprocessOrder, setPendingVendorData] = useState(null);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // New state for WhatsApp modal
+
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
     newOrder: 0,
@@ -1008,7 +1011,10 @@ function ShopProcess() {
       )
     );
   };
-
+  const closeWhatsAppModal = () => {
+    setShowWhatsAppModal(false);
+    setSelectedRow(null);
+  };
   const openBillModal = (row) => {
     setSelectedBill(row.fullSale);
     setBillModalVisible(true);
@@ -1098,6 +1104,10 @@ function ShopProcess() {
       toast.success(`${successCount} order(s) sent to workshop successfully`);
       await fetchSalesAndCounts(currentFilters.current, true);
     }
+  };
+  const openWhatsAppModal = (row) => {
+    setSelectedRow(row);
+    setShowWhatsAppModal(true);
   };
   const handleSendToPending = async () => {
     const selectedOrders = productTableData
@@ -1571,6 +1581,7 @@ function ShopProcess() {
 
                                   <th className="py-3 px-2">Left Lens SKU</th>
                                   <th className="py-3 px-2">Status</th>
+                                  <th className="py-3 px-2">Chat</th>
                                 </>
                               ) : (
                                 <>
@@ -1578,6 +1589,7 @@ function ShopProcess() {
                                   <th className="py-3 px-2">Product SKU</th>
                                   <th className="py-3 px-2">Barcode</th>
                                   <th className="py-3 px-2">SRP</th>
+                                  <th className="py-3 px-2">Chat</th>
                                 </>
                               )}
                             </tr>
@@ -1612,17 +1624,70 @@ function ShopProcess() {
                                             : "--"}
                                         </td>
                                         <td style={{ minWidth: "110px" }}>
-                                          {prodRow.rightLens
-                                            ? prodRow.rightLens
-                                            : "--"}
+                                          <p>
+                                            {" "}
+                                            {prodRow.rightLens
+                                              ? prodRow.rightLens
+                                              : "--"}
+                                          </p>
+                                          {prodRow.rightLens ? (
+                                            <p
+                                              className={`${
+                                                prodRow?.fullOrder
+                                                  ?.currentRightJobWork
+                                                  ?.status === "pending"
+                                                  ? "text-danger"
+                                                  : "text-primary"
+                                              }`}
+                                            >
+                                              {
+                                                prodRow?.fullOrder
+                                                  ?.currentRightJobWork?.vendor
+                                                  ?.companyName
+                                              }
+                                            </p>
+                                          ) : (
+                                            ""
+                                          )}
                                         </td>
                                         <td style={{ minWidth: "200px" }}>
-                                          {prodRow.leftLens
-                                            ? prodRow.leftLens
-                                            : "--"}
+                                          <p>
+                                            {" "}
+                                            {prodRow.leftLens
+                                              ? prodRow.leftLens
+                                              : "--"}
+                                          </p>
+                                          {prodRow.rightLens ? (
+                                            <p
+                                              className={`${
+                                                prodRow?.fullOrder
+                                                  ?.currentLeftJobWork
+                                                  ?.status === "pending"
+                                                  ? "text-danger"
+                                                  : "text-primary"
+                                              }`}
+                                            >
+                                              {
+                                                prodRow?.fullOrder
+                                                  ?.currentLeftJobWork?.vendor
+                                                  ?.companyName
+                                              }
+                                            </p>
+                                          ) : (
+                                            ""
+                                          )}
                                         </td>
                                         <td style={{ minWidth: "70px" }}>
                                           {prodRow.status}
+                                        </td>
+                                        <td style={{ minWidth: "70px" }}>
+                                          <SiWhatsapp
+                                            className="text-success"
+                                            style={{ fontSize: "20px" }}
+                                            onClick={() =>
+                                              openWhatsAppModal(row)
+                                            }
+                                          />
                                         </td>
                                       </>
                                     ) : (
@@ -1644,6 +1709,15 @@ function ShopProcess() {
                                           {prodRow.product
                                             ? prodRow.product.srp
                                             : prodRow.rightLens?.srp}
+                                        </td>
+                                        <td style={{ minWidth: "70px" }}>
+                                          <SiWhatsapp
+                                            className="text-success"
+                                            style={{ fontSize: "20px" }}
+                                            onClick={() =>
+                                              openWhatsAppModal(row)
+                                            }
+                                          />
                                         </td>
                                       </>
                                     )}
@@ -1990,6 +2064,12 @@ function ShopProcess() {
           onHide={() => setShowVendorModal(false)}
           selectedRows={pendingprocessOrder}
           onSubmit={handleVendorSubmit}
+        />
+      )}
+      {showWhatsAppModal && selectedRow && (
+        <WhatsAppModal
+          closeModal={closeWhatsAppModal}
+          selectedRow={selectedRow}
         />
       )}
     </div>

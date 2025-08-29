@@ -562,7 +562,7 @@ const SaleForm = () => {
 
     inventoryData.forEach((pair) => {
       if (pair.data) {
-        totalQuantity += pair?.quantity || 1 || 0;
+        totalQuantity += 1 || 0;
         totalAmount += pair.totalAmount || 0;
         taxAmount += pair.taxAmount || 0;
         totalDiscount += pair.discount || 0;
