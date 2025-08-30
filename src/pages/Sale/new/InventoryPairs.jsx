@@ -6,6 +6,8 @@ const BASE_URL =
     "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
 export default function InventoryPairs({ inventoryPairs, setInventoryPairs, defaultStore }) {
     // Async loaders
+    console.log("inventoryPairs<<",inventoryPairs);
+    
     const fetchLensOptions = async (input) => {
         try {
             const resp = await saleService.getLensData(input);

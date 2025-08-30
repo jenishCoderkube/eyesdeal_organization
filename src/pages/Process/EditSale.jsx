@@ -8,8 +8,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "react-toastify";
 import { shopProcessService } from "../../services/Process/shopProcessService";
-import ProductSelector from "../../components/Sale/ProductSelector";
-import InventoryData from "../../components/Sale/InventoryData";
+import ProductSelector from "../../pages/Sale/new/ProductSelector";
+import InventoryData from "../../pages/Sale/new/InventoryPairs";
 import AsyncSelect from "react-select/async";
 import { v4 as uuidv4 } from "uuid";
 import { saleService } from "../../services/saleService";
@@ -20,6 +20,7 @@ function EditSale() {
   const [showProductSelector, setShowProductSelector] = useState(true);
   const [defaultStore, setDefaultStore] = useState(null);
   const [inventoryData, setInventoryData] = useState([]);
+
   const [errors, setErrors] = useState({});
   const [inventoryPairs, setInventoryPairs] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -64,140 +65,95 @@ function EditSale() {
     callback(filtered);
   };
 
-  const handleAddProduct = async (selectedProduct) => {
-    if (
-      !selectedProduct ||
-      !selectedProduct.value ||
-      !defaultStore ||
-      !defaultStore.value
-    ) {
-      console.warn("Selected product or default store is missing.");
-      toast.error("Please select a product and ensure a store is selected.");
-      return;
+
+
+const calculateTotals = () => {
+  let totalQuantity = 0;
+  let totalAmount = 0;
+  let taxAmount = 0;
+  let totalDiscount = 0;
+  let flatDiscount = Number(formData.flatDiscount) || 0;
+  let couponDiscount = Number(formData.couponDiscount) || 0;
+  let otherCharges = Number(formData.otherCharges) || 0;
+
+  console.log("inventoryPairs<<<<<<<,,", inventoryPairs);
+
+  // Iterate over inventoryPairs to calculate totals for product, leftLens, and rightLens
+  inventoryPairs.forEach((pair) => {
+    const { product, leftLens, rightLens } = pair;
+
+    // Calculate totals for the product (if available)
+    if (product) {
+      const productQuantity =  1; // Assuming 1 unit per product
+      const productAmount = product.srp * productQuantity; // SRP is the price
+      const productTaxAmount = product.perPieceTax || 0;
+      const productDiscount = product.perPieceDiscount || 0;
+
+      totalQuantity += productQuantity;
+      totalAmount += productAmount;
+      taxAmount += productTaxAmount;
+      totalDiscount += productDiscount;
     }
 
-    const productDetails = await fetchInventoryDetails(
-      selectedProduct.value,
-      defaultStore.value
-    );
-    if (productDetails) {
-      const pairId = uuidv4();
-      const groupId = uuidv4();
+    // Calculate totals for the right lens (if available)
+    if (rightLens) {
+      const rightLensQuantity =  1; // Assuming 1 unit per right lens
+      const rightLensAmount = rightLens.srp * rightLensQuantity;
+      const rightLensTaxAmount = rightLens.perPieceTax || 0;
+      const rightLensDiscount = rightLens.perPieceDiscount || 0;
 
-      setInventoryData((prev) => [
-        ...prev,
-        {
-          type: "product",
-          data: productDetails,
-          pairId,
-          groupId,
-          quantity: 1,
-          taxAmount: 0,
-          discount: 0,
-          totalAmount: parseFloat(productDetails.sellPrice) || 0,
-        },
-        { type: "lensDropdown", pairId, groupId },
-      ]);
-
-      const newPair = {
-        pairId,
-        groupId,
-        product: {
-          item: productDetails._id,
-          unit: productDetails.unit?.name || "Pieces",
-          displayName: productDetails.productName,
-          barcode: productDetails.oldBarcode,
-          sku: productDetails.sku,
-          mrp: parseFloat(productDetails.MRP) || 0,
-          srp: parseFloat(productDetails.sellPrice) || 0,
-          perPieceDiscount: 0,
-          taxRate: `${productDetails.tax || 0} (Inc)`,
-          perPieceTax: 0,
-          perPieceAmount: parseFloat(productDetails.sellPrice) || 0,
-          inclusiveTax: productDetails.inclusiveTax ?? true,
-          manageStock: productDetails.manageStock ?? true,
-          incentiveAmount: productDetails.incentiveAmount || 0,
-        },
-        rightLens: null,
-        leftLens: null,
-      };
-      setInventoryPairs((prev) => [...prev, newPair]);
-    } else {
-      toast.error("Failed to fetch product details or product out of stock.");
+      totalQuantity += rightLensQuantity;
+      totalAmount += rightLensAmount;
+      taxAmount += rightLensTaxAmount;
+      totalDiscount += rightLensDiscount;
     }
-  };
 
-  const fetchInventoryDetails = async (prodID, storeID) => {
-    try {
-      const response = await saleService.checkInventory(prodID, storeID);
-      if (response.success) {
-        const newItem = response?.data?.data?.docs?.[0];
-        if (newItem) {
-          return newItem.product;
-        }
-        if (response.data.data.docs.length === 0) {
-          toast.error("Product out of stock");
-          return null;
-        }
-      } else {
-        console.error(response.data.message);
-        toast.error(response.data.message || "Error fetching inventory");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
-      toast.error("Error fetching inventory");
-      return null;
+    // Calculate totals for the left lens (if available)
+    if (leftLens) {
+      const leftLensQuantity =  1; // Assuming 1 unit per left lens
+      const leftLensAmount = leftLens.srp * leftLensQuantity;
+      const leftLensTaxAmount = leftLens.perPieceTax || 0;
+      const leftLensDiscount = leftLens.perPieceDiscount || 0;
+
+      totalQuantity += leftLensQuantity;
+      totalAmount += leftLensAmount;
+      taxAmount += leftLensTaxAmount;
+      totalDiscount += leftLensDiscount;
     }
-  };
+  });
 
-  const calculateTotals = () => {
-    let totalQuantity = 0;
-    let totalAmount = 0;
-    let taxAmount = 0;
-    let totalDiscount = 0;
-    let flatDiscount = Number(formData.flatDiscount) || 0;
-    let couponDiscount = Number(formData.couponDiscount) || 0;
-    let otherCharges = Number(formData.otherCharges) || 0;
+  // Add any global discounts and charges
+  totalDiscount += flatDiscount + couponDiscount;
+  const netAmount = totalAmount - flatDiscount + otherCharges - couponDiscount;
 
-    inventoryData.forEach((item) => {
-      if (item.type !== "lensDropdown" && item.data) {
-        totalQuantity += item.quantity || 1;
-        totalAmount += item.totalAmount || 0;
-        taxAmount += item.taxAmount || 0;
-        totalDiscount += item.discount || 0;
-      }
-    });
+  // Update the formData state with the totals
+  setFormData((prev) => ({
+    ...prev,
+    totalQuantity,
+    totalAmount,
+    totalTax: taxAmount,
+    netDiscount: totalDiscount,
+    netAmount,
+  }));
 
-    totalDiscount += flatDiscount + couponDiscount;
-    const netAmount =
-      totalAmount - flatDiscount + otherCharges - couponDiscount;
+  // Update saleData with the totals
+  setSaleData((prev) => ({
+    ...prev,
+    totalQuantity,
+    totalAmount,
+    totalTax: taxAmount,
+    totalDiscount,
+    netDiscount: totalDiscount,
+    netAmount,
+  }));
+};
 
-    setFormData((prev) => ({
-      ...prev,
-      totalQuantity,
-      totalAmount,
-      totalTax: taxAmount,
-      netDiscount: totalDiscount,
-      netAmount,
-    }));
-
-    // Update saleData to reflect totals
-    setSaleData((prev) => ({
-      ...prev,
-      totalQuantity,
-      totalAmount,
-      totalTax: taxAmount,
-      totalDiscount,
-      netDiscount: totalDiscount,
-      netAmount,
-    }));
-  };
 
   useEffect(() => {
     calculateTotals();
   }, [
     inventoryData,
+    inventoryPairs,
     formData.flatDiscount,
     formData.otherCharges,
     formData.couponDiscount,
@@ -239,11 +195,12 @@ function EditSale() {
             const pairId = `pair-${index}-${order._id}`;
             const groupId = pairId;
 
+
             if (order.product) {
               newInventoryData.push({
                 type: "product",
                 data: {
-                  _id: order.product.item,
+                  _id: order.product.item ?? order.product.id ?? order.product._id,
                   oldBarcode: order.product.barcode,
                   sku: order.product.sku,
                   productName: order.product.displayName,
@@ -268,7 +225,7 @@ function EditSale() {
               newInventoryData.push({
                 type: "rightLens",
                 data: {
-                  _id: order.rightLens.item,
+                  _id: order.rightLens.item ?? order.rightLens.id ?? order.rightLens._id,
                   oldBarcode: order.rightLens.barcode,
                   sku: order.rightLens.sku,
                   productName: order.rightLens.displayName,
@@ -293,7 +250,7 @@ function EditSale() {
               newInventoryData.push({
                 type: "leftLens",
                 data: {
-                  _id: order.leftLens.item,
+                  _id: order.leftLens.item ?? order.leftLens.id ?? order.leftLens._id,
                   oldBarcode: order.leftLens.barcode,
                   sku: order.leftLens.sku,
                   productName: order.leftLens.displayName,
@@ -323,9 +280,9 @@ function EditSale() {
             newInventoryPairs.push({
               pairId,
               groupId,
-              product: order.product || null,
-              rightLens: order.rightLens || null,
-              leftLens: order.leftLens || null,
+              product: order.product ? {...order.product, quantity:1} : null || null,
+              rightLens: order.rightLens ? {...order.rightLens,quantity:1} :null || null,
+              leftLens: order.leftLens ?{...order.leftLens,quantity:1}: null || null,
             });
           });
           setInventoryData(newInventoryData);
@@ -350,107 +307,6 @@ function EditSale() {
     { value: "upi", label: "UPI" },
   ];
 
-  const handleProductsSelected = (selectedProducts) => {
-    const newOrders = selectedProducts.map((product, index) => {
-      const pairId = `pair-new-${Date.now()}-${index}`;
-      const groupId = pairId;
-      return {
-        product: {
-          item: product._id,
-          unit: product.unit?._id || "Pieces",
-          displayName: product.productName,
-          barcode: product.newBarcode || product.oldBarcode,
-          sku: product.sku,
-          mrp: product.MRP,
-          srp: product.sellPrice || product.MRP,
-          perPieceDiscount: product.discount || 0,
-          taxRate: `${product.tax || 0} (Inc)`,
-          perPieceTax:
-            ((product.sellPrice || product.MRP) * (product.tax || 0)) /
-            (100 + (product.tax || 0)),
-          perPieceAmount: product.sellPrice || product.MRP,
-          inclusiveTax: product.inclusiveTax ?? true,
-          manageStock: product.manageStock ?? true,
-          incentiveAmount: product.incentiveAmount || 0,
-        },
-        pairId,
-        groupId,
-      };
-    });
-
-    setSaleData((prev) => ({
-      ...prev,
-      orders: [...(prev.orders || []), ...newOrders],
-      totalQuantity: (prev.totalQuantity || 0) + newOrders.length,
-      totalAmount:
-        (prev.totalAmount || 0) +
-        newOrders.reduce(
-          (sum, order) => sum + (order.product.perPieceAmount || 0),
-          0
-        ),
-      totalTax:
-        (prev.totalTax || 0) +
-        newOrders.reduce(
-          (sum, order) => sum + (order.product.perPieceTax || 0),
-          0
-        ),
-      netAmount:
-        (prev.netAmount || 0) +
-        newOrders.reduce(
-          (sum, order) =>
-            sum +
-            (order.product.perPieceAmount || 0) +
-            (order.product.perPieceTax || 0),
-          0
-        ),
-    }));
-
-    const newInventoryData = newOrders.map((order) => ({
-      type: "product",
-      data: {
-        _id: order.product.item,
-        oldBarcode: order.product.barcode,
-        sku: order.product.sku,
-        productName: order.product.displayName,
-        MRP: order.product.mrp,
-        sellPrice: order.product.perPieceAmount,
-        tax: parseFloat(order.product.taxRate) || 0,
-        photos: [],
-        manageStock: order.product.manageStock,
-        inclusiveTax: order.product.inclusiveTax,
-        incentiveAmount: order.product.incentiveAmount,
-      },
-      quantity: 1,
-      taxAmount: order.product.perPieceTax,
-      discount: order.product.perPieceDiscount,
-      totalAmount: order.product.perPieceAmount,
-      pairId: order.pairId,
-      groupId: order.groupId,
-    }));
-
-    setInventoryData((prev) => [
-      ...prev,
-      ...newInventoryData,
-      ...newOrders.map((order) => ({
-        type: "lensDropdown",
-        pairId: order.pairId,
-        groupId: order.groupId,
-      })),
-    ]);
-
-    setInventoryPairs((prev) => [
-      ...prev,
-      ...newOrders.map((order) => ({
-        pairId: order.pairId,
-        groupId: order.groupId,
-        product: order.product,
-        rightLens: null,
-        leftLens: null,
-      })),
-    ]);
-
-    setShowProductSelector(false);
-  };
 
   const handleAddPayment = () => {
     setPayments([
@@ -481,6 +337,11 @@ function EditSale() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+     if (!inventoryPairs || inventoryPairs.length === 0) {
+        return;
+      }
+
     setSubmitting(true);
 
     const validPayments = payments
@@ -497,141 +358,146 @@ function EditSale() {
         date: payment.date ? payment.date.toISOString() : null,
         reference: payment.reference || "",
       }));
+    const transformInventoryPairs = (inventoryPairs) => {
+      return inventoryPairs.map((pair) => {
+        console.log("pair<<,", pair);
 
-    console.log("inventoryData:", inventoryData);
-    console.log("inventoryPairs:", inventoryPairs);
+        return {
+          product: pair.product
+            ? {
+              product: pair.product.id || pair.product._id || pair.product.item || pair.product.product, // id for backend
+              productObject: pair.product.raw || pair.product.productObject || {}, // keep full raw for reference
+              quantity: 1,
+              barcode:
+                pair.product.barcode ||
+                pair.product.newBarcode ||
+                pair.product.oldBarcode ||
+                pair.product.raw?.newBarcode ||
+                pair.product.raw?.oldBarcode ||
+                null,
+              stock:
+                // pair.product.quantity ||
+                // pair.product.stock ||
+                // pair.product.raw?.quantity ||
+                // pair.product.inventory?.totalQuantity ||
+                0,
+              sku:
+                pair.product.sku ||
+                pair.product.raw?.sku ||
+                "",
+              photos:
+                pair.product.photos ||
+                pair.product.raw?.photos ||
+                [],
+              mrp:
+                pair.product.mrp ||
+                pair.product.MRP ||
+                pair.product.raw?.MRP ||
+                0,
+              srp:
+                pair.product.srp ||
+                pair.product.sellPrice ||
+                pair.product.raw?.sellPrice ||
+                0,
+              taxRate: `${pair.product.taxRate || pair.product.raw?.tax || 0}`,
+              taxAmount: pair.product.taxAmount || 0,
+              discount: pair.product.discount || pair.product.raw?.discount || 0,
+              displayName: pair.product.displayName || pair.product.raw?.displayName,
+              unit:
+                pair.product.unit?.name ||
+                pair.product.unit ||
+                pair.product.raw?.unit ||
+                "",
+              netAmount:
+                (pair.product.srp ||
+                  pair.product.sellPrice ||
+                  pair.product.raw?.sellPrice ||
+                  0) -
+                (pair.product.discount || pair.product.raw?.discount || 0),
+              inclusiveTax:
+                pair.product.inclusiveTax ??
+                pair.product.raw?.inclusiveTax ??
+                true,
+              manageStock:
+                pair.product.manageStock ??
+                pair.product.raw?.manageStock ??
+                true,
+              resellerPrice:
+                pair.product.resellerPrice ||
+                pair.product.raw?.resellerPrice ||
+                0,
+              incentiveAmount:
+                pair.product.incentiveAmount ||
+                pair.product.raw?.incentiveAmount ||
+                0,
+            }
+            : null,
 
-    // Construct orders from inventoryData and inventoryPairs
-    const updatedOrders = inventoryPairs
-      .map((pair, index) => {
-        // Use groupId if available, otherwise fallback to pairId
-        const groupId = pair.groupId || pair.pairId;
 
-        // Find corresponding inventoryData items for the pair
-        const groupItems = inventoryData
-          ? inventoryData.filter((item) => item.groupId === groupId)
-          : [];
+          rightLens: pair.rightLens
+            ? {
+              product: pair.rightLens.id || pair.rightLens._id || pair.rightLens.item || pair.rightLens.product,
+              quantity: 1,
+              barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
+              stock: pair.rightLens.stock || 0,
+              sku: pair.rightLens.sku,
+              photos: pair.rightLens.photos || [],
+              mrp: pair.rightLens.MRP || pair.rightLens.mrp || 0,
+              srp: pair.rightLens.sellPrice || pair.rightLens.srp || 0,
+              taxRate: `${pair.rightLens.tax || pair.rightLens.taxRate} (Inc)`,
+              taxAmount:
+                pair.rightLens.perPieceTax || pair.rightLens.taxAmount || 0,
+              discount:
+                pair.rightLens.perPieceDiscount || pair.rightLens.discount || 0,
+              netAmount:
+                (pair.rightLens.sellPrice || pair.rightLens.srp || 0) -
+                (pair.rightLens.perPieceDiscount ||
+                  pair.rightLens.discount ||
+                  0),
+              inclusiveTax: pair.rightLens.inclusiveTax ?? true,
+              manageStock: pair.rightLens.manageStock ?? false,
+              displayName:
+                pair.rightLens.displayName ||
+                pair.rightLens.productName ||
+                "Lens",
+              unit: pair.rightLens.unit?.name || pair.rightLens.unit || "Pieces",
+              incentiveAmount: pair.rightLens.incentiveAmount || 0,
+            }
+            : null,
 
-        let product = null;
-        let rightLens = null;
-        let leftLens = null;
-
-        // Log for debugging
-        console.log(`Processing pair ${index}:`, { groupId, groupItems });
-
-        // Check for multiple rightLens or leftLens items
-        const rightLensItems = groupItems.filter(
-          (item) => item.type === "rightLens"
-        );
-        const leftLensItems = groupItems.filter(
-          (item) => item.type === "leftLens"
-        );
-        if (rightLensItems.length > 1) {
-          console.warn(
-            `Multiple rightLens items found for groupId: ${groupId}`
-          );
-        }
-        if (leftLensItems.length > 1) {
-          console.warn(`Multiple leftLens items found for groupId: ${groupId}`);
-        }
-
-        // Helper function to create lens or product object
-        const createItem = (source, itemType, inventoryItem = null) => {
-          if (!source) return null;
-          const data = inventoryItem?.data || source; // Fallback to source if no inventory data
-          return {
-            item: data._id || source.item,
-            unit: data.unit?.name || source.unit || "Pieces",
-            displayName: data.productName || source.displayName || "",
-            barcode: data.oldBarcode || data.newBarcode || source.barcode || "",
-            sku: data.sku || source.sku || "",
-            mrp: parseFloat(data.MRP || source.mrp) || 0,
-            srp: parseFloat(data.sellPrice || source.srp) || 0,
-            perPieceDiscount:
-              inventoryItem?.discount ||
-              source.perPieceDiscount ||
-              data.discount ||
-              0,
-            taxRate: `${data.tax || source.taxRate || 0} (Inc)`,
-            perPieceTax: inventoryItem?.taxAmount || source.perPieceTax || 0,
-            perPieceAmount:
-              inventoryItem?.totalAmount ||
-              source.perPieceAmount ||
-              data.sellPrice ||
-              0,
-            inclusiveTax: data.inclusiveTax ?? source.inclusiveTax ?? true,
-            manageStock:
-              data.manageStock ??
-              source.manageStock ??
-              (itemType === "product" ? true : false),
-            incentiveAmount:
-              data.incentiveAmount || source.incentiveAmount || 0,
-          };
+          leftLens: pair.leftLens
+            ? {
+              product: pair.leftLens.id || pair.leftLens._id || pair.leftLens.item || pair.leftLens.product,
+              quantity: 1,
+              barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
+              stock: pair.leftLens.stock || 0,
+              sku: pair.leftLens.sku,
+              photos: pair.leftLens.photos || [],
+              mrp: pair.leftLens.MRP || pair.leftLens.mrp || 0,
+              srp: pair.leftLens.sellPrice || pair.leftLens.srp || 0,
+              taxRate: `${pair.leftLens.tax || pair.leftLens.taxRate} (Inc)`,
+              taxAmount:
+                pair.leftLens.perPieceTax || pair.leftLens.taxAmount || 0,
+              discount:
+                pair.leftLens.perPieceDiscount || pair.leftLens.discount || 0,
+              netAmount:
+                (pair.leftLens.sellPrice || pair.leftLens.srp || 0) -
+                (pair.leftLens.perPieceDiscount ||
+                  pair.leftLens.discount ||
+                  0),
+              inclusiveTax: pair.leftLens.inclusiveTax ?? true,
+              manageStock: pair.leftLens.manageStock ?? false,
+              displayName:
+                pair.leftLens.displayName ||
+                pair.leftLens.productName ||
+                "Lens",
+              unit: pair.leftLens.unit?.name || pair.leftLens.unit || "Pieces",
+              incentiveAmount: pair.leftLens.incentiveAmount || 0,
+            }
+            : null,
         };
-
-        // Update product details
-        const productItem = groupItems.find((item) => item.type === "product");
-        if (productItem) {
-          product = createItem(pair.product, "product", productItem);
-        } else if (pair.product) {
-          // Fallback to pair.product if no inventoryData match
-          product = createItem(pair.product, "product");
-        }
-
-        // Update rightLens details
-        const rightLensItem = rightLensItems[0];
-        if (rightLensItem) {
-          rightLens = createItem(pair.rightLens, "rightLens", rightLensItem);
-        } else if (pair.rightLens) {
-          // Fallback to pair.rightLens if no inventoryData match
-          rightLens = createItem(pair.rightLens, "rightLens");
-        }
-
-        // Update leftLens details
-        const leftLensItem = leftLensItems[0];
-        if (leftLensItem) {
-          leftLens = createItem(pair.leftLens, "leftLens", leftLensItem);
-        } else if (pair.leftLens) {
-          // Fallback to pair.leftLens if no inventoryData match
-          leftLens = createItem(pair.leftLens, "leftLens");
-        }
-
-        // Validate lens pairs (warn but don’t skip)
-        if ((rightLens && !leftLens) || (!rightLens && leftLens)) {
-          console.warn(
-            `Incomplete lens pair for groupId: ${groupId}. RightLens: ${
-              rightLens ? "present" : "missing"
-            }, LeftLens: ${leftLens ? "present" : "missing"}`
-          );
-        }
-
-        // Only include orders with at least one item
-        if (product || rightLens || leftLens) {
-          const pairIdParts = pair.pairId.split("-");
-          const orderId =
-            pairIdParts.length === 3 && !pair.pairId.includes("pair-new-")
-              ? pairIdParts[2]
-              : undefined;
-
-          return {
-            _id: orderId,
-            product,
-            rightLens,
-            leftLens,
-            store: saleData?.store?._id,
-            status: "pending",
-            attachments: [],
-            sale: id,
-            billNumber: saleData?.saleNumber?.toString(),
-          };
-        }
-
-        console.warn(`No valid items for pair ${index} (groupId: ${groupId})`);
-        return null;
-      })
-      .filter((order) => order !== null);
-
-    console.log("updatedOrders:", updatedOrders);
+      });
+    };
 
     // Calculate totals for payload
     const totalQuantity = formData.totalQuantity || 0;
@@ -662,7 +528,7 @@ function EditSale() {
       netAmount,
       totalQuantity,
       salesRep: saleData?.salesRep?._id || null,
-      orders: updatedOrders,
+      orders: transformInventoryPairs(inventoryPairs),
       receivedAmount: validPayments,
       createdAt: saleData?.createdAt || null,
       updatedAt: new Date().toISOString(),
@@ -673,6 +539,7 @@ function EditSale() {
       recallDate: formData.recallDate || null,
       __v: saleData?.__v || 0,
     };
+
 
     try {
       const response = await shopProcessService.updateSale(id, payload);
@@ -754,12 +621,11 @@ function EditSale() {
         </div>
 
         <div className="row">
-          <div className="col-md-6 col-12">
+          <div className="col-md-6 col-12 mt-2">
+
             <ProductSelector
               showProductSelector={showProductSelector}
               defaultStore={defaultStore}
-              setInventoryData={setInventoryData}
-              setShowProductSelector={setShowProductSelector}
               setInventoryPairs={setInventoryPairs}
             />
             {!showProductSelector && (
@@ -818,9 +684,8 @@ function EditSale() {
                     setErrors({ ...errors, recallDate: "" });
                   }
                 }}
-                className={`form-control ${
-                  errors.recallDate ? "is-invalid" : ""
-                }`}
+                className={`form-control ${errors.recallDate ? "is-invalid" : ""
+                  }`}
                 placeholderText="Select date"
                 dateFormat="yyyy-MM-dd"
                 required
@@ -835,13 +700,12 @@ function EditSale() {
           </div>
         </div>
 
+
         <InventoryData
-          inventoryData={inventoryData}
-          setInventoryData={setInventoryData}
           inventoryPairs={inventoryPairs}
           setInventoryPairs={setInventoryPairs}
+          defaultStore={defaultStore}
         />
-
         <div className="row g-3 mt-4">
           {[
             {

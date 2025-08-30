@@ -21,6 +21,7 @@ const StockAdjustmentCom = () => {
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
+console.log("storeData",storeData);
 
   useEffect(() => {
     getStores();
@@ -135,7 +136,7 @@ const StockAdjustmentCom = () => {
     if (inventory?.length > 0) {
       const updatedProducts = inventory.map((item) => ({
         ...item,
-        quantityToUpdate: 0,
+        quantityToUpdate: item?.quantity,
         reason: null,
       }));
       setProducts(updatedProducts);
@@ -194,15 +195,20 @@ const StockAdjustmentCom = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+if(!products[0].reason){
+  toast("please select Reason");
+  return;
+}
+const data = {
+  store: formik.values.stores[0]?.value, // formik.values instead of values
+  product: product?.value,
+  newQuantity: products[0]?.quantityToUpdate,
+  adjustmentId: generateAdjustmentId(),
+  stock: products[0].quantity,
+  reason: products[0].reason?.label,
+};
+console.log("data",data);
 
-    const data = {
-      store: values.stores[0]?.value,
-      product: product?.value,
-      newQuantity: products[0]?.quantityToUpdate,
-      adjustmentId: generateAdjustmentId(),
-      stock: products[0].quantity,
-      reason: products[0].reason.value,
-    };
 
     setLoading(true);
 
@@ -314,17 +320,27 @@ const StockAdjustmentCom = () => {
                                 className="form-control"
                               />
                             </td>
-                            <td className="">
-                              <Select
-                                options={reasonOptions}
-                                value={item.reason}
-                                onChange={(selected) =>
-                                  handleReasonChange(index, selected)
-                                }
-                                placeholder="Select..."
-                                className="w-100"
-                              />
-                            </td>
+                           <td style={{ position: "relative", zIndex: 1000 }}>
+  <Select
+    options={reasonOptions}
+    value={item.reason}
+    onChange={(selected) => handleReasonChange(index, selected)}
+    placeholder="Select..."
+    className="w-100"
+    styles={{
+      menu: (provided) => ({
+        ...provided,
+        zIndex: 9999, // Higher z-index for the dropdown menu
+      }),
+      menuPortal: (provided) => ({
+        ...provided,
+        zIndex: 9999, // Ensure portal rendering uses high z-index
+      }),
+    }}
+    menuPortalTarget={document.body} // Render dropdown in body to avoid clipping
+    menuPosition="fixed" // Use fixed positioning to avoid stacking issues
+  />
+</td>
                             <td className="">{item.product?.sku || "-"}</td>
                             <td className=" align-middle text-center">
                               <button
