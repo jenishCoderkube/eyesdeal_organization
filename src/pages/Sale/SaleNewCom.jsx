@@ -8,9 +8,10 @@ import { saleService } from "../../services/saleService";
 import PrescriptionModel from "../../components/Process/PrescriptionModel";
 import OrdersModel from "../../components/Process/OrdersModel";
 import { storeService } from "../../services/storeService";
-import InventoryData from "../../components/Sale/InventoryData";
-import ProductSelector from "../../components/Sale/ProductSelector";
+import InventoryData from "../../pages/Sale/new/InventoryPairs";
+import ProductSelector from "../../pages/Sale/new/ProductSelector";
 import { toast } from "react-toastify";
+import OrderBuilder from "./new/OrderBuilder";
 
 const SaleForm = () => {
   const navigate = useNavigate();
@@ -247,42 +248,84 @@ const SaleForm = () => {
   };
 
   const transformInventoryPairs = (inventoryPairs) => {
-    console.log("jenish<<", inventoryPairs);
+    return inventoryPairs.map((pair) => {
+      console.log("pair<<,", pair);
 
-    return inventoryPairs.map((pair) => ({
-      product: pair.product
-        ? {
-            product: pair.product._id || pair.product.product,
-            productObject: pair.product.productObject || pair.product,
+      return {
+        product: pair.product
+          ? {
+            product: pair.product.id || pair.product._id || pair.product.product, // id for backend
+            productObject: pair.product.raw || pair.product.productObject || {}, // keep full raw for reference
             quantity: 1,
             barcode:
               pair.product.barcode ||
               pair.product.newBarcode ||
-              pair.product.oldBarcode,
+              pair.product.oldBarcode ||
+              pair.product.raw?.newBarcode ||
+              pair.product.raw?.oldBarcode ||
+              null,
             stock:
-              pair.product.stock || pair.product.inventory?.totalQuantity || 0,
-            sku: pair.product.sku,
-            photos: pair.product.photos || [],
-            mrp: pair.product.mrp || pair.product.MRP || 0,
-            srp: pair.product.srp || pair.product.sellPrice || 0,
-            taxRate: pair.product.taxRate || `${pair.product.tax} (Inc)`,
+              // pair.product.quantity ||
+              // pair.product.stock ||
+              // pair.product.raw?.quantity ||
+              // pair.product.inventory?.totalQuantity ||
+              0,
+            sku:
+              pair.product.sku ||
+              pair.product.raw?.sku ||
+              "",
+            photos:
+              pair.product.photos ||
+              pair.product.raw?.photos ||
+              [],
+            mrp:
+              pair.product.mrp ||
+              pair.product.MRP ||
+              pair.product.raw?.MRP ||
+              0,
+            srp:
+              pair.product.srp ||
+              pair.product.sellPrice ||
+              pair.product.raw?.sellPrice ||
+              0,
+            taxRate: `${pair.product.taxRate || pair.product.raw?.tax || 0}`,
             taxAmount: pair.product.taxAmount || 0,
-            discount: pair.product.discount || 0,
-            displayName: pair.product.displayName,
-            unit: pair.product.unit?.name || pair.product.unit,
-            netAmount: pair.product.netAmount || pair.product.sellPrice || 0,
-            inclusiveTax: pair.product.inclusiveTax ?? true,
-            manageStock: pair.product.manageStock,
-            resellerPrice: pair.product.resellerPrice || 0,
-            incentiveAmount: pair.product.incentiveAmount || 0,
+            discount: pair.product.discount || pair.product.raw?.discount || 0,
+            displayName: pair.product.displayName || pair.product.raw?.displayName,
+            unit:
+              pair.product.unit?.name ||
+              pair.product.unit ||
+              pair.product.raw?.unit ||
+              "",
+            netAmount:
+              (pair.product.srp ||
+                pair.product.sellPrice ||
+                pair.product.raw?.sellPrice ||
+                0) -
+              (pair.product.discount || pair.product.raw?.discount || 0),
+            inclusiveTax:
+              pair.product.inclusiveTax ??
+              pair.product.raw?.inclusiveTax ??
+              true,
+            manageStock:
+              pair.product.manageStock ??
+              pair.product.raw?.manageStock ??
+              true,
+            resellerPrice:
+              pair.product.resellerPrice ||
+              pair.product.raw?.resellerPrice ||
+              0,
+            incentiveAmount:
+              pair.product.incentiveAmount ||
+              pair.product.raw?.incentiveAmount ||
+              0,
           }
-        : null,
-      rightLens: pair.rightLens
-        ? {
-            product:
-              pair.rightLens._id ||
-              pair.rightLens.item ||
-              pair.rightLens.product,
+          : null,
+
+
+        rightLens: pair.rightLens
+          ? {
+            product: pair.rightLens.id || pair.rightLens.product,
             quantity: 1,
             barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
             stock: pair.rightLens.stock || 0,
@@ -290,16 +333,16 @@ const SaleForm = () => {
             photos: pair.rightLens.photos || [],
             mrp: pair.rightLens.MRP || pair.rightLens.mrp || 0,
             srp: pair.rightLens.sellPrice || pair.rightLens.srp || 0,
-            taxRate: pair.rightLens.taxRate || `${pair.rightLens.tax} (Inc)`,
+            taxRate: `${pair.rightLens.tax || pair.rightLens.taxRate} (Inc)`,
             taxAmount:
               pair.rightLens.perPieceTax || pair.rightLens.taxAmount || 0,
             discount:
               pair.rightLens.perPieceDiscount || pair.rightLens.discount || 0,
             netAmount:
-              pair.rightLens.perPieceAmount ||
-              pair.rightLens.netAmount ||
-              pair.rightLens.sellPrice ||
-              0,
+              (pair.rightLens.sellPrice || pair.rightLens.srp || 0) -
+              (pair.rightLens.perPieceDiscount ||
+                pair.rightLens.discount ||
+                0),
             inclusiveTax: pair.rightLens.inclusiveTax ?? true,
             manageStock: pair.rightLens.manageStock ?? false,
             displayName:
@@ -309,11 +352,11 @@ const SaleForm = () => {
             unit: pair.rightLens.unit?.name || pair.rightLens.unit || "Pieces",
             incentiveAmount: pair.rightLens.incentiveAmount || 0,
           }
-        : null,
-      leftLens: pair.leftLens
-        ? {
-            product:
-              pair.leftLens._id || pair.leftLens.item || pair.leftLens.product,
+          : null,
+
+        leftLens: pair.leftLens
+          ? {
+            product: pair.leftLens.id || pair.leftLens.product,
             quantity: 1,
             barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
             stock: pair.leftLens.stock || 0,
@@ -321,30 +364,36 @@ const SaleForm = () => {
             photos: pair.leftLens.photos || [],
             mrp: pair.leftLens.MRP || pair.leftLens.mrp || 0,
             srp: pair.leftLens.sellPrice || pair.leftLens.srp || 0,
-            taxRate: pair.leftLens.taxRate || `${pair.leftLens.tax} (Inc)`,
+            taxRate: `${pair.leftLens.tax || pair.leftLens.taxRate} (Inc)`,
             taxAmount:
               pair.leftLens.perPieceTax || pair.leftLens.taxAmount || 0,
             discount:
               pair.leftLens.perPieceDiscount || pair.leftLens.discount || 0,
             netAmount:
-              pair.leftLens.perPieceAmount ||
-              pair.leftLens.netAmount ||
-              pair.leftLens.sellPrice ||
-              0,
+              (pair.leftLens.sellPrice || pair.leftLens.srp || 0) -
+              (pair.leftLens.perPieceDiscount ||
+                pair.leftLens.discount ||
+                0),
             inclusiveTax: pair.leftLens.inclusiveTax ?? true,
             manageStock: pair.leftLens.manageStock ?? false,
             displayName:
-              pair.leftLens.displayName || pair.leftLens.productName || "Lens",
+              pair.leftLens.displayName ||
+              pair.leftLens.productName ||
+              "Lens",
             unit: pair.leftLens.unit?.name || pair.leftLens.unit || "Pieces",
             incentiveAmount: pair.leftLens.incentiveAmount || 0,
           }
-        : null,
-    }));
+          : null,
+      };
+    });
   };
 
-  const checkingCouponCode = async (coupon, customerPhone, inventoryPairs) => {
+
+
+
+  const checkingCouponCode = async (coupon, customerPhone, InventoryPairs) => {
     try {
-      const products = transformInventoryPairs(inventoryPairs);
+      const products = transformInventoryPairs(InventoryPairs);
       const response = await saleService.checkCouponCode({
         couponCode: coupon,
         phone: customerPhone,
@@ -426,6 +475,7 @@ const SaleForm = () => {
     setOrderModelVisible(false);
     setSalesOrderData(null);
   };
+  console.log("formData<<", formData);
 
   const calculateRecallDate = (months) => {
     const today = new Date();
@@ -439,28 +489,35 @@ const SaleForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!InventoryPairs || InventoryPairs.length === 0) {
-      return;
-    }
-
+    // Handle recall date logic (similar to the first function)
     if (validateForm()) {
+      if (!InventoryPairs || InventoryPairs.length === 0) {
+        return;
+      }
+
+      // Collect the prescription IDs as an object
+      const prescriptions = formData.prescriptions.reduce((acc, prescription) => {
+        acc[prescription.__t] = prescription._id;  // Using __t as key and _id as value
+        return acc;
+      }, {});
+
+
+      let recall;
+      if (formData.recallOption === "other") {
+        const date = new Date(formData.recallDate);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        recall = `${day}-${month}-${year}`;
+      } else {
+        const months = parseInt(formData.recallOption) || 0;
+        recall = calculateRecallDate(months);
+      }
+
+      const [day, month, year] = recall.split("-");
+      const newDateFormatate = new Date(`${year}-${month}-${day}`);
+
       try {
-        let recall;
-        if (formData.recallOption === "other") {
-          const date = new Date(formData.recallDate);
-          const day = String(date.getDate()).padStart(2, "0");
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const year = date.getFullYear();
-          recall = `${day}-${month}-${year}`;
-        } else {
-          const months = parseInt(formData.recallOption) || 0;
-          recall = calculateRecallDate(months);
-        }
-
-        const [day, month, year] = recall.split("-");
-        const newDateFormatate = new Date(`${year}-${month}-${day}`);
-
         const payload = {
           store: defaultStore?.value || "",
           customerId: formData.customerId,
@@ -468,14 +525,17 @@ const SaleForm = () => {
           customerPhone: formData.customerPhone,
           salesRep: formData.salesRep,
           products: transformInventoryPairs(InventoryPairs),
-          totalAmount: Number(formData.totalAmount) || 0,
+          totalAmount: Number(formData.dueAmount) || 0,
           totalQuantity: Number(formData.totalQuantity) || 0,
           totalTax: Number(formData.totalTax) || 0,
-          totalDiscount: null,
           flatDiscount: Number(formData.flatDiscount) || 0,
           couponDiscount: Number(formData.couponDiscount) || 0,
-          netDiscount: Number(formData.netDiscount) || 0,
+          coupon: formData.coupon || "",
+          coupons: formData.coupon ? [formData.coupon] : [],
+          totalDiscount: null,
+          incentiveAmount: "",
           deliveryCharges: 0,
+          netDiscount: Number(formData.netDiscount) || 0,
           otherCharges: Number(formData.otherCharges) || 0,
           netAmount: Number(formData.netAmount) || 0,
           receivedAmount: receivedAmounts.map((amount) => ({
@@ -484,28 +544,15 @@ const SaleForm = () => {
             date: new Date(amount.date).toISOString(),
             reference: amount.reference,
           })),
-          coupon: formData.coupon || "",
-          coupons: formData.coupon ? [formData.coupon] : [],
-          incentiveAmount: "",
-          note: formData.note,
-          powerAtTime: formData.prescriptions?.length
-            ? {
-                specs:
-                  formData.prescriptions.find(
-                    (p) => p.__t.toLowerCase() === "specs"
-                  )?._id || null,
-                contacts:
-                  formData.prescriptions.find(
-                    (p) => p.__t.toLowerCase() === "contacts"
-                  )?._id || null,
-              }
-            : null,
-          attachments: documentsFiles,
           recall: newDateFormatate,
+          attachments: documentsFiles,
+          note: formData.note,
+          powerAtTime: prescriptions,  // Add prescriptions object to the payload
         };
 
         console.log("Submitting form with payload:", payload);
         const response = await saleService.addSales(payload);
+
         if (response.success) {
           toast.success("Sale submitted successfully");
           setFormData({
@@ -513,8 +560,6 @@ const SaleForm = () => {
             customerName: "",
             customerPhone: "",
             salesRep: "",
-            product: "",
-            store: defaultStore?.label || "ELITE HOSPITAL / 27",
             totalQuantity: 0,
             totalAmount: 0,
             totalTax: 0,
@@ -525,8 +570,6 @@ const SaleForm = () => {
             coupon: "",
             netAmount: 0,
             note: "",
-            dueAmount: 0,
-            prescriptions: [],
             recallOption: "",
             recallDate: "",
           });
@@ -536,51 +579,74 @@ const SaleForm = () => {
           setDocuments([]);
           setDocumentsFiles([]);
           setErrors({});
-          setShowProductSelector(true); // Reset product selector visibility
-          setSalesData([]); // Clear sales data
+          setShowProductSelector(true);  // Reset product selector visibility
+          setSalesData([]);  // Clear sales data
           navigate("/process/shop");
         } else {
           toast.error(
             response?.message?.error?.message ||
-              response?.message?.message ||
-              "Failed to submit sale"
+            response?.message?.message ||
+            "Failed to submit sale"
           );
         }
-      } catch (error) {
-        console.error("Error submitting form:", error);
+      } catch (err) {
+        console.error("Submit error:", err);
       }
     }
   };
+
+
+
+
 
   useEffect(() => {
     let totalQuantity = 0;
     let totalAmount = 0;
     let taxAmount = 0;
     let totalDiscount = 0;
-    let flatDiscount = Number(formData.flatDiscount) || 0;
-    let couponDiscount = Number(formData.couponDiscount) || 0;
-    let otherCharges = Number(formData.otherCharges) || 0;
 
-    inventoryData.forEach((pair) => {
-      if (pair.data) {
-        totalQuantity += 1 || 0;
-        totalAmount += pair.totalAmount || 0;
-        taxAmount += pair.taxAmount || 0;
-        totalDiscount += pair.discount || 0;
+    const flatDiscount = Number(formData.flatDiscount) || 0;
+    const couponDiscount = Number(formData.couponDiscount) || 0;
+    const otherCharges = Number(formData.otherCharges) || 0;
+
+    InventoryPairs.forEach((pair) => {
+      console.log("pairpair<<", pair);
+
+      // ✅ Frame / Product
+      if (pair.product) {
+        totalQuantity += 1;
+        totalAmount += pair.product.totalAmount || pair.product.srp || 0;
+        taxAmount += pair.product.taxAmount || 0;
+        totalDiscount += pair.product.discount || 0;
+      }
+
+      // ✅ Right Lens
+      if (pair.rightLens) {
+        totalQuantity += 1;
+        totalAmount += pair.rightLens.totalAmount || pair.rightLens.srp || 0;
+        taxAmount += pair.rightLens.taxAmount || 0;
+        totalDiscount += pair.rightLens.discount || 0;
+      }
+
+      // ✅ Left Lens
+      if (pair.leftLens) {
+        totalQuantity += 1;
+        totalAmount += pair.leftLens.totalAmount || pair.leftLens.srp || 0;
+        taxAmount += pair.leftLens.taxAmount || 0;
+        totalDiscount += pair.leftLens.discount || 0;
       }
     });
 
-    totalDiscount += flatDiscount + couponDiscount;
-    const netAmount =
-      totalAmount - flatDiscount + otherCharges - couponDiscount;
 
-    // Calculate total received amount
+    totalDiscount += flatDiscount + couponDiscount;
+
+    const netAmount = totalAmount - totalDiscount + otherCharges;
+
+    // Received & Due
     const totalReceivedAmount = receivedAmounts.reduce(
       (sum, amount) => sum + (Number(amount.amount) || 0),
       0
     );
-
-    // Calculate due amount
     const dueAmount = netAmount - totalReceivedAmount;
 
     setFormData((prev) => ({
@@ -590,15 +656,16 @@ const SaleForm = () => {
       totalTax: taxAmount,
       netDiscount: totalDiscount,
       netAmount,
-      dueAmount, // Update dueAmount in formData
+      dueAmount,
     }));
   }, [
-    inventoryData,
+    InventoryPairs,
     formData.flatDiscount,
     formData.otherCharges,
     formData.couponDiscount,
-    receivedAmounts, // Add receivedAmounts as a dependency
+    receivedAmounts,
   ]);
+
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
@@ -643,15 +710,15 @@ const SaleForm = () => {
                 value={
                   formData.customerId
                     ? {
-                        value: formData.customerId,
-                        label: `${formData.customerName} / ${formData.customerPhone}`,
-                        data: {
-                          _id: formData.customerId,
-                          name: formData.customerName,
-                          phone: formData.customerPhone,
-                          prescriptions: formData.prescriptions,
-                        },
-                      }
+                      value: formData.customerId,
+                      label: `${formData.customerName} / ${formData.customerPhone}`,
+                      data: {
+                        _id: formData.customerId,
+                        name: formData.customerName,
+                        phone: formData.customerPhone,
+                        prescriptions: formData.prescriptions,
+                      },
+                    }
                     : null
                 }
               />
@@ -664,9 +731,8 @@ const SaleForm = () => {
                 </label>
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerName ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
+                    }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
@@ -683,9 +749,8 @@ const SaleForm = () => {
                 </label>
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${
-                    errors.customerPhone ? "is-invalid" : ""
-                  }`}
+                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
+                    }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
@@ -701,9 +766,8 @@ const SaleForm = () => {
                   Sales Rep <span className="text-danger">*</span>
                 </label>
                 <select
-                  className={`form-select w-100 ${
-                    errors.salesRep ? "is-invalid" : ""
-                  }`}
+                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
+                    }`}
                   id="salesRep"
                   name="salesRep"
                   // required
@@ -779,20 +843,8 @@ const SaleForm = () => {
                 <ProductSelector
                   showProductSelector={showProductSelector}
                   defaultStore={defaultStore}
-                  inventoryData={inventoryData}
-                  setInventoryData={setInventoryData}
-                  setShowProductSelector={setShowProductSelector}
                   setInventoryPairs={setInventoryPairs}
                 />
-                {!showProductSelector && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary my-2 w-25"
-                    onClick={() => setShowProductSelector(true)}
-                  >
-                    Add Another Pair
-                  </button>
-                )}
               </div>
 
               <div className="col-md-6 col-12">
@@ -842,9 +894,8 @@ const SaleForm = () => {
                         setErrors({ ...errors, recallDate: "" });
                       }
                     }}
-                    className={`form-control ${
-                      errors.recallDate ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.recallDate ? "is-invalid" : ""
+                      }`}
                     placeholderText="Select date"
                     dateFormat="yyyy-MM-dd"
                     required
@@ -858,11 +909,10 @@ const SaleForm = () => {
                 )}
               </div>
             </div>
-
             <InventoryData
-              inventoryData={inventoryData}
-              setInventoryData={setInventoryData}
+              inventoryPairs={InventoryPairs}
               setInventoryPairs={setInventoryPairs}
+              defaultStore={defaultStore}
             />
           </div>
         </div>
@@ -911,9 +961,8 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-100 ${
-                      field.readOnly ? "custom-disabled" : ""
-                    }`}
+                    className={`form-control w-100 ${field.readOnly ? "custom-disabled" : ""
+                      }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}
@@ -1077,11 +1126,10 @@ const SaleForm = () => {
                       <div className="col-md-3 p-1">
                         <input
                           type="number"
-                          className={`form-control ${
-                            errors[`receivedAmount.${index}.amount`]
-                              ? "is-invalid"
-                              : ""
-                          }`}
+                          className={`form-control ${errors[`receivedAmount.${index}.amount`]
+                            ? "is-invalid"
+                            : ""
+                            }`}
                           name={`receivedAmount.${index}.amount`}
                           value={amount.amount}
                           onChange={(e) =>
@@ -1112,11 +1160,10 @@ const SaleForm = () => {
                               date ? date.toISOString().split("T")[0] : ""
                             )
                           }
-                          className={`form-control ${
-                            errors[`receivedAmount.${index}.date`]
-                              ? "is-invalid"
-                              : ""
-                          }`}
+                          className={`form-control ${errors[`receivedAmount.${index}.date`]
+                            ? "is-invalid"
+                            : ""
+                            }`}
                           placeholderText="Select date"
                           dateFormat="yyyy-MM-dd"
                           required

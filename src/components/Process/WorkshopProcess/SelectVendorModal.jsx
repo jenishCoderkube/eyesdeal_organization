@@ -261,7 +261,7 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             </div>
           </div>
           <div className="mb-3">
-            voli{" "}
+       
             <Form.Label
               className="mb-1 text-sm font-medium"
               htmlFor="vendorNote"

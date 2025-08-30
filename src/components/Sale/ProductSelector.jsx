@@ -7,121 +7,146 @@ export default function ProductSelector({
   showProductSelector,
   defaultStore,
   setInventoryData,
-  setShowProductSelector,
   setInventoryPairs,
-  inventoryData,
 }) {
-  console.log("jenish<<", inventoryData);
-
   const fetchProductData = async (inputValue) => {
     try {
       const response = await saleService.listProducts(inputValue);
-      if (response.success) {
+      if (response?.success) {
         return response.data.data.docs.map((prod) => ({
           value: prod._id,
-          label: `${prod.newBarcode} / ${prod.sku}`,
+          label: `${prod.newBarcode ?? ""} / ${prod.sku ?? ""}`,
           data: prod,
         }));
-      } else {
-        console.error(response.data.message);
       }
+      return [];
     } catch (error) {
       console.error("Error fetching products:", error);
+      return [];
     }
   };
 
   const fetchInventoryDetails = async (prodID, storeID) => {
     try {
       const response = await saleService.checkInventory(prodID, storeID);
-      if (response.success) {
-        const newItem = response?.data?.data?.docs?.[0];
-        console.log("Fetched inventory item:", newItem);
-        if (newItem?.quantity <= 0) {
+      if (response?.success) {
+        const invItem = response?.data?.data?.docs?.[0];
+        if (!invItem) {
+          alert("Product not found in inventory");
+          return null;
+        }
+        if ((invItem.quantity ?? 0) <= 0) {
           alert("Product out of stock");
           return null;
         }
-        if (newItem) {
-          return { ...newItem.product, quantity: newItem.quantity };
-        }
-        if (response.data.data.docs.length === 0) {
-          alert("Product out of stock");
-          return null;
-        }
-      } else {
-        console.error(response.data.message);
+        return { ...invItem.product, quantity: invItem.quantity };
       }
+      return null;
     } catch (error) {
       console.error("Error fetching inventory:", error);
+      return null;
     }
   };
 
+  // helpers
+  const calcInvoice = (mrp = 0, srp = 0, taxRate = 0) => {
+    const base = srp / (1 + (Number(taxRate) || 0) / 100);
+    const taxAmount = srp - base;
+    const discount = mrp - srp;
+    return {
+      taxAmount: Number(taxAmount.toFixed(2)),
+      discount: Number(discount.toFixed(2)),
+      totalAmount: Number(Number(srp).toFixed(2)),
+    };
+  };
+
+  const normalizeForPair = (prod) => {
+    const mrp = Number(prod?.MRP) || 0;
+    const srp = Number(prod?.sellPrice) || 0;
+    const taxRate = Number(prod?.tax) || 0;
+    const { taxAmount, discount, totalAmount } = calcInvoice(mrp, srp, taxRate);
+
+    return {
+      product: prod._id,
+      quantity: prod?.quantity ?? 1,
+      barcode: prod?.oldBarcode ?? prod?.newBarcode ?? "",
+      stock: prod?.quantity ?? 0,
+      sku: prod?.sku ?? "",
+      photos: Array.isArray(prod?.photos) ? prod.photos : [],
+      mrp,
+      srp,
+      taxRate: `${taxRate} (Inc)`,
+      perPieceTax: taxAmount,
+      perPieceDiscount: discount,
+      perPieceAmount: totalAmount,
+      inclusiveTax: prod?.inclusiveTax ?? true,
+      manageStock: prod?.manageStock ?? false,
+      displayName: prod?.productName || prod?.displayName || "",
+      unit: typeof prod?.unit === "object" ? prod?.unit?.name : "Pieces",
+      incentiveAmount: prod?.incentiveAmount ?? 0,
+      raw: prod,
+    };
+  };
+
+  const rowFromProduct = (pairId, type, prod) => {
+    const mrp = Number(prod?.MRP) || 0;
+    const srp = Number(prod?.sellPrice) || 0;
+    const taxRate = Number(prod?.tax) || 0;
+    const { taxAmount, discount, totalAmount } = calcInvoice(mrp, srp, taxRate);
+
+    return {
+      groupId: pairId,
+      type, // "product" | "leftLens" | "rightLens"
+      data: {
+        ...prod,
+        sellPrice: srp,
+        quantity: prod?.quantity ?? 1,
+      },
+      quantity: prod?.quantity ?? 1,
+      taxAmount,
+      discount,
+      totalAmount,
+    };
+  };
+
   const handleAddProduct = async (selectedProduct) => {
-    if (!selectedProduct || !defaultStore || !defaultStore.value) {
-      console.warn("Selected product or default store is missing.");
-      return;
-    }
+    if (!selectedProduct || !defaultStore?.value) return;
 
     const productDetails = await fetchInventoryDetails(
       selectedProduct.value,
       defaultStore.value
     );
+    if (!productDetails) return;
 
-    if (productDetails) {
-      const pairId = uuidv4();
-      if (productDetails.__t === "eyeGlasses") {
-        // Frame: Add product and lens dropdown
-        setInventoryData((prev) => [
-          ...prev,
-          {
-            type: "product",
-            data: productDetails,
-            pairId,
-            quantity: productDetails.quantity || 0,
-          },
-          { type: "lensDropdown", pairId },
-        ]);
+    const pairId = uuidv4();
+    const type = productDetails?.__t;
 
-        const newPair = {
-          pairId,
-          product: productDetails,
-          lens: null, // Note: Original had lens: null, but for frames, it's right/left
-        };
-        setInventoryPairs((prev) => [...prev, newPair]);
-        setShowProductSelector(false);
-      } else if (productDetails.__t === "contactLens") {
-        // Lens: Auto-add right and left lenses with same data, no frame, no dropdown
+    if (type === "eyeGlasses") {
+      // frame → new pair with frame
+      const normalized = normalizeForPair(productDetails);
 
-        console.log(
-          "Adding contact lens with details:",
-          productDetails?.quantity
-        );
+      setInventoryPairs((prev) => [
+        ...prev,
+        { pairId, product: normalized, leftLens: null, rightLens: null },
+      ]);
 
-        setInventoryData((prev) => [
-          ...prev,
-          {
-            type: "rightLens",
-            data: productDetails,
-            pairId,
-            groupId: pairId,
-            quantity: productDetails.quantity || 0,
-          },
-          {
-            type: "leftLens",
-            data: productDetails,
-            pairId,
-            groupId: pairId,
-            quantity: productDetails.quantity || 0,
-          },
-        ]);
+      setInventoryData((prev) => [
+        ...prev,
+        rowFromProduct(pairId, "product", productDetails),
+      ]);
+    } else if (type === "contactLens") {
+      // lens → new pair with right lens only
+      const normalized = normalizeForPair(productDetails);
 
-        const newPair = {
-          pairId,
-          rightLens: productDetails,
-          leftLens: productDetails,
-        };
-        setInventoryPairs((prev) => [...prev, newPair]);
-        setShowProductSelector(false);
-      }
+      setInventoryPairs((prev) => [
+        ...prev,
+        { pairId, product: null, leftLens: null, rightLens: normalized },
+      ]);
+
+      setInventoryData((prev) => [
+        ...prev,
+        rowFromProduct(pairId, "rightLens", productDetails),
+      ]);
     }
   };
 
