@@ -187,12 +187,12 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
         ? formData?.country?.label
         : formData?.country,
     };
-    console.log("Form submitted:", payload);
 
     try {
       const response = await storeService.updateStore(payload);
-      if (response?.success) {
-        toast.success(response.message);
+      
+      if (response?.data?.success) {
+        toast.success(response?.data?.message);
         setFormData({
           name: "",
           locationUrl: "",

@@ -454,6 +454,7 @@ function ShopProcessEdit() {
                 Received Amount
               </label>
               <button
+              type="button"
                 className="btn text-primary border-secondary-subtle ms-2"
                 onClick={handleAddPayment}
                 disabled={submitting}
