@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 function WhatsAppModal({ closeModal, selectedRow }) {
   console.log("whatassappp<<", selectedRow);
 
-  const [phone, setPhone] = useState(selectedRow?.phone || "");
+  const [ phone, setPhone] = useState(selectedRow?.phone || selectedRow?.customerNumber || "");
   const [message, setMessage] = useState(
     `Hi ${
       selectedRow?.customerName || ""

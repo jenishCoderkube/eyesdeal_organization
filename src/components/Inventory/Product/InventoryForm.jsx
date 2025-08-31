@@ -10,6 +10,8 @@ import { FaSearch } from "react-icons/fa";
 const InventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+
   const [categoryData, setCategoryData] = useState([]);
   const [frameType, setFrameType] = useState([]);
   const [frameShape, setShapeType] = useState([]);
@@ -280,7 +282,7 @@ const InventoryForm = () => {
   const getInventoryData = async (values) => {
     const storeId = values?.stores?.map((option) => option.value);
 
-    setLoading(true);
+    setLoadingInventory(true);
 
     try {
       const response = await inventoryService.getInventory(
@@ -307,7 +309,7 @@ const InventoryForm = () => {
     } catch (error) {
       console.error("error:", error);
     } finally {
-      setLoading(false);
+      setLoadingInventory(false);
     }
   };
 
@@ -682,6 +684,9 @@ const InventoryForm = () => {
             </div>
           </div>
           <div className="table-responsive px-2">
+            {
+              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
+            
             <table className="table table-sm">
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
@@ -724,6 +729,7 @@ const InventoryForm = () => {
                 )}
               </tbody>
             </table>
+}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">

@@ -14,6 +14,8 @@ const StockSaleOutTable = () => {
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
   const [showOffcanvas, setShowOffCanvas] = useState(false);
+    const [loadingInventory, setLoadingInventory] = useState(false);
+
   const [showData, setShowData] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -27,7 +29,7 @@ const StockSaleOutTable = () => {
   }, []);
 
   const getCollectionData = async () => {
-    setLoading(true);
+    setLoadingInventory(true);
 
     const params = {
       "optimize[from]": user?.stores?.[0],
@@ -46,7 +48,7 @@ const StockSaleOutTable = () => {
     } catch (error) {
       console.error(" error:", error);
     } finally {
-      setLoading(false);
+      setLoadingInventory(false);
     }
   };
 
@@ -121,6 +123,9 @@ const StockSaleOutTable = () => {
         </div> */}
         </div>
         <div className="table-responsive px-2">
+           {
+              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
+           
           <table className="table table-sm ">
             <thead className="text-xs text-uppercase text-muted bg-light border">
               <tr>
@@ -182,6 +187,7 @@ const StockSaleOutTable = () => {
               )}
             </tbody>
           </table>
+}
         </div>
         <div className="d-flex flex-column px-3 pb-2 flex-sm-row justify-content-between align-items-center mt-3">
           <div className="text-sm text-muted mb-3 mb-sm-0">

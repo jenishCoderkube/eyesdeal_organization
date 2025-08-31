@@ -50,7 +50,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
         {
           method: null,
           amount: "",
-          date: null,
+          date: new Date(),
           reference: "",
           isEditing: true, // Set Amount field as editable by default
         },
@@ -70,7 +70,7 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
       {
         method: null,
         amount: "",
-        date: null,
+        date: new Date(),
         reference: "",
       },
     ]);

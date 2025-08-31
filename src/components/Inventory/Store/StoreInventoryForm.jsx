@@ -20,6 +20,7 @@ const StoreInventoryForm = () => {
   const [inventory, setInventory] = useState([]);
   const [inventoryGetCount, setInventoryGetCount] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -280,7 +281,7 @@ const StoreInventoryForm = () => {
   const getInventoryData = async (values) => {
     const storeId = values?.stores?.map((option) => option.value);
 
-    setLoading(true);
+    setLoadingInventory(true);
 
     try {
       const response = await inventoryService.getInventoryStore(
@@ -307,7 +308,7 @@ const StoreInventoryForm = () => {
     } catch (error) {
       console.error("error:", error);
     } finally {
-      setLoading(false);
+      setLoadingInventory(false);
     }
   };
 
@@ -714,6 +715,9 @@ const StoreInventoryForm = () => {
             </div>
           </div>
           <div className="table-responsive px-2">
+             {
+              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
+           
             <table className="table table-sm">
               <thead className="text-xs text-uppercase text-muted bg-light border">
                 <tr>
@@ -770,6 +774,7 @@ const StoreInventoryForm = () => {
                 )}
               </tbody>
             </table>
+}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">

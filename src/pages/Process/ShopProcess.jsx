@@ -1789,7 +1789,7 @@ function ShopProcess() {
                                         <td style={{ minWidth: "70px" }}>
                                           <SiWhatsapp
                                             className="text-success"
-                                            style={{ fontSize: "20px" }}
+                                            size={30}
                                             onClick={() =>
                                               openWhatsAppModal(row)
                                             }
@@ -1818,8 +1818,8 @@ function ShopProcess() {
                                         </td>
                                         <td style={{ minWidth: "70px" }}>
                                           <SiWhatsapp
-                                            className="text-success"
-                                            style={{ fontSize: "20px" }}
+                                            className="text-success "
+                                            size={30}
                                             onClick={() =>
                                               openWhatsAppModal(row)
                                             }

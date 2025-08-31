@@ -15,11 +15,16 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
   console.log(":initialData", initialData);
 
   const [lens, setLens] = useState(initialData?.lens || null);
-  const [pairNumber, setPairNumber] = useState(initialData?.pairNumber || 1);
-  const [lensPrice, setLensPrice] = useState(initialData?.lensPrice || "");
+  const [pairNumber, setPairNumber] = useState( initialData?.pairNumber || 1);
+  const [lensPrice, setLensPrice] = useState( initialData?.lensPrice || "");
   const [framePrice, setFramePrice] = useState(initialData?.framePrice || "");
   const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice || "");
   const [submitting, setSubmitting] = useState(false);
+// console.log("lens",lens);
+
+// useEffect(() => {
+// setLensPrice(lens?.MRP || initialData?.lensPrice || "");
+// },[lens]);
 
   // Calculate total price whenever lensPrice or framePrice changes
   useEffect(() => {
@@ -100,7 +105,7 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
     <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
-          {initialData ? "Edit Package" : "Create Package Offer"}
+          {initialData ? "Edit Package Offer" : "Create Package Offer"}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -211,7 +216,7 @@ const AddPackageOffers = () => {
             : null,
       });
     } else {
-      toast.error(res.message);
+      // toast.error(res.message);
       setPackages([]);
       setPagination((prev) => ({ ...prev, totalDocs: 0 }));
     }
@@ -389,7 +394,7 @@ const AddPackageOffers = () => {
             setModalShow(true);
           }}
         >
-          Create Package
+          Create Package Offer
         </Button>
       </div>
       <div className="table-responsive">
@@ -420,7 +425,7 @@ const AddPackageOffers = () => {
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-center">
-                  No packages found.
+                  No packages Offers found.
                 </td>
               </tr>
             ) : (
