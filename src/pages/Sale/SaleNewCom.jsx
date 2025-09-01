@@ -254,142 +254,132 @@ const SaleForm = () => {
       return {
         product: pair.product
           ? {
-            product: pair.product.id || pair.product._id || pair.product.product, // id for backend
-            productObject: pair.product.raw || pair.product.productObject || {}, // keep full raw for reference
-            quantity: 1,
-            barcode:
-              pair.product.barcode ||
-              pair.product.newBarcode ||
-              pair.product.oldBarcode ||
-              pair.product.raw?.newBarcode ||
-              pair.product.raw?.oldBarcode ||
-              null,
-            stock:
-              // pair.product.quantity ||
-              // pair.product.stock ||
-              // pair.product.raw?.quantity ||
-              // pair.product.inventory?.totalQuantity ||
-              0,
-            sku:
-              pair.product.sku ||
-              pair.product.raw?.sku ||
-              "",
-            photos:
-              pair.product.photos ||
-              pair.product.raw?.photos ||
-              [],
-            mrp:
-              pair.product.mrp ||
-              pair.product.MRP ||
-              pair.product.raw?.MRP ||
-              0,
-            srp:
-              pair.product.srp ||
-              pair.product.sellPrice ||
-              pair.product.raw?.sellPrice ||
-              0,
-            taxRate: `${pair.product.taxRate || pair.product.raw?.tax || 0}`,
-            taxAmount: pair.product.taxAmount || 0,
-            discount: pair.product.discount || pair.product.raw?.discount || 0,
-            displayName: pair.product.displayName || pair.product.raw?.displayName,
-            unit:
-              pair.product.unit?.name ||
-              pair.product.unit ||
-              pair.product.raw?.unit ||
-              "",
-            netAmount:
-              (pair.product.srp ||
+              product:
+                pair.product.id || pair.product._id || pair.product.product, // id for backend
+              productObject:
+                pair.product.raw || pair.product.productObject || {}, // keep full raw for reference
+              quantity: 1,
+              barcode:
+                pair.product.barcode ||
+                pair.product.newBarcode ||
+                pair.product.oldBarcode ||
+                pair.product.raw?.newBarcode ||
+                pair.product.raw?.oldBarcode ||
+                null,
+              stock:
+                // pair.product.quantity ||
+                // pair.product.stock ||
+                // pair.product.raw?.quantity ||
+                // pair.product.inventory?.totalQuantity ||
+                0,
+              sku: pair.product.sku || pair.product.raw?.sku || "",
+              photos: pair.product.photos || pair.product.raw?.photos || [],
+              mrp:
+                pair.product.mrp ||
+                pair.product.MRP ||
+                pair.product.raw?.MRP ||
+                0,
+              srp:
+                pair.product.srp ||
                 pair.product.sellPrice ||
                 pair.product.raw?.sellPrice ||
-                0) -
-              (pair.product.discount || pair.product.raw?.discount || 0),
-            inclusiveTax:
-              pair.product.inclusiveTax ??
-              pair.product.raw?.inclusiveTax ??
-              true,
-            manageStock:
-              pair.product.manageStock ??
-              pair.product.raw?.manageStock ??
-              true,
-            resellerPrice:
-              pair.product.resellerPrice ||
-              pair.product.raw?.resellerPrice ||
-              0,
-            incentiveAmount:
-              pair.product.incentiveAmount ||
-              pair.product.raw?.incentiveAmount ||
-              0,
-          }
+                0,
+              taxRate: `${pair.product.taxRate || pair.product.raw?.tax || 0}`,
+              taxAmount: pair.product.taxAmount || 0,
+              discount: 0,
+              displayName:
+                pair.product.displayName || pair.product.raw?.displayName,
+              unit:
+                pair.product.unit?.name ||
+                pair.product.unit ||
+                pair.product.raw?.unit ||
+                "",
+              netAmount:
+                (pair.product.srp ||
+                  pair.product.sellPrice ||
+                  pair.product.raw?.sellPrice ||
+                  0) -
+                (pair.product.discount || pair.product.raw?.discount || 0),
+              inclusiveTax:
+                pair.product.inclusiveTax ??
+                pair.product.raw?.inclusiveTax ??
+                true,
+              manageStock:
+                pair.product.manageStock ??
+                pair.product.raw?.manageStock ??
+                true,
+              resellerPrice:
+                pair.product.resellerPrice ||
+                pair.product.raw?.resellerPrice ||
+                0,
+              incentiveAmount:
+                pair.product.incentiveAmount ||
+                pair.product.raw?.incentiveAmount ||
+                0,
+            }
           : null,
-
 
         rightLens: pair.rightLens
           ? {
-            product: pair.rightLens.id || pair.rightLens.product,
-            quantity: 1,
-            barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
-            stock: pair.rightLens.stock || 0,
-            sku: pair.rightLens.sku,
-            photos: pair.rightLens.photos || [],
-            mrp: pair.rightLens.MRP || pair.rightLens.mrp || 0,
-            srp: pair.rightLens.sellPrice || pair.rightLens.srp || 0,
-            taxRate: `${pair.rightLens.tax || pair.rightLens.taxRate} (Inc)`,
-            taxAmount:
-              pair.rightLens.perPieceTax || pair.rightLens.taxAmount || 0,
-            discount:
-              pair.rightLens.perPieceDiscount || pair.rightLens.discount || 0,
-            netAmount:
-              (pair.rightLens.sellPrice || pair.rightLens.srp || 0) -
-              (pair.rightLens.perPieceDiscount ||
-                pair.rightLens.discount ||
-                0),
-            inclusiveTax: pair.rightLens.inclusiveTax ?? true,
-            manageStock: pair.rightLens.manageStock ?? false,
-            displayName:
-              pair.rightLens.displayName ||
-              pair.rightLens.productName ||
-              "Lens",
-            unit: pair.rightLens.unit?.name || pair.rightLens.unit || "Pieces",
-            incentiveAmount: pair.rightLens.incentiveAmount || 0,
-          }
+              product: pair.rightLens.id || pair.rightLens.product,
+              quantity: 1,
+              barcode: pair.rightLens.oldBarcode || pair.rightLens.barcode,
+              stock: pair.rightLens.stock || 0,
+              sku: pair.rightLens.sku,
+              photos: pair.rightLens.photos || [],
+              mrp: pair.rightLens.MRP || pair.rightLens.mrp || 0,
+              srp: pair.rightLens.sellPrice || pair.rightLens.srp || 0,
+              taxRate: `${pair.rightLens.tax || pair.rightLens.taxRate} (Inc)`,
+              taxAmount:
+                pair.rightLens.perPieceTax || pair.rightLens.taxAmount || 0,
+              discount: 0,
+              netAmount:
+                (pair.rightLens.sellPrice || pair.rightLens.srp || 0) -
+                (pair.rightLens.perPieceDiscount ||
+                  pair.rightLens.discount ||
+                  0),
+              inclusiveTax: pair.rightLens.inclusiveTax ?? true,
+              manageStock: pair.rightLens.manageStock ?? false,
+              displayName:
+                pair.rightLens.displayName ||
+                pair.rightLens.productName ||
+                "Lens",
+              unit:
+                pair.rightLens.unit?.name || pair.rightLens.unit || "Pieces",
+              incentiveAmount: pair.rightLens.incentiveAmount || 0,
+            }
           : null,
 
         leftLens: pair.leftLens
           ? {
-            product: pair.leftLens.id || pair.leftLens.product,
-            quantity: 1,
-            barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
-            stock: pair.leftLens.stock || 0,
-            sku: pair.leftLens.sku,
-            photos: pair.leftLens.photos || [],
-            mrp: pair.leftLens.MRP || pair.leftLens.mrp || 0,
-            srp: pair.leftLens.sellPrice || pair.leftLens.srp || 0,
-            taxRate: `${pair.leftLens.tax || pair.leftLens.taxRate} (Inc)`,
-            taxAmount:
-              pair.leftLens.perPieceTax || pair.leftLens.taxAmount || 0,
-            discount:
-              pair.leftLens.perPieceDiscount || pair.leftLens.discount || 0,
-            netAmount:
-              (pair.leftLens.sellPrice || pair.leftLens.srp || 0) -
-              (pair.leftLens.perPieceDiscount ||
-                pair.leftLens.discount ||
-                0),
-            inclusiveTax: pair.leftLens.inclusiveTax ?? true,
-            manageStock: pair.leftLens.manageStock ?? false,
-            displayName:
-              pair.leftLens.displayName ||
-              pair.leftLens.productName ||
-              "Lens",
-            unit: pair.leftLens.unit?.name || pair.leftLens.unit || "Pieces",
-            incentiveAmount: pair.leftLens.incentiveAmount || 0,
-          }
+              product: pair.leftLens.id || pair.leftLens.product,
+              quantity: 1,
+              barcode: pair.leftLens.oldBarcode || pair.leftLens.barcode,
+              stock: pair.leftLens.stock || 0,
+              sku: pair.leftLens.sku,
+              photos: pair.leftLens.photos || [],
+              mrp: pair.leftLens.MRP || pair.leftLens.mrp || 0,
+              srp: pair.leftLens.sellPrice || pair.leftLens.srp || 0,
+              taxRate: `${pair.leftLens.tax || pair.leftLens.taxRate} (Inc)`,
+              taxAmount:
+                pair.leftLens.perPieceTax || pair.leftLens.taxAmount || 0,
+              discount: 0,
+              netAmount:
+                (pair.leftLens.sellPrice || pair.leftLens.srp || 0) -
+                (pair.leftLens.perPieceDiscount || pair.leftLens.discount || 0),
+              inclusiveTax: pair.leftLens.inclusiveTax ?? true,
+              manageStock: pair.leftLens.manageStock ?? false,
+              displayName:
+                pair.leftLens.displayName ||
+                pair.leftLens.productName ||
+                "Lens",
+              unit: pair.leftLens.unit?.name || pair.leftLens.unit || "Pieces",
+              incentiveAmount: pair.leftLens.incentiveAmount || 0,
+            }
           : null,
       };
     });
   };
-
-
-
 
   const checkingCouponCode = async (coupon, customerPhone, InventoryPairs) => {
     try {
@@ -496,11 +486,13 @@ const SaleForm = () => {
       }
 
       // Collect the prescription IDs as an object
-      const prescriptions = formData.prescriptions.reduce((acc, prescription) => {
-        acc[prescription.__t] = prescription._id;  // Using __t as key and _id as value
-        return acc;
-      }, {});
-
+      const prescriptions = formData.prescriptions.reduce(
+        (acc, prescription) => {
+          acc[prescription.__t] = prescription._id; // Using __t as key and _id as value
+          return acc;
+        },
+        {}
+      );
 
       let recall;
       if (formData.recallOption === "other") {
@@ -547,7 +539,7 @@ const SaleForm = () => {
           recall: newDateFormatate,
           attachments: documentsFiles,
           note: formData.note,
-          powerAtTime: prescriptions,  // Add prescriptions object to the payload
+          powerAtTime: prescriptions, // Add prescriptions object to the payload
         };
 
         console.log("Submitting form with payload:", payload);
@@ -579,14 +571,14 @@ const SaleForm = () => {
           setDocuments([]);
           setDocumentsFiles([]);
           setErrors({});
-          setShowProductSelector(true);  // Reset product selector visibility
-          setSalesData([]);  // Clear sales data
+          setShowProductSelector(true); // Reset product selector visibility
+          setSalesData([]); // Clear sales data
           navigate("/process/shop");
         } else {
           toast.error(
             response?.message?.error?.message ||
-            response?.message?.message ||
-            "Failed to submit sale"
+              response?.message?.message ||
+              "Failed to submit sale"
           );
         }
       } catch (err) {
@@ -594,10 +586,6 @@ const SaleForm = () => {
       }
     }
   };
-
-
-
-
 
   useEffect(() => {
     let totalQuantity = 0;
@@ -617,7 +605,7 @@ const SaleForm = () => {
         totalQuantity += 1;
         totalAmount += pair.product.totalAmount || pair.product.srp || 0;
         taxAmount += pair.product.taxAmount || 0;
-        totalDiscount += pair.product.discount || 0;
+        totalDiscount += 0;
       }
 
       // ✅ Right Lens
@@ -625,7 +613,7 @@ const SaleForm = () => {
         totalQuantity += 1;
         totalAmount += pair.rightLens.totalAmount || pair.rightLens.srp || 0;
         taxAmount += pair.rightLens.taxAmount || 0;
-        totalDiscount += pair.rightLens.discount || 0;
+        totalDiscount += 0;
       }
 
       // ✅ Left Lens
@@ -633,10 +621,9 @@ const SaleForm = () => {
         totalQuantity += 1;
         totalAmount += pair.leftLens.totalAmount || pair.leftLens.srp || 0;
         taxAmount += pair.leftLens.taxAmount || 0;
-        totalDiscount += pair.leftLens.discount || 0;
+        totalDiscount += 0;
       }
     });
-
 
     totalDiscount += flatDiscount + couponDiscount;
 
@@ -665,7 +652,6 @@ const SaleForm = () => {
     formData.couponDiscount,
     receivedAmounts,
   ]);
-
 
   return (
     <form className="container-fluid px-5" onSubmit={handleSubmit}>
@@ -710,15 +696,15 @@ const SaleForm = () => {
                 value={
                   formData.customerId
                     ? {
-                      value: formData.customerId,
-                      label: `${formData.customerName} / ${formData.customerPhone}`,
-                      data: {
-                        _id: formData.customerId,
-                        name: formData.customerName,
-                        phone: formData.customerPhone,
-                        prescriptions: formData.prescriptions,
-                      },
-                    }
+                        value: formData.customerId,
+                        label: `${formData.customerName} / ${formData.customerPhone}`,
+                        data: {
+                          _id: formData.customerId,
+                          name: formData.customerName,
+                          phone: formData.customerPhone,
+                          prescriptions: formData.prescriptions,
+                        },
+                      }
                     : null
                 }
               />
@@ -731,8 +717,9 @@ const SaleForm = () => {
                 </label>
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerName ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerName ? "is-invalid" : ""
+                  }`}
                   id="customerName"
                   name="customerName"
                   value={formData.customerName}
@@ -749,8 +736,9 @@ const SaleForm = () => {
                 </label>
                 <input
                   type="text"
-                  className={`form-control custom-disabled w-100 ${errors.customerPhone ? "is-invalid" : ""
-                    }`}
+                  className={`form-control custom-disabled w-100 ${
+                    errors.customerPhone ? "is-invalid" : ""
+                  }`}
                   id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
@@ -766,8 +754,9 @@ const SaleForm = () => {
                   Sales Rep <span className="text-danger">*</span>
                 </label>
                 <select
-                  className={`form-select w-100 ${errors.salesRep ? "is-invalid" : ""
-                    }`}
+                  className={`form-select w-100 ${
+                    errors.salesRep ? "is-invalid" : ""
+                  }`}
                   id="salesRep"
                   name="salesRep"
                   // required
@@ -894,8 +883,9 @@ const SaleForm = () => {
                         setErrors({ ...errors, recallDate: "" });
                       }
                     }}
-                    className={`form-control ${errors.recallDate ? "is-invalid" : ""
-                      }`}
+                    className={`form-control ${
+                      errors.recallDate ? "is-invalid" : ""
+                    }`}
                     placeholderText="Select date"
                     dateFormat="yyyy-MM-dd"
                     required
@@ -961,8 +951,9 @@ const SaleForm = () => {
                 <div className="flex-grow-1">
                   <input
                     type="number"
-                    className={`form-control w-100 ${field.readOnly ? "custom-disabled" : ""
-                      }`}
+                    className={`form-control w-100 ${
+                      field.readOnly ? "custom-disabled" : ""
+                    }`}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name]}
@@ -1126,10 +1117,11 @@ const SaleForm = () => {
                       <div className="col-md-3 p-1">
                         <input
                           type="number"
-                          className={`form-control ${errors[`receivedAmount.${index}.amount`]
-                            ? "is-invalid"
-                            : ""
-                            }`}
+                          className={`form-control ${
+                            errors[`receivedAmount.${index}.amount`]
+                              ? "is-invalid"
+                              : ""
+                          }`}
                           name={`receivedAmount.${index}.amount`}
                           value={amount.amount}
                           onChange={(e) =>
@@ -1160,10 +1152,11 @@ const SaleForm = () => {
                               date ? date.toISOString().split("T")[0] : ""
                             )
                           }
-                          className={`form-control ${errors[`receivedAmount.${index}.date`]
-                            ? "is-invalid"
-                            : ""
-                            }`}
+                          className={`form-control ${
+                            errors[`receivedAmount.${index}.date`]
+                              ? "is-invalid"
+                              : ""
+                          }`}
                           placeholderText="Select date"
                           dateFormat="yyyy-MM-dd"
                           required
