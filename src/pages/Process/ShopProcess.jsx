@@ -918,8 +918,18 @@ function ShopProcess() {
       {
         accessorKey: "billNumber",
         header: "Bill Number",
-        cell: ({ getValue }) => (
-          <div className="table-vendor-data-size">{getValue()}</div>
+        cell: ({ getValue, row }) => (
+          <div
+            className="table-vendor-data-size"
+            style={{
+              cursor: "pointer",
+              textDecoration: "underline",
+              color: "#6366f1",
+            }}
+            onClick={() => openBillModal(row.original)}
+          >
+            {getValue()}
+          </div>
         ),
       },
       {
@@ -1039,7 +1049,7 @@ function ShopProcess() {
     setSelectedRow(null);
   };
   const openBillModal = (row) => {
-    setSelectedBill(row.fullSale);
+    setSelectedBill(row.fullSale ?? row?.fullOrder);
     setBillModalVisible(true);
   };
 
@@ -1367,70 +1377,70 @@ function ShopProcess() {
       );
     }
 
-    if (activeStatus === "New Order" || activeStatus === "In Fitting") {
-      return (
-        <>
-          <table className="table table-sm">
-            <thead className="table-light border text-xs text-uppercase">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="py-3 text-left custom-perchase-th"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {combinedData.length !== 0 && (
-            <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
-              <div className="text-sm text-muted mb-3 mb-sm-0">
-                Showing <span className="fw-medium">{startRow}</span> to{" "}
-                <span className="fw-medium">{endRow}</span> of{" "}
-                <span className="fw-medium">{totalRows}</span> results
-              </div>
-              <div className="btn-group">
-                <Button
-                  variant="outline-primary"
-                  onClick={() => handlePageChange(pagination.prevPage)}
-                  disabled={!pagination.hasPrevPage}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline-primary"
-                  onClick={() => handlePageChange(pagination.nextPage)}
-                  disabled={!pagination.hasNextPage}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      );
-    }
+    // if (activeStatus === "New Order" || activeStatus === "In Fitting") {
+    //   return (
+    //     <>
+    //       <table className="table table-sm">
+    //         <thead className="table-light border text-xs text-uppercase">
+    //           {table.getHeaderGroups().map((headerGroup) => (
+    //             <tr key={headerGroup.id}>
+    //               {headerGroup.headers.map((header) => (
+    //                 <th
+    //                   key={header.id}
+    //                   className="py-3 text-left custom-perchase-th"
+    //                 >
+    //                   {flexRender(
+    //                     header.column.columnDef.header,
+    //                     header.getContext()
+    //                   )}
+    //                 </th>
+    //               ))}
+    //             </tr>
+    //           ))}
+    //         </thead>
+    //         <tbody>
+    //           {table.getRowModel().rows.map((row) => (
+    //             <tr key={row.id}>
+    //               {row.getVisibleCells().map((cell) => (
+    //                 <td key={cell.id}>
+    //                   {flexRender(
+    //                     cell.column.columnDef.cell,
+    //                     cell.getContext()
+    //                   )}
+    //                 </td>
+    //               ))}
+    //             </tr>
+    //           ))}
+    //         </tbody>
+    //       </table>
+    //       {combinedData.length !== 0 && (
+    //         <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
+    //           <div className="text-sm text-muted mb-3 mb-sm-0">
+    //             Showing <span className="fw-medium">{startRow}</span> to{" "}
+    //             <span className="fw-medium">{endRow}</span> of{" "}
+    //             <span className="fw-medium">{totalRows}</span> results
+    //           </div>
+    //           <div className="btn-group">
+    //             <Button
+    //               variant="outline-primary"
+    //               onClick={() => handlePageChange(pagination.prevPage)}
+    //               disabled={!pagination.hasPrevPage}
+    //             >
+    //               Previous
+    //             </Button>
+    //             <Button
+    //               variant="outline-primary"
+    //               onClick={() => handlePageChange(pagination.nextPage)}
+    //               disabled={!pagination.hasNextPage}
+    //             >
+    //               Next
+    //             </Button>
+    //           </div>
+    //         </div>
+    //       )}
+    //     </>
+    //   );
+    // }
 
     return (
       <>
@@ -1624,6 +1634,7 @@ function ShopProcess() {
                         activeStatus === "Ready" ||
                         activeStatus === "In Process" ||
                         activeStatus === "In Fitting" ||
+                        activeStatus === "New Order" ||
                         activeStatus === "Delivered") && (
                         <div className="d-flex flex-column align-items-center justify-content-center">
                           <button
@@ -1997,141 +2008,130 @@ function ShopProcess() {
 
       <div
         className="border-bottom"
-        style={{ margin: "-9px 0px 33px 0px" }}
+        style={{ margin: "-9px 0px 10px 0px" }}
       ></div>
-
-      {hasSelectedProducts &&
-        activeStatus !== "Returned" &&
-        activeStatus !== "In Process" &&
-        activeStatus !== "New Order" &&
-        activeStatus !== "In Fitting" && (
-          <div className="mb-3">
-            {activeStatus === "Pending" && (
-              <button
-                className="btn me-2 custom-hover-border"
-                onClick={handleSendToPending}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Process Order"}
-              </button>
-            )}
-            {activeStatus === "Pending" && (
-              <button
-                className="btn me-2 custom-hover-border"
-                onClick={handleSendToWorkshop}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Send To Workshop"}
-              </button>
-            )}
-            {activeStatus !== "Delivered" && (
-              <button
-                className="btn custom-hover-border mx-2"
-                onClick={handleDeliver}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Deliver"}
-              </button>
-            )}
-          </div>
-        )}
-      {hasSelectedProducts && activeStatus === "In Process" && (
-        <div className="mb-4 col-12">
-          <div>
-            {activeStatus === "In Process" && (
-              <button
-                className="btn me-1 custom-hover-border"
-                onClick={handleEditVendor}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Edit Vendor"}
-              </button>
-            )}
-            <button
-              className="btn custom-hover-border ms-2"
-              type="button"
-              onClick={handleSendForFitting}
-              disabled={loading}
-            >
-              {loading ? "Processing..." : "Send for Fitting"}
-            </button>
-            <button
-              className="btn custom-hover-border ms-2"
-              onClick={handleSendToReady}
-              disabled={loading}
-            >
-              {loading ? "Processing..." : "Ready"}
-            </button>
-          </div>
+      {hasSelectedProducts && activeStatus === "Pending" && (
+        <div className="mb-2">
+          <button
+            className="btn me-2 custom-hover-border"
+            onClick={handleSendToPending}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Process Order"}
+          </button>
+          <button
+            className="btn me-2 custom-hover-border"
+            onClick={handleSendToWorkshop}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Send To Workshop"}
+          </button>
+          <button
+            className="btn custom-hover-border mx-2"
+            onClick={handleDeliver}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Deliver"}
+          </button>
         </div>
       )}
-      {(activeStatus === "New Order" || activeStatus === "In Fitting") && (
-        <div className="mb-4 col-12">
-          {selectedRows.length > 0 && (
-            <div className="d-flex justify-content-between flex-wrap gap-3 mt-2">
-              {activeStatus === "New Order" && (
-                <div>
-                  <button
-                    className="btn custom-hover-border"
-                    type="button"
-                    onClick={handleProcessOrder}
-                    disabled={loading}
-                  >
-                    {loading ? "Processing..." : "Process Order"}
-                  </button>
-                  <button
-                    className="btn custom-hover-border ms-2"
-                    type="button"
-                    onClick={handleSendForFitting}
-                    disabled={loading}
-                  >
-                    {loading ? "Processing..." : "Send for Fitting"}
-                  </button>
-                </div>
-              )}
-              {activeStatus === "In Fitting" && (
-                <>
-                  <div>
-                    <button
-                      className="btn custom-hover-border"
-                      type="button"
-                      onClick={handleMarkAsReady}
-                      disabled={loading}
-                    >
-                      {loading ? "Processing..." : "Mark as Ready"}
-                    </button>
-                    <button
-                      className="btn custom-hover-border"
-                      type="button"
-                      onClick={handleAddDamagePiece}
-                      disabled={loading}
-                    >
-                      {loading ? "Processing..." : "Add Damaged"}
-                    </button>
-                  </div>
-                </>
-              )}
-              <div>
-                <button
-                  className="btn custom-hover-border me-2"
-                  type="button"
-                  onClick={handleRevertOrder}
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : "Revert Order"}
-                </button>
-                {activeStatus === "New Order" && (
-                  <button
-                    className="btn custom-hover-border"
-                    type="button"
-                    disabled={loading}
-                  >
-                    {loading ? "Processing..." : "Force Ahead"}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+      {hasSelectedProducts && activeStatus === "New Order" && (
+        <div className="mb-2">
+          {" "}
+          <button
+            className="btn me-2 custom-hover-border"
+            onClick={handleSendToPending}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Process Order"}
+          </button>
+          <button
+            className="btn custom-hover-border me-2"
+            type="button"
+            onClick={handleSendForFitting}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Send for Fitting"}
+          </button>
+          <button
+            className="btn custom-hover-border me-2"
+            type="button"
+            onClick={handleRevertOrder}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Revert Order"}
+          </button>
+          {/* <button
+            className="btn custom-hover-border"
+            type="button"
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Force Ahead"}
+          </button> */}
+        </div>
+      )}
+      {hasSelectedProducts && activeStatus === "In Process" && (
+        <div className="mb-2">
+          <button
+            className="btn me-1 custom-hover-border"
+            onClick={handleEditVendor}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Edit Vendor"}
+          </button>
+          <button
+            className="btn custom-hover-border ms-2"
+            type="button"
+            onClick={handleSendForFitting}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Send for Fitting"}
+          </button>
+          <button
+            className="btn custom-hover-border ms-2"
+            onClick={handleSendToReady}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Ready"}
+          </button>
+        </div>
+      )}
+      {hasSelectedProducts && activeStatus === "In Fitting" && (
+        <div className="mb-2">
+          <button
+            className="btn custom-hover-border ms-2"
+            onClick={handleSendToReady}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Ready"}
+          </button>
+          <button
+            className="btn custom-hover-border ms-2"
+            type="button"
+            onClick={handleAddDamagePiece}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Add Damaged"}
+          </button>
+          <button
+            className="btn custom-hover-border ms-2"
+            type="button"
+            onClick={handleRevertOrder}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Revert Order"}
+          </button>
+        </div>
+      )}
+      {hasSelectedProducts && activeStatus === "Ready" && (
+        <div className="mb-2">
+          <button
+            className="btn custom-hover-border mx-2"
+            onClick={handleDeliver}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Deliver"}
+          </button>
         </div>
       )}
 
