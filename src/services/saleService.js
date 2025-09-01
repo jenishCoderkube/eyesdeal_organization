@@ -161,10 +161,10 @@ export const saleService = {
         search,
         "__t[$in][0]": "spectacleLens",
         "__t[$in][1]": "contactLens",
+        activeInERP: true,
       };
       const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, {
-        ...params,
-        activeInERP: true,
+        params,
       });
       return {
         success: true,

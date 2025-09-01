@@ -260,33 +260,35 @@ function ShopProcess() {
         if (response.success && response.data.data) {
           const sales = response.data.data.docs || [];
           setTableData(
-            sales.map((sale) => ({
-              _id: sale._id,
-              date: new Date(sale.createdAt).toISOString().split("T")[0],
-              billNumber: sale.saleNumber || sale.billNumber || "N/A",
-              customerName:
-                sale.customerName || sale.sale?.customerName || "N/A",
-              phone: sale.customerPhone || sale.sale?.customerPhone || "N/A",
-              storeName: sale.store?.name || "N/A",
-              totalItems: sale.totalQuantity || sale.orders?.length || 0,
-              receivedAmount: sale.receivedAmount?.length
+            sales.map((sale) => {
+              const totalReceived = sale.receivedAmount?.length
                 ? sale.receivedAmount.reduce(
                     (sum, amt) => sum + (amt.amount || 0),
                     0
                   )
-                : 0,
-              remainingAmount:
-                (sale.netAmount || 0) -
-                (sale.receivedAmount?.length
-                  ? sale.receivedAmount.reduce(
-                      (sum, amt) => sum + (amt.amount || 0),
-                      0
-                    )
-                  : 0),
-              notes: sale.note || "N/A",
-              action: "Edit",
-              fullSale: sale,
-            }))
+                : 0;
+
+              const remainingAmount = Math.max(
+                (sale.netAmount || 0) - totalReceived,
+                0
+              );
+
+              return {
+                _id: sale._id,
+                date: new Date(sale.createdAt).toISOString().split("T")[0],
+                billNumber: sale.saleNumber || sale.billNumber || "N/A",
+                customerName:
+                  sale.customerName || sale.sale?.customerName || "N/A",
+                phone: sale.customerPhone || sale.sale?.customerPhone || "N/A",
+                storeName: sale.store?.name || "N/A",
+                totalItems: sale.totalQuantity || sale.orders?.length || 0,
+                receivedAmount: totalReceived,
+                remainingAmount, // ✅ safe (no negatives)
+                notes: sale.note || "N/A",
+                action: "Edit",
+                fullSale: sale,
+              };
+            })
           );
 
           setProductTableData(

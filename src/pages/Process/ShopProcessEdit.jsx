@@ -163,7 +163,26 @@ function ShopProcessEdit() {
         date: payment.date ? payment.date.toISOString() : null,
         reference: payment.reference || "",
       }));
+    const totalReceived = validPayments.reduce(
+      (sum, p) => sum + (p.amount || 0),
+      0
+    );
 
+    const netAmount = saleData?.netAmount || 0;
+
+    // ✅ prevent 0 or negative
+    if (totalReceived < 0) {
+      toast.error("Total received amount must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
+    // ✅ prevent overpayment
+    if (totalReceived > netAmount) {
+      toast.error("Total received amount cannot be greater than Net Amount");
+      setSubmitting(false);
+      return;
+    }
     // Prepare payload matching the provided structure
     const payload = {
       _id: id,

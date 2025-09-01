@@ -108,7 +108,6 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
       return;
     }
 
-    setIsSubmitting(true);
     const formattedPayments = payments.map((payment) => ({
       method: payment.method.value,
       amount: parseFloat(payment.amount),
@@ -120,13 +119,28 @@ function RAModel({ closeRAModal, selectedRA, refreshSalesData }) {
       (sum, payment) => sum + payment.amount,
       0
     );
+    const finalAmount = selectedRA.fullSale?.netAmount || 0;
+
+    if (totalReceived < 0) {
+      toast.error("Total received amount must be greater than 0");
+      return;
+    }
+
+    if (totalReceived > finalAmount) {
+      toast.error("Total received amount cannot be greater than Net Amount");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const amountDue = Math.max(finalAmount - totalReceived, 0); // clamp to 0
 
     const payload = {
       ...selectedRA.fullSale,
       billNumber: selectedRA.billNumber,
       receivedAmount: formattedPayments,
-      finalAmount: selectedRA.netAmount || 0,
-      amountDue: (selectedRA.netAmount || 0) - totalReceived,
+      finalAmount, // ✅ always netAmount
+      amountDue, // ✅ clamped to avoid negative
     };
 
     try {
