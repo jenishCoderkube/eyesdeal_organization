@@ -90,7 +90,6 @@ const menuItems = [
     submenu: [
       { label: "Add Product", link: "/products/add" },
       { label: "Bulk Upload", link: "/products/bulk-upload" },
-      { label: "Bulk Upload Package", link: "/products/bulk-upload-package" },
       { label: "Bulk Edit Product", link: "/products/bulk-edit" },
       { label: "View Products", link: "/products/view" },
       { label: "View Product Attributes", link: "/products/view-attributes" },
@@ -147,10 +146,14 @@ const menuItems = [
     link: "/re-call",
   },
   {
-    label: "Packages Offer",
-    icon: "bi bi-cash-stack",
-    link: "/packages-offer",
+    label: "Packages",
+    icon: "bi bi-cash-stack", // You can adjust the icon as needed
+    submenu: [
+      { label: "Packages List", link: "/packages-offer" },
+      { label: "Bulk Upload Package", link: "/package/bulk-upload-package" },
+    ],
   },
+
   // {
   //   label: "New Sale",
   //   icon: "bi bi-cash-stack", // You can adjust the icon as needed

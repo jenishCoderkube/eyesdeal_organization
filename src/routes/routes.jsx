@@ -526,7 +526,7 @@ const routes = [
   },
   {
     title: "BulkUploadPackage",
-    path: "/products/bulk-upload-package",
+    path: "/package/bulk-upload-package",
     element: (
       <PrivateRoute>
         <BulkUploadPackage />
