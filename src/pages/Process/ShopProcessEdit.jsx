@@ -79,6 +79,41 @@ function ShopProcessEdit() {
     { value: "card", label: "Card" },
     { value: "upi", label: "UPI" },
   ];
+  const recalcTotals = (orders, form) => {
+    let totalQuantity = 0;
+    let totalAmount = 0;
+    let totalTax = 0;
+    let totalDiscount = 0;
+
+    orders.forEach((order) => {
+      ["product", "rightLens", "leftLens"].forEach((key) => {
+        if (order[key]) {
+          totalQuantity += 1;
+          totalAmount += order[key].perPieceAmount || order[key].srp || 0;
+          totalTax += order[key].perPieceTax || 0;
+          totalDiscount += order[key].perPieceDiscount || 0;
+        }
+      });
+    });
+
+    const flatDiscount = parseFloat(form.flatDiscount) || 0;
+    const deliveryCharges = parseFloat(form.deliveryCharges) || 0;
+    const otherCharges = parseFloat(form.otherCharges) || 0;
+
+    const netDiscount = totalDiscount + flatDiscount;
+    const netAmount =
+      totalAmount + totalTax + deliveryCharges + otherCharges - netDiscount;
+
+    setSaleData((prev) => ({
+      ...prev,
+      totalQuantity,
+      totalAmount,
+      totalTax,
+      totalDiscount,
+      netDiscount,
+      netAmount,
+    }));
+  };
 
   const handleAddPayment = () => {
     setPayments([
@@ -99,10 +134,12 @@ function ShopProcessEdit() {
   };
 
   const handleFormChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
+    const updatedForm = {
+      ...formData,
       [field]: value,
-    }));
+    };
+    setFormData(updatedForm);
+    recalcTotals(saleData.orders || [], updatedForm);
   };
 
   const navigate = useNavigate();
@@ -298,25 +335,37 @@ function ShopProcessEdit() {
                             value={item.srp || item.perPieceAmount || ""}
                             onChange={(e) => {
                               const updatedOrders = [...saleData.orders];
-                              const newSRP = parseFloat(e.target.value) || 0;
+                              let newSRP = parseFloat(e.target.value) || 0;
+
+                              // ✅ validation: SRP should not exceed MRP
+                              if (newSRP > (item.mrp || 0)) {
+                                alert("SRP cannot be greater than MRP!");
+                                newSRP = item.mrp || 0;
+                              }
 
                               // update in correct place
                               if (label === "Product") {
                                 updatedOrders[orderIndex].product = {
                                   ...item,
                                   srp: newSRP,
+                                  perPieceAmount: newSRP,
                                 };
                               } else if (label === "Right Lens") {
                                 updatedOrders[orderIndex].rightLens = {
                                   ...item,
                                   srp: newSRP,
+                                  perPieceAmount: newSRP,
                                 };
                               } else if (label === "Left Lens") {
                                 updatedOrders[orderIndex].leftLens = {
                                   ...item,
                                   srp: newSRP,
+                                  perPieceAmount: newSRP,
                                 };
                               }
+
+                              // ✅ recalc totals after SRP update
+                              recalcTotals(updatedOrders, formData);
 
                               setSaleData((prev) => ({
                                 ...prev,
@@ -454,7 +503,7 @@ function ShopProcessEdit() {
                 Received Amount
               </label>
               <button
-              type="button"
+                type="button"
                 className="btn text-primary border-secondary-subtle ms-2"
                 onClick={handleAddPayment}
                 disabled={submitting}
