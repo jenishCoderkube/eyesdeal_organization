@@ -95,8 +95,11 @@ export const saleService = {
     try {
       const params = {
         search,
+        activeInERP: true,
       };
-      const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, { params });
+      const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -159,7 +162,10 @@ export const saleService = {
         "__t[$in][0]": "spectacleLens",
         "__t[$in][1]": "contactLens",
       };
-      const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, { params });
+      const response = await api.get(SALE_ENDPOINTS.LIST_PRODUCT, {
+        ...params,
+        activeInERP: true,
+      });
       return {
         success: true,
         data: response.data,

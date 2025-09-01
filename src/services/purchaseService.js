@@ -5,7 +5,8 @@ import api from "./api";
 const AUTH_ENDPOINTS = {
   STORES: `/stores`,
   VENDORS: "/vendors",
-  PRODUCTS: (search) => `/products/product?search=${search}&manageStock=true`,
+  PRODUCTS: (search) =>
+    `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
