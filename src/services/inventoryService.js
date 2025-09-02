@@ -34,6 +34,7 @@ const INVENTORY_ENDPOINTS = {
     `/products/count/${productType}?${params}`,
   PRODUCT_EXPORT: (productType, params) =>
     `/products/${productType}/export?${params}`,
+  UPDATE_INVENTORY_STATUS: (id) => `/inventory/status/${id}`,
 };
 
 const buildInventoryParams = (
@@ -837,6 +838,24 @@ export const inventoryService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error Upload inventory",
+      };
+    }
+  },
+  updateInventoryStatus: async (id, data) => {
+    try {
+      const response = await api.patch(
+        INVENTORY_ENDPOINTS.UPDATE_INVENTORY_STATUS(id),
+        data
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error updating inventory status",
       };
     }
   },

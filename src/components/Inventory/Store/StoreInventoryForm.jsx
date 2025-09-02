@@ -52,7 +52,6 @@ const StoreInventoryForm = () => {
     initialValues: {
       stores: [],
       selectedProduct: productOptions[0],
-
       brand: null,
       frameType: null,
       frameShape: null,
@@ -151,7 +150,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -167,7 +166,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -183,7 +182,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -199,7 +198,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -215,7 +214,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -231,7 +230,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -247,7 +246,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -263,7 +262,7 @@ const StoreInventoryForm = () => {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error(" error:", error);
+      console.error("error:", error);
     } finally {
       setLoading(false);
     }
@@ -278,7 +277,7 @@ const StoreInventoryForm = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  const getInventoryData = async (values) => {
+  const getInventoryData = async (values = formik.values) => {
     const storeId = values?.stores?.map((option) => option.value);
 
     setLoadingInventory(true);
@@ -312,11 +311,10 @@ const StoreInventoryForm = () => {
     }
   };
 
-  const getInventoryGetCount = async (values) => {
+  const getInventoryGetCount = async (values = formik.values) => {
     const storeId = values?.stores?.map((option) => option.value);
 
     setLoading(true);
-
     try {
       const response = await inventoryService.getInventoryGetCount(
         values?.selectedProduct?.value || productOptions[0]?.value,
@@ -346,6 +344,33 @@ const StoreInventoryForm = () => {
     }
   };
 
+  const handleToggle = async (itemId, newState) => {
+    setLoading(true);
+    try {
+      const response = await inventoryService.updateInventoryStatus(itemId, {
+        is_global: newState, // Changed to is_global to match API
+      });
+      if (response.success) {
+        setInventory((prevInventory) => ({
+          ...prevInventory,
+          docs: prevInventory.docs.map((item) =>
+            item._id === itemId ? { ...item, is_global: newState } : item
+          ),
+        }));
+        toast.success(
+          `Inventory set to ${newState ? "Global" : "Local"} successfully`
+        );
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Toggle error:", error);
+      toast.error("Failed to update Global/Local status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const exportProduct = async (e) => {
     e.preventDefault();
 
@@ -369,41 +394,41 @@ const StoreInventoryForm = () => {
         "Frame Material": product.frameMaterial?.name || "",
         "Frame Color": product.frameColor?.name || "",
         "Frame Size": product.frameSize || "",
+        is_global: item.is_global ? "Global" : "Local", // Add is_global to export
       });
     });
 
     const finalPayload = {
-      data: finalData, // Wrap your array like this
+      data: finalData,
     };
 
     setLoading(true);
 
-    if (finalData) {
+    if (finalData.length > 0) {
       try {
         const response = await inventoryService.exportCsv(finalPayload);
-
         if (response.success) {
-          const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
-
-          // Create a Blob from the CSV string
+          const csvData = response.data;
           const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
           const url = URL.createObjectURL(blob);
-
-          // Create a temporary download link
           const link = document.createElement("a");
           link.href = url;
-          link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+          link.setAttribute("download", "barcodes.csv");
           document.body.appendChild(link);
-          link.click(); // Trigger the download
-          document.body.removeChild(link); // Clean up
+          link.click();
+          document.body.removeChild(link);
         } else {
           toast.error(response.message);
         }
       } catch (error) {
-        console.error("Login error:", error);
+        console.error("Export error:", error);
+        toast.error("Failed to export product data");
       } finally {
         setLoading(false);
       }
+    } else {
+      toast.error("No data to export");
+      setLoading(false);
     }
   };
 
@@ -416,7 +441,6 @@ const StoreInventoryForm = () => {
       const selected = item.product;
       const quantity = parseInt(item.quantity) || 0;
 
-      // for (let i = 0; i < quantity; i++) {
       finalData.push({
         sku: selected.sku,
         Barcode: selected.oldBarcode,
@@ -431,39 +455,40 @@ const StoreInventoryForm = () => {
         "Frame Material": selected?.frameMaterial?.name,
         "Frame Color": selected?.frameColor?.name,
         "Frame Size": selected?.frameSize,
+        is_global: item.is_global ? "Global" : "Local", // Add is_global to export
       });
-      // }
     });
 
     const finalPayload = {
-      data: finalData, // Wrap your array like this
+      data: finalData,
     };
 
     setLoading(true);
 
-    try {
-      const response = await inventoryService.exportCsv(finalPayload);
-
-      if (response.success) {
-        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
-
-        // Create a Blob from the CSV string
-        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-
-        // Create a temporary download link
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
-        document.body.appendChild(link);
-        link.click(); // Trigger the download
-        document.body.removeChild(link); // Clean up
-      } else {
-        toast.error(response.message);
+    if (finalData.length > 0) {
+      try {
+        const response = await inventoryService.exportCsv(finalPayload);
+        if (response.success) {
+          const csvData = response.data;
+          const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", "barcodes_with_cp.csv");
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        console.error("Export error:", error);
+        toast.error("Failed to export product CP data");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Login error:", error);
-    } finally {
+    } else {
+      toast.error("No data to export");
       setLoading(false);
     }
   };
@@ -666,9 +691,9 @@ const StoreInventoryForm = () => {
           <button
             type="submit"
             className="btn custom-button-bgcolor"
-            // disabled={formik.isSubmitting}
+            disabled={loading}
           >
-            Submit
+            {loading ? "Submitting..." : "Submit"}
           </button>
         </div>
       </form>
@@ -676,28 +701,29 @@ const StoreInventoryForm = () => {
       <div className="card p-0 shadow-none border mt-5">
         <h6 className="fw-bold px-3 pt-3">Inventory</h6>
         <div className="card-body p-0">
-          <div className="d-flex flex-column px-3  flex-md-row gap-3 mb-4">
+          <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
             <p className="mb-0 fw-normal text-black">
-              Total Quantity: {inventoryGetCount?.[0]?.totalQuantity}
+              Total Quantity: {inventoryGetCount?.[0]?.totalQuantity || 0}
             </p>
             <p className="mb-0 fw-normal text-black">
-              Total Sold: {inventoryGetCount?.[0]?.totalSold}
+              Total Sold: {inventoryGetCount?.[0]?.totalSold || 0}
             </p>
-
             <button
               className="btn custom-button-bgcolor ms-md-auto"
               onClick={(e) => exportProduct(e)}
+              disabled={loading}
             >
-              Export Product
+              {loading ? "Exporting..." : "Export Product"}
             </button>
             <button
               onClick={(e) => exportProductCp(e)}
               className="btn custom-button-bgcolor"
+              disabled={loading}
             >
-              Export Product CP
+              {loading ? "Exporting..." : "Export Product CP"}
             </button>
           </div>
-          <div className="mb-4  col-md-5">
+          <div className="mb-4 col-md-5">
             <div className="input-group px-2">
               <span className="input-group-text bg-white border-end-0">
                 <FaSearch
@@ -711,91 +737,185 @@ const StoreInventoryForm = () => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
           <div className="table-responsive px-2">
-             {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-           
-            <table className="table table-sm">
-              <thead className="text-xs text-uppercase text-muted bg-light border">
-                <tr>
-                  <th className="custom-perchase-th">Barcode</th>
-                  <th className="custom-perchase-th">Date</th>
-                  <th className="custom-perchase-th">Photo</th>
-                  <th className="custom-perchase-th">Store</th>
-                  <th className="custom-perchase-th">Sku</th>
-                  <th className="custom-perchase-th">Brand</th>
-                  <th className="custom-perchase-th">Mrp</th>
-                  <th className="custom-perchase-th">Stock</th>
-                  <th className="custom-perchase-th">Sold</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {inventory?.docs?.length > 0 ? (
-                  inventory.docs.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td style={{ minWidth: "80px" }}>
-                        {item.product?.newBarcode}
-                      </td>
-                      <td style={{ minWidth: "100px" }}>
-                        {moment(item.product?.createdAt).format("YYYY-MM-DD")}
-                      </td>
-                      <td>
-                        <img
-                          style={{ minWidth: "100px" }}
-                          src={item.photo}
-                          alt="Product"
-                          width="60"
-                          height="40"
-                        />
-                      </td>
-                      <td style={{ minWidth: "200px" }}>{item.store?.name}</td>
-                      <td style={{ minWidth: "210px" }}>{item.product?.sku}</td>
-
-                      <td style={{ minWidth: "200px" }}>
-                        {item.product?.brand?.name} {item.product?.__t}
-                      </td>
-                      <td>{item.product?.MRP}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.sold}</td>
-                    </tr>
-                  ))
-                ) : (
+            {loadingInventory ? (
+              <div className="d-flex justify-content-center">
+                <h4>Loading Data...</h4>
+              </div>
+            ) : (
+              <table className="table table-sm">
+                <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="text-center add_power_title py-3"
-                    >
-                      No data available
-                    </td>
+                    <th className="custom-perchase-th">Barcode</th>
+                    <th className="custom-perchase-th">Date</th>
+                    <th className="custom-perchase-th">Photo</th>
+                    <th className="custom-perchase-th">Store</th>
+                    <th className="custom-perchase-th">Sku</th>
+                    <th className="custom-perchase-th">Brand</th>
+                    <th className="custom-perchase-th">Mrp</th>
+                    <th className="custom-perchase-th">Stock</th>
+                    <th className="custom-perchase-th">Sold</th>
+                    <th className="custom-perchase-th">Global / Local</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-}
+                </thead>
+                <tbody className="text-sm">
+                  {inventory?.docs?.length > 0 ? (
+                    inventory.docs.map((item, index) => (
+                      <tr key={item._id || index}>
+                        <td style={{ minWidth: "80px" }}>
+                          {item.product?.newBarcode || "-"}
+                        </td>
+                        <td style={{ minWidth: "100px" }}>
+                          {item.product?.createdAt
+                            ? moment(item.product.createdAt).format(
+                                "YYYY-MM-DD"
+                              )
+                            : "-"}
+                        </td>
+                        <td>
+                          <img
+                            style={{ minWidth: "100px" }}
+                            src={item.photo || "/placeholder-image.jpg"}
+                            alt="Product"
+                            width="60"
+                            height="40"
+                          />
+                        </td>
+                        <td style={{ minWidth: "200px" }}>
+                          {item.store?.name || "-"}
+                        </td>
+                        <td style={{ minWidth: "210px" }}>
+                          {item.product?.sku || "-"}
+                        </td>
+                        <td style={{ minWidth: "200px" }}>
+                          {item.product?.brand?.name || "-"}{" "}
+                          {item.product?.__t || ""}
+                        </td>
+                        <td>{item.product?.MRP || "-"}</td>
+                        <td>{item.quantity ? item.quantity : "-"}</td>
+                        <td>{item.sold ? item.sold : "-"}</td>
+                        <td style={{ minWidth: "120px" }}>
+                          <label className="switch">
+                            <input
+                              type="checkbox"
+                              checked={item.is_global || false}
+                              onChange={() =>
+                                handleToggle(item._id, !item.is_global)
+                              }
+                              disabled={loading}
+                              aria-label={`Toggle ${
+                                item.is_global ? "Global" : "Local"
+                              } for ${item.product?.sku || "item"}`}
+                            />
+                            <span className="slider"></span>
+                          </label>
+                          <span className="ms-2">
+                            {item.is_global ? "Global" : "Local"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="10"
+                        className="text-center add_power_title py-3"
+                      >
+                        No data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
               Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              <span className="fw-medium">{inventory?.docs?.length || 0}</span>{" "}
+              of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
             <div className="btn-group">
-              <button className="btn btn-outline-primary">Previous</button>
-              <button className="btn btn-outline-primary">Next</button>
+              <button
+                className="btn btn-outline-primary"
+                disabled={!inventory?.hasPrevPage || loading}
+                onClick={() =>
+                  getInventoryData({
+                    ...formik.values,
+                    page: inventory?.prevPage,
+                  })
+                }
+              >
+                Previous
+              </button>
+              <button
+                className="btn btn-outline-primary"
+                disabled={!inventory?.hasNextPage || loading}
+                onClick={() =>
+                  getInventoryData({
+                    ...formik.values,
+                    page: inventory?.nextPage,
+                  })
+                }
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
-        {/* <ImageSliderModal
-        show={showModal}
-        onHide={closeImageModal}
-        images={modalImages}
-      /> */}
-        {/* <InventoryTable data={inventory} /> */}
       </div>
+      <style>
+        {`
+          .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+          }
+          .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+          }
+          .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 20px;
+          }
+          .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+          }
+          input:checked + .slider {
+            background-color: #28a745;
+          }
+          input:checked + .slider:before {
+            transform: translateX(20px);
+          }
+          input:disabled + .slider {
+            cursor: not-allowed;
+            opacity: 0.6;
+          }
+        `}
+      </style>
     </div>
   );
 };

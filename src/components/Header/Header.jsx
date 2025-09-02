@@ -53,6 +53,10 @@ const menuItems = [
       // { label: "Stock Sale In", link: "/inventory/stock-sale-in" },
       { label: "Stock Sale Out", link: "/inventory/stock-sale-out" },
       { label: "Transfer Stock", link: "/inventory/transfer-stock" },
+      {
+        label: "Bulk Upload Transfer Stock",
+        link: "/inventory/transfer-bulk-stock",
+      },
       { label: "Adjustment Stock", link: "/inventory/adjustment-stock" },
       {
         label: "View Adjustment Stock",

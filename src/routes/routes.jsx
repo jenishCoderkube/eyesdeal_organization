@@ -71,6 +71,7 @@ import PackagesOffers from "../pages/Packages/PackagesOffers";
 import BulkUploadPackage from "../pages/Products/BulkUploadPackage";
 import AddPackageOffers from "../pages/Packages/AddPackageOffers";
 import AddPackageProducts from "../pages/Packages/AddPackageProducts";
+import AddBulkStockTransfer from "../pages/Inventory/AddBulkStockTransfer";
 
 const routes = [
   {
@@ -458,6 +459,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <AddStockTransfer />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "AddBulkStockTransfer",
+    path: "/inventory/transfer-bulk-stock",
+    element: (
+      <PrivateRoute>
+        <AddBulkStockTransfer />
       </PrivateRoute>
     ),
   },
