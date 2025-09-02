@@ -358,15 +358,17 @@ const PackagesOffers = () => {
             >
               Add Product
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                navigate(`/products/add-package-offers/${row.original._id}`);
-              }}
-            >
-              Add Offer
-            </Button>
+            {!row?.original?.isBogo && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  navigate(`/products/add-package-offers/${row.original._id}`);
+                }}
+              >
+                Add Offer
+              </Button>
+            )}
             <span
               style={{ cursor: "pointer", color: "#007bff" }}
               title="Edit"
