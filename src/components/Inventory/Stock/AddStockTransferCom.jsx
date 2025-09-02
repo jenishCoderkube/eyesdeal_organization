@@ -1,33 +1,126 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Select from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { debounce } from "lodash";
 import { inventoryService } from "../../../services/inventoryService";
-import { toast } from "react-toastify"; // Assuming toast is imported for error handling
+import { toast } from "react-toastify";
+import moment from "moment";
 
 const AddStockTransferCom = () => {
-  // State for form fields
-  const [from, setFrom] = useState(null); // Initialize as null, will set default later
+  const [from, setFrom] = useState(null);
   const [to, setTo] = useState(null);
-  const [product, setProduct] = useState(null);
-  const [items, setItems] = useState([]);
+  const [products, setProducts] = useState([]); // Array of { productId, stockQuantity, label, availableStock }
   const [productData, setProductData] = useState([]);
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showData, setShowData] = useState([]);
 
-  // Retrieve user data from localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log({ from, to, product, tableData: showData });
-    // Add API call or further logic here
+  // Handle quantity change for a specific product
+  const handleQuantityChange = (productId, value) => {
+    const quantity = Math.max(1, parseInt(value) || 1); // Ensure quantity is at least 1
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.productId === productId
+          ? { ...item, stockQuantity: Math.min(quantity, item.availableStock) } // Cap at available stock
+          : item
+      )
+    );
   };
 
-  const handleProductChange = (selectedOption) => {
-    setItems(selectedOption);
+  // Handle product selection
+  const handleProductChange = async (selectedOptions) => {
+    if (!from) {
+      toast.error("Please select a 'From' store first");
+      return;
+    }
+
+    const newProducts = [];
+    for (const option of selectedOptions || []) {
+      // Check if product is already in the list
+      if (products.find((p) => p.productId === option.value)) {
+        continue; // Skip duplicates
+      }
+
+      setLoading(true);
+      try {
+        const response = await inventoryService.getInventoryByStoreAndProduct(
+          from.value,
+          option.value
+        );
+        const inventoryItem = response?.data?.data?.docs?.[0];
+
+        if (response.success && inventoryItem && inventoryItem.quantity > 0) {
+          newProducts.push({
+            productId: option.value,
+            stockQuantity: 1, // Default quantity
+            label: option.label,
+            availableStock: inventoryItem.quantity, // Store available stock
+          });
+        } else {
+          toast.error(`${option.label} is out of stock in the selected store`);
+        }
+      } catch (error) {
+        console.error("Error checking inventory:", error);
+        toast.error(`Failed to check stock for ${option.label}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Merge new products with existing ones, avoiding duplicates
+    setProducts((prev) => [
+      ...prev,
+      ...newProducts.filter(
+        (np) => !prev.some((p) => p.productId === np.productId)
+      ),
+    ]);
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!from || !to || products.length === 0) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    // Validate quantities against available stock
+    for (const product of products) {
+      if (product.stockQuantity > product.availableStock) {
+        toast.error(
+          `Requested quantity for ${product.label} exceeds available stock (${product.availableStock})`
+        );
+        return;
+      }
+    }
+
+    const payload = {
+      from: from.value,
+      to: to.value,
+      products: products.map(({ productId, stockQuantity }) => ({
+        productId,
+        stockQuantity,
+      })),
+    };
+
+    setLoading(true);
+    try {
+      const response = await inventoryService.createStockTransfer(payload);
+      if (response.success) {
+        toast.success("Stock transfer created successfully");
+        // Reset form
+        setTo(null);
+        setProducts([]);
+      } else {
+        toast.error(response.message || "Failed to create stock transfer");
+      }
+    } catch (error) {
+      console.error("Error creating stock transfer:", error);
+      toast.error("Failed to create stock transfer");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getProduct = async (search) => {
@@ -35,12 +128,13 @@ const AddStockTransferCom = () => {
     try {
       const response = await inventoryService.universalSearch(search);
       if (response.success) {
-        setProductData(response?.data?.data);
+        setProductData(response?.data?.data || []);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -67,65 +161,52 @@ const AddStockTransferCom = () => {
         const stores = response?.data?.data || [];
         setStoreData(stores);
 
-        // Set default 'from' based on user's store ID
         if (user.stores && user.stores.length > 0) {
-          const userStoreId = user.stores[0]; // Use first store ID
+          const userStoreId = user.stores[0];
           const defaultStore = stores.find(
             (store) => store._id === userStoreId
           );
-          if (defaultStore) {
-            setFrom({
-              value: defaultStore._id,
-              label: `${defaultStore.name}${
-                defaultStore.storeNumber ? ` / ${defaultStore.storeNumber}` : ""
-              }`,
-            });
-          } else {
-            // Fallback to hardcoded default if no matching store is found
-            setFrom({
-              value: "27",
-              label: "ELITE HOSPITAL / 27",
-            });
-          }
+          setFrom(
+            defaultStore
+              ? {
+                  value: defaultStore._id,
+                  label: `${defaultStore.name}${
+                    defaultStore.storeNumber
+                      ? ` / ${defaultStore.storeNumber}`
+                      : ""
+                  }`,
+                }
+              : { value: "27", label: "ELITE HOSPITAL / 27" }
+          );
         } else {
-          // Fallback to hardcoded default if no stores in user data
-          setFrom({
-            value: "27",
-            label: "ELITE HOSPITAL / 27",
-          });
+          setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
         }
       } else {
         toast.error(response.message);
-        // Set fallback default if API fails
-        setFrom({
-          value: "27",
-          label: "ELITE HOSPITAL / 27",
-        });
+        setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
       }
     } catch (error) {
       console.error("Error fetching stores:", error);
       toast.error("Failed to load stores");
-      // Set fallback default on error
-      setFrom({
-        value: "27",
-        label: "ELITE HOSPITAL / 27",
-      });
+      setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
     } finally {
       setLoading(false);
     }
   };
 
-  const storeOptions = storeData?.map((vendor) => ({
-    value: vendor._id,
-    label: `${vendor.name}${
-      vendor.storeNumber ? ` / ${vendor.storeNumber}` : ""
-    }`,
-  }));
+  const storeOptions =
+    storeData?.map((vendor) => ({
+      value: vendor._id,
+      label: `${vendor.name}${
+        vendor.storeNumber ? ` / ${vendor.storeNumber}` : ""
+      }`,
+    })) || [];
 
-  const productOptions = productData?.docs?.map((vendor) => ({
-    value: vendor._id,
-    label: `${vendor.oldBarcode} ${vendor.sku}`,
-  }));
+  const productOptions =
+    productData?.docs?.map((vendor) => ({
+      value: vendor._id,
+      label: `${vendor.oldBarcode} ${vendor.sku}`,
+    })) || [];
 
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
@@ -137,95 +218,97 @@ const AddStockTransferCom = () => {
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
               <div className="col-12">
-                <div>
-                  <label htmlFor="from" className="form-label font-weight-500">
-                    From
-                  </label>
-                  <Select
-                    id="from"
-                    value={from}
-                    onChange={setFrom}
-                    options={storeOptions}
-                    isDisabled={true}
-                    className="w-100"
-                    isLoading={loading}
-                    placeholder="Select..."
-                  />
-                </div>
+                <label htmlFor="from" className="form-label font-weight-500">
+                  From
+                </label>
+                <Select
+                  id="from"
+                  value={from}
+                  onChange={setFrom}
+                  options={storeOptions}
+                  isDisabled={true}
+                  className="w-100"
+                  isLoading={loading}
+                  placeholder="Select..."
+                />
               </div>
               <div className="col-12">
-                <div>
-                  <label htmlFor="to" className="form-label font-weight-500">
-                    To
-                  </label>
-                  <Select
-                    id="to"
-                    value={to}
-                    onChange={setTo}
-                    options={storeOptions}
-                    placeholder="Select..."
-                    className="w-100"
-                    isLoading={loading}
-                  />
-                </div>
+                <label htmlFor="to" className="form-label font-weight-500">
+                  To
+                </label>
+                <Select
+                  id="to"
+                  value={to}
+                  onChange={setTo}
+                  options={storeOptions}
+                  placeholder="Select..."
+                  className="w-100"
+                  isLoading={loading}
+                />
               </div>
               <div className="col-12">
-                <div>
-                  <label
-                    htmlFor="product"
-                    className="form-label font-weight-500"
-                  >
-                    Product
-                  </label>
-                  <Select
-                    options={productOptions}
-                    value={items}
-                    onChange={(option) => handleProductChange(option)}
-                    placeholder="Select..."
-                    className="basic-select"
-                    classNamePrefix="select"
-                    onInputChange={(value) => {
-                      debouncedGetProduct(value);
-                    }}
-                    isLoading={loading}
-                    loadingMessage={() => "Loading..."}
-                    noOptionsMessage={({ inputValue }) =>
-                      inputValue ? "No products found" : "Type to search"
-                    }
-                  />
-                </div>
+                <label htmlFor="product" className="form-label font-weight-500">
+                  Products
+                </label>
+                <Select
+                  options={productOptions}
+                  value={products.map((p) => ({
+                    value: p.productId,
+                    label: p.label,
+                  }))}
+                  onChange={handleProductChange}
+                  placeholder="Select products..."
+                  className="basic-select"
+                  classNamePrefix="select"
+                  onInputChange={debouncedGetProduct}
+                  isLoading={loading}
+                  isMulti
+                  loadingMessage={() => "Loading..."}
+                  noOptionsMessage={({ inputValue }) =>
+                    inputValue ? "No products found" : "Type to search"
+                  }
+                />
               </div>
               <div className="col-12">
                 <div className="table-responsive mt-3">
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
                       <tr>
-                        <th className="custom-perchase-th">barcode</th>
-                        <th className="custom-perchase-th">stock</th>
-                        <th className="custom-perchase-th">quantity</th>
-                        <th className="custom-perchase-th">sku</th>
+                        <th className="custom-perchase-th">Barcode</th>
+                        <th className="custom-perchase-th">SKU</th>
+                        <th className="custom-perchase-th">Quantity</th>
+                        <th className="custom-perchase-th">Stock</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {showData?.docs?.length > 0 ? (
-                        showData.docs.map((item, index) => (
-                          <tr key={item.id || index}>
-                            <td>{index + 1}</td>
+                      {products.length > 0 ? (
+                        products.map((item, index) => (
+                          <tr key={item.productId || index}>
+                            <td>{item.label.split(" ")[0]}</td> {/* Barcode */}
+                            <td>{item.label.split(" ")[1]}</td> {/* SKU */}
                             <td>
-                              {moment(item.createdAt).format("YYYY-MM-DD")}
+                              <input
+                                type="number"
+                                min="1"
+                                max={item.availableStock}
+                                value={item.stockQuantity}
+                                onChange={(e) =>
+                                  handleQuantityChange(
+                                    item.productId,
+                                    e.target.value
+                                  )
+                                }
+                                className="form-control form-control-sm w-75"
+                              />
                             </td>
-                            <td>
-                              {item.from.storeNumber}/{item.from.name}
-                            </td>
-                            <td>
-                              {item.to.storeNumber}/{item.to.name}
-                            </td>
+                            <td>{item.availableStock}</td>{" "}
+                            {/* Display actual stock */}
                           </tr>
                         ))
                       ) : (
                         <tr>
                           <td
-                            colSpan="8"
+                            colSpan="4"
                             className="text-center add_power_title py-3"
                           >
                             No data available
@@ -237,8 +320,12 @@ const AddStockTransferCom = () => {
                 </div>
               </div>
               <div className="col-12">
-                <button type="submit" className="btn custom-button-bgcolor">
-                  Submit
+                <button
+                  type="submit"
+                  className="btn custom-button-bgcolor"
+                  disabled={loading || !from || !to || products.length === 0}
+                >
+                  {loading ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </div>
