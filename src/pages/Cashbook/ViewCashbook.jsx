@@ -155,6 +155,26 @@ const ViewCashbook = () => {
     setCurrentPage(1); // Reset to first page on search
     debouncedSearch(query);
   };
+  // Calculate Opening & Closing
+  const calculateOpeningClosing = (data) => {
+    if (!data || data.length === 0) return { opening: 0, closing: 0 };
+
+    const first = data[0];
+    const last = data[data.length - 1];
+
+    let opening = 0;
+    if (first.type === "credit") {
+      opening = first.balance - first.amount;
+    } else {
+      opening = first.balance + first.amount;
+    }
+
+    const closing = last.balance;
+
+    return { opening, closing };
+  };
+
+  const { opening, closing } = calculateOpeningClosing(cashBooks?.docs);
 
   // Handle pagination
   const handlePageChange = (newPage) => {
@@ -267,6 +287,15 @@ const ViewCashbook = () => {
             <div className="card-header border-0 px-4 pt-3">
               <h5 className="fw-bold pt-3">Cashbooks</h5>
             </div>
+            <div className="d-flex gap-x-5">
+              <div className="ms-4">
+                <h6>Opening Amount: {opening}</h6>
+              </div>
+              <div className="ms-4">
+                <h6>Closing Amount: {closing}</h6>
+              </div>
+            </div>
+
             <div className="card-body p-0">
               <div className="mb-4 col-md-5">
                 <div className="input-group px-4">

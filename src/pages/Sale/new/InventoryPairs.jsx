@@ -141,8 +141,8 @@ export default function InventoryPairs({
         const wasAuto = pair.autoFilledRight;
         updatePair(pairId, {
           leftLens: null,
-          autoFilledRight: false,
-          rightLens: wasAuto ? null : pair.rightLens,
+          // autoFilledRight: false,
+          // rightLens: wasAuto ? null : pair.rightLens,
         });
         setInventoryPairs((prev) =>
           prev.filter(
@@ -252,7 +252,7 @@ export default function InventoryPairs({
             type="number"
             value={item.srp}
             onChange={(e) => {
-              const newSrp = Number(e.target.value) || 0;
+              const newSrp = Number(e.target.value) || "";
               // update srp and derived amounts
               setInventoryPairs((prev) =>
                 prev.map((p) => {

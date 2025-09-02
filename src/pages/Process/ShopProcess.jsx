@@ -46,7 +46,7 @@ const debounce = (func, delay) => {
 };
 
 function ShopProcess() {
-  const [activeStatus, setActiveStatus] = useState("Pending");
+  const [activeStatus, setActiveStatus] = useState("New Order");
   const [expandedRows, setExpandedRows] = useState([]);
   const [PrescriptionModelVisible, setPrescriptionModelVisible] =
     useState(false);
@@ -176,7 +176,7 @@ function ShopProcess() {
   const getStatusForTab = useCallback((status) => {
     switch (status) {
       case "New Order":
-        return "inWorkshop";
+        return "pending";
       case "In Process":
         return ["inWorkshop", "inLab"];
       case "In Fitting":
@@ -187,7 +187,7 @@ function ShopProcess() {
         return "delivered";
       case "Returned":
         return "returned";
-      case "Pending":
+
       default:
         return "pending";
     }
@@ -281,7 +281,7 @@ function ShopProcess() {
                   sale.customerName || sale.sale?.customerName || "N/A",
                 phone: sale.customerPhone || sale.sale?.customerPhone || "N/A",
                 storeName: sale.store?.name || "N/A",
-                totalItems: sale.totalQuantity || sale.orders?.length || 0,
+                totalItems: sale.orders?.length || 0,
                 receivedAmount: totalReceived,
                 remainingAmount, // ✅ safe (no negatives)
                 notes: sale.note || "N/A",
@@ -373,7 +373,7 @@ function ShopProcess() {
                 (orderCounts.inWorkshopCount || 0) +
                 (orderCounts.inLabCount || 0) +
                 (orderCounts.inFittingCount || 0),
-              newOrder: orderCounts.inWorkshopCount || 0,
+              newOrder: orderCounts.pendingCount || 0,
               inFitting: orderCounts.inFittingCount || 0,
               ready: orderCounts.readyCount || 0,
               delivered: orderCounts.deliveredCount || 0,
@@ -422,7 +422,7 @@ function ShopProcess() {
                 (orderCounts.inWorkshopCount || 0) +
                 (orderCounts.inLabCount || 0) +
                 (orderCounts.inFittingCount || 0),
-              newOrder: orderCounts.inWorkshopCount || 0,
+              newOrder: orderCounts.pendingCount || 0,
               inFitting: orderCounts.inFittingCount || 0,
               delivered: orderCounts.deliveredCount || 0,
               ready: orderCounts.readyCount || 0,
@@ -537,7 +537,6 @@ function ShopProcess() {
   }, [storeOptions, users?.stores, hasSetDefaultStore, formik]);
 
   const statuses = [
-    { name: "Pending", count: statusCounts.pending },
     { name: "New Order", count: statusCounts.newOrder },
     { name: "In Process", count: statusCounts.inProcess },
     { name: "In Fitting", count: statusCounts.inFitting },
@@ -1636,17 +1635,20 @@ function ShopProcess() {
                         activeStatus === "Ready" ||
                         activeStatus === "In Process" ||
                         activeStatus === "In Fitting" ||
-                        activeStatus === "New Order" ||
-                        activeStatus === "Delivered") && (
+                        activeStatus === "New Order") && (
                         <div className="d-flex flex-column align-items-center justify-content-center">
-                          <button
-                            className="btn btn-sm btn-primary px-0 py-2 mb-2"
-                            style={{ minWidth: "60px", width: "50px" }}
-                            onClick={() => navigate(`/process/shop/${row._id}`)}
-                          >
-                            Edit
-                          </button>
-                          {activeStatus === "Pending" && (
+                          {activeStatus !== "Delivered" && (
+                            <button
+                              className="btn btn-sm btn-primary px-0 py-2 mb-2"
+                              style={{ minWidth: "60px", width: "50px" }}
+                              onClick={() =>
+                                navigate(`/process/shop/${row._id}`)
+                              }
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {activeStatus === "New Order" && (
                             <>
                               <button
                                 className="btn btn-sm btn-danger border px-0 py-2 mb-2"
@@ -1658,7 +1660,8 @@ function ShopProcess() {
                               </button>
                             </>
                           )}
-                          {activeStatus !== "Returned" && (
+                          {(activeStatus !== "Returned" ||
+                            activeStatus !== "Delivered") && (
                             <button
                               className="btn btn-sm border py-2 mb-2"
                               style={{ minWidth: "80px" }}
@@ -1667,15 +1670,15 @@ function ShopProcess() {
                               Assign Power
                             </button>
                           )}
-                          <button
-                            className="btn btn-sm border px-2 py-2"
-                            style={{ minWidth: "60px", width: "80px" }}
-                            onClick={() => openBillInNewTab(row)}
-                          >
-                            View Bill
-                          </button>
                         </div>
                       )}
+                      <button
+                        className="btn btn-sm border px-2 py-2"
+                        style={{ minWidth: "60px", width: "80px" }}
+                        onClick={() => openBillInNewTab(row)}
+                      >
+                        View Bill
+                      </button>
                     </td>
                   )}
                 </tr>
@@ -2056,13 +2059,20 @@ function ShopProcess() {
             {loading ? "Processing..." : "Send for Fitting"}
           </button>
           <button
+            className="btn custom-hover-border mx-2"
+            onClick={handleDeliver}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Deliver"}
+          </button>
+          {/* <button
             className="btn custom-hover-border me-2"
             type="button"
             onClick={handleRevertOrder}
             disabled={loading}
           >
             {loading ? "Processing..." : "Revert Order"}
-          </button>
+          </button> */}
           {/* <button
             className="btn custom-hover-border"
             type="button"
