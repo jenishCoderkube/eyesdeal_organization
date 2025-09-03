@@ -530,7 +530,7 @@ const AddPerchaseCom = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
+              {/* <div className="mt-4">
                 <div className="form-check">
                   <input
                     type="file"
@@ -539,7 +539,7 @@ const AddPerchaseCom = () => {
                     onChange={handleFileUpload}
                   />
                 </div>
-              </div>
+              </div> */}
               <div className="mt-4">
                 <label className="form-label fw-medium mb-2">Product</label>
                 <Select
