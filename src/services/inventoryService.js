@@ -37,6 +37,8 @@ const INVENTORY_ENDPOINTS = {
     `/products/${productType}/export?${params}`,
   UPDATE_INVENTORY_STATUS: (id) => `/inventory/status/${id}`,
   INVENTORY_BY_STORE: (params) => `/inventory?${params}`,
+  STOCKTRANSFER_BULK_UPLOAD: "/stockTransfer/upload/bulk-upload",
+  BULK_INVENTORY_UPLOAD: "/inventory/bulk-upload",
 };
 
 const buildInventoryParams = (
@@ -913,6 +915,68 @@ export const inventoryService = {
         message:
           error.response?.data?.message ||
           "Error fetching inventory by store and product",
+      };
+    }
+  },
+  bulkStockTransferUpload: async (from, to, file) => {
+    try {
+      const formData = new FormData();
+      formData.append("from", from);
+      formData.append("to", to);
+      formData.append("bulkUploadFile", file);
+
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.STOCKTRANSFER_BULK_UPLOAD,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Error uploading stock transfer file",
+      };
+    }
+  },
+  bulkInventoryUpload: async (data) => {
+    try {
+      const formData = new FormData();
+      formData.append("vendorId", data.vendorId);
+      formData.append("invoiceNumber", data.invoiceNumber);
+      formData.append("date", data.date);
+      formData.append("store", data.store);
+      formData.append("isDelivered", data.isDelivered);
+      formData.append("bulkUploadFile", data.bulkUploadFile);
+
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.BULK_INVENTORY_UPLOAD,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error uploading bulk inventory",
       };
     }
   },

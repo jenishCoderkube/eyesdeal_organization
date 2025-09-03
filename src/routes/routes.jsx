@@ -72,6 +72,7 @@ import BulkUploadPackage from "../pages/Products/BulkUploadPackage";
 import AddPackageOffers from "../pages/Packages/AddPackageOffers";
 import AddPackageProducts from "../pages/Packages/AddPackageProducts";
 import AddBulkStockTransfer from "../pages/Inventory/AddBulkStockTransfer";
+import AddBulkPurchase from "../pages/Purchase/AddBulkPurchase";
 
 const routes = [
   {
@@ -189,6 +190,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <ViewPerchase />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "BulkPerchase",
+    path: "/purchase/bulk-purchase",
+    element: (
+      <PrivateRoute>
+        <AddBulkPurchase />
       </PrivateRoute>
     ),
   },

@@ -35,6 +35,7 @@ const menuItems = [
     submenu: [
       { label: "Add Purchase", link: "/purchase/new" },
       { label: "View Purchase", link: "/purchase/list" },
+      { label: "Bulk Purchase ", link: "/purchase/bulk-purchase" },
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
     ],
   },

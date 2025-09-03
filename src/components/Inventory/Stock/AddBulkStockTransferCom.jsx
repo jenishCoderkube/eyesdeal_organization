@@ -1,59 +1,71 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { debounce } from "lodash";
 import { inventoryService } from "../../../services/inventoryService";
-import { toast } from "react-toastify"; // Assuming toast is imported for error handling
+import { toast } from "react-toastify";
 
 const AddBulkStockTransferCom = () => {
   // State for form fields
   const [from, setFrom] = useState(null); // Initialize as null, will set default later
   const [to, setTo] = useState(null);
-  const [product, setProduct] = useState(null);
-  const [items, setItems] = useState([]);
-  const [productData, setProductData] = useState([]);
+  const [file, setFile] = useState(null); // State for file input
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showData, setShowData] = useState([]);
 
   // Retrieve user data from localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.type === "text/csv") {
+      setFile(selectedFile);
+    } else {
+      toast.error("Please upload a valid CSV file");
+      setFile(null);
+      e.target.value = null; // Reset file input
+    }
+  };
+
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ from, to, product, tableData: showData });
-    // Add API call or further logic here
-  };
 
-  const handleProductChange = (selectedOption) => {
-    setItems(selectedOption);
-  };
+    if (!from || !to || !file) {
+      toast.error(
+        "Please select source store, destination store, and upload a CSV file"
+      );
+      return;
+    }
 
-  const getProduct = async (search) => {
+    if (from.value === to.value) {
+      toast.error("Source and destination stores cannot be the same");
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await inventoryService.universalSearch(search);
+      const response = await inventoryService.bulkStockTransferUpload(
+        from.value,
+        to.value,
+        file
+      );
       if (response.success) {
-        setProductData(response?.data?.data);
+        toast.success("Stock transfer successfully");
+        // Reset form
+        setTo(null);
+        setFile(null);
+        document.getElementById("bulkUploadFile").value = null; // Reset file input
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Failed to upload stock transfer");
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
+      toast.error("Error uploading stock transfer");
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  const debouncedGetProduct = useCallback(
-    debounce((value) => {
-      if (value?.trim()) {
-        getProduct(value);
-      }
-    }, 1000),
-    []
-  );
 
   useEffect(() => {
     getStores();
@@ -122,11 +134,6 @@ const AddBulkStockTransferCom = () => {
     }`,
   }));
 
-  const productOptions = productData?.docs?.map((vendor) => ({
-    value: vendor._id,
-    label: `${vendor.oldBarcode} ${vendor.sku}`,
-  }));
-
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
       <h1 className="h2 text-dark fw-bold mb-4 px-md-5 px-2">
@@ -172,73 +179,28 @@ const AddBulkStockTransferCom = () => {
               <div className="col-12">
                 <div>
                   <label
-                    htmlFor="product"
+                    htmlFor="bulkUploadFile"
                     className="form-label font-weight-500"
                   >
-                    Product
+                    Upload CSV File
                   </label>
-                  <Select
-                    options={productOptions}
-                    value={items}
-                    onChange={(option) => handleProductChange(option)}
-                    placeholder="Select..."
-                    className="basic-select"
-                    classNamePrefix="select"
-                    onInputChange={(value) => {
-                      debouncedGetProduct(value);
-                    }}
-                    isLoading={loading}
-                    loadingMessage={() => "Loading..."}
-                    noOptionsMessage={({ inputValue }) =>
-                      inputValue ? "No products found" : "Type to search"
-                    }
+                  <input
+                    type="file"
+                    id="bulkUploadFile"
+                    className="form-control"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    disabled={loading}
                   />
                 </div>
               </div>
               <div className="col-12">
-                <div className="table-responsive mt-3">
-                  <table className="table table-sm">
-                    <thead className="text-xs text-uppercase text-muted bg-light border">
-                      <tr>
-                        <th className="custom-perchase-th">barcode</th>
-                        <th className="custom-perchase-th">stock</th>
-                        <th className="custom-perchase-th">quantity</th>
-                        <th className="custom-perchase-th">sku</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-sm">
-                      {showData?.docs?.length > 0 ? (
-                        showData.docs.map((item, index) => (
-                          <tr key={item.id || index}>
-                            <td>{index + 1}</td>
-                            <td>
-                              {moment(item.createdAt).format("YYYY-MM-DD")}
-                            </td>
-                            <td>
-                              {item.from.storeNumber}/{item.from.name}
-                            </td>
-                            <td>
-                              {item.to.storeNumber}/{item.to.name}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan="8"
-                            className="text-center add_power_title py-3"
-                          >
-                            No data available
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="col-12">
-                <button type="submit" className="btn custom-button-bgcolor">
-                  Submit
+                <button
+                  type="submit"
+                  className="btn custom-button-bgcolor"
+                  disabled={loading}
+                >
+                  {loading ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </div>
