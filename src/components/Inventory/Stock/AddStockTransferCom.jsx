@@ -22,26 +22,36 @@ const AddStockTransferCom = () => {
     setProducts((prev) =>
       prev.map((item) =>
         item.productId === productId
-          ? { ...item, stockQuantity: Math.min(quantity, item.availableStock) } // Cap at available stock
+          ? { ...item, stockQuantity: Math.min(quantity, item.availableStock) }
           : item
       )
     );
   };
 
-  // Handle product selection
+  // Handle product selection and removal
   const handleProductChange = async (selectedOptions) => {
     if (!from) {
       toast.error("Please select a 'From' store first");
       return;
     }
 
-    const newProducts = [];
-    for (const option of selectedOptions || []) {
-      // Check if product is already in the list
-      if (products.find((p) => p.productId === option.value)) {
-        continue; // Skip duplicates
-      }
+    // Create a set of selected product IDs for efficient lookup
+    const selectedProductIds = new Set(
+      selectedOptions.map((option) => option.value)
+    );
 
+    // Keep existing products that are still selected, preserving their stockQuantity
+    const existingProducts = products.filter((p) =>
+      selectedProductIds.has(p.productId)
+    );
+
+    // Identify new products to add (not already in products)
+    const newOptions = selectedOptions.filter(
+      (option) => !products.some((p) => p.productId === option.value)
+    );
+
+    const newProducts = [];
+    for (const option of newOptions) {
       setLoading(true);
       try {
         const response = await inventoryService.getInventoryByStoreAndProduct(
@@ -68,13 +78,13 @@ const AddStockTransferCom = () => {
       }
     }
 
-    // Merge new products with existing ones, avoiding duplicates
-    setProducts((prev) => [
-      ...prev,
-      ...newProducts.filter(
-        (np) => !prev.some((p) => p.productId === np.productId)
-      ),
-    ]);
+    // Update products state: keep existing products that are still selected + add new products
+    setProducts([...existingProducts, ...newProducts]);
+  };
+
+  // Handle removing a product via table button
+  const handleRemoveProduct = (productId) => {
+    setProducts((prev) => prev.filter((item) => item.productId !== productId));
   };
 
   // Handle form submission
@@ -278,6 +288,7 @@ const AddStockTransferCom = () => {
                         <th className="custom-perchase-th">SKU</th>
                         <th className="custom-perchase-th">Quantity</th>
                         <th className="custom-perchase-th">Stock</th>
+                        <th className="custom-perchase-th">Action</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -301,14 +312,24 @@ const AddStockTransferCom = () => {
                                 className="form-control form-control-sm w-75"
                               />
                             </td>
-                            <td>{item.availableStock}</td>{" "}
-                            {/* Display actual stock */}
+                            <td>{item.availableStock}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                onClick={() =>
+                                  handleRemoveProduct(item.productId)
+                                }
+                              >
+                                Remove
+                              </button>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
                           <td
-                            colSpan="4"
+                            colSpan="5"
                             className="text-center add_power_title py-3"
                           >
                             No data available
