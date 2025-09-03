@@ -32,13 +32,13 @@ function ViewPurchase() {
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [filterType, setFilterType] = useState({
     value: "vendor",
-    label: "Vendor",
+    label: "Purchase",
   });
   const [invoiceData, setInvoiceData] = useState([]);
 
   const filterOptions = [
-    { value: "vendor", label: "Vendor" },
-    { value: "invoice", label: "Invoice" },
+    { value: "vendor", label: "Purchase" },
+    { value: "invoice", label: "Vendor Invoice" },
   ];
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
