@@ -5,19 +5,23 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaArrowLeft, FaArrowRight, FaSearch } from "react-icons/fa";
 import { purchaseService } from "../../services/purchaseService";
-import { printLogs } from "../../utils/constants";
 import { toast } from "react-toastify";
 import moment from "moment";
 import PurchaseModal from "../../components/Perchase/PurchaseModal";
 import CommonButton from "../../components/CommonButton/CommonButton";
+
 function ViewPurchase() {
-  const [vendor, setVendor] = useState(null);
-  const [store, setStore] = useState(null);
+  const [vendor, setVendor] = useState([]);
+  const [store, setStore] = useState([]);
   const [fromDate, setFromDate] = useState(() => {
     const previousDate = new Date();
     previousDate.setDate(previousDate.getDate() - 1);
     return previousDate;
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage] = useState(10); // you can make this selectable
+  const [totalResults, setTotalResults] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [toDate, setToDate] = useState(new Date());
   const [search, setSearch] = useState("");
   const [vendorData, setVendorData] = useState([]);
@@ -26,19 +30,26 @@ function ViewPurchase() {
   const [purchaseData, setPurchaseData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
-  console.log("purchaseData", purchaseData);
+  const [filterType, setFilterType] = useState({
+    value: "vendor",
+    label: "Vendor",
+  });
+  const [invoiceData, setInvoiceData] = useState([]);
 
-  const handleSubmit = (e) => {
-    // e.preventDefault();
-    // getPurchaseLogs();
-    // Handle form submission
-  };
+  const filterOptions = [
+    { value: "vendor", label: "Vendor" },
+    { value: "invoice", label: "Invoice" },
+  ];
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
 
+  // Fetch vendors and stores on component mount
   useEffect(() => {
-    getVendor();
+    getVendors(); // Call getVendors by default
     getStores();
-  }, []); // run only once when component mounts
+  }, []);
 
+  // Set default store based on localStorage
   useEffect(() => {
     const storedStoreId = JSON.parse(localStorage.getItem("user"))?.stores?.[0];
     if (storedStoreId && storeData.length > 0) {
@@ -54,33 +65,9 @@ function ViewPurchase() {
         ]);
       }
     }
-  }, [storeData]); // run when storeData updates
+  }, [storeData]);
 
-  const getPurchaseLogs = async () => {
-    const vendorId = vendor.map((option) => option.value);
-    const storeId = store.map((option) => option.value);
-    setLoading(true);
-
-    try {
-      const response = await purchaseService.getPurchaseLog(
-        fromDate.getTime(),
-        toDate.getTime(),
-        storeId,
-        vendorId
-      );
-      if (response.success) {
-        console.log("response", response?.data?.data);
-        setPurchaseData(response?.data?.data);
-      } else {
-        toast.error(response.message);
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const getVendor = async () => {
+  const getVendors = async () => {
     setLoading(true);
     try {
       const response = await purchaseService.getVendors();
@@ -90,7 +77,8 @@ function ViewPurchase() {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Vendor fetch error:", error);
+      toast.error("Failed to fetch vendors");
     } finally {
       setLoading(false);
     }
@@ -106,7 +94,63 @@ function ViewPurchase() {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Store fetch error:", error);
+      toast.error("Failed to fetch stores");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInvoices = async (page = 1) => {
+    const vendorId = vendor.map((option) => option.value);
+    const storeId = store.map((option) => option.value);
+    setLoading(true);
+    try {
+      const response = await purchaseService.getInvoices(
+        fromDate.getTime(),
+        toDate.getTime(),
+        storeId,
+        vendorId,
+        page,
+        rowsPerPage // ✅ pass limit
+      );
+      if (response.success) {
+        setInvoiceData(response?.data?.data?.data); // page data
+        setTotalPages(response?.data?.data?.totalPages);
+        setTotalResults(response?.data?.data?.totalRecords);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Invoice fetch error:", error);
+      toast.error("Failed to fetch invoices");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const getPurchaseLogs = async (page = 1) => {
+    const vendorId = vendor.map((option) => option.value);
+    const storeId = store.map((option) => option.value);
+    setLoading(true);
+    try {
+      const response = await purchaseService.getPurchaseLog(
+        fromDate.getTime(),
+        toDate.getTime(),
+        storeId,
+        vendorId,
+        page,
+        rowsPerPage
+      );
+      if (response.success) {
+        setPurchaseData(response?.data?.data?.docs);
+        setTotalPages(response?.data?.data?.totalPages);
+        setTotalResults(response?.data?.data?.totalDocs);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Purchase log fetch error:", error);
+      toast.error("Failed to fetch purchase logs");
     } finally {
       setLoading(false);
     }
@@ -117,25 +161,32 @@ function ViewPurchase() {
     label: vendor.companyName,
   }));
 
-  const storeOptions = storeData?.map((vendor) => ({
-    value: vendor._id,
-    label: `${vendor.name}`,
+  const storeOptions = storeData?.map((store) => ({
+    value: store._id,
+    label: store.name,
   }));
 
   const btnSubmit = (e) => {
     e.preventDefault();
-    getPurchaseLogs();
+    if (filterType.value === "vendor") {
+      getPurchaseLogs();
+    } else if (filterType.value === "invoice") {
+      const vendorId = vendor.map((option) => option.value); // get selected vendor(s)
+      getInvoices(vendorId);
+    }
   };
+
   const handleViewClick = (purchase) => {
     setSelectedPurchase(purchase);
     setShowModal(true);
   };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedPurchase(null);
   };
 
-  const filteredData = purchaseData?.docs?.filter((item) => {
+  const filteredData = purchaseData?.filter((item) => {
     const searchText = search.toLowerCase();
     return (
       item?.vendor?.companyName?.toLowerCase().includes(searchText) ||
@@ -145,79 +196,78 @@ function ViewPurchase() {
       String(item?.netAmount).includes(searchText)
     );
   });
-  console.log("filteredData", filteredData);
 
-  const handleDownload = async (e) => {
+  const filteredInvoiceData = invoiceData?.filter((item) => {
+    const searchText = search.toLowerCase();
+    return (
+      item?.vendor?.companyName?.toLowerCase().includes(searchText) ||
+      item?.store?.companyName?.toLowerCase().includes(searchText) ||
+      item?.invoiceNumber?.toLowerCase().includes(searchText) ||
+      moment(item?.invoiceDate).format("DD-MM-YYYY").includes(searchText)
+    );
+  });
+
+  const handleDownload = async (e, invoice) => {
     e.preventDefault();
-
-    let finalData = []; // Initialize the finalData array
-
-    filteredData?.forEach((item) => {
-      const selected = item?.products; // Assuming 'products' is an array
-      selected?.forEach((product) => {
-        // Loop through each product
-        const sku = product?.product?.sku;
-        const newBarcode = product?.product?.newBarcode;
-        const sellPrice = product?.product?.sellPrice;
-        const quantity = parseInt(product.quantity) || 0;
-
-        console.log("Selected Product:", quantity);
-
-        // Push to finalData based on quantity
-        for (let i = 0; i < quantity; i++) {
-          finalData.push({
-            sku: sku,
-            barcode: newBarcode,
-            price: sellPrice,
-          });
-        }
-      });
+    let finalData = [];
+    invoice?.jobWorks?.forEach((job) => {
+      const lens = job?.lens;
+      const quantity = job?.sale?.totalQuantity || 1;
+      for (let i = 0; i < quantity; i++) {
+        finalData.push({
+          sku: lens?.sku,
+          barcode: lens?.barcode,
+          price: lens?.mrp,
+        });
+      }
     });
-
-    // Wrap finalData inside an object with a 'data' key
-    const result = {
-      data: finalData,
-    };
-
-    console.log("result", result); // This will log the final object in the desired format
-
+    const result = { data: finalData };
     setLoading(true);
-
     try {
       const response = await purchaseService.exportCsv(result);
-
       if (response.success) {
-        const csvData = response.data; // string: e.g., "sku,barcode,price\n7STAR-9005-46,10027,1350"
-
-        // Create a Blob from the CSV string
+        const csvData = response.data;
         const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
-
-        // Create a temporary download link
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", "barcodes.csv"); // Set the desired filename
+        link.setAttribute("download", `invoice_${invoice?.invoiceNumber}.csv`);
         document.body.appendChild(link);
-        link.click(); // Trigger the download
-        document.body.removeChild(link); // Clean up
+        link.click();
+        document.body.removeChild(link);
       } else {
         toast.error(response.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Export CSV error:", error);
+      toast.error("Failed to export CSV");
     } finally {
       setLoading(false);
     }
-
-    // Call your API here with `finalData`
   };
 
   return (
     <div className="container-fluid p-md-5">
-      <div className=" border-0 mb-4 px-md-3">
+      <div className="border-0 mb-4 px-md-3">
         <div className="">
           <form>
             <div className="row g-3">
+              <div className="col-md-3">
+                <label
+                  htmlFor="filterType"
+                  className="form-label font-weight-600"
+                >
+                  FILTER BY
+                </label>
+                <Select
+                  options={filterOptions}
+                  value={filterType}
+                  onChange={(selected) => {
+                    setFilterType(selected);
+                  }}
+                  placeholder="Select filter"
+                />
+              </div>
               <div className="col-md-3">
                 <label
                   htmlFor="vendorName"
@@ -271,7 +321,7 @@ function ViewPurchase() {
                   dateFormat="dd/MM/yyyy"
                 />
               </div>
-              <div className="col-12 mt-3 ">
+              <div className="col-12 mt-3">
                 <CommonButton
                   loading={loading}
                   buttonText="Submit"
@@ -283,11 +333,12 @@ function ViewPurchase() {
           </form>
         </div>
       </div>
-
       <div className="px-md-3">
         <div className="card shadow-none border">
           <div className="">
-            <h4 className="h6 mb-0 p-3 fw-bold">Purchases</h4>
+            <h4 className="h6 mb-0 p-3 fw-bold">
+              {filterType.value === "invoice" ? "Invoices" : "Purchases"}
+            </h4>
           </div>
           <div className="">
             <div className="mb-3 mx-2">
@@ -308,99 +359,203 @@ function ViewPurchase() {
               </div>
             </div>
             <div className="table-responsive px-2">
-              <table className="table border-top table-hover">
-                <thead className="table-light">
-                  <tr>
-                    <th scope="col" className="custom-perchase-th py-3">
-                      SRNO
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      VENDOR
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      STORE
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      DATE
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      QTY
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      AMOUNT
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      ACTION
-                    </th>
-                    <th scope="col" className="custom-perchase-th">
-                      BARCODE
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {purchaseData?.docs?.length > 0 ? (
-                    purchaseData?.docs?.map((item, index) => (
-                      <tr key={index}>
-                        <td>{index + 1}</td>
-                        <td>{item?.vendor?.companyName}</td>
-                        <td>{item?.store?.companyName}</td>
-                        <td>
-                          {moment(item?.invoiceDate).format("DD-MM-YYYY")}
-                        </td>
-                        <td>{item?.totalQuantity}</td>
-                        <td>{item?.netAmount}</td>
-                        <td role="button" onClick={() => handleViewClick(item)}>
-                          <i className="bi bi-eye text-primary"></i>
-                        </td>
-                        <td>
-                          <div
-                            onClick={(e) => handleDownload(e)}
-                            className="btn btn-sm btn-primary"
+              {filterType.value === "invoice" ? (
+                <table className="table border-top table-hover">
+                  <thead className="table-light">
+                    <tr>
+                      <th scope="col" className="custom-perchase-th py-3">
+                        SRNO
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        INVOICE NO
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        VENDOR
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        STORE
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        DATE
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        CUSTOMER
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        ITEM
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        AMOUNT
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        ACTION
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        BARCODE
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInvoiceData?.length > 0 ? (
+                      filteredInvoiceData.map((invoice, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>{invoice?.invoiceNumber || "N/A"}</td>
+                          <td>{invoice?.vendor?.companyName || "N/A"}</td>
+                          <td>{invoice?.store?.companyName || "N/A"}</td>
+                          <td>
+                            {moment(invoice?.invoiceDate).format("DD-MM-YYYY")}
+                          </td>
+                          <td>
+                            {invoice?.jobWorks?.[0]?.sale?.customerName ||
+                              "N/A"}
+                          </td>
+                          <td>{invoice?.jobWorks?.[0]?.lens?.sku || "N/A"}</td>
+                          <td>
+                            {invoice?.jobWorks?.[0]?.sale?.netAmount || "N/A"}
+                          </td>
+                          <td
+                            role="button"
+                            onClick={() => handleViewClick(invoice)}
                           >
-                            DOWNLOAD
-                          </div>
+                            <i className="bi bi-eye text-primary"></i>
+                          </td>
+                          <td>
+                            <div
+                              onClick={(e) => handleDownload(e, invoice)}
+                              className="btn btn-sm btn-primary"
+                            >
+                              DOWNLOAD
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="10"
+                          className="px-4 py-3 text-center custom-perchase-th"
+                        >
+                          No data found
                         </td>
                       </tr>
-                    ))
-                  ) : (
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="table border-top table-hover">
+                  <thead className="table-light">
                     <tr>
-                      <td
-                        colSpan="8"
-                        className="px-4 py-3 text-center custom-perchase-th"
-                      >
-                        No data found
-                      </td>
+                      <th scope="col" className="custom-perchase-th py-3">
+                        SRNO
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        VENDOR
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        STORE
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        DATE
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        QTY
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        AMOUNT
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        ACTION
+                      </th>
+                      <th scope="col" className="custom-perchase-th">
+                        BARCODE
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredData?.length > 0 ? (
+                      filteredData?.map((item, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>{item?.vendor?.companyName}</td>
+                          <td>{item?.store?.companyName}</td>
+                          <td>
+                            {moment(item?.invoiceDate).format("DD-MM-YYYY")}
+                          </td>
+                          <td>{item?.totalQuantity}</td>
+                          <td>{item?.netAmount}</td>
+                          <td
+                            role="button"
+                            onClick={() => handleViewClick(item)}
+                          >
+                            <i className="bi bi-eye text-primary"></i>
+                          </td>
+                          <td>
+                            <div
+                              onClick={(e) => handleDownload(e, item)}
+                              className="btn btn-sm btn-primary"
+                            >
+                              DOWNLOAD
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="8"
+                          className="px-4 py-3 text-center custom-perchase-th"
+                        >
+                          No data found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
-            <div className="d-flex px-3 justify-content-between align-items-center ">
+            <div className="d-flex px-3 justify-content-between align-items-center">
               <div className="text-muted fw-normal">
-                Showing <span className="fw-medium">1</span> to{" "}
-                <span className="fw-medium">0</span> of{" "}
-                <span className="fw-medium">0</span> results
+                Showing{" "}
+                <span className="fw-medium">
+                  {totalResults > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}
+                </span>{" "}
+                to{" "}
+                <span className="fw-medium">
+                  {Math.min(currentPage * rowsPerPage, totalResults)}
+                </span>{" "}
+                of <span className="fw-medium">{totalResults}</span> results
               </div>
-              <nav
-                className=" sm:mb-0 sm:order-1"
-                role="navigation"
-                aria-label="Navigation"
-              >
-                <ul className="d-flex justify-content-center  list-unstyled">
+              <nav role="navigation" aria-label="Navigation">
+                <ul className="d-flex justify-content-center list-unstyled">
                   <li className="me-3">
                     <button
-                      className="btn bg-white border border-3  text-secondary disabled:cursor-not-allowed disabled:text-muted disabled:border-muted"
-                      disabled
+                      className="btn bg-white border"
+                      onClick={() => {
+                        const newPage = currentPage - 1;
+                        setCurrentPage(newPage);
+                        filterType.value === "invoice"
+                          ? getInvoices(newPage)
+                          : getPurchaseLogs(newPage);
+                      }}
+                      disabled={currentPage === 1}
                     >
-                      <FaArrowLeft className="me-1  text-secondary" /> Previous
+                      <FaArrowLeft className="me-1" /> Previous
                     </button>
                   </li>
                   <li>
                     <button
-                      className="btn bg-white border border-3 text-secondary disabled:cursor-not-allowed disabled:text-muted disabled:border-muted"
-                      disabled
+                      className="btn bg-white border"
+                      onClick={() => {
+                        const newPage = currentPage + 1;
+                        setCurrentPage(newPage);
+                        filterType.value === "invoice"
+                          ? getInvoices(newPage)
+                          : getPurchaseLogs(newPage);
+                      }}
+                      disabled={currentPage === totalPages || totalPages === 0}
                     >
-                      Next <FaArrowRight className="ms-1  text-secondary" />
+                      Next <FaArrowRight className="ms-1" />
                     </button>
                   </li>
                 </ul>

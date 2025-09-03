@@ -28,19 +28,34 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
   // Custom global filter function
   const filterGlobally = useMemo(
     () => (data, query) => {
-      if (!query) return data;
+      if (!query || !data) return data;
       const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [
-          item.product.newBarcode.toString(),
-          item.product.sku,
-          item.quantity.toString(),
-          item.purchaseRate.toString(),
-          item.tax.toString(),
-          item.totalDiscount.toString(),
-          item.totalAmount.toString(),
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
-      );
+      return data.filter((item) => {
+        if (item.product) {
+          // For purchase logs (products)
+          return [
+            item.product.newBarcode?.toString(),
+            item.product.sku,
+            item.quantity?.toString(),
+            item.purchaseRate?.toString(),
+            item.tax?.toString(),
+            item.totalDiscount?.toString(),
+            item.totalAmount?.toString(),
+          ].some((field) => field?.toLowerCase().includes(lowerQuery));
+        } else if (item.lens) {
+          // For invoices (jobWorks)
+          return [
+            item.lens.barcode?.toString(),
+            item.lens.sku,
+            item.sale?.totalQuantity?.toString(),
+            item.lens.mrp?.toString(),
+            item.sale?.totalTax?.toString(),
+            item.sale?.totalDiscount?.toString(),
+            item.sale?.netAmount?.toString(),
+          ].some((field) => field?.toLowerCase().includes(lowerQuery));
+        }
+        return false;
+      });
     },
     []
   );
@@ -48,8 +63,9 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
   // Debounced filter logic
   useEffect(() => {
     if (!purchase) return; // Skip filtering if no purchase
+    const data = purchase.products || purchase.jobWorks || [];
     const debouncedFilter = debounce((query) => {
-      setFilteredProducts(filterGlobally(purchase.products, query));
+      setFilteredProducts(filterGlobally(data, query));
     }, 200);
 
     debouncedFilter(searchQuery);
@@ -58,13 +74,25 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
   }, [searchQuery, purchase, filterGlobally]);
 
   // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredProducts || (purchase ? purchase.products : []);
+  const tableData =
+    filteredProducts ||
+    (purchase ? purchase.products || purchase.jobWorks || [] : []);
 
   // Calculate totals for display
-  const totalQuantity = tableData.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = tableData
-    .reduce((sum, item) => sum + item.totalAmount, 0)
-    .toFixed(2);
+  const totalQuantity =
+    tableData.length > 0
+      ? tableData.reduce((sum, item) => {
+          return sum + (item.quantity || item.sale?.totalQuantity || 0);
+        }, 0)
+      : 0;
+  const totalAmount =
+    tableData.length > 0
+      ? tableData
+          .reduce((sum, item) => {
+            return sum + (item.totalAmount || item.sale?.netAmount || 0);
+          }, 0)
+          .toFixed(2)
+      : "0.00";
 
   // Define table columns
   const columns = useMemo(
@@ -72,47 +100,85 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
       {
         accessorKey: "product.newBarcode",
         header: "BARCODE",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.product?.newBarcode ||
+              row.original.lens?.barcode ||
+              "N/A"}
+          </div>
+        ),
       },
       {
         accessorKey: "product.sku",
         header: "SKU",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.product?.sku || row.original.lens?.sku || "N/A"}
+          </div>
+        ),
       },
       {
         accessorKey: "quantity",
         header: "QTY",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.quantity || row.original.sale?.totalQuantity || "N/A"}
+          </div>
+        ),
       },
       {
         accessorKey: "purchaseRate",
-        header: "PUR RATE",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        header: "RATE",
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.purchaseRate || row.original.lens?.mrp || "N/A"}
+          </div>
+        ),
       },
       {
         accessorKey: "tax",
         header: "TAX",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.tax || row.original.sale?.totalTax || "N/A"}
+          </div>
+        ),
       },
       {
         accessorFn: (row) => {
-          // Combine tax1 and tax2, for example add them
-          const tax1 = row.purchaseRate || 0;
-          const tax2 = row.tax || 0;
-          return (tax1 * tax2) / 100;
+          if (row.product) {
+            const tax1 = row.purchaseRate || 0;
+            const tax2 = row.tax || 0;
+            return (tax1 * tax2) / 100;
+          } else if (row.lens) {
+            const tax1 = row.lens.mrp || 0;
+            const tax2 = row.sale?.totalTax || 0;
+            return tax2; // Assuming totalTax is the computed tax amount
+          }
+          return 0;
         },
         header: "TAX AMOUNT",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
         accessorKey: "totalDiscount",
         header: "DISCOUNT",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.totalDiscount ||
+              row.original.sale?.totalDiscount ||
+              "N/A"}
+          </div>
+        ),
       },
       {
         accessorKey: "totalAmount",
         header: "TOTAL",
-        cell: ({ getValue }) => <div className="text-left ">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.totalAmount || row.original.sale?.netAmount || "N/A"}
+          </div>
+        ),
       },
     ],
     []
@@ -127,7 +193,7 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 20, // Larger page size for "big model"
+        pageSize: 20,
       },
     },
   });
@@ -135,18 +201,33 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
   // Export to Excel
   const exportToExcel = () => {
     if (!purchase) return;
-    const worksheet = XLSX.utils.json_to_sheet(
-      tableData.map((item) => ({
-        Barcode: item.product.newBarcode,
-        SKU: item.product.sku,
-        Quantity: item.quantity,
-        "Purchase Rate": item.purchaseRate,
-        Tax: item.product.tax,
-        "Tax Amount": item.tax,
-        Discount: item.totalDiscount,
-        Total: item.totalAmount,
-      }))
-    );
+    const data = tableData.map((item) => {
+      if (item.product) {
+        return {
+          Barcode: item.product.newBarcode,
+          SKU: item.product.sku,
+          Quantity: item.quantity,
+          "Purchase Rate": item.purchaseRate,
+          Tax: item.tax,
+          "Tax Amount": (item.purchaseRate * item.tax) / 100,
+          Discount: item.totalDiscount,
+          Total: item.totalAmount,
+        };
+      } else if (item.lens) {
+        return {
+          Barcode: item.lens.barcode,
+          SKU: item.lens.sku,
+          Quantity: item.sale?.totalQuantity,
+          "Purchase Rate": item.lens.mrp,
+          Tax: item.sale?.totalTax,
+          "Tax Amount": item.sale?.totalTax,
+          Discount: item.sale?.totalDiscount,
+          Total: item.sale?.netAmount,
+        };
+      }
+      return {};
+    });
+    const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Products");
     XLSX.writeFile(workbook, `Purchase_${purchase.invoiceNumber}.xlsx`);
@@ -180,7 +261,7 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
                 Store: {purchase.store.name}
               </div>
               <button variant="link" className="p-0" onClick={onHide}>
-                <i class="bi bi-x fs-1"></i>
+                <i className="bi bi-x fs-1"></i>
               </button>
             </div>
           </div>
@@ -188,25 +269,25 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
           {/* Purchase Info */}
           <div className="px-4 py-4">
             {/* Vendor, Bill No, Bill Date */}
-            <div className=" d-flex flex-wrap justify-content-around gap-5 mx-auto mb-4">
-              <div className=" mb-3 mb-md-0">
-                <p className=" mb-0 font-size-normal font-size-normal">
+            <div className="d-flex flex-wrap justify-content-around gap-5 mx-auto mb-4">
+              <div className="mb-3 mb-md-0">
+                <p className="mb-0 font-size-normal">
                   VENDOR:{" "}
-                  <span className="font-size-normal ">
+                  <span className="font-size-normal">
                     {purchase.vendor.companyName}
                   </span>
                 </p>
               </div>
-              <div className=" mb-3 mb-md-0">
-                <p className=" mb-0 font-size-normal font-size-normal">
+              <div className="mb-3 mb-md-0">
+                <p className="mb-0 font-size-normal">
                   Bill No:{" "}
                   <span className="font-size-normal">
                     {purchase.invoiceNumber}
                   </span>
                 </p>
               </div>
-              <div className=" mb-3 mb-md-0">
-                <p className=" mb-0 font-size-normal">
+              <div className="mb-3 mb-md-0">
+                <p className="mb-0 font-size-normal">
                   BILL DATE:{" "}
                   <span className="font-size-normal">
                     {moment(purchase.invoiceDate).format("DD/MM/YYYY")}
@@ -217,67 +298,75 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
 
             {/* Totals */}
             <div className="w-full ms-md-5 mx-auto">
-              <div className="row  row-cols-1 ms-md-4 row-cols-sm-2 row-cols-md-5 justify-content-start  gap-2 text-start mb-4">
+              <div className="row row-cols-1 ms-md-4 row-cols-sm-2 row-cols-md-5 justify-content-start gap-2 text-start mb-4">
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     TOTAL QTY:{" "}
-                    <span className="font-size-normal">
-                      {purchase.totalQuantity}
-                    </span>
+                    <span className="font-size-normal">{totalQuantity}</span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  ま
+                  <p className="mb-0 font-size-normal">
                     TOTAL AMT:{" "}
-                    <span className="font-size-normal">
-                      {purchase.totalAmount}
-                    </span>
+                    <span className="font-size-normal">{totalAmount}</span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     TOTAL TAX:{" "}
                     <span className="font-size-normal">
-                      {purchase.totalTax}
+                      {purchase.totalTax ||
+                        purchase.jobWorks?.[0]?.sale?.totalTax ||
+                        "N/A"}
                     </span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     TOTAL DISC:{" "}
                     <span className="font-size-normal">
-                      {purchase.totalDiscount}
+                      {purchase.totalDiscount ||
+                        purchase.jobWorks?.[0]?.sale?.totalDiscount ||
+                        "N/A"}
                     </span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     OTHER CHARGE:{" "}
                     <span className="font-size-normal">
-                      {purchase.otherCharges}
+                      {purchase.otherCharges ||
+                        purchase.jobWorks?.[0]?.sale?.otherCharges ||
+                        "N/A"}
                     </span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     FLAT DISC:{" "}
                     <span className="font-size-normal">
-                      {purchase.flatDiscount}
+                      {purchase.flatDiscount ||
+                        purchase.jobWorks?.[0]?.sale?.flatDiscount ||
+                        "N/A"}
                     </span>
                   </p>
                 </div>
                 <div className="col mb-2">
-                  <p className=" mb-0 font-size-normal">
+                  <p className="mb-0 font-size-normal">
                     NET AMT:{" "}
                     <span className="font-size-normal">
-                      {purchase.netAmount}
+                      {purchase.netAmount ||
+                        purchase.jobWorks?.[0]?.sale?.netAmount ||
+                        "N/A"}
                     </span>
                   </p>
                 </div>
               </div>
             </div>
+
             {/* Products Table */}
-            <div className="bg-white  rounded-sm border border-slate-200">
+            <div className="bg-white rounded-sm border border-slate-200">
               <div className="px-4 py-4">
                 <div className="d-flex flex-column flex-md-row gap-3 mb-4">
                   <p className="mb-0 font-size-normal fw-normal text-black">

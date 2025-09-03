@@ -8,6 +8,7 @@ const AUTH_ENDPOINTS = {
   PRODUCTS: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
+  INVOICELOG: (params) => `/vendors/getinvoice?${params}`,
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   ADD_INVENTORY: "/inventory",
@@ -17,14 +18,17 @@ const buildPurchaseLogParams = (
   invoiceDateGte,
   invoiceDateLte,
   storeIds = [],
-  vendorIds = []
+  vendorIds = [],
+  page,
+  rowsPerPage
 ) => {
   const params = new URLSearchParams();
 
   // Invoice date filters
   if (invoiceDateGte) params.append("invoiceDate[$gte]", invoiceDateGte);
   if (invoiceDateLte) params.append("invoiceDate[$lte]", invoiceDateLte);
-
+  params.append("page", page);
+  params.append("limit", rowsPerPage);
   // Store IDs
   storeIds.forEach((storeId, index) => {
     params.append(`optimize[store][$in][${index}]`, storeId);
@@ -117,14 +121,18 @@ export const purchaseService = {
     invoiceDateGte,
     invoiceDateLte,
     storeIds = [],
-    vendorIds = []
+    vendorIds = [],
+    page,
+    rowsPerPage
   ) => {
     try {
       let params = buildPurchaseLogParams(
         invoiceDateGte,
         invoiceDateLte,
         storeIds,
-        vendorIds
+        vendorIds,
+        page,
+        rowsPerPage
       );
       const response = await api.get(AUTH_ENDPOINTS.PURCHASELOG(params));
 
@@ -141,7 +149,40 @@ export const purchaseService = {
       };
     }
   },
+  getInvoices: async (
+    invoiceDateGte,
+    invoiceDateLte,
+    storeIds = [],
+    vendorIds = [],
+    page,
+    rowsPerPage
+  ) => {
+    try {
+      let params = buildPurchaseLogParams(
+        invoiceDateGte,
+        invoiceDateLte,
+        storeIds,
+        vendorIds,
+        page,
+        rowsPerPage
+      );
+      console.log("invoice params", page, rowsPerPage);
 
+      const response = await api.get(AUTH_ENDPOINTS.INVOICELOG(params));
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      printLogs(error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
   exportCsv: async (data) => {
     try {
       const response = await api.post(AUTH_ENDPOINTS.EXPORT, data);

@@ -178,6 +178,8 @@ const SaleReturn = () => {
             data: order,
           })
         );
+        console.log("Filtered Orders:", response.data.data?.docs?.[0].orders);
+
         setOrdersData(filteredOrders);
       } else {
         console.error(response.data.message);

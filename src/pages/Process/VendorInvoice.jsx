@@ -246,15 +246,15 @@ function VendorInvoice() {
 
   useEffect(() => {
     const storedStoreId = user?.stores?.[0];
-    if (storedStoreId && storeData.length > 0) {
+    if (storedStoreId && storeData.length > 0 && !formik.values.store) {
       const defaultStore = storeOptions.find(
         (option) => option.value === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("store", defaultStore);
+        formik.setFieldValue("store", defaultStore, false); // false = prevent validation on change
       }
     }
-  }, [storeData, storeOptions, user]);
+  }, [storeData, storeOptions, user, formik.values.store]);
 
   const vendorOptions = useMemo(() => {
     return vendorData.map((vendor) => ({
