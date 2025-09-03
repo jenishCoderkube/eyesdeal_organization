@@ -118,7 +118,7 @@ const AddStockTransferCom = () => {
     try {
       const response = await inventoryService.createStockTransfer(payload);
       if (response.success) {
-        toast.success("Stock transfer created successfully");
+        toast.success("Stock transfer successfully");
         // Reset form
         setTo(null);
         setProducts([]);
