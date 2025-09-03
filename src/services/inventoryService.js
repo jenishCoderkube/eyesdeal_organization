@@ -23,6 +23,7 @@ const INVENTORY_ENDPOINTS = {
   UNIVERSALSEARCH: (params) => `/products/product?search=${params}`,
   UNIVERSALSEARCHGET: (params) => `/inventory/store?${params}`,
   STOCKTRANSFER: (params) => `/stockTransfer?populate=true&${params}`,
+  CREATESTOCKTRANSFER: `/stockTransfer`,
   SALEINOUT: (params) => `/stockSale?populate=true&${params}`,
   ADJUSTMENT: (params) => `/stockAdjustment?populate=true&${params}`,
   STOCKADJUSTMENT: (params) => `/inventory?${params}`,
@@ -35,6 +36,7 @@ const INVENTORY_ENDPOINTS = {
   PRODUCT_EXPORT: (productType, params) =>
     `/products/${productType}/export?${params}`,
   UPDATE_INVENTORY_STATUS: (id) => `/inventory/status/${id}`,
+  INVENTORY_BY_STORE: (params) => `/inventory?${params}`,
 };
 
 const buildInventoryParams = (
@@ -219,6 +221,17 @@ const buildStockAdjustmentParams = (productId, storeIds) => {
     params.append(`storesArr[0]`, storeIds);
   }
 
+  return params.toString();
+};
+
+const buildStoreProductInventoryParams = (storeId, productId) => {
+  const params = new URLSearchParams();
+  if (storeId) {
+    params.append("storesArr[0]", storeId);
+  }
+  if (productId) {
+    params.append("product._id", productId);
+  }
   return params.toString();
 };
 
@@ -702,6 +715,30 @@ export const inventoryService = {
     }
   },
 
+  createStockTransfer: async (data) => {
+    try {
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.CREATESTOCKTRANSFER,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error creating stock transfer",
+      };
+    }
+  },
+
   stockReceive: async (params) => {
     try {
       const response = await api.get(INVENTORY_ENDPOINTS.SALEINOUT(params));
@@ -856,6 +893,26 @@ export const inventoryService = {
         success: false,
         message:
           error.response?.data?.message || "Error updating inventory status",
+      };
+    }
+  },
+  getInventoryByStoreAndProduct: async (storeId, productId) => {
+    try {
+      const params = buildStoreProductInventoryParams(storeId, productId);
+      const response = await api.get(
+        INVENTORY_ENDPOINTS.INVENTORY_BY_STORE(params)
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Error fetching inventory by store and product",
       };
     }
   },
