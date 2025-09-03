@@ -383,63 +383,63 @@ const AddPerchaseCom = () => {
     { value: "amount", label: "Amount" },
   ];
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // const handleFileUpload = (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
 
-    // Validate vendor and invoiceNumber
-    let validationErrors = {};
-    if (!formData.vendor || !formData.vendor.value) {
-      validationErrors.vendor = "Vendor is required";
-    }
-    if (!formData.invoiceNumber.trim()) {
-      validationErrors.invoiceNumber = "Invoice Number is required";
-    }
-    // Update errors state if there are validation issues
-    if (Object.keys(validationErrors).length > 0) {
-      event.target.value = null;
-      setErrors(validationErrors);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const binaryStr = e.target.result;
-      const workbook = XLSX.read(binaryStr, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+  //   // Validate vendor and invoiceNumber
+  //   let validationErrors = {};
+  //   if (!formData.vendor || !formData.vendor.value) {
+  //     validationErrors.vendor = "Vendor is required";
+  //   }
+  //   if (!formData.invoiceNumber.trim()) {
+  //     validationErrors.invoiceNumber = "Invoice Number is required";
+  //   }
+  //   // Update errors state if there are validation issues
+  //   if (Object.keys(validationErrors).length > 0) {
+  //     event.target.value = null;
+  //     setErrors(validationErrors);
+  //     return;
+  //   }
+  //   const reader = new FileReader();
+  //   reader.onload = (e) => {
+  //     const binaryStr = e.target.result;
+  //     const workbook = XLSX.read(binaryStr, { type: "binary" });
+  //     const sheetName = workbook.SheetNames[0];
+  //     const sheet = workbook.Sheets[sheetName];
 
-      // Convert to JSON
-      const jsonData = XLSX.utils.sheet_to_json(sheet);
-      setInventoryData(jsonData);
-      uploadInventoryFile(jsonData);
-    };
-    reader.readAsBinaryString(file);
-  };
+  //     // Convert to JSON
+  //     const jsonData = XLSX.utils.sheet_to_json(sheet);
+  //     setInventoryData(jsonData);
+  //     uploadInventoryFile(jsonData);
+  //   };
+  //   reader.readAsBinaryString(file);
+  // };
 
-  const uploadInventoryFile = async (jsonData) => {
-    const payload = {
-      vendorId: formData.vendor.value,
-      invoiceNumber: formData.invoiceNumber,
-      date: formData.invoiceDate.getTime(),
-      store: formData.store?.value,
-      isDelivered: formData.isDelivered,
-      inventoryData: jsonData,
-    };
+  // const uploadInventoryFile = async (jsonData) => {
+  //   const payload = {
+  //     vendorId: formData.vendor.value,
+  //     invoiceNumber: formData.invoiceNumber,
+  //     date: formData.invoiceDate.getTime(),
+  //     store: formData.store?.value,
+  //     isDelivered: formData.isDelivered,
+  //     inventoryData: jsonData,
+  //   };
 
-    try {
-      const response = await inventoryService.uploadInventory(payload);
-      if (response.success) {
-        toast.success(response.data.message);
-        window.location.reload();
-      } else {
-        toast.error(response.message);
-      }
-    } catch (error) {
-      console.error("Product error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   try {
+  //     const response = await inventoryService.uploadInventory(payload);
+  //     if (response.success) {
+  //       toast.success(response.data.message);
+  //       window.location.reload();
+  //     } else {
+  //       toast.error(response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Product error:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="container-fluid p-2">
