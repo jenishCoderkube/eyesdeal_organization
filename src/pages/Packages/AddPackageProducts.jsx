@@ -136,37 +136,45 @@ const AddPackageProducts = () => {
   const fetchPackageProducts = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      // Assuming you have an API to fetch package products
       const res = await api.get(
         `/package/product/${packageId}?page=${page}&limit=${limit}`
       );
-      console.log("res.data?.data?.docs", res?.data?.message?.data);
-      if (res?.data?.success) {
-        setProducts(res?.data?.message?.data || []);
+
+      if (res?.data) {
+        setProducts(res.data?.message?.data || []);
+
         setPagination({
-          totalDocs: res.data?.totalRecords || 0,
-          limit: res.data?.limit || limit,
-          page: res.data?.currentPage || page,
-          totalPages: res.data?.totalPages || 1,
-          hasPrevPage: (res.data?.currentPage || page) > 1,
+          totalDocs: res.data?.message?.totalRecords || 0,
+          limit: res.data?.message?.limit || limit,
+          page: res.data?.message?.currentPage || page,
+          totalPages: res.data?.message?.totalPages || 1,
+          hasPrevPage: (res.data?.message?.currentPage || page) > 1,
           hasNextPage:
-            (res.data?.currentPage || page) < (res.data?.totalPages || 1),
+            (res.data?.message?.currentPage || page) <
+            (res.data?.message?.totalPages || 1),
           prevPage:
-            (res.data?.currentPage || page) > 1
-              ? (res.data?.currentPage || page) - 1
+            (res.data?.message?.currentPage || page) > 1
+              ? (res.data?.message?.currentPage || page) - 1
               : null,
           nextPage:
-            (res.data?.currentPage || page) < (res.data?.totalPages || 1)
-              ? (res.data?.currentPage || page) + 1
+            (res.data?.message?.currentPage || page) <
+            (res.data?.message?.totalPages || 1)
+              ? (res.data?.message?.currentPage || page) + 1
               : null,
         });
       } else {
-        toast.error(res.message);
+        toast.error(res?.data?.message || "Failed to load package products");
         setProducts([]);
         setPagination((prev) => ({ ...prev, totalDocs: 0 }));
       }
-    } catch (error) {}
-    setLoading(false);
+    } catch (error) {
+      console.error("Error fetching package products:", error);
+      toast.error("Error fetching package products");
+      setProducts([]);
+      setPagination((prev) => ({ ...prev, totalDocs: 0 }));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
