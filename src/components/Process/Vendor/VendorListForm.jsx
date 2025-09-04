@@ -13,7 +13,7 @@ const VendorListForm = ({
 }) => {
   const formik = useFormik({
     initialValues: {
-      store: initialStore || null,
+      store: initialStore || [], // Ensure store is initialized as an array
       vendor: null,
       from: null,
       to: null,
@@ -25,18 +25,15 @@ const VendorListForm = ({
 
   // Update formik.values.store when initialStore changes
   useEffect(() => {
-    if (initialStore && formik.values.store !== initialStore) {
+    if (initialStore?.length) {
       formik.setFieldValue("store", initialStore);
     }
-  }, [initialStore, formik]);
-
-  console.log("formik.values.store:", formik.values.store);
-  console.log("stores prop:", stores);
-  console.log("initialStore prop:", initialStore);
+  }, [initialStore]); // Remove formik from dependencies
 
   return (
     <form onSubmit={formik.handleSubmit}>
       <div className="row g-3">
+        {/* Vendor */}
         <div className="col-12">
           <label htmlFor="vendor" className="form-label fw-medium text-black">
             Vendor
@@ -52,6 +49,8 @@ const VendorListForm = ({
             isDisabled={loading}
           />
         </div>
+
+        {/* Store - Multiple Select */}
         <div className="col-12">
           <label htmlFor="store" className="form-label fw-medium text-black">
             Store
@@ -59,14 +58,17 @@ const VendorListForm = ({
           <Select
             options={stores}
             value={formik.values.store}
-            onChange={(option) => formik.setFieldValue("store", option)}
+            onChange={(options) => formik.setFieldValue("store", options || [])}
             onBlur={() => formik.setFieldTouched("store", true)}
             placeholder="Select..."
             classNamePrefix="react-select"
             id="store"
+            isMulti
             isDisabled={loading}
           />
         </div>
+
+        {/* Submit Button */}
         <div className="col-12 d-flex gap-2 mt-3">
           <button
             className="btn custom-button-bgcolor"

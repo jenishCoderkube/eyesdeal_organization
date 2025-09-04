@@ -21,6 +21,7 @@ const VendorListCom = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [defaultStore, setDefaultStore] = useState(null);
   const [currentFilters, setCurrentFilters] = useState(null);
+
   // Fetch stores, vendors, and initial table data on mount
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -28,6 +29,8 @@ const VendorListCom = () => {
       try {
         // Fetch stores
         const storesResponse = await vendorshopService.getStores();
+        let defaultStoreOptions = [];
+
         if (storesResponse.data?.success) {
           const storeOptions = storesResponse.data?.data.map((store) => ({
             value: store._id,
@@ -36,17 +39,15 @@ const VendorListCom = () => {
           setStores(storeOptions);
 
           // Set default store based on user.stores[0]
-          if (user?.stores?.[0]) {
-            const defaultStoreOption = storeOptions.find(
-              (option) => option.value === user.stores[0]
+          if (user?.stores?.length) {
+            defaultStoreOptions = storeOptions.filter((option) =>
+              user.stores.includes(option.value)
             );
-            if (defaultStoreOption) {
-              setDefaultStore(defaultStoreOption);
-            }
+            setDefaultStore(defaultStoreOptions); // now array of stores
           }
         }
 
-        // Fetch vendors
+        // Fetch vendors (independent of stores success)
         const vendorsResponse = await vendorshopService.getVendors();
         if (vendorsResponse.success) {
           setVendors(
@@ -57,14 +58,18 @@ const VendorListCom = () => {
           );
         }
 
-        // Fetch initial job works data
+        // Fetch initial job works data with default store filters
         const defaultFilters = {
           populate: true,
           status: "pending",
           page: 1,
           limit: 100,
+          stores: defaultStoreOptions?.length
+            ? defaultStoreOptions.map((s) => s.value)
+            : [],
         };
         setCurrentFilters(defaultFilters);
+
         const jobWorksResponse = await vendorshopService.getJobWorks(
           defaultFilters
         );
@@ -100,6 +105,7 @@ const VendorListCom = () => {
         setLoading(false);
       }
     };
+
     fetchInitialData();
   }, []);
 
@@ -110,12 +116,13 @@ const VendorListCom = () => {
       const filters = {
         populate: true,
         status: "pending",
-        stores: values.store ? [values.store.value] : [],
+        stores: values.store?.length ? values.store.map((s) => s.value) : [],
         vendors: values.vendor ? [values.vendor.value] : [],
         page: 1,
         limit: 100,
       };
       setCurrentFilters(filters);
+
       const response = await vendorshopService.getJobWorks(filters);
       if (response.success) {
         setFilteredData(response.data.data.docs || []);
@@ -200,7 +207,7 @@ const VendorListCom = () => {
               stores={stores}
               vendors={vendors}
               loading={loading}
-              initialStore={defaultStore} // Pass default store to form
+              initialStore={defaultStore} // now an array
             />
           </div>
           <div className="card shadow-none border p-0 mt-3">
