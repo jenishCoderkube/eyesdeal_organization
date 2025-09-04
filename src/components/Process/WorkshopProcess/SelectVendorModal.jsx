@@ -50,11 +50,12 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!rightSelected && !leftSelected) {
       toast.warning("Please select at least one side (Right or Left).");
       return;
     }
-
+    setLoadingVendors(true);
     let successCount = 0;
 
     for (const row of selectedRows) {
@@ -166,7 +167,9 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
         selectedRows,
       });
       onHide();
+      setLoadingVendors(false);
     } else {
+      setLoadingVendors(false);
       toast.error("No orders were processed successfully.");
     }
   };
@@ -261,7 +264,6 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             </div>
           </div>
           <div className="mb-3">
-       
             <Form.Label
               className="mb-1 text-sm font-medium"
               htmlFor="vendorNote"
