@@ -150,7 +150,17 @@ const AddPerchaseCom = () => {
   };
 
   const handleInputChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updatedForm = { ...prev, [name]: value };
+
+      // If discount or charges change, recalc totals
+      if (name === "flatDiscount" || name === "otherCharges") {
+        updateFormTotals(products, updatedForm);
+      }
+
+      return updatedForm;
+    });
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -600,7 +610,7 @@ const AddPerchaseCom = () => {
                         </td>
                       </tr>
                     ) : (
-                      products.map((product, index) => (
+                      [...products].reverse().map((product, index) => (
                         <tr key={product.id}>
                           <td className="p-2 text-center">
                             <svg

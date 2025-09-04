@@ -1327,7 +1327,11 @@ function ShopProcess() {
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `order_${order.billNumber || order._id}.png`;
+
+      link.download = `order_${
+        order?.selectedRows[0]?.fullOrder?.billNumber ||
+        order?.selectedRows[0]?.fullOrder?.barcode
+      }.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

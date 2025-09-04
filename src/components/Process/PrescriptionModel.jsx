@@ -9,11 +9,13 @@ function PrescriptionModel({
   const [activeCustStatus, setActiveCustStatus] = useState("Specs");
   const [currentIndex, setCurrentIndex] = useState(0); // Track current prescription
   const custstatus = ["Specs", "Contacts"];
-  console.log("selectedCust", selectedCust);
   const filteredPrescriptions =
-    selectedCust?.filter(
-      (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
-    ) || [];
+    selectedCust
+      ?.filter(
+        (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
+      )
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) || [];
+
   useEffect(() => {
     if (filteredPrescriptions.length > 0) {
       setActiveCustomer(
