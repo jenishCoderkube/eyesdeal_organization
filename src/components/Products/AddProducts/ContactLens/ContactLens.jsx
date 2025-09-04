@@ -512,7 +512,12 @@ function ContactLens({ initialData = {}, mode = "add" }) {
           console.log("Update successful:", response.data);
           toast.success("Product updated successfully");
           resetForm();
-          navigate("/products/view");
+          const query = new URLSearchParams({
+            model: payload.model || "contactLens",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           console.log("Update failed:", response.message);
           toast.error(response.message || "Failed to update product");
@@ -527,6 +532,12 @@ function ContactLens({ initialData = {}, mode = "add" }) {
           console.log("Add successful:", response.data);
           toast.success("Product added successfully");
           resetForm();
+          const query = new URLSearchParams({
+            model: payload.model || "contactLens",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           console.log("Add failed:", response.message);
           toast.error(response.message || "Failed to add product");

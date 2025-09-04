@@ -16,7 +16,7 @@ import {
 } from "../../../utils/constants";
 import { inventoryService } from "../../../services/inventoryService";
 import { Modal, Button } from "react-bootstrap";
-
+import { useLocation } from "react-router-dom";
 // Debounce utility function
 const debounce = (func, wait) => {
   let timeout;

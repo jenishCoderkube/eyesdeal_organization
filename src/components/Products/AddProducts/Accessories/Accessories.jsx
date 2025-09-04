@@ -244,7 +244,12 @@ function Accessories({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
-          navigate("/products/view"); // Go back to the previous page
+          const query = new URLSearchParams({
+            model: payload.model || "accessories",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to update product");
         }
@@ -257,7 +262,12 @@ function Accessories({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
-          console.log("Add response:", response.data);
+          const query = new URLSearchParams({
+            model: payload.model || "accessories",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to add product");
         }

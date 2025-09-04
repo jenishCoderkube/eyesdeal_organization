@@ -3,7 +3,7 @@ import { Formik, Form, Field } from "formik";
 import Select from "react-select";
 import { FaSearch } from "react-icons/fa";
 import productViewService from "../../../services/Products/productViewService"; // Adjust path
-
+import { useLocation } from "react-router-dom";
 const modelOptions = [
   { value: "eyeGlasses", label: "Eye Glasses" },
   { value: "accessories", label: "Accessories" },
@@ -36,7 +36,15 @@ function ProductFilterForm({ onSubmit }) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const location = useLocation();
 
+  // Parse query string
+  const queryParams = new URLSearchParams(location.search);
+  const filters = {
+    model: queryParams.get("model") || "eyeGlasses",
+    brand: queryParams.get("brand") || "",
+    status: queryParams.get("status") || "active",
+  };
   useEffect(() => {
     const fetchOptions = async () => {
       setLoading(true);
@@ -137,18 +145,18 @@ function ProductFilterForm({ onSubmit }) {
   return (
     <Formik
       initialValues={{
-        search: "",
-        model: "eyeGlasses",
-        brand: "",
-        frameType: "",
-        frameShape: "",
-        gender: "",
-        frameMaterial: "",
-        frameColor: "",
-        frameSize: "",
-        prescriptionType: "",
-        frameCollection: "",
-        status: "active",
+        search: queryParams.get("search") || "",
+        model: filters.model, // from query
+        brand: filters.brand, // from query
+        frameType: queryParams.get("frameType") || "",
+        frameShape: queryParams.get("frameShape") || "",
+        gender: queryParams.get("gender") || "",
+        frameMaterial: queryParams.get("frameMaterial") || "",
+        frameColor: queryParams.get("frameColor") || "",
+        frameSize: queryParams.get("frameSize") || "",
+        prescriptionType: queryParams.get("prescriptionType") || "",
+        frameCollection: queryParams.get("frameCollection") || "",
+        status: filters.status, // from query
       }}
       onSubmit={(values) => onSubmit(values)}
     >

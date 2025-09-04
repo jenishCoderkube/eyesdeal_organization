@@ -148,7 +148,7 @@ const productViewService = {
       }
 
       // Set activeInWebsite=true by default
-      queryParams.append("activeInWebsite", true);
+      queryParams.append("activeInERP", true);
 
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -156,7 +156,6 @@ const productViewService = {
             if (key === "search") {
               queryParams.append("search", value);
             } else if (key === "status") {
-              // Override default activeInWebsite with the provided status
               queryParams.set("activeInERP", value === "active" ? true : false);
             } else {
               queryParams.append(`optimize[${key}]`, value);

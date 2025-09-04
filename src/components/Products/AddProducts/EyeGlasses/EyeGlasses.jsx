@@ -354,7 +354,12 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
-          navigate("/products/view"); // Go back to the previous page
+          const query = new URLSearchParams({
+            model: payload.model || "eyeGlasses",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to update product");
           setErrors({ submit: response.message || "Failed to update product" });
@@ -368,6 +373,12 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
           toast.success("Product added successfully");
           resetForm();
           setSelectedImage([]); // Reset images
+          const query = new URLSearchParams({
+            model: payload.model || "eyeGlasses",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to add product");
           setErrors({ submit: response.message || "Failed to add product" });

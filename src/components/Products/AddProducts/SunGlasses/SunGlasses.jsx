@@ -470,7 +470,12 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product updated successfully");
           resetForm();
-          navigate("/products/view");
+          const query = new URLSearchParams({
+            model: payload.model || "sunGlasses",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to update product");
         }
@@ -480,6 +485,12 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         if (response.success) {
           toast.success("Product added successfully");
           resetForm();
+          const query = new URLSearchParams({
+            model: payload.model || "sunGlasses",
+            brand: payload.brand || "",
+            status: "active",
+          }).toString();
+          navigate(`/products/view?${query}`);
         } else {
           toast.error(response.message || "Failed to add product");
         }

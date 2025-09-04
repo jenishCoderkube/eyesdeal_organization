@@ -461,7 +461,7 @@ export const inventoryService = {
       const params = new URLSearchParams();
       params.append("start", start);
       params.append("end", end);
-      params.append("activeInWebsite", activeInWebsite);
+      // params.append("activeInWebsite", activeInWebsite);
 
       const response = await api.get(
         INVENTORY_ENDPOINTS.PRODUCT_EXPORT(productType, params.toString()),
