@@ -102,6 +102,7 @@ function ViewPurchase() {
   };
 
   const getInvoices = async (page = 1) => {
+    console.log("Fetching purchase logs for page:", page);
     const vendorId = vendor.map((option) => option.value);
     const storeId = store.map((option) => option.value);
     setLoading(true);
@@ -172,7 +173,7 @@ function ViewPurchase() {
       getPurchaseLogs();
     } else if (filterType.value === "invoice") {
       const vendorId = vendor.map((option) => option.value); // get selected vendor(s)
-      getInvoices(vendorId);
+      getInvoices();
     }
   };
 
