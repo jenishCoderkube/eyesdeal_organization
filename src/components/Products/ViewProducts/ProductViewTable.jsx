@@ -61,7 +61,7 @@ function ProductTable({
   // Add new state
 
   useEffect(() => {
-    if (range?.length > 0) {
+    if (range?.length > 0 && filteredData.length > 0) {
       const firstRange = parseRange(range[0]);
       const lastRange = parseRange(range[range.length - 1]);
 
@@ -81,7 +81,7 @@ function ProductTable({
       setStartRange(0);
       setEndRange(0);
     }
-  }, [range]);
+  }, [range, filteredData]);
 
   const getRange = async (filters) => {
     try {
@@ -649,9 +649,7 @@ function ProductTable({
                   />
                 </>
               ) : minVal !== null && maxVal !== null && minVal === maxVal ? (
-                <label className="form-label">
-                  Only one range available: {minVal}
-                </label>
+                <label className="form-label">range available: {minVal}</label>
               ) : (
                 <label className="form-label text-danger">
                   No ranges available
@@ -669,7 +667,7 @@ function ProductTable({
             </Button>
             <Button
               variant="primary"
-              disabled={minVal === null || maxVal === null} // disable when no range
+              disabled={minVal === 0 || maxVal === 0} // disable when no range
               onClick={() => {
                 downloadExcel();
                 setShowDownloadModal(false);
