@@ -443,7 +443,12 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
         accessorKey: "powerAtTime.specs",
         header: "Power",
         cell: ({ row }) => {
-          const specs = row.original.powerAtTime.specs;
+          let specs = null;
+          if (row.original.side === "left") {
+            specs = row.original.powerAtTime.specs?.left || {};
+          } else {
+            specs = row.original.powerAtTime.specs?.right;
+          }
           return (
             <div className="text-xs">
               <div
@@ -460,29 +465,29 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
                 ))}
                 <div className="border border-dark p-1 fw-bold">Dist</div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.distance.sph || ""}
+                  {specs?.distance?.sph || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.distance.cyl || ""}
+                  {specs?.distance?.cyl || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.distance.axis || ""}
+                  {specs?.distance?.axis || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.distance.add || ""}
+                  {specs?.distance?.add || ""}
                 </div>
                 <div className="border border-dark p-1 fw-bold">Near</div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.near.sph || ""}
+                  {specs?.near?.sph || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.near.cyl || ""}
+                  {specs?.near?.cyl || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.near.axis || ""}
+                  {specs?.near?.axis || ""}
                 </div>
                 <div className="border border-dark p-1 table-vendor-data-size">
-                  {specs?.right.near.add || ""}
+                  {specs?.near?.add || ""}
                 </div>
               </div>
             </div>

@@ -117,7 +117,7 @@ function ShopProcess() {
     startDate: null,
     endDate: null,
     search: "",
-    status: "pending",
+    status: "inWorkshop",
     page: 1,
     limit: 100,
   });
@@ -176,9 +176,9 @@ function ShopProcess() {
   const getStatusForTab = useCallback((status) => {
     switch (status) {
       case "New Order":
-        return "pending";
+        return "inWorkshop";
       case "In Process":
-        return ["inWorkshop", "inLab"];
+        return "inLab";
       case "In Fitting":
         return "inFitting";
       case "Ready":
@@ -189,7 +189,7 @@ function ShopProcess() {
         return "returned";
 
       default:
-        return "pending";
+        return "inWorkshop";
     }
   }, []);
 
@@ -369,11 +369,9 @@ function ShopProcess() {
             setStatusCounts((prev) => ({
               ...prev,
               pending: orderCounts.pendingCount || 0,
-              inProcess:
-                (orderCounts.inWorkshopCount || 0) +
-                (orderCounts.inLabCount || 0) +
-                (orderCounts.inFittingCount || 0),
-              newOrder: orderCounts.pendingCount || 0,
+              inProcess: orderCounts.inLabCount || 0,
+
+              newOrder: orderCounts.inWorkshopCount || 0,
               inFitting: orderCounts.inFittingCount || 0,
               ready: orderCounts.readyCount || 0,
               delivered: orderCounts.deliveredCount || 0,
@@ -418,11 +416,9 @@ function ShopProcess() {
             setStatusCounts((prev) => ({
               ...prev,
               pending: orderCounts.pendingCount || 0,
-              inProcess:
-                (orderCounts.inWorkshopCount || 0) +
-                (orderCounts.inLabCount || 0) +
-                (orderCounts.inFittingCount || 0),
-              newOrder: orderCounts.pendingCount || 0,
+              inProcess: orderCounts.inLabCount || 0,
+
+              newOrder: orderCounts.inWorkshopCount || 0,
               inFitting: orderCounts.inFittingCount || 0,
               delivered: orderCounts.deliveredCount || 0,
               ready: orderCounts.readyCount || 0,
@@ -1743,7 +1739,11 @@ function ShopProcess() {
                               ? productTableData
                               : salesReturnProductData
                             )
-                              .filter((prod) => prod.saleId === row._id)
+                              .filter(
+                                (prod) =>
+                                  prod.saleId === row._id &&
+                                  getStatusForTab(activeStatus) === prod.status
+                              )
                               .map((prodRow, prodIndex) => {
                                 return (
                                   <tr key={prodRow.id}>
