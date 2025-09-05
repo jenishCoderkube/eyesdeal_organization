@@ -403,7 +403,7 @@ function ViewPurchase() {
                           <td>{index + 1}</td>
                           <td>{invoice?.invoiceNumber || "N/A"}</td>
                           <td>{invoice?.vendor?.companyName || "N/A"}</td>
-                          <td>{invoice?.store?.companyName || "N/A"}</td>
+                          <td>{invoice?.store?.name || "N/A"}</td>
                           <td>
                             {moment(invoice?.invoiceDate).format("DD-MM-YYYY")}
                           </td>

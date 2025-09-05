@@ -129,37 +129,41 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
       {
         accessorKey: "purchaseRate",
         header: "RATE",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.purchaseRate || row.original.lens?.mrp || "N/A"}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const rate = row.original?.lens?.item?.costPrice ?? 0;
+          return <div className="text-left">{rate}</div>;
+        },
       },
       {
         accessorKey: "tax",
-        header: "TAX",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.tax || row.original.sale?.totalTax || "N/A"}
-          </div>
-        ),
+        header: "TAX (%)",
+        cell: ({ row }) => {
+          const tax = row.original?.lens?.item?.tax ?? 0;
+          return <div className="text-left">{tax}</div>;
+        },
       },
       {
-        accessorFn: (row) => {
-          if (row.product) {
-            const tax1 = row.purchaseRate || 0;
-            const tax2 = row.tax || 0;
-            return (tax1 * tax2) / 100;
-          } else if (row.lens) {
-            const tax1 = row.lens.mrp || 0;
-            const tax2 = row.sale?.totalTax || 0;
-            return tax2; // Assuming totalTax is the computed tax amount
-          }
-          return 0;
-        },
+        accessorKey: "taxAmount",
         header: "TAX AMOUNT",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ row }) => {
+          const rate = row.original?.lens?.item?.costPrice ?? 0;
+          const tax = row.original?.lens?.item?.tax ?? 0;
+          const taxAmount = (rate * tax) / 100;
+          return <div className="text-left">{taxAmount.toFixed(2)}</div>;
+        },
       },
+      {
+        accessorKey: "totalAmount",
+        header: "TOTAL (Rate + Tax)",
+        cell: ({ row }) => {
+          const rate = row.original?.lens?.item?.costPrice ?? 0;
+          const tax = row.original?.lens?.item?.tax ?? 0;
+          const taxAmount = (rate * tax) / 100;
+          const total = rate + taxAmount;
+          return <div className="text-left">{total.toFixed(2)}</div>;
+        },
+      },
+
       {
         accessorKey: "totalDiscount",
         header: "DISCOUNT",
@@ -168,15 +172,6 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
             {row.original.totalDiscount ||
               row.original.sale?.totalDiscount ||
               "N/A"}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "totalAmount",
-        header: "TOTAL",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.totalAmount || row.original.sale?.netAmount || "N/A"}
           </div>
         ),
       },
@@ -306,7 +301,6 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
                   </p>
                 </div>
                 <div className="col mb-2">
-                  ま
                   <p className="mb-0 font-size-normal">
                     TOTAL AMT:{" "}
                     <span className="font-size-normal">{totalAmount}</span>
