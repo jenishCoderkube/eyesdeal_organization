@@ -12,6 +12,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
   const [loadingVendors, setLoadingVendors] = useState(false);
   const [previousRightVendor, setPreviousRightVendor] = useState(null);
   const [previousLeftVendor, setPreviousLeftVendor] = useState(null);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   console.log("EditVendorModal", selectedRows);
 
   // Fetch vendors when the modal opens
@@ -76,9 +77,10 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
 
     for (const row of selectedRows) {
       const order = row.fullOrder || row;
+      console.log("Processing order:", order);
 
       const {
-        _id: orderId,
+        _id: _id,
         product,
         rightLens,
         leftLens,
@@ -89,23 +91,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
         currentLeftJobWork,
       } = order;
 
-      // Validate required fields
-      if (
-        !orderId ||
-        !product?.item ||
-        !product?.barcode ||
-        !product?.sku ||
-        !product?.mrp ||
-        !product?.srp ||
-        !sale ||
-        !store ||
-        !powerAtTime?.specs
-      ) {
-        toast.error(
-          `Missing required fields for order ${orderId || "unknown"}`
-        );
-        continue;
-      }
+      const orderId = order._id || order.id;
 
       // Base payload (common parts)
       const basePayload = {
@@ -126,6 +112,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
       let newLeftJobWorkId = null;
 
       try {
+        setLoadingSubmit(true);
         // 1. Cancel existing right job work
         if (rightVendor && currentRightJobWork?._id) {
           await workshopService.updateJobWorkStatus(
@@ -225,6 +212,8 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
         }
       } catch (error) {
         toast.error(`Error processing order ${orderId}: ${error.message}`);
+      } finally {
+        setLoadingSubmit(false);
       }
     }
 
@@ -346,7 +335,7 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
               type="submit"
               variant="primary"
               className="bg-primary hover-bg-primary-dark text-white"
-              disabled={loadingVendors}
+              disabled={loadingSubmit}
             >
               Submit
             </Button>

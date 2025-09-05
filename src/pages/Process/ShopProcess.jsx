@@ -672,26 +672,38 @@ function ShopProcess() {
       toast.warning("No orders selected");
       return;
     }
-    const order = selectedOrders[0]?.fullOrder;
-    const hasLeftLens = !!order.leftLens;
-    const hasRightLens = !!order.rightLens;
 
-    // If left lens exists but not received
-    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
-      toast.warning("Please first receive Left lens vendor jobwork");
-      return;
-    }
-
-    // If right lens exists but not received
-    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
-      toast.warning("Please first receive Right lens vendor jobwork");
-      return;
-    }
     setLoading(true);
     let successCount = 0;
     const failedOrders = [];
 
     for (const order of selectedOrders) {
+      const fullOrder = order.fullOrder;
+      const hasLeftLens = !!fullOrder.leftLens;
+      const hasRightLens = !!fullOrder.rightLens;
+
+      // Validation for left lens
+      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Left lens vendor jobwork",
+        });
+        continue; // skip this order
+      }
+
+      // Validation for right lens
+      if (
+        hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "received"
+      ) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Right lens vendor jobwork",
+        });
+        continue; // skip this order
+      }
+
+      // If validation passed → try update
       try {
         const response = await workshopService.updateOrderStatus(
           order.orderId,
@@ -730,7 +742,7 @@ function ShopProcess() {
 
     if (failedOrders.length > 0) {
       failedOrders.forEach(({ orderId, message }) => {
-        toast.error(`Failed to send order ${orderId} for fitting: ${message}`);
+        toast.error(`${message}`);
       });
     }
   };
@@ -1199,50 +1211,77 @@ function ShopProcess() {
       return;
     }
 
-    const order = selectedOrders[0]?.fullOrder;
-    const hasLeftLens = !!order.leftLens;
-    const hasRightLens = !!order.rightLens;
-
-    // If left lens exists but not received
-    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
-      toast.warning("Please first receive Left lens vendor jobwork");
-      return;
-    }
-
-    // If right lens exists but not received
-    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
-      toast.warning("Please first receive Right lens vendor jobwork");
-      return;
-    }
-
     setLoading(true);
     let successCount = 0;
+    const failedOrders = [];
 
     for (const order of selectedOrders) {
-      const response = await shopProcessService.updateOrderStatus(
-        order.orderId,
-        "ready"
-      );
-      if (response.success) {
-        successCount++;
-        setProductTableData((prev) =>
-          prev.map((row) =>
-            row.id === order.id
-              ? { ...row, status: "ready", selected: false }
-              : row
-          )
+      const fullOrder = order.fullOrder;
+      const hasLeftLens = !!fullOrder.leftLens;
+      const hasRightLens = !!fullOrder.rightLens;
+
+      // Validation for left lens
+      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Left lens vendor jobwork",
+        });
+        continue; // skip this order
+      }
+
+      // Validation for right lens
+      if (
+        hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "received"
+      ) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Right lens vendor jobwork",
+        });
+        continue; // skip this order
+      }
+
+      // Try updating
+      try {
+        const response = await shopProcessService.updateOrderStatus(
+          order.orderId,
+          "ready"
         );
-      } else {
-        toast.error(
-          `Failed to send order ${order.id} to Ready: ${response.message}`
-        );
+
+        if (response.success) {
+          successCount++;
+          setProductTableData((prev) =>
+            prev.map((row) =>
+              row.id === order.id
+                ? { ...row, status: "ready", selected: false }
+                : row
+            )
+          );
+        } else {
+          failedOrders.push({
+            orderId: order.orderId,
+            message: response.message || "Failed to update status",
+          });
+        }
+      } catch (error) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: error.message || "Error updating order status",
+        });
       }
     }
 
     setLoading(false);
+
     if (successCount > 0) {
       toast.success(`${successCount} order(s) sent to Ready successfully`);
       await fetchSalesAndCounts(currentFilters.current, true);
+    }
+
+    if (failedOrders.length > 0) {
+      failedOrders.forEach(({ orderId, message }) => {
+        toast.error(` ${message}`);
+      });
     }
   };
 
@@ -1256,48 +1295,77 @@ function ShopProcess() {
       return;
     }
 
-    const order = selectedOrders[0]?.fullOrder;
-    const hasLeftLens = !!order.leftLens;
-    const hasRightLens = !!order.rightLens;
-
-    // If left lens exists but not received
-    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
-      toast.warning("Please first receive Left lens vendor jobwork");
-      return;
-    }
-
-    // If right lens exists but not received
-    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
-      toast.warning("Please first receive Right lens vendor jobwork");
-      return;
-    }
-
     setLoading(true);
     let successCount = 0;
+    const failedOrders = [];
 
     for (const order of selectedOrders) {
-      const response = await shopProcessService.updateOrderStatus(
-        order.orderId,
-        "delivered"
-      );
-      if (response.success) {
-        successCount++;
-        setProductTableData((prev) =>
-          prev.map((row) =>
-            row.id === order.id
-              ? { ...row, status: "delivered", selected: false }
-              : row
-          )
+      const fullOrder = order.fullOrder;
+      const hasLeftLens = !!fullOrder.leftLens;
+      const hasRightLens = !!fullOrder.rightLens;
+
+      // Validation for left lens
+      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Left lens vendor jobwork",
+        });
+        continue;
+      }
+
+      // Validation for right lens
+      if (
+        hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "received"
+      ) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: "Please first receive Right lens vendor jobwork",
+        });
+        continue;
+      }
+
+      // Try updating
+      try {
+        const response = await shopProcessService.updateOrderStatus(
+          order.orderId,
+          "delivered"
         );
-      } else {
-        toast.error(`Failed to deliver order ${order.id}: ${response.message}`);
+
+        if (response.success) {
+          successCount++;
+          setProductTableData((prev) =>
+            prev.map((row) =>
+              row.id === order.id
+                ? { ...row, status: "delivered", selected: false }
+                : row
+            )
+          );
+        } else {
+          failedOrders.push({
+            orderId: order.orderId,
+            message: response.message || "Failed to update status",
+          });
+        }
+      } catch (error) {
+        failedOrders.push({
+          orderId: order.orderId,
+          message: error.message || "Error updating order status",
+        });
       }
     }
 
     setLoading(false);
+
     if (successCount > 0) {
       toast.success(`${successCount} order(s) delivered successfully`);
       await fetchSalesAndCounts(currentFilters.current, true);
+    }
+
+    if (failedOrders.length > 0) {
+      failedOrders.forEach(({ orderId, message }) => {
+        toast.error(`Failed to deliver order ${orderId}: ${message}`);
+      });
     }
   };
 
