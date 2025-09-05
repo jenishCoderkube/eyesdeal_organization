@@ -592,13 +592,12 @@ const AddVendors = () => {
           </div>
 
           <div className="mt-5">
-            <a
-              className="text-secondary text-decoration-underline text-black"
-              href="#"
+            <button
+              className="bg-primary text-white btn"
               onClick={() => setShowForm((prev) => !prev)}
             >
               Create Vendor
-            </a>
+            </button>
           </div>
           {showForm && renderForm(createFormik)}
 

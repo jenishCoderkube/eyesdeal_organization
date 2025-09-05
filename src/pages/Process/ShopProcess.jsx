@@ -671,21 +671,26 @@ function ShopProcess() {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
       .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
-    console.log("selectedOrders<<");
 
     if (selectedOrders.length === 0) {
       toast.warning("No orders selected");
       return;
     }
+    const order = selectedOrders[0]?.fullOrder;
+    const hasLeftLens = !!order.leftLens;
+    const hasRightLens = !!order.rightLens;
 
-    if (
-      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
-      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
-    ) {
-      toast.warning("Please first Receive Left and Right vendor list");
+    // If left lens exists but not received
+    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
+      toast.warning("Please first receive Left lens vendor jobwork");
       return;
     }
 
+    // If right lens exists but not received
+    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
+      toast.warning("Please first receive Right lens vendor jobwork");
+      return;
+    }
     setLoading(true);
     let successCount = 0;
     const failedOrders = [];
@@ -1198,11 +1203,19 @@ function ShopProcess() {
       return;
     }
 
-    if (
-      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
-      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
-    ) {
-      toast.warning("Please first Receive Left and Right vendor list");
+    const order = selectedOrders[0]?.fullOrder;
+    const hasLeftLens = !!order.leftLens;
+    const hasRightLens = !!order.rightLens;
+
+    // If left lens exists but not received
+    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
+      toast.warning("Please first receive Left lens vendor jobwork");
+      return;
+    }
+
+    // If right lens exists but not received
+    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
+      toast.warning("Please first receive Right lens vendor jobwork");
       return;
     }
 
@@ -1247,11 +1260,19 @@ function ShopProcess() {
       return;
     }
 
-    if (
-      selectedOrders[0]?.fullOrder?.currentLeftJobWork?.status !== "received" ||
-      selectedOrders[0]?.fullOrder?.currentRightJobWork?.status !== "received"
-    ) {
-      toast.warning("Please first Receive Left and Right vendor list");
+    const order = selectedOrders[0]?.fullOrder;
+    const hasLeftLens = !!order.leftLens;
+    const hasRightLens = !!order.rightLens;
+
+    // If left lens exists but not received
+    if (hasLeftLens && order.currentLeftJobWork?.status !== "received") {
+      toast.warning("Please first receive Left lens vendor jobwork");
+      return;
+    }
+
+    // If right lens exists but not received
+    if (hasRightLens && order.currentRightJobWork?.status !== "received") {
+      toast.warning("Please first receive Right lens vendor jobwork");
       return;
     }
 
