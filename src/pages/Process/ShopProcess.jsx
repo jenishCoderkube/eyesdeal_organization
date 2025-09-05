@@ -1364,7 +1364,7 @@ function ShopProcess() {
 
     if (failedOrders.length > 0) {
       failedOrders.forEach(({ orderId, message }) => {
-        toast.error(`Failed to deliver order ${orderId}: ${message}`);
+        toast.error(`${message}`);
       });
     }
   };
@@ -1394,40 +1394,52 @@ function ShopProcess() {
   };
   const handleDownloadImage = async (order) => {
     try {
-      setDownloadOrder({
-        order: order?.selectedRows[0]?.sale,
-        orderDetails: order,
-      });
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      const element = downloadRef.current;
-      if (!element) {
-        throw new Error("Template element not found");
+      const selectedRows = order?.selectedRows || [];
+
+      if (selectedRows.length === 0) {
+        toast.warning("No orders selected");
+        return;
       }
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-      });
+      for (const row of selectedRows) {
+        // Set state for each order so template renders correctly
+        setDownloadOrder({
+          order: row?.sale,
+          orderDetails: order,
+        });
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = dataUrl;
+        // Small delay to ensure DOM updates
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-      link.download = `order_${
-        order?.selectedRows[0]?.fullOrder?.billNumber ||
-        order?.selectedRows[0]?.fullOrder?.barcode
-      }.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        const element = downloadRef.current;
+        if (!element) {
+          throw new Error("Template element not found");
+        }
 
-      toast.success("Image downloaded successfully");
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+        });
+
+        const dataUrl = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `order_${
+          row?.fullOrder?.billNumber || row?.fullOrder?.barcode
+        }.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      toast.success(`${selectedRows.length} image(s) downloaded successfully`);
       setDownloadOrder(null);
     } catch (error) {
       setDownloadOrder(null);
-      toast.error("Error downloading image");
+      toast.error("Error downloading image(s)");
     }
   };
+
   // Centralized rendering function for table content
   const renderTableContent = () => {
     if (loading || !dataLoaded) {

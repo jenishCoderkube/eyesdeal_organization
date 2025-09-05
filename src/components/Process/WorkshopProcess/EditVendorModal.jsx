@@ -96,11 +96,11 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
       // Base payload (common parts)
       const basePayload = {
         product: {
-          item: product.item,
-          barcode: product.barcode,
-          sku: product.sku,
-          mrp: product.mrp,
-          srp: product.srp,
+          item: product?.item,
+          barcode: product?.barcode,
+          sku: product?.sku,
+          mrp: product?.mrp,
+          srp: product?.srp,
         },
         sale,
         order: orderId,
@@ -136,11 +136,11 @@ const EditVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
           const rightPayload = {
             ...basePayload,
             lens: {
-              item: rightLens.item,
-              barcode: rightLens.barcode,
-              sku: rightLens.sku,
-              mrp: rightLens.mrp,
-              srp: rightLens.srp,
+              item: rightLens?.item,
+              barcode: rightLens?.barcode,
+              sku: rightLens?.sku,
+              mrp: rightLens?.mrp,
+              srp: rightLens?.srp,
             },
             side: "right",
             vendor: rightVendor.value,
