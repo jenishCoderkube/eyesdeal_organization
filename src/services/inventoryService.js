@@ -421,17 +421,34 @@ export const inventoryService = {
       };
     }
   },
-  getProductCount: async (productType, activeInWebsite = false) => {
+  getProductCount: async (
+    productType,
+    filters = {},
+    activeInWebsite = false
+  ) => {
     try {
       if (!productType) {
         throw new Error("Product type is required");
       }
 
-      const params = new URLSearchParams();
-      params.append("activeInERP", activeInWebsite);
+      const queryParams = new URLSearchParams();
+      queryParams.append("activeInERP", true);
 
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value && key !== "model") {
+            if (key === "search") {
+              queryParams.append("search", value);
+            } else if (key === "status") {
+              queryParams.set("activeInERP", value === "active" ? true : false);
+            } else {
+              queryParams.append(`optimize[${key}]`, value);
+            }
+          }
+        });
+      }
       const response = await api.get(
-        INVENTORY_ENDPOINTS.PRODUCT_COUNT(productType, params.toString())
+        INVENTORY_ENDPOINTS.PRODUCT_COUNT(productType, queryParams.toString())
       );
 
       return {

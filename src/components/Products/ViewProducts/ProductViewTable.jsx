@@ -14,6 +14,7 @@ import {
   parseRange,
   productRangesByType,
 } from "../../../utils/constants";
+import { Range } from "react-range";
 import { inventoryService } from "../../../services/inventoryService";
 import { Modal, Button } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
@@ -26,7 +27,11 @@ const debounce = (func, wait) => {
   };
 };
 
-function ProductTable({ filters, isDownloadButtonVisible }) {
+function ProductTable({
+  filters,
+  isDownloadButtonVisible,
+  setIsDownloadButtonVisible,
+}) {
   const navigate = useNavigate();
   const [filteredData, setFilteredData] = useState([]);
   const [paginationMeta, setPaginationMeta] = useState({
@@ -55,28 +60,42 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
   const [showDownloadModal, setShowDownloadModal] = useState(false); // New state for download modal
   // Add new state
 
-  // Existing useEffect and getRange functions unchanged
-
-  // Update useEffect to set default startRange and endRange
   useEffect(() => {
     if (range?.length > 0) {
       const firstRange = parseRange(range[0]);
       const lastRange = parseRange(range[range.length - 1]);
-      setMinVal(firstRange?.min);
-      setMaxVal(lastRange?.max);
-      setStartRange(firstRange?.min); // Set default startRange
-      setEndRange(lastRange?.max); // Set default endRange
+
+      if (firstRange && lastRange) {
+        const min = firstRange.min ?? 0;
+        const max = lastRange.max ?? 0;
+
+        setMinVal(min);
+        setMaxVal(max);
+        setStartRange(min);
+        setEndRange(max);
+      }
+    } else {
+      // ✅ handle blank array case
+      setMinVal(0);
+      setMaxVal(0);
+      setStartRange(0);
+      setEndRange(0);
     }
   }, [range]);
 
-  const getRange = async () => {
+  const getRange = async (filters) => {
     try {
+      console.log("Fetching product count with filters:", filters);
+
       const result = await inventoryService.getProductCount(
         filters?.model ? filters?.model : "eyeGlasses",
-        filters?.status !== "active" ? true : false
+        filters,
+        filters?.status == "active" ? true : false
       );
       if (result.success) {
-        setRange(result?.data?.data);
+        console.log("result?.data?.data", result?.data?.data);
+
+        setRange(result?.data?.data || []);
       } else {
         console.error("Error:", result.message);
       }
@@ -96,6 +115,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
             filters,
             page,
           });
+          getRange(filters);
           const response = await productViewService.getProducts(
             model,
             filters,
@@ -111,6 +131,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
               hasPrevPage: response.other.hasPrevPage || false,
               hasNextPage: response.other.hasNextPage || false,
             });
+
             setError(null);
           } else {
             setError(response.message || "Failed to fetch products");
@@ -142,7 +163,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
 
   useEffect(() => {
     const model = filters.model || "eyeGlasses";
-    console.log("useEffect triggered with page:", page);
+
     fetchProducts(model, filters, page);
     return () => clearTimeout(fetchProducts.timeout);
   }, [filters, page, fetchProducts]);
@@ -176,6 +197,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
     setCompletedCount(1);
     const model = filters.model || "eyeGlasses";
     fetchProducts(model, filters, page);
+    getRange(filters);
   };
 
   const handleFetchAllPhotos = async () => {
@@ -210,6 +232,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
     toast.success("Photos fetched and updated.");
     const model = filters.model || "eyeGlasses";
     fetchProducts(model, filters, page);
+    getRange(filters);
   };
 
   const handleDelete = async (productId) => {
@@ -225,6 +248,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
         );
         const model = filters.model || "eyeGlasses";
         fetchProducts(model, filters, page);
+        getRange(filters);
         if (response) {
           toast.success(response?.message || "Product deleted successfully");
         }
@@ -233,9 +257,6 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
       }
     }
   };
-  useEffect(() => {
-    getRange();
-  }, [filters.model]);
   const handleViewMoreImages = (photos) => {
     const fullImageUrls = photos.map(
       (photo) => `${defalutImageBasePath}${photo}`
@@ -448,7 +469,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
         <div className="d-flex flex-column flex-md-row gap-3 mb-4">
           <h5>{filters?.model || "eyeGlasses"}</h5>
 
-          <button
+          {/* <button
             className="btn custom-button-bgcolor ms-md-auto"
             onClick={exportToExcel}
             disabled={isFetchingPhotos}
@@ -461,10 +482,10 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
             disabled={isFetchingPhotos}
           >
             Fetch Photos
-          </button>
+          </button> */}
           {isDownloadButtonVisible && (
             <button
-              className="btn custom-button-bgcolor"
+              className="btn custom-button-bgcolor  ms-md-auto"
               onClick={() => setShowDownloadModal(true)} // Always show button, open modal
             >
               Download
@@ -582,38 +603,63 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
           <Modal.Header closeButton>
             <Modal.Title>Select Download Range</Modal.Title>
           </Modal.Header>
+
           <Modal.Body>
             <div className="d-flex flex-column gap-3">
-              <div>
+              {minVal !== null && maxVal !== null && minVal < maxVal ? (
+                <>
+                  <label className="form-label">
+                    Range: {startRange} - {endRange}
+                  </label>
+
+                  <Range
+                    step={1}
+                    min={minVal}
+                    max={maxVal}
+                    values={[startRange, endRange]}
+                    onChange={(values) => {
+                      setStartRange(values[0]);
+                      setEndRange(values[1]);
+                    }}
+                    renderTrack={({ props, children }) => (
+                      <div
+                        {...props}
+                        style={{
+                          ...props.style,
+                          height: "6px",
+                          background: "#ddd",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        {children}
+                      </div>
+                    )}
+                    renderThumb={({ props }) => (
+                      <div
+                        {...props}
+                        style={{
+                          ...props.style,
+                          height: "16px",
+                          width: "16px",
+                          backgroundColor: "#0d6efd",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    )}
+                  />
+                </>
+              ) : minVal !== null && maxVal !== null && minVal === maxVal ? (
                 <label className="form-label">
-                  Start Range: {startRange !== null ? startRange : "-"}
+                  Only one range available: {minVal}
                 </label>
-                <input
-                  type="range"
-                  className="form-range"
-                  min={minVal}
-                  max={maxVal}
-                  id="modalStartRange"
-                  value={startRange !== null ? startRange : minVal}
-                  onChange={(e) => setStartRange(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label className="form-label">
-                  End Range: {endRange !== null ? endRange : "-"}
+              ) : (
+                <label className="form-label text-danger">
+                  No ranges available
                 </label>
-                <input
-                  type="range"
-                  className="form-range"
-                  min={minVal}
-                  max={maxVal}
-                  id="modalEndRange"
-                  value={endRange !== null ? endRange : maxVal}
-                  onChange={(e) => setEndRange(Number(e.target.value))}
-                />
-              </div>
+              )}
             </div>
           </Modal.Body>
+
           <Modal.Footer>
             <Button
               variant="secondary"
@@ -623,6 +669,7 @@ function ProductTable({ filters, isDownloadButtonVisible }) {
             </Button>
             <Button
               variant="primary"
+              disabled={minVal === null || maxVal === null} // disable when no range
               onClick={() => {
                 downloadExcel();
                 setShowDownloadModal(false);

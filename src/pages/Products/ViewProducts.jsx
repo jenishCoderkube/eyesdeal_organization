@@ -11,12 +11,22 @@ function ProductList() {
   // Parse query string whenever URL changes
   const queryParams = new URLSearchParams(location.search);
   const filterFromUrl = {
+    search: queryParams.get("search") || "",
     model: queryParams.get("model") || "eyeGlasses",
+    brand: queryParams.get("brand") || "",
+    frameType: queryParams.get("frameType") || "",
+    frameShape: queryParams.get("frameShape") || "",
+    gender: queryParams.get("gender") || "",
+    frameMaterial: queryParams.get("frameMaterial") || "",
+    frameColor: queryParams.get("frameColor") || "",
+    frameSize: queryParams.get("frameSize") || "",
+    prescriptionType: queryParams.get("prescriptionType") || "",
+    frameCollection: queryParams.get("frameCollection") || "",
     status: queryParams.get("status") || "active",
   };
 
   const [filters, setFilters] = useState(filterFromUrl);
-  const [isDownloadButtonVisible, setIsDownloadButtonVisible] = useState(false);
+  const [isDownloadButtonVisible, setIsDownloadButtonVisible] = useState(true);
 
   // Keep filters in sync with URL changes (back/forward navigation support)
   useEffect(() => {
@@ -26,6 +36,12 @@ function ProductList() {
   const handleFilterSubmit = (filterValues) => {
     setFilters(filterValues);
     setIsDownloadButtonVisible(true);
+    const query = new URLSearchParams({
+      ...filterValues,
+      model: filterValues.model || "eyeGlasses",
+      status: filterValues.status || "active",
+    }).toString();
+    navigate(`/products/view?${query}`);
   };
 
   return (
@@ -36,6 +52,7 @@ function ProductList() {
       />
       <ProductViewTable
         isDownloadButtonVisible={isDownloadButtonVisible}
+        setIsDownloadButtonVisible={setIsDownloadButtonVisible}
         filters={filters}
       />
     </div>

@@ -63,7 +63,8 @@ export const productRangesByType = {
   ],
 };
 
-export const parseRange = (range) => {
-  const [min, max] = range.split("-").map(Number);
-  return { min, max };
+export const parseRange = (rangeStr) => {
+  if (!rangeStr) return null;
+  const [min, max] = rangeStr.split("-").map(Number);
+  return { min: min || 0, max: max || min || 0 };
 };
