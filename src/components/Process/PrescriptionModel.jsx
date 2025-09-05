@@ -14,7 +14,7 @@ function PrescriptionModel({
       ?.filter(
         (cust) => cust.__t.toLowerCase() === activeCustStatus.toLowerCase()
       )
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) || [];
+      .reverse() || [];
 
   useEffect(() => {
     if (filteredPrescriptions.length > 0) {

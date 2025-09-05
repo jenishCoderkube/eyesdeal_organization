@@ -212,7 +212,7 @@ const AddPerchaseCom = () => {
           totalAmount: 0,
         };
         const calculatedProduct = calculateProductFields(newProduct);
-        const updatedProducts = [...products, calculatedProduct];
+        const updatedProducts = [...products, calculatedProduct].reverse();
         setProducts(updatedProducts);
         updateFormTotals(updatedProducts);
         setFormData((prev) => ({ ...prev, product: null }));
@@ -220,15 +220,23 @@ const AddPerchaseCom = () => {
       }
     }
   };
-
   const handleProductChange = (index, field, value) => {
     const updatedProducts = [...products];
+    let parsedValue = value;
+
+    // Ensure numeric fields are treated as numbers
+    if (["quantity", "purRate", "discRate", "tax"].includes(field)) {
+      parsedValue = value === "" ? "" : parseFloat(value);
+    }
+
     updatedProducts[index] = {
       ...updatedProducts[index],
-      [field]: value,
+      [field]: parsedValue,
     };
+
     const calculatedProduct = calculateProductFields(updatedProducts[index]);
     updatedProducts[index] = calculatedProduct;
+
     setProducts(updatedProducts);
     updateFormTotals(updatedProducts);
   };
@@ -610,7 +618,7 @@ const AddPerchaseCom = () => {
                         </td>
                       </tr>
                     ) : (
-                      [...products].reverse().map((product, index) => (
+                      [...products].map((product, index) => (
                         <tr key={product.id}>
                           <td className="p-2 text-center">
                             <svg
@@ -633,15 +641,15 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="text"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.barcode}
                             />
                           </td>
                           <td className="p-2">
                             <textarea
-                              className="form-control form-control-sm"
-                              rows="2"
+                              className="form-control form-control-sm bg-secondary-subtle"
+                              rows="4"
                               readOnly
                               value={product.sku}
                             />
@@ -664,7 +672,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.mrp}
                             />
@@ -706,7 +714,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm "
                               min="0"
                               value={product.discRate}
                               onChange={(e) =>
@@ -721,7 +729,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.discAmount}
                             />
@@ -729,7 +737,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.tax}
                             />
@@ -737,7 +745,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.taxAmount}
                             />
@@ -745,7 +753,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.totalDisc}
                             />
@@ -753,7 +761,7 @@ const AddPerchaseCom = () => {
                           <td className="p-2">
                             <input
                               type="number"
-                              className="form-control form-control-sm"
+                              className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.totalAmount}
                             />
