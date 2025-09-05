@@ -1,14 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Modal, Button } from "react-bootstrap";
+import React, { useState, useEffect, useCallback } from "react";
+import { Modal } from "react-bootstrap";
 import moment from "moment";
 import { FaSearch } from "react-icons/fa";
 import * as XLSX from "xlsx";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import vendorshopService from "../../services/Process/vendorshopService";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -19,50 +14,55 @@ const debounce = (func, wait) => {
   };
 };
 
-const PurchaseModal = ({ show, onHide, purchase }) => {
+const PurchaseModal = ({ show, onHide, purchase, filterType }) => {
   console.log("get data from modelpurchase<<<", purchase);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(null);
+  const [editableData, setEditableData] = useState([]);
+
+  useEffect(() => {
+    if (purchase) {
+      const data = purchase.products || purchase.jobWorks || [];
+      setEditableData(data);
+    }
+  }, [purchase]);
 
   // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query || !data) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) => {
-        if (item.product) {
-          // For purchase logs (products)
-          return [
-            item.product.newBarcode?.toString(),
-            item.product.sku,
-            item.quantity?.toString(),
-            item.purchaseRate?.toString(),
-            item.tax?.toString(),
-            item.totalDiscount?.toString(),
-            item.totalAmount?.toString(),
-          ].some((field) => field?.toLowerCase().includes(lowerQuery));
-        } else if (item.lens) {
-          // For invoices (jobWorks)
-          return [
-            item.lens.barcode?.toString(),
-            item.lens.sku,
-            item.sale?.totalQuantity?.toString(),
-            item.lens.mrp?.toString(),
-            item.sale?.totalTax?.toString(),
-            item.sale?.totalDiscount?.toString(),
-            item.sale?.netAmount?.toString(),
-          ].some((field) => field?.toLowerCase().includes(lowerQuery));
-        }
-        return false;
-      });
-    },
-    []
-  );
+  const filterGlobally = useCallback((data, query) => {
+    if (!query || !data) return data;
+    const lowerQuery = query.toLowerCase();
+    return data.filter((item) => {
+      if (item.product) {
+        // For purchase logs (products)
+        return [
+          item.product.newBarcode?.toString(),
+          item.product.sku,
+          item.quantity?.toString(),
+          item.purchaseRate?.toString(),
+          item.tax?.toString(),
+          item.totalDiscount?.toString(),
+          item.totalAmount?.toString(),
+        ].some((field) => field?.toLowerCase().includes(lowerQuery));
+      } else if (item.lens) {
+        // For invoices (jobWorks)
+        return [
+          item.lens.barcode?.toString(),
+          item.lens.sku,
+          item.sale?.totalQuantity?.toString(),
+          item.lens.mrp?.toString(),
+          item.sale?.totalTax?.toString(),
+          item.sale?.totalDiscount?.toString(),
+          item.sale?.netAmount?.toString(),
+        ].some((field) => field?.toLowerCase().includes(lowerQuery));
+      }
+      return false;
+    });
+  }, []);
 
   // Debounced filter logic
   useEffect(() => {
-    if (!purchase) return; // Skip filtering if no purchase
+    if (!purchase) return;
     const data = purchase.products || purchase.jobWorks || [];
     const debouncedFilter = debounce((query) => {
       setFilteredProducts(filterGlobally(data, query));
@@ -76,6 +76,7 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
   // Use filtered data if available, otherwise use full dataset
   const tableData =
     filteredProducts ||
+    editableData ||
     (purchase ? purchase.products || purchase.jobWorks || [] : []);
 
   // Calculate totals for display
@@ -94,104 +95,50 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
           .toFixed(2)
       : "0.00";
 
-  // Define table columns
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "product.newBarcode",
-        header: "BARCODE",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.product?.newBarcode ||
-              row.original.lens?.barcode ||
-              "N/A"}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "product.sku",
-        header: "SKU",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.product?.sku || row.original.lens?.sku || "N/A"}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "quantity",
-        header: "QTY",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.quantity || row.original.sale?.totalQuantity || "N/A"}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "purchaseRate",
-        header: "RATE",
-        cell: ({ row }) => {
-          const rate = row.original?.lens?.item?.costPrice ?? 0;
-          return <div className="text-left">{rate}</div>;
-        },
-      },
-      {
-        accessorKey: "tax",
-        header: "TAX (%)",
-        cell: ({ row }) => {
-          const tax = row.original?.lens?.item?.tax ?? 0;
-          return <div className="text-left">{tax}</div>;
-        },
-      },
-      {
-        accessorKey: "taxAmount",
-        header: "TAX AMOUNT",
-        cell: ({ row }) => {
-          const rate = row.original?.lens?.item?.costPrice ?? 0;
-          const tax = row.original?.lens?.item?.tax ?? 0;
-          const taxAmount = (rate * tax) / 100;
-          return <div className="text-left">{taxAmount.toFixed(2)}</div>;
-        },
-      },
-      {
-        accessorKey: "totalAmount",
-        header: "TOTAL (Rate + Tax)",
-        cell: ({ row }) => {
-          const rate = row.original?.lens?.item?.costPrice ?? 0;
-          const tax = row.original?.lens?.item?.tax ?? 0;
-          const taxAmount = (rate * tax) / 100;
-          const total = rate + taxAmount;
-          return <div className="text-left">{total.toFixed(2)}</div>;
-        },
-      },
+  // Handle input changes
+  const handleRateChange = useCallback((rowIndex, newRate) => {
+    setEditableData((prev) =>
+      prev.map((item, i) =>
+        i === rowIndex
+          ? {
+              ...item,
+              lens: item.lens
+                ? {
+                    ...item.lens,
+                    item: {
+                      ...item.lens.item,
+                      costPrice: parseFloat(newRate),
+                    },
+                  }
+                : item.lens,
+              purchaseRate: parseFloat(newRate) || 0, // Support products
+            }
+          : item
+      )
+    );
+  }, []);
 
-      {
-        accessorKey: "totalDiscount",
-        header: "DISCOUNT",
-        cell: ({ row }) => (
-          <div className="text-left">
-            {row.original.totalDiscount ||
-              row.original.sale?.totalDiscount ||
-              "N/A"}
-          </div>
-        ),
-      },
-    ],
-    []
-  );
-
-  // @tanstack/react-table setup
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 20,
-      },
-    },
-  });
+  const handleTaxChange = useCallback((rowIndex, newTax) => {
+    setEditableData((prev) =>
+      prev.map((item, i) =>
+        i === rowIndex
+          ? {
+              ...item,
+              lens: item.lens
+                ? {
+                    ...item.lens,
+                    item: {
+                      ...item.lens.item,
+                      tax: parseFloat(newTax),
+                    },
+                  }
+                : item.lens,
+              tax: parseFloat(newTax) || 0, // Support products
+            }
+          : item
+      )
+    );
+  }, []);
 
   // Export to Excel
   const exportToExcel = () => {
@@ -228,15 +175,55 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
     XLSX.writeFile(workbook, `Purchase_${purchase.invoiceNumber}.xlsx`);
   };
 
-  // Pagination info
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
+  // Pagination state
+  const [pageIndex, setPageIndex] = useState(0);
+  const pageSize = 20;
+  const startRow = pageIndex * pageSize;
   const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
   const totalRows = tableData.length;
+  const totalPages = Math.ceil(totalRows / pageSize);
 
   // Early return after hooks
   if (!purchase) return null;
+  // Handle Save Row
+  const handleSaveRow = async (item, rowIndex) => {
+    const isLens = !!item.lens;
+    const rate = isLens
+      ? item.lens?.item?.costPrice ?? 0
+      : item.purchaseRate ?? 0;
+    const taxRate = isLens ? item.lens?.item?.tax ?? 0 : item.tax ?? 0;
+    const taxAmount = (rate * taxRate) / 100;
+    const amount = rate + taxAmount;
+
+    // Build payload
+    const payload = {
+      _id: item._id || purchase._id, // fallback if row doesn't have id
+      price: rate,
+      taxAmount: taxAmount,
+      taxRate: taxRate,
+      taxType: "exc", // hardcoded for now
+      amount: amount,
+      fillStatus: "filled",
+      notes: null,
+      invoiceNumber: purchase.invoiceNumber,
+      invoiceDate: new Date(purchase.invoiceDate).getTime(),
+      gstType: "", // can map later if needed
+    };
+
+    console.log("Row Payload >>>", payload);
+    try {
+      const response = await vendorshopService.updateJobWorkData(payload);
+      if (response.success) {
+        toast.success("Row updated successfully!");
+      } else {
+        toast.error(response.message || "Failed to update row");
+      }
+    } catch (error) {
+      toast.error("Something went wrong while updating row");
+    }
+    // TODO: call API here
+    // await api.updateRow(payload)
+  };
 
   return (
     <Modal
@@ -396,58 +383,143 @@ const PurchaseModal = ({ show, onHide, purchase }) => {
                 <div className="table-responsive px-2">
                   <table className="table table-sm">
                     <thead className="text-xs text-uppercase text-muted bg-light border">
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <tr key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <th
-                              key={header.id}
-                              className="p-3 text-left custom-perchase-th"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
+                      <tr>
+                        <th className="p-3 text-left custom-perchase-th">
+                          BARCODE
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          SKU
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          QTY
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          RATE
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          TAX (%)
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          TAX AMOUNT
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          TOTAL (Rate + Tax)
+                        </th>
+                        {filterType === "invoice" && (
+                          <th className="p-3 text-left custom-perchase-th">
+                            ACTION
+                          </th>
+                        )}
+                      </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="p-3 fw-normal">
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
+                      {editableData
+                        .slice(startRow, endRow)
+                        .map((item, index) => {
+                          const rowIndex = startRow + index;
+                          const isLens = !!item.lens;
+                          const rate = isLens
+                            ? item.lens?.item?.costPrice ?? 0
+                            : item.purchaseRate ?? 0;
+                          const tax = isLens
+                            ? item.lens?.item?.tax ?? 0
+                            : item.tax ?? 0;
+                          const taxAmount = (rate * tax) / 100;
+                          const total = rate + taxAmount;
+
+                          return (
+                            <tr key={rowIndex}>
+                              <td className="p-3 fw-normal">
+                                {item.product?.newBarcode ||
+                                  item.lens?.barcode ||
+                                  "N/A"}
+                              </td>
+                              <td className="p-3 fw-normal">
+                                {item.product?.sku || item.lens?.sku || "N/A"}
+                              </td>
+                              <td className="p-3 fw-normal">
+                                {item.quantity ||
+                                  item.sale?.totalQuantity ||
+                                  "N/A"}
+                              </td>
+                              {filterType === "invoice" ? (
+                                <td className="p-3 fw-normal">
+                                  <input
+                                    type="number"
+                                    value={rate}
+                                    onChange={(e) =>
+                                      handleRateChange(rowIndex, e.target.value)
+                                    }
+                                    className="form-control form-control-sm text-left"
+                                    style={{ width: "100px" }}
+                                  />
+                                </td>
+                              ) : (
+                                <td className="p-3 fw-normal">{rate}</td>
                               )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
+                              {filterType === "invoice" ? (
+                                <td className="p-3 fw-normal">
+                                  <input
+                                    type="number"
+                                    value={tax}
+                                    onChange={(e) =>
+                                      handleTaxChange(rowIndex, e.target.value)
+                                    }
+                                    className="form-control form-control-sm text-left"
+                                    style={{ width: "80px" }}
+                                  />
+                                </td>
+                              ) : (
+                                <td className="p-3 fw-normal">{tax}</td>
+                              )}
+                              <td className="p-3 fw-normal">
+                                {taxAmount.toFixed(2)}
+                              </td>
+                              <td className="p-3 fw-normal">
+                                {total.toFixed(2)}
+                              </td>
+                              {filterType === "invoice" && (
+                                <td className="p-3 fw-normal">
+                                  <button
+                                    className="btn btn-sm btn-success"
+                                    onClick={() =>
+                                      handleSaveRow(item, rowIndex)
+                                    }
+                                  >
+                                    Save
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
                 <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
                   <div className="text-sm text-muted mb-3 mb-sm-0">
-                    Showing <span className="fw-medium">{startRow}</span> to{" "}
+                    Showing <span className="fw-medium">{startRow + 1}</span> to{" "}
                     <span className="fw-medium">{endRow}</span> of{" "}
                     <span className="fw-medium">{totalRows}</span> results
                   </div>
                   <div className="btn-group">
                     <button
                       className="btn btn-outline-primary"
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
+                      onClick={() =>
+                        setPageIndex((prev) => Math.max(prev - 1, 0))
+                      }
+                      disabled={pageIndex === 0}
                     >
                       Previous
                     </button>
                     <button
                       className="btn btn-outline-primary"
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
+                      onClick={() =>
+                        setPageIndex((prev) =>
+                          Math.min(prev + 1, totalPages - 1)
+                        )
+                      }
+                      disabled={pageIndex >= totalPages - 1}
                     >
                       Next
                     </button>

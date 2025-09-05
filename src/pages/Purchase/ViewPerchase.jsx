@@ -569,6 +569,7 @@ function ViewPurchase() {
         show={showModal}
         onHide={handleCloseModal}
         purchase={selectedPurchase}
+        filterType={filterType.value}
       />
     </div>
   );

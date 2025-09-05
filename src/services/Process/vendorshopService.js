@@ -7,6 +7,7 @@ const AUTH_ENDPOINTS = {
   ORDER_COUNT: `/orders/get-count`,
   JOB_WORKS: `/jobWorks`,
   JOB_WORKS_PDF: `/jobWorks/pdf`,
+  JOB_WORKS_DATA: `/vendors/updateinvoice`,
 };
 
 const buildJobWorksParams = (filters) => {
@@ -235,7 +236,22 @@ export const vendorshopService = {
       };
     }
   },
-
+  updateJobWorkData: async (data) => {
+    try {
+      const response = await api.put(AUTH_ENDPOINTS.JOB_WORKS_DATA, data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          `Error updating job work ${jobWorkId} status to ${status}`,
+      };
+    }
+  },
   updateOrderNote: async (saleId, note) => {
     try {
       const response = await api.patch(AUTH_ENDPOINTS.ORDERS, {
