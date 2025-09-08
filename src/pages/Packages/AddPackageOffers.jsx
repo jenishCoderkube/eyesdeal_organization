@@ -7,70 +7,76 @@ import {
 import { Modal, Button, Form, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
 import AsyncSelect from "react-select/async";
-import { packageService } from "../../services/packageService"; // Adjust path as needed
-import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal"; // Adjust path as needed
+import { packageService } from "../../services/packageService";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
 import { useParams } from "react-router-dom";
 
 const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
-  console.log(":initialData", initialData);
-
-  const [lens, setLens] = useState(initialData?.lens || null);
-  const [pairNumber, setPairNumber] = useState( initialData?.pairNumber || 1);
-  const [lensPrice, setLensPrice] = useState( initialData?.lensPrice || "");
-  const [framePrice, setFramePrice] = useState(initialData?.framePrice || "");
-  const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice || "");
+  const [lens, setLens] = useState(null);
+  const [pairs, setPairs] = useState(
+    initialData?.pairs || [
+      { pairNumber: 1, lensPrice: "", framePrice: "", totalPrice: "" },
+    ]
+  );
   const [submitting, setSubmitting] = useState(false);
-// console.log("lens",lens);
 
-// useEffect(() => {
-// setLensPrice(lens?.MRP || initialData?.lensPrice || "");
-// },[lens]);
-
-  // Calculate total price whenever lensPrice or framePrice changes
+  // Initialize form with initialData
   useEffect(() => {
-    const lens = parseFloat(lensPrice) || 0;
-    const frame = parseFloat(framePrice) || 0;
-    setTotalPrice((lens + frame).toFixed(2));
-  }, [lensPrice, framePrice]);
-
-  // Reset form when initialData or show changes
-  useEffect(() => {
-    if (initialData?.lens) {
-      if (typeof initialData.lens === "string") {
-        // Case: lens is just an ID
-        setLens({ value: initialData.lens, label: initialData.lens });
-      } else if (typeof initialData.lens === "object") {
-        // Case: lens is populated object
-        setLens({
-          value: initialData.lens._id,
-          label: initialData.lens.sku || initialData.lens.productName,
-          ...initialData.lens,
-        });
+    if (show) {
+      if (initialData) {
+        // Handle edit case
+        setLens(
+          initialData.lens
+            ? {
+                value:
+                  typeof initialData.lens === "string"
+                    ? initialData.lens
+                    : initialData.lens._id,
+                label:
+                  typeof initialData.lens === "string"
+                    ? initialData.lens
+                    : initialData.lens.sku || initialData.lens.productName,
+                ...initialData.lens,
+              }
+            : null
+        );
+        setPairs(
+          initialData.pairs
+            ? initialData.pairs.map((pair, index) => ({
+                ...pair,
+                pairNumber: index + 1, // Ensure pair numbers are sequential
+              }))
+            : [{ pairNumber: 1, lensPrice: "", framePrice: "", totalPrice: "" }]
+        );
+      } else {
+        // Reset for new package
+        setLens(null);
+        setPairs([
+          { pairNumber: 1, lensPrice: "", framePrice: "", totalPrice: "" },
+        ]);
       }
-    } else {
-      setLens(null);
     }
-
-    setPairNumber(initialData?.quantity || 1);
-    setLensPrice(initialData?.lensPrice || "");
-    setFramePrice(initialData?.framePrice || "");
-    setTotalPrice(initialData?.totalPrice || "");
   }, [initialData, show]);
 
-  // Async lens options loader
+  // Calculate total price for each pair
+  useEffect(() => {
+    setPairs((prevPairs) =>
+      prevPairs.map((pair) => {
+        const lensPrice = parseFloat(pair.lensPrice) || 0;
+        const framePrice = parseFloat(pair.framePrice) || 0;
+        return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
+      })
+    );
+  }, [pairs]);
+
   const loadLensOptions = async (inputValue) => {
     try {
       const response = await packageService.getLenses(inputValue);
-
-      // API returns docs as array of product objects
       const docs = response.data?.docs || [];
-      console.log("docs", docs);
-
-      // Map to { value, label } format
-      return docs?.map((lens) => ({
+      return docs.map((lens) => ({
         value: lens._id,
-        label: lens.sku || lens?.productName, // 👈 label is sku
-        ...lens, // keep full object if you need later (price, brand, etc.)
+        label: lens.sku || lens.productName,
+        ...lens,
       }));
     } catch (error) {
       toast.error("Error loading lenses");
@@ -78,27 +84,70 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
     }
   };
 
+  const handlePairChange = (index, field, value) => {
+    setPairs((prevPairs) => {
+      const newPairs = [...prevPairs];
+      newPairs[index] = { ...newPairs[index], [field]: value };
+      return newPairs;
+    });
+  };
+
+  const addPair = () => {
+    if (pairs.length < 5) {
+      setPairs([
+        ...pairs,
+        {
+          pairNumber: pairs.length + 1,
+          lensPrice: "",
+          framePrice: "",
+          totalPrice: "",
+        },
+      ]);
+    }
+  };
+
+  const removePair = (index) => {
+    if (pairs.length > 1) {
+      setPairs(
+        (prevPairs) =>
+          prevPairs
+            .filter((_, i) => i !== index)
+            .map((pair, i) => ({ ...pair, pairNumber: i + 1 })) // Reindex pair numbers
+      );
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    if (!lens) {
+      toast.error("Please select a lens");
+      return;
+    }
 
-    // Build plain JSON payload
+    setSubmitting(true);
     const payload = {
-      package: packageId, // 👈 make sure you have this from props/state
-      lens: lens?.value || lens, // lens._id if from react-select
-      quantity: Number(pairNumber) || 0,
-      framePrice: Number(framePrice) || 0,
-      lensPrice: Number(lensPrice) || 0,
-      totalPrice: Number(totalPrice) || 0,
+      package: packageId,
+      lens: lens.value,
+      pairs: pairs.map((pair) => ({
+        pairNumber: pair.pairNumber,
+        lensPrice: Number(pair.lensPrice) || 0,
+        framePrice: Number(pair.framePrice) || 0,
+        totalPrice: Number(pair.totalPrice) || 0,
+      })),
     };
 
-    // If updating an existing record
     if (initialData?._id) {
       payload._id = initialData._id;
     }
 
-    await onSubmit(payload); // send JSON
-    setSubmitting(false);
+    try {
+      await onSubmit(payload);
+      setSubmitting(false);
+      onHide();
+    } catch (error) {
+      setSubmitting(false);
+      toast.error("Error submitting package");
+    }
   };
 
   return (
@@ -123,49 +172,67 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
               required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Pair (1-5)</Form.Label>
-            <Form.Control
-              type="number"
-              min="1"
-              max="5"
-              value={pairNumber}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPairNumber(val === "" ? "" : parseInt(val));
-              }}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Lens Price</Form.Label>
-            <Form.Control
-              type="number"
-              step="0.01"
-              value={lensPrice}
-              onChange={(e) => setLensPrice(e.target.value)}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Frame Price</Form.Label>
-            <Form.Control
-              type="number"
-              step="0.01"
-              value={framePrice}
-              onChange={(e) => setFramePrice(e.target.value)}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Total Price</Form.Label>
-            <Form.Control
-              type="number"
-              step="0.01"
-              value={totalPrice}
-              readOnly
-            />
-          </Form.Group>
+          {pairs.length < 5 && (
+            <Button
+              variant="outline-primary mb-3"
+              type="button"
+              onClick={addPair}
+            >
+              Add Pair
+            </Button>
+          )}
+          {pairs.map((pair, index) => (
+            <div key={index} className="border p-3 mb-3 rounded">
+              <h5>Pair {pair.pairNumber}</h5>
+              <div className="row">
+                <Form.Group className="col-md-4 mb-3">
+                  <Form.Label>Lens Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={pair.lensPrice}
+                    onChange={(e) =>
+                      handlePairChange(index, "lensPrice", e.target.value)
+                    }
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="col-md-4 mb-3">
+                  <Form.Label>Frame Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={pair.framePrice}
+                    onChange={(e) =>
+                      handlePairChange(index, "framePrice", e.target.value)
+                    }
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="col-md-3 mb-3">
+                  <Form.Label>Total Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={pair.totalPrice}
+                    readOnly
+                  />
+                </Form.Group>
+                {pairs.length > 1 && (
+                  <div className="col-md-1 d-flex align-items-end mb-3">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => removePair(index)}
+                    >
+                      X
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
           <Button type="submit" variant="primary" disabled={submitting}>
             {submitting ? "Saving..." : initialData ? "Update" : "Create"}
           </Button>
@@ -192,33 +259,41 @@ const AddPackageOffers = () => {
   });
   const [deleteModalShow, setDeleteModalShow] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { id: packageId } = useParams(); // Get package ID from URL
+  const { id: packageId } = useParams();
+
   const fetchPackages = async (page = 1, limit = 10) => {
     setLoading(true);
-    const res = await packageService.getPackagesProducs(page, limit, packageId);
-    if (res.success) {
-      setPackages(res.data?.data || []);
-      setPagination({
-        totalDocs: res.data?.totalRecords || 0,
-        limit: res.data?.limit || limit,
-        page: res.data?.currentPage || page,
-        totalPages: res.data?.totalPages || 1,
-        hasPrevPage: (res.data?.currentPage || page) > 1,
-        hasNextPage:
-          (res.data?.currentPage || page) < (res.data?.totalPages || 1),
-        prevPage:
-          (res.data?.currentPage || page) > 1
-            ? (res.data?.currentPage || page) - 1
-            : null,
-        nextPage:
-          (res.data?.currentPage || page) < (res.data?.totalPages || 1)
-            ? (res.data?.currentPage || page) + 1
-            : null,
-      });
-    } else {
-      // toast.error(res.message);
-      setPackages([]);
-      setPagination((prev) => ({ ...prev, totalDocs: 0 }));
+    try {
+      const res = await packageService.getPackagesProducs(
+        page,
+        limit,
+        packageId
+      );
+      if (res.success) {
+        setPackages(res.data?.data || []);
+        setPagination({
+          totalDocs: res.data?.totalRecords || 0,
+          limit: res.data?.limit || limit,
+          page: res.data?.currentPage || page,
+          totalPages: res.data?.totalPages || 1,
+          hasPrevPage: (res.data?.currentPage || page) > 1,
+          hasNextPage:
+            (res.data?.currentPage || page) < (res.data?.totalPages || 1),
+          prevPage:
+            (res.data?.currentPage || page) > 1
+              ? (res.data?.currentPage || page) - 1
+              : null,
+          nextPage:
+            (res.data?.currentPage || page) < (res.data?.totalPages || 1)
+              ? (res.data?.currentPage || page) + 1
+              : null,
+        });
+      } else {
+        setPackages([]);
+        setPagination((prev) => ({ ...prev, totalDocs: 0 }));
+      }
+    } catch (error) {
+      toast.error("Error fetching packages");
     }
     setLoading(false);
   };
@@ -247,45 +322,30 @@ const AddPackageOffers = () => {
         cell: ({ getValue }) => <span>{getValue()?.sku || "N/A"}</span>,
       },
       {
-        accessorKey: "quantity",
-        header: "Pair",
-        cell: ({ getValue }) => <span>{getValue() || "N/A"}</span>,
+        accessorKey: "pairs",
+        header: "Pairs",
+        cell: ({ getValue }) => <span>{getValue()?.length || 1} Pair(s)</span>,
       },
       {
-        accessorKey: "lensPrice",
-        header: "Lens Price",
-        cell: ({ getValue }) => {
-          const value = getValue();
-          return (
-            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
-          );
-        },
-      },
-      {
-        accessorKey: "framePrice",
-        header: "Frame Price",
-        cell: ({ getValue }) => {
-          const value = getValue();
-          return (
-            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
-          );
-        },
-      },
-      {
-        accessorKey: "totalPrice",
-        header: "Total Price",
-        cell: ({ getValue }) => {
-          const value = getValue();
-          return (
-            <span>{typeof value === "number" ? value.toFixed(2) : "0.00"}</span>
-          );
-        },
+        accessorKey: "pairs",
+        header: "Details",
+        cell: ({ getValue }) => (
+          <div>
+            {getValue()?.map((pair, index) => (
+              <div key={index}>
+                Pair {pair.pairNumber}: Lens ${pair.lensPrice?.toFixed(2)} |
+                Frame ${pair.framePrice?.toFixed(2)} | Total $
+                {pair.totalPrice?.toFixed(2)}
+              </div>
+            ))}
+          </div>
+        ),
       },
       {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
-          <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <span
               style={{ cursor: "pointer", color: "#007bff" }}
               title="Edit"
@@ -338,7 +398,7 @@ const AddPackageOffers = () => {
                 <line x1="14" y1="11" x2="14" y2="17" />
               </svg>
             </span>
-          </span>
+          </div>
         ),
       },
     ],
@@ -359,19 +419,20 @@ const AddPackageOffers = () => {
   });
 
   const handleModalSubmit = async (formData) => {
-    let res;
-    if (formData._id) {
-      res = await packageService.updatePackageOffers(formData);
-    } else {
-      res = await packageService.createPackageProduct(formData);
-    }
-    if (res.success) {
-      toast.success(res.message || "Success");
-      setModalShow(false);
-      setEditData(null);
-      fetchPackages(pagination.page, pagination.limit);
-    } else {
-      toast.error(res.message);
+    try {
+      const res = formData._id
+        ? await packageService.updatePackageOffers(formData)
+        : await packageService.createPackageProduct(formData);
+      if (res.success) {
+        toast.success(res.message || "Success");
+        setModalShow(false);
+        setEditData(null);
+        fetchPackages(pagination.page, pagination.limit);
+      } else {
+        toast.error(res.message || "Failed to save package");
+      }
+    } catch (error) {
+      toast.error("Error saving package");
     }
   };
 
@@ -419,13 +480,13 @@ const AddPackageOffers = () => {
             {loading ? (
               <tr>
                 <td colSpan={columns.length} className="text-center">
-                  Loading...
+                  <Spinner animation="border" size="sm" /> Loading...
                 </td>
               </tr>
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-center">
-                  No packages Offers found.
+                  No package offers found.
                 </td>
               </tr>
             ) : (
@@ -520,21 +581,25 @@ const AddPackageOffers = () => {
         onConfirm={async () => {
           if (!deleteTarget) return;
           setLoading(true);
-          const res = await packageService.deletePackageProduct(
-            deleteTarget._id
-          );
+          try {
+            const res = await packageService.deletePackageProduct(
+              deleteTarget._id
+            );
+            if (res.success) {
+              toast.success(res.message || "Package deleted successfully");
+              fetchPackages(pagination.page, pagination.limit);
+            } else {
+              toast.error(res.message || "Failed to delete package");
+            }
+          } catch (error) {
+            toast.error("Error deleting package");
+          }
           setLoading(false);
           setDeleteModalShow(false);
           setDeleteTarget(null);
-          if (res.success) {
-            toast.success(res.message || "Package deleted successfully");
-            fetchPackages(pagination.page, pagination.limit);
-          } else {
-            toast.error(res.message || "Failed to delete package");
-          }
         }}
         message={`Are you sure you want to delete the package with lens ${
-          deleteTarget?.lens?.label || ""
+          deleteTarget?.lens?.sku || "N/A"
         }?`}
       />
     </div>
