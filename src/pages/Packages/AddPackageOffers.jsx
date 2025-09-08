@@ -129,7 +129,7 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
       package: packageId,
       lens: lens.value,
       pairs: pairs.map((pair) => ({
-        pairNumber: pair.pairNumber,
+        quantity: pair.pairNumber,
         lensPrice: Number(pair.lensPrice) || 0,
         framePrice: Number(pair.framePrice) || 0,
         totalPrice: Number(pair.totalPrice) || 0,
@@ -333,8 +333,8 @@ const AddPackageOffers = () => {
           <div>
             {getValue()?.map((pair, index) => (
               <div key={index}>
-                Pair {pair.pairNumber}: Lens ${pair.lensPrice?.toFixed(2)} |
-                Frame ${pair.framePrice?.toFixed(2)} | Total $
+                Pair {pair?.quantity} | Lens ₹{pair.lensPrice?.toFixed(2)} |
+                Frame ₹{pair.framePrice?.toFixed(2)} | Total ₹
                 {pair.totalPrice?.toFixed(2)}
               </div>
             ))}

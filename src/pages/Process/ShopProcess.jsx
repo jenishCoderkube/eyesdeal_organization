@@ -1198,9 +1198,24 @@ function ShopProcess() {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
       .map((row) => ({ id: row.id, orderId: row.orderId, ...row }));
+
+    // Check for missing lenses
+    const invalidOrder = selectedOrders.find(
+      (order) => order.leftLens === "N/A" || order.rightLens === "N/A"
+    );
+
+    if (invalidOrder) {
+      toast.warning(
+        `Please first add lenses for barcode: ${invalidOrder?.barcode}`
+      );
+      return; // stop flow
+    }
+
+    // ✅ If all good, continue
     setPendingVendorData(selectedOrders);
     setShowVendorModal(true);
   };
+
   const handleSendToReady = async () => {
     const selectedOrders = productTableData
       .filter((row) => row.selected)
