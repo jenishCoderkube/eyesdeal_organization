@@ -4,6 +4,7 @@ import moment from "moment";
 import { FaSearch } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import vendorshopService from "../../services/Process/vendorshopService";
+import { toast } from "react-toastify";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -14,7 +15,14 @@ const debounce = (func, wait) => {
   };
 };
 
-const PurchaseModal = ({ show, onHide, purchase, filterType }) => {
+const PurchaseModal = ({
+  show,
+  onHide,
+  purchase,
+  filterType,
+  onUpdate,
+  currentPage,
+}) => {
   console.log("get data from modelpurchase<<<", purchase);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -213,7 +221,10 @@ const PurchaseModal = ({ show, onHide, purchase, filterType }) => {
     console.log("Row Payload >>>", payload);
     try {
       const response = await vendorshopService.updateJobWorkData(payload);
+      console.log("Update Response >>>", response);
+
       if (response.success) {
+        onUpdate(currentPage); // Refresh data in parent component
         toast.success("Row updated successfully!");
       } else {
         toast.error(response.message || "Failed to update row");

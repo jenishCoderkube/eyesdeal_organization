@@ -170,10 +170,10 @@ function ViewPurchase() {
   const btnSubmit = (e) => {
     e.preventDefault();
     if (filterType.value === "vendor") {
-      getPurchaseLogs();
+      getPurchaseLogs(currentPage);
     } else if (filterType.value === "invoice") {
       const vendorId = vendor.map((option) => option.value); // get selected vendor(s)
-      getInvoices();
+      getInvoices(currentPage);
     }
   };
 
@@ -570,6 +570,8 @@ function ViewPurchase() {
         onHide={handleCloseModal}
         purchase={selectedPurchase}
         filterType={filterType.value}
+        onUpdate={getInvoices}
+        currentPage={currentPage}
       />
     </div>
   );

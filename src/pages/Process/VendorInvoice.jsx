@@ -40,8 +40,8 @@ function VendorInvoice() {
 
   const users = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
-  const defaultStartDate = new Date("2024-12-01");
-  const defaultEndDate = new Date("2024-12-31");
+  const defaultStartDate = new Date();
+  const defaultEndDate = new Date();
 
   const formik = useFormik({
     initialValues: {
