@@ -11,7 +11,7 @@ const AddBulkStockTransferCom = () => {
   const [file, setFile] = useState(null); // State for file input
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [failedTransfers, setFailedTransfers] = useState([]);
   // Retrieve user data from localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
@@ -27,7 +27,6 @@ const AddBulkStockTransferCom = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -44,18 +43,26 @@ const AddBulkStockTransferCom = () => {
     }
 
     setLoading(true);
+    setFailedTransfers([]); // reset before new submit
     try {
       const response = await inventoryService.bulkStockTransferUpload(
         from.value,
         to.value,
         file
       );
+
       if (response.success) {
-        toast.success("Stock transfer successfully");
-        // Reset form
-        setTo(null);
-        setFile(null);
-        document.getElementById("bulkUploadFile").value = null; // Reset file input
+        if (response?.data?.failedTransfers?.length) {
+          toast.success("Stock transfer partially successful");
+          setFailedTransfers(response?.data?.failedTransfers);
+        } else {
+          toast.success("Stock transfer successful");
+          // Reset form
+          setFailedTransfers([]);
+          setTo(null);
+          setFile(null);
+          document.getElementById("bulkUploadFile").value = null;
+        }
       } else {
         toast.error(response.message || "Failed to upload stock transfer");
       }
@@ -207,6 +214,24 @@ const AddBulkStockTransferCom = () => {
           </form>
         </div>
       </div>
+      {failedTransfers.length > 0 && (
+        <div className="mt-4">
+          <h5 className="text-danger">Failed Transfers:</h5>
+          <ul className="list-group">
+            {failedTransfers.map((fail, idx) => (
+              <li
+                key={idx}
+                className="list-group-item d-flex justify-content-between"
+              >
+                <span>
+                  <strong>Barcode:</strong> {fail.barcode}
+                </span>
+                <span className="text-danger">{fail.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

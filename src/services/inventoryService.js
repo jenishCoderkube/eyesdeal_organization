@@ -76,7 +76,7 @@ const buildInventoryParams = (
   if (page) params.append("page", page);
 
   if (search) {
-    params.append("search[search]", search);
+    params.append("search", search);
   }
   if (limit) {
     params.append("limit", limit);
@@ -125,7 +125,7 @@ const buildInventoryStoreParams = (
   if (page) params.append("page", page);
 
   if (search) {
-    params.append("search[search]", search);
+    params.append("search", search);
   }
   if (limit) {
     params.append("limit", limit);
@@ -145,7 +145,7 @@ const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
   if (page) params.append("page", page);
 
   if (search) {
-    params.append("search[search]", search);
+    params.append("search", search);
   }
   if (limit) {
     params.append("limit", limit);
@@ -189,7 +189,7 @@ const buildAdjustmentParams = (productId, storeIds, page, search, limit) => {
   if (page) params.append("page", page);
 
   if (search) {
-    params.append("search[search]", search);
+    params.append("search", search);
   }
   if (limit) {
     params.append("limit", limit);
