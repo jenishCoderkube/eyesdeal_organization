@@ -36,6 +36,7 @@ const SaleReturn = () => {
   const [productOptions, setProductOptions] = useState([]);
   const [inventoryData, setInventoryData] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [receivedAmounts, setReceivedAmounts] = useState([]);
 
   const [selectedDate, setSelectedDate] = useState(new Date()); // State for the date
   const [SalesOrderData, setSalesOrderData] = useState(null);
@@ -85,6 +86,10 @@ const SaleReturn = () => {
     callback(filtered);
   };
 
+  useEffect(() => {
+    console.log("Inventory Data:", inventoryData);
+  }, [inventoryData]);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -105,10 +110,6 @@ const SaleReturn = () => {
 
     if (!formData.customerPhone.trim()) {
       newErrors.customerPhone = "Customer Phone is required";
-      isValid = false;
-    } else if (!/^\d{10}$/.test(formData.customerPhone.trim())) {
-      // Basic phone number validation (10 digits)
-      newErrors.customerPhone = "Please enter a valid 10-digit phone number";
       isValid = false;
     }
 
@@ -168,17 +169,16 @@ const SaleReturn = () => {
     try {
       const response = await saleService.sales(id);
       if (response.success) {
-        setSalesData(response.data.data);
-        setSalesId(response.data.data?.docs?.[0]._id);
+        const sale = response.data.data?.docs?.[0];
+        setSalesData(sale);
+        setSalesId(sale?._id);
 
-        const filteredOrders = response.data.data?.docs?.[0].orders.map(
-          (order) => ({
-            value: order._id,
-            label: order.billNumber,
-            data: order,
-          })
-        );
-        console.log("Filtered Orders:", response.data.data?.docs?.[0].orders);
+        setReceivedAmounts(sale?.receivedAmount || []); // ✅ store it here
+        const filteredOrders = response.data.data?.docs?.map((order) => ({
+          value: order._id,
+          label: order?.saleNumber || order?.billNumber || order?.smsId,
+          data: order,
+        }));
 
         setOrdersData(filteredOrders);
       } else {
@@ -193,24 +193,59 @@ const SaleReturn = () => {
     try {
       const options = [];
 
-      if (data.lens) {
-        options.push({
-          label: data.lens.displayName,
-          value: data.lens.barcode,
-          data: data.lens,
-        });
-      }
+      if (!data?.orders || !Array.isArray(data.orders)) return;
 
-      if (data.product) {
-        options.push({
-          label: data.product.displayName,
-          value: data.product.barcode,
-          data: data.product,
-        });
-      }
+      console.log("order", data);
+      data.orders.forEach((order) => {
+        // Product
+
+        if (order.product) {
+          const uniqueId = crypto.randomUUID(); // ✅ ensures unique value
+          options.push({
+            label: order.product.displayName,
+            value: `${order.product?.item}-${uniqueId}`,
+            type: "product",
+            data: order.product,
+          });
+        }
+
+        // Left Lens
+        if (order.leftLens) {
+          const uniqueId = crypto.randomUUID(); // ✅ ensures unique value
+          options.push({
+            label: `Left Lens - ${order.leftLens.displayName}`,
+            value: `${order.leftLens?.item}-${uniqueId}`,
+            type: "leftLens",
+            data: order.leftLens,
+          });
+        }
+
+        // Right Lens
+        if (order.rightLens) {
+          const uniqueId = crypto.randomUUID(); // ✅ ensures unique value
+          options.push({
+            label: `Right Lens - ${order.rightLens.displayName}`,
+            value: `${order.rightLens?.item}-${uniqueId}`,
+            type: "rightLens",
+            data: order.rightLens,
+          });
+        }
+
+        // Sometimes API has just `lens`
+        if (order.lens) {
+          const uniqueId = crypto.randomUUID(); // ✅ ensures unique value
+          options.push({
+            label: `Lens - ${order.lens.displayName}`,
+            value: `${order.lens?.item}-${uniqueId}`,
+            type: "lens",
+            data: order.lens,
+          });
+        }
+      });
+
       setProductOptions(options);
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error("Error fetching products:", error);
     }
   };
 
@@ -281,11 +316,15 @@ const SaleReturn = () => {
                     setFormData((prev) => ({
                       ...prev,
                       customer: selectedOption.data,
+                      customerName: selectedOption.data.name || "",
+                      customerPhone: selectedOption.data.phone || "",
                     }));
                   } else {
                     setFormData((prev) => ({
                       ...prev,
                       customer: null,
+                      customerName: "",
+                      customerPhone: "",
                     }));
                   }
                   fetchOrderData(selectedOption?.data._id);
@@ -592,29 +631,47 @@ const SaleReturn = () => {
                 <div className="mb-3">
                   <label className="form-label">Pay Amount</label>
                 </div>
-                {inventoryData.length > 0 && (
-                  <div className="row align-items-center px-3 mb-3">
+
+                {(receivedAmounts.length > 0
+                  ? receivedAmounts
+                  : inventoryData.length > 0
+                  ? [{}]
+                  : []
+                ).map((payment, index) => (
+                  <div
+                    key={payment._id || index}
+                    className="row align-items-center px-3 mb-3"
+                  >
+                    {/* Method */}
                     <div className="col-md-3 p-1 d-flex align-items-center">
-                      <select className="form-select" name={`receivedAmount`}>
+                      <select
+                        className="form-select"
+                        name={`receivedAmount[${index}].method`}
+                        defaultValue={payment.method || "cash"}
+                      >
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
                         <option value="bank">Bank</option>
                       </select>
                     </div>
+
                     {/* Amount */}
                     <div className="col-md-3 p-1">
                       <input
                         type="number"
                         className="form-control"
-                        name={`receivedAmount`}
-                        defaultValue={totalAmount.toFixed(2)}
+                        name={`receivedAmount[${index}].amount`}
+                        defaultValue={payment.amount ?? totalAmount.toFixed(2)}
                       />
                     </div>
+
                     {/* Date */}
                     <div className="col-md-3 p-1">
                       <DatePicker
                         className="form-control"
-                        selected={selectedDate}
+                        selected={
+                          payment.date ? new Date(payment.date) : selectedDate
+                        }
                         onChange={handleDateChange}
                         dateFormat="yyyy-MM-dd"
                       />
@@ -625,12 +682,12 @@ const SaleReturn = () => {
                       <input
                         type="text"
                         className="form-control"
-                        name={`salesId`}
-                        defaultValue={salesId}
+                        name={`receivedAmount[${index}].reference`}
+                        defaultValue={payment.reference || salesId}
                       />
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </div>

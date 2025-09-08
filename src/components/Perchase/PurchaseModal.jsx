@@ -242,11 +242,10 @@ const PurchaseModal = ({
       onHide={onHide}
       size="xl"
       centered
-      dialogClassName="modal-90w"
       className="overflow-auto"
     >
       <Modal.Body className="p-0">
-        <div className="bg-white rounded shadow-lg w-100 max-w-5xl max-h-[90vh] overflow-auto">
+        <div className="bg-white rounded shadow-lg w-100  max-h-[90vh] overflow-auto">
           {/* Header */}
           <div className="px-4 py-3 border-bottom border-slate-200">
             <div className="d-flex justify-content-between align-items-center">

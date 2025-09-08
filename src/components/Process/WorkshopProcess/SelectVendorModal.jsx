@@ -92,7 +92,6 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
             vendor: leftVendor.value,
           };
 
-          console.log("Creating Left JobWork:", leftPayload);
           const jobWorkRes = await workshopService.createJobWork(leftPayload);
 
           if (jobWorkRes?.success && jobWorkRes.data?.data?.id) {
@@ -105,7 +104,6 @@ const SelectVendorModal = ({ show, onHide, selectedRows, onSubmit }) => {
               vendorNote: vendorNote || null,
             };
 
-            console.log("Updating order (Left):", updatePayload);
             const updateRes = await workshopService.updateOrderJobWork(
               orderId,
               updatePayload

@@ -459,7 +459,7 @@ function ViewProductAttributesCom() {
   const totalRows = tableData.length;
 
   return (
-    <div className="container-fluid px-4 py-5">
+    <div className="container-fluid px-4 ">
       <style>
         {`
           .text-color-purple {
@@ -469,7 +469,7 @@ function ViewProductAttributesCom() {
       </style>
       {/* Mobile Horizontal Tabs */}
       <div className="d-md-none bg-light border-bottom">
-        <div className="max-width-90 mx-auto py-md-3 py-2">
+        <div className="max-width-90 mx-auto py-md-3 ">
           <ul
             className="nav flex-row flex-nowrap overflow-x-auto"
             style={{ whiteSpace: "nowrap" }}
@@ -502,7 +502,7 @@ function ViewProductAttributesCom() {
           </ul>
         </div>
       </div>
-      <div className="row max-width-90 mx-auto mt-5">
+      <div className="row max-width-90 mx-auto">
         {/* Desktop Vertical Tabs */}
         <div
           className="col-md-2 d-none d-md-block bg-light mt-5 border-end"

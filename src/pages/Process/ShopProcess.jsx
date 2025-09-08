@@ -1409,19 +1409,52 @@ function ShopProcess() {
         });
 
         // Small delay to ensure DOM updates
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         const element = downloadRef.current;
         if (!element) {
           throw new Error("Template element not found");
         }
 
+        // Capture element at high resolution
         const canvas = await html2canvas(element, {
-          scale: 2,
+          scale: 3, // Higher = sharper output
           useCORS: true,
         });
 
-        const dataUrl = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/png");
+
+        // Create A4 canvas (at 300 DPI: 2480 x 3508)
+        const a4Width = 2480;
+        const a4Height = 3508;
+
+        const a4Canvas = document.createElement("canvas");
+        a4Canvas.width = a4Width;
+        a4Canvas.height = a4Height;
+        const ctx = a4Canvas.getContext("2d");
+
+        // Fill white background (important for print)
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, a4Width, a4Height);
+
+        // Calculate scaling to fit content into A4
+        const scale = Math.min(
+          a4Width / canvas.width,
+          a4Height / canvas.height
+        );
+        const x = (a4Width - canvas.width * scale) / 2;
+        const y = (a4Height - canvas.height * scale) / 2;
+
+        ctx.drawImage(
+          canvas,
+          x,
+          y,
+          canvas.width * scale,
+          canvas.height * scale
+        );
+
+        // Download as PNG
+        const dataUrl = a4Canvas.toDataURL("image/png");
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = `order_${
