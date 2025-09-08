@@ -298,39 +298,66 @@ function VendorInvoice() {
     async (invoiceData) => {
       try {
         setLoading(true);
-        const selectedJobs = tableData
-          .filter((row) => row.selected)
-          .map((row) => row._id);
-        const payload = {
-          store: formik.values.store?.value || "",
-          vendor: formik.values.vendor?.value || "",
-          invoiceNumber: invoiceData.invoiceNumber,
-          invoiceDate: invoiceData.invoiceDate.toISOString().split("T")[0],
-          jobWork: selectedJobs,
-        };
 
-        if (!payload.store || !payload.vendor) {
+        if (!formik.values.store?.value || !formik.values.vendor?.value) {
           toast.error("Please select both a store and a vendor");
           return;
         }
 
-        const response = await vendorInvoiceService.createVendorInvoice(
-          payload
-        );
-        if (response.success) {
-          toast.success("Vendor invoice created successfully");
-          setShowModal(false);
-          formik.handleSubmit(); // Refresh the table
-        } else {
-          toast.error(response.message || "Failed to create vendor invoice");
+        // Loop over invoiceData array and call API for each row
+        for (let row of invoiceData) {
+          const price = parseFloat(row.price) || 0;
+          const taxRate = parseFloat(row.taxRate) || 12;
+          const taxType = row.taxType || "inc";
+
+          const taxAmount =
+            taxType.toLowerCase() === "exc"
+              ? parseFloat(((price * taxRate) / 100).toFixed(2))
+              : 0;
+
+          const total =
+            taxType.toLowerCase() === "exc"
+              ? parseFloat((price + taxAmount).toFixed(2))
+              : price;
+
+          const payload = {
+            _id: row._id,
+            price,
+            taxAmount,
+            taxRate,
+            taxType: taxType.toLowerCase(),
+            amount: total,
+            fillStatus: "filled",
+            notes: row.notes || null,
+            invoiceNumber: row.invoiceNumber,
+            invoiceDate: row.invoiceDate,
+            gstType: "",
+          };
+
+          const response = await vendorInvoiceService.createVendorInvoice({
+            store: formik.values.store?.value,
+            vendor: formik.values.vendor?.value,
+
+            ...payload, // single item per API call
+          });
+
+          if (!response.success) {
+            toast.error(
+              response.message || `Failed to create invoice for ${payload._id}`
+            );
+          }
         }
+
+        toast.success("Vendor invoices created successfully");
+        setShowModal(false);
+        formik.handleSubmit(); // Refresh table
       } catch (error) {
-        toast.error(error.message);
+        toast.error(error.message || "Something went wrong");
       } finally {
         setLoading(false);
       }
     },
-    [formik, tableData]
+    [formik]
   );
 
   const columns = useMemo(
@@ -681,6 +708,9 @@ function VendorInvoice() {
             onHide={() => setShowModal(false)}
             onSubmit={handleModalSubmit}
             loading={loading}
+            selectedJobs={tableData.filter((row) =>
+              selectedRows.includes(row._id)
+            )}
           />
         </Card.Body>
       </Card>
