@@ -327,7 +327,7 @@ function VendorInvoice() {
             taxRate,
             taxType: taxType.toLowerCase(),
             amount: total,
-            fillStatus: "filled",
+            status: "filled",
             notes: row.notes || null,
             invoiceNumber: row.invoiceNumber,
             invoiceDate: row.invoiceDate,
