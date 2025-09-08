@@ -8,7 +8,7 @@ const AUTH_ENDPOINTS = {
   PRODUCTS: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASELOG: (params) => `/inventory/purchase/purchaseLog?${params}`,
-  INVOICELOG: (params) => `/vendors/getinvoice?${params}`,
+  INVOICELOG: (params) => `/jobWorks?${params}`,
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   ADD_INVENTORY: "/inventory",

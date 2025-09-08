@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import PurchaseModal from "../../components/Perchase/PurchaseModal";
 import CommonButton from "../../components/CommonButton/CommonButton";
+import LensModal from "../../components/Perchase/LensModal";
 
 function ViewPurchase() {
   const [vendor, setVendor] = useState([]);
@@ -116,7 +117,7 @@ function ViewPurchase() {
         rowsPerPage // ✅ pass limit
       );
       if (response.success) {
-        setInvoiceData(response?.data?.data?.data); // page data
+        setInvoiceData(response?.data?.data?.docs); // page data
         setTotalPages(response?.data?.data?.totalPages);
         setTotalResults(response?.data?.data?.totalRecords);
       } else {
@@ -382,9 +383,7 @@ function ViewPurchase() {
                       <th scope="col" className="custom-perchase-th">
                         CUSTOMER
                       </th>
-                      <th scope="col" className="custom-perchase-th">
-                        ITEM
-                      </th>
+
                       <th scope="col" className="custom-perchase-th">
                         AMOUNT
                       </th>
@@ -398,39 +397,49 @@ function ViewPurchase() {
                   </thead>
                   <tbody>
                     {filteredInvoiceData?.length > 0 ? (
-                      filteredInvoiceData.map((invoice, index) => (
-                        <tr key={index}>
-                          <td>{index + 1}</td>
-                          <td>{invoice?.invoiceNumber || "N/A"}</td>
-                          <td>{invoice?.vendor?.companyName || "N/A"}</td>
-                          <td>{invoice?.store?.name || "N/A"}</td>
-                          <td>
-                            {moment(invoice?.invoiceDate).format("DD-MM-YYYY")}
-                          </td>
-                          <td>
-                            {invoice?.jobWorks?.[0]?.sale?.customerName ||
-                              "N/A"}
-                          </td>
-                          <td>{invoice?.jobWorks?.[0]?.lens?.sku || "N/A"}</td>
-                          <td>
-                            {invoice?.jobWorks?.[0]?.sale?.netAmount || "N/A"}
-                          </td>
-                          <td
-                            role="button"
-                            onClick={() => handleViewClick(invoice)}
-                          >
-                            <i className="bi bi-eye text-primary"></i>
-                          </td>
-                          <td>
-                            <div
-                              onClick={(e) => handleDownload(e, invoice)}
-                              className="btn btn-sm btn-primary"
+                      filteredInvoiceData.map((invoice, index) => {
+                        const job = invoice?.jobWorks?.[0]; // safely get first job
+                        const sale = invoice?.sale;
+                        const lens = job?.lens;
+
+                        return (
+                          <tr key={invoice._id || index}>
+                            <td>{index + 1}</td>
+                            <td>{invoice?.invoiceNumber || "N/A"}</td>
+                            <td>{invoice?.vendor?.companyName || "N/A"}</td>
+                            <td>{invoice?.store?.name || "N/A"}</td>
+                            <td>
+                              {invoice?.invoiceDate
+                                ? moment(invoice.invoiceDate).format(
+                                    "DD-MM-YYYY"
+                                  )
+                                : "N/A"}
+                            </td>
+                            <td>{sale?.customerName || "N/A"}</td>
+
+                            <td>
+                              {sale?.netAmount ??
+                                job?.amount ??
+                                lens?.item?.totalAmount ??
+                                "N/A"}
+                            </td>
+                            <td
+                              role="button"
+                              onClick={() => handleViewClick(invoice)}
                             >
-                              DOWNLOAD
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                              <i className="bi bi-eye text-primary"></i>
+                            </td>
+                            <td>
+                              <div
+                                onClick={(e) => handleDownload(e, invoice)}
+                                className="btn btn-sm btn-primary"
+                              >
+                                DOWNLOAD
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td
@@ -565,14 +574,26 @@ function ViewPurchase() {
           </div>
         </div>
       </div>
-      <PurchaseModal
-        show={showModal}
-        onHide={handleCloseModal}
-        purchase={selectedPurchase}
-        filterType={filterType.value}
-        onUpdate={getInvoices}
-        currentPage={currentPage}
-      />
+      {filterType.value === "vendor" && (
+        <PurchaseModal
+          show={showModal}
+          onHide={handleCloseModal}
+          purchase={selectedPurchase}
+          filterType={filterType.value}
+          onUpdate={getInvoices}
+          currentPage={currentPage}
+        />
+      )}
+      {filterType.value === "invoice" && (
+        <LensModal
+          show={showModal}
+          onHide={handleCloseModal}
+          lensData={selectedPurchase}
+          filterType={filterType.value}
+          onUpdate={() => getInvoices(currentPage)}
+          currentPage={currentPage}
+        />
+      )}
     </div>
   );
 }
