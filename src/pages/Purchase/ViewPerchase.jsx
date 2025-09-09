@@ -119,7 +119,7 @@ function ViewPurchase() {
       if (response.success) {
         setInvoiceData(response?.data?.data?.docs); // page data
         setTotalPages(response?.data?.data?.totalPages);
-        setTotalResults(response?.data?.data?.totalRecords);
+        setTotalResults(response?.data?.data?.totalDocs);
       } else {
         toast.error(response.message);
       }

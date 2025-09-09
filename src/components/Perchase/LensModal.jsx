@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal } from "react-bootstrap";
-import { FaSearch } from "react-icons/fa";
-import * as XLSX from "xlsx";
-import { toast } from "react-toastify";
 
-// Debounce utility to optimize search
 const debounce = (func, wait) => {
   let timeout;
   return (...args) => {
@@ -16,21 +12,32 @@ const debounce = (func, wait) => {
 const LensModal = ({ show, onHide, lensData }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredLens, setFilteredLens] = useState([]);
+  const [editableLens, setEditableLens] = useState([]);
 
-  // Initialize filteredLens with lens data
+  // Load lens data
   useEffect(() => {
     if (lensData?.lens) {
-      // Create an array with the lens object, and optionally rightLens and leftLens
-      const lensArray = [lensData.lens];
-      if (lensData.order?.rightLens) lensArray.push(lensData.order.rightLens);
-      if (lensData.order?.leftLens) lensArray.push(lensData.order.leftLens);
-      setFilteredLens(lensArray);
+      setFilteredLens([lensData.lens]); // ✅ only lens object
     } else {
       setFilteredLens([]);
     }
   }, [lensData]);
 
-  // Filter lenses by barcode, SKU, or displayName
+  useEffect(() => {
+    if (lensData?.lens) {
+      setEditableLens([
+        {
+          ...lensData.lens,
+          costPrice: lensData.lens.price || lensData.lens.item?.costPrice || 0,
+          taxRate: lensData.lens.taxRate || lensData.lens.item?.tax || 0,
+        },
+      ]);
+    } else {
+      setEditableLens([]);
+    }
+  }, [lensData]);
+
+  // Filtering
   const filterGlobally = useCallback((data, query) => {
     if (!query || !data) return data;
     const lowerQuery = query.toLowerCase();
@@ -41,12 +48,9 @@ const LensModal = ({ show, onHide, lensData }) => {
     );
   }, []);
 
-  // Debounced search effect
   useEffect(() => {
     if (!lensData?.lens) return;
     const lensArray = [lensData.lens];
-    if (lensData.order?.rightLens) lensArray.push(lensData.order.rightLens);
-    if (lensData.order?.leftLens) lensArray.push(lensData.order.leftLens);
     const debouncedFilter = debounce((query) => {
       setFilteredLens(filterGlobally(lensArray, query));
     }, 200);
@@ -54,26 +58,18 @@ const LensModal = ({ show, onHide, lensData }) => {
     return () => clearTimeout(debouncedFilter.timeout);
   }, [searchQuery, lensData, filterGlobally]);
 
-  // Export filtered data to Excel
-  const exportToExcel = () => {
-    if (!filteredLens.length) {
-      toast.error("No data to export");
-      return;
-    }
-    const data = filteredLens.map((item) => ({
-      Barcode: item.barcode || "N/A",
-      SKU: item.sku || "N/A",
-      DisplayName: item.displayName || item.item?.displayName || "N/A",
-      MRP: item.mrp || item.item?.MRP || "N/A",
-      SRP: item.srp || item.item?.sellPrice || "N/A",
-      Quantity: lensData.sale?.totalQuantity || "N/A",
-      Tax: lensData.sale?.totalTax || item.taxRate || item.item?.tax || "N/A",
-      TotalAmount: lensData.sale?.netAmount || item.perPieceAmount || "N/A",
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Lens Data");
-    XLSX.writeFile(workbook, `Lens_Data_${Date.now()}.xlsx`);
+  // Handle cost price change
+  const handleCostPriceChange = (index, value) => {
+    const updated = [...editableLens];
+    updated[index].costPrice = parseFloat(value) || "";
+    setEditableLens(updated);
+  };
+
+  // Calculate total with tax
+  const calculateTotal = (costPrice, taxRate) => {
+    const price = parseFloat(costPrice) || 0;
+    const tax = parseFloat(taxRate) || 0;
+    return (price + price * (tax / 100)).toFixed(2);
   };
 
   if (!lensData?.lens) {
@@ -100,80 +96,88 @@ const LensModal = ({ show, onHide, lensData }) => {
         <div className="bg-white rounded shadow-lg w-100 max-h-[90vh] overflow-auto">
           {/* Header */}
           <div className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
-            <div className="font-semibold fs-5">ORDERS DETAILS</div>
+            <div className="font-semibold fs-5">LENS DETAILS</div>
             <button className="p-0" onClick={onHide}>
               <i className="bi bi-x fs-1"></i>
             </button>
           </div>
 
-          {/* Search & Export */}
-          <div className="px-4 py-4">
-            <div className="d-flex flex-column flex-md-row gap-3 mb-4">
-              <button
-                className="btn btn-primary ms-md-auto"
-                onClick={exportToExcel}
-              >
-                Export to Excel
-              </button>
-            </div>
-            <div className="mb-4 col-md-6">
-              <div className="input-group">
-                <span className="input-group-text bg-white border-end-0">
-                  <FaSearch className="text-muted" />
-                </span>
-                <input
-                  type="search"
-                  className="form-control border-start-0"
-                  placeholder="Search by barcode, SKU, or name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          {/* Invoice / Purchase Summary */}
+          <div className="px-4 py-3">
+            <div className="row g-3">
+              <div className="col-md-4">
+                <strong>Vendor:</strong>{" "}
+                {lensData?.vendor?.companyName || "N/A"}
+              </div>
+              <div className="col-md-4">
+                <strong>invoiceNumber:</strong>{" "}
+                {lensData?.invoiceNumber || "N/A"}
+              </div>
+              <div className="col-md-4">
+                <strong>Bill Date:</strong> {lensData?.invoiceDate || "N/A"}
+              </div>
+              <div className="col-md-3">
+                <strong>Total Qty:</strong>{" "}
+                {lensData?.sale?.totalQuantity || "0"}
+              </div>
+              <div className="col-md-3">
+                <strong>Total Amount:</strong>{" "}
+                {lensData?.sale?.totalAmount || "0.00"}
+              </div>
+              <div className="col-md-3">
+                <strong>Total Tax:</strong> {lensData?.sale?.totalTax || "0.00"}
+              </div>
+              <div className="col-md-3">
+                <strong>Discount:</strong>{" "}
+                {lensData?.sale?.netDiscount || "N/A"}
+              </div>
+              <div className="col-md-3">
+                <strong>Other Charges:</strong>{" "}
+                {lensData?.sale?.otherCharges || "N/A"}
+              </div>
+
+              <div className="col-md-3 fw-bold text-success">
+                <strong>Net Amount:</strong>{" "}
+                {lensData?.sale?.netAmount || "0.00"}
               </div>
             </div>
+          </div>
 
-            {/* Lens Table */}
+          {/* Lens Table */}
+          <div className="px-4 py-4">
             <div className="table-responsive px-2">
               <table className="table table-sm">
                 <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
                     <th className="p-3 text-left">BARCODE</th>
                     <th className="p-3 text-left">SKU</th>
-                    <th className="p-3 text-left">NAME</th>
+                    <th className="p-3 text-left">STORE</th>
+                    <th className="p-2 text-left">COST PRICE</th>
                     <th className="p-3 text-left">MRP</th>
                     <th className="p-3 text-left">SRP</th>
-                    <th className="p-3 text-left">QTY</th>
                     <th className="p-3 text-left">TAX</th>
-                    <th className="p-3 text-left">TOTAL</th>
+                    <th className="p-3 text-left">TOTAL AMOUNT</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {filteredLens.length > 0 ? (
-                    filteredLens.map((item, index) => (
+                  {editableLens.length > 0 ? (
+                    editableLens.map((item, index) => (
                       <tr key={index}>
                         <td className="p-3">{item.barcode || "N/A"}</td>
                         <td className="p-3">{item.sku || "N/A"}</td>
                         <td className="p-3">
-                          {item.displayName || item.item?.displayName || "N/A"}
+                          {lensData?.store?.name || "N/A"}
                         </td>
+                        <td className="p-3">{item?.costPrice}</td>
                         <td className="p-3">
                           {item.mrp || item.item?.MRP || "N/A"}
                         </td>
                         <td className="p-3">
                           {item.srp || item.item?.sellPrice || "N/A"}
                         </td>
-                        <td className="p-3">
-                          {lensData.sale?.totalQuantity || "N/A"}
-                        </td>
-                        <td className="p-3">
-                          {lensData.sale?.totalTax ||
-                            item.taxRate ||
-                            item.item?.tax ||
-                            "N/A"}
-                        </td>
-                        <td className="p-3">
-                          {lensData.sale?.netAmount ||
-                            item.perPieceAmount ||
-                            "N/A"}
+                        <td className="p-3">{item.taxRate}%</td>
+                        <td className="p-3 fw-bold">
+                          {calculateTotal(item.costPrice, item.taxRate)}
                         </td>
                       </tr>
                     ))
@@ -184,6 +188,37 @@ const LensModal = ({ show, onHide, lensData }) => {
                       </td>
                     </tr>
                   )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Lens Specifications */}
+          <div className="px-4 py-4">
+            <h6 className="fw-bold mb-3">Lens Specifications</h6>
+            <div className="table-responsive">
+              <table className="table table-bordered table-sm">
+                <tbody>
+                  <tr>
+                    <th className="w-25">Lens Material</th>
+                    <td>{lensData?.lens?.item?.lensMaterial || "N/A"}</td>
+                  </tr>
+                  <tr>
+                    <th>Lens Technology</th>
+                    <td>{lensData?.lens?.item?.lensTechnology || "N/A"}</td>
+                  </tr>
+                  <tr>
+                    <th>Disposability</th>
+                    <td>{lensData?.lens?.item?.disposability || "N/A"}</td>
+                  </tr>
+                  <tr>
+                    <th>Prescription Type</th>
+                    <td>{lensData?.lens?.item?.prescriptionType || "N/A"}</td>
+                  </tr>
+                  <tr>
+                    <th>Gender</th>
+                    <td>{lensData?.lens?.item?.gender || "Unisex / N/A"}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
