@@ -173,7 +173,7 @@ const LensModal = ({ show, onHide, lensData }) => {
                         <td className="p-3">
                           {lensData?.store?.name || "N/A"}
                         </td>
-                        <td className="p-3">{item?.costPrice}</td>
+                        <td className="p-3">{lensData?.price}</td>
                         <td className="p-3">
                           {item.mrp || item.item?.MRP || "N/A"}
                         </td>
