@@ -16,7 +16,7 @@ function DashBoardCard() {
   };
 
   const headerStyle = {
-    fontSize: "1.25rem",
+    fontSize: "1rem",
     fontWeight: "bold",
     padding: "0.75rem",
     borderBottom: "1px solid #dee2e6",

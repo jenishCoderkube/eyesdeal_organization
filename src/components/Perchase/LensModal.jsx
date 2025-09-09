@@ -97,8 +97,13 @@ const LensModal = ({ show, onHide, lensData }) => {
           {/* Header */}
           <div className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
             <div className="font-semibold fs-5">LENS DETAILS</div>
-            <button className="p-0" onClick={onHide}>
-              <i className="bi bi-x fs-1"></i>
+            <button
+              type="button"
+              className="btn p-0 border-0 bg-transparent"
+              onClick={onHide}
+              aria-label="Close"
+            >
+              <i className="bi bi-x fs-3"></i>
             </button>
           </div>
 
@@ -116,27 +121,27 @@ const LensModal = ({ show, onHide, lensData }) => {
               <div className="col-md-4">
                 <strong>Bill Date:</strong> {lensData?.invoiceDate || "N/A"}
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <strong>Total Qty:</strong>{" "}
                 {lensData?.sale?.totalQuantity || "0"}
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <strong>Total Amount:</strong>{" "}
                 {lensData?.sale?.totalAmount || "0.00"}
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <strong>Total Tax:</strong> {lensData?.sale?.totalTax || "0.00"}
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <strong>Discount:</strong>{" "}
                 {lensData?.sale?.netDiscount || "N/A"}
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <strong>Other Charges:</strong>{" "}
                 {lensData?.sale?.otherCharges || "N/A"}
               </div>
 
-              <div className="col-md-3 fw-bold ">
+              <div className="col-md-4 fw-bold ">
                 <strong>Net Amount:</strong>{" "}
                 {lensData?.sale?.netAmount || "0.00"}
               </div>
