@@ -6,7 +6,8 @@ import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
 import { FaSearch } from "react-icons/fa";
 import moment from "moment";
-
+import { defalutImageBasePath } from "../../../utils/constants";
+import ImageSliderModalProduct from "../../../components/Products/ViewProducts/ImageSliderModalProduct";
 const StoreInventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,8 @@ const StoreInventoryForm = () => {
   const [inventoryGetCount, setInventoryGetCount] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingInventory, setLoadingInventory] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -492,7 +495,13 @@ const StoreInventoryForm = () => {
       setLoading(false);
     }
   };
-
+  const handleViewMoreImages = (photos) => {
+    const fullImageUrls = photos.map(
+      (photo) => `${defalutImageBasePath}${photo}`
+    );
+    setSelectedImages(fullImageUrls);
+    setShowImageModal(true);
+  };
   return (
     <div className="card-body px-3 py-3">
       <form onSubmit={formik.handleSubmit}>
@@ -777,13 +786,34 @@ const StoreInventoryForm = () => {
                             : "-"}
                         </td>
                         <td>
-                          <img
-                            style={{ minWidth: "100px" }}
-                            src={item.photo || "/placeholder-image.jpg"}
-                            alt="Product"
-                            width="60"
-                            height="40"
-                          />
+                          <div>
+                            {item?.product?.photos?.length > 0 ? (
+                              <>
+                                <img
+                                  src={`https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/${item?.product?.photos[0]}`}
+                                  alt=""
+                                  className="img-fluid rounded"
+                                  style={{ width: "50px", height: "50px" }}
+                                />
+                                <div>
+                                  <a
+                                    href="#"
+                                    className="text-primary text-decoration-underline"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleViewMoreImages(
+                                        item?.product?.photos
+                                      );
+                                    }}
+                                  >
+                                    View More
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <div>-</div>
+                            )}
+                          </div>
                         </td>
                         <td style={{ minWidth: "200px" }}>
                           {item.store?.name || "-"}
@@ -869,6 +899,11 @@ const StoreInventoryForm = () => {
           </div>
         </div>
       </div>
+      <ImageSliderModalProduct
+        show={showImageModal}
+        onHide={() => setShowImageModal(false)}
+        images={selectedImages}
+      />
       <style>
         {`
           .switch {

@@ -4,8 +4,9 @@ import * as Yup from "yup";
 import Select from "react-select";
 import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
-
+import ImageSliderModalProduct from "../../../components/Products/ViewProducts/ImageSliderModalProduct";
 import { FaSearch } from "react-icons/fa";
+import { defalutImageBasePath } from "../../../utils/constants";
 
 const InventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
@@ -21,6 +22,8 @@ const InventoryForm = () => {
   const [collection, setCollection] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -372,7 +375,13 @@ const InventoryForm = () => {
       setLoading(false);
     }
   };
-
+  const handleViewMoreImages = (photos) => {
+    const fullImageUrls = photos.map(
+      (photo) => `${defalutImageBasePath}${photo}`
+    );
+    setSelectedImages(fullImageUrls);
+    setShowImageModal(true);
+  };
   const exportProductCp = async (e) => {
     e.preventDefault();
 
@@ -706,12 +715,34 @@ const InventoryForm = () => {
                       <tr key={item.id || index}>
                         <td>{item.product?.newBarcode}</td>
                         <td>
-                          <img
-                            src={item.photo}
-                            alt="Product"
-                            width="40"
-                            height="40"
-                          />
+                          <div>
+                            {item?.product?.photos?.length > 0 ? (
+                              <>
+                                <img
+                                  src={`https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/${item?.product?.photos[0]}`}
+                                  alt=""
+                                  className="img-fluid rounded"
+                                  style={{ width: "50px", height: "50px" }}
+                                />
+                                <div>
+                                  <a
+                                    href="#"
+                                    className="text-primary text-decoration-underline"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleViewMoreImages(
+                                        item?.product?.photos
+                                      );
+                                    }}
+                                  >
+                                    View More
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <div>-</div>
+                            )}
+                          </div>
                         </td>
                         <td>{item.product?.sku}</td>
                         <td>{item.product?.MRP}</td>
@@ -753,6 +784,11 @@ const InventoryForm = () => {
         images={modalImages}
       /> */}
         {/* <InventoryTable data={inventory} /> */}
+        <ImageSliderModalProduct
+          show={showImageModal}
+          onHide={() => setShowImageModal(false)}
+          images={selectedImages}
+        />
       </div>
     </div>
   );
