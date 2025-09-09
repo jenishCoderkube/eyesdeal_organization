@@ -330,7 +330,7 @@ function VendorInvoice() {
             taxRate,
             taxType: taxType.toLowerCase(),
             amount: total,
-            fillStatus: "filled", // ✅ match your example key
+            status: "filled", // ✅ match your example key
             notes: row.notes || null,
             invoiceNumber: row.invoiceNumber,
             invoiceDate: row.invoiceDate,
