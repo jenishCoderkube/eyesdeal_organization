@@ -409,8 +409,8 @@ function ViewPurchase() {
                             <td>{invoice?.vendor?.companyName || "N/A"}</td>
                             <td>{invoice?.store?.name || "N/A"}</td>
                             <td>
-                              {invoice?.invoiceDate
-                                ? moment(invoice.invoiceDate).format(
+                              {invoice?.updatedAt
+                                ? moment(invoice?.updatedAt).format(
                                     "DD-MM-YYYY"
                                   )
                                 : "N/A"}
