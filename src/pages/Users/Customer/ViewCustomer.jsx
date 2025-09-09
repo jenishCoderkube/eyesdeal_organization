@@ -9,9 +9,11 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useDebounce } from "use-debounce";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
-import { Modal, Nav, Tab, Button } from "react-bootstrap";
+import { Modal, Button } from "react-bootstrap";
+import ReactPaginate from "react-paginate";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -31,25 +33,62 @@ const ViewCustomer = () => {
   const [activeTab, setActiveTab] = useState("specs");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 100,
+    totalDocs: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+    nextPage: null,
+    prevPage: null,
+    pagingCounter: 1,
+  });
+  const [debouncedSearch] = useDebounce(searchQuery, 1300);
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    fetchCustomers(pagination.page, debouncedSearch);
+  }, [pagination.page, debouncedSearch]);
 
-  const fetchCustomers = () => {
+  const fetchCustomers = async (page, search) => {
     setLoading(true);
-    userService
-      .getCustomers()
-      .then((res) => {
-        console.log("API Response:", res.data?.data?.docs);
-        setCustomers(res.data?.data?.docs || []);
-      })
-      .catch((e) => {
-        console.log("Failed to fetch customers: ", e);
-        toast.error("Failed to fetch customers");
-        setCustomers([]);
-      })
-      .finally(() => setLoading(false));
+    try {
+      const response = await userService.getCustomers({
+        page,
+        limit: pagination.limit,
+        search,
+      });
+
+      if (response.success) {
+        const {
+          docs,
+          totalDocs,
+          totalPages,
+          page,
+          hasNextPage,
+          hasPrevPage,
+          nextPage,
+          prevPage,
+          pagingCounter,
+        } = response.data.data;
+        setCustomers(docs || []);
+        setPagination((prev) => ({
+          ...prev,
+          page,
+          totalDocs,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+          nextPage,
+          prevPage,
+          pagingCounter,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching customers", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filterGlobally = useMemo(
@@ -80,6 +119,7 @@ const ViewCustomer = () => {
 
   const handleSearch = (value) => {
     setSearchQuery(value);
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
   };
 
   const tableData = filteredData || customers;
@@ -109,108 +149,6 @@ const ViewCustomer = () => {
     setActiveTab(specsPrescription ? "specs" : "contacts");
     setShowModal(true);
   };
-
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "_id",
-        header: "SRNO",
-        cell: ({ table, row }) => (
-          <div className="text-left">
-            {table?.getSortedRowModel()?.flatRows?.indexOf(row) + 1}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "name",
-        header: "Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "phone",
-        header: "Phone",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "prescriptions",
-        header: "Prescriptions",
-        cell: ({ getValue, row }) => (
-          <div className="text-left d-flex align-items-center gap-2">
-            {getValue()?.length > 0 && (
-              <button
-                className="btn btn-sm btn-outline-primary d-flex align-items-center"
-                onClick={() => handleViewPrescriptions(row.original._id)}
-                title="View Prescriptions"
-                disabled={loading}
-              >
-                <FaEye size={16} />
-                <span className="ms-2">View</span>
-              </button>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "action",
-        header: "Action",
-        cell: ({ row }) => (
-          <div className="d-flex gap-2 align-items-center">
-            <FiEdit2
-              size={18}
-              className="text-primary cursor-pointer"
-              onClick={() => handleEdit(row.original)}
-            />
-            <MdDeleteOutline
-              size={24}
-              className="text-danger cursor-pointer"
-              onClick={() => handleDelete(row.original._id)}
-            />
-          </div>
-        ),
-      },
-    ],
-    [loading]
-  );
-
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 100,
-      },
-    },
-  });
-
-  const handleEdit = (store) => {
-    navigate(`/customer/${store?._id}`);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete?")) {
-      try {
-        const response = await userService.deleteCustomer(id);
-        if (response.success) {
-          fetchCustomers();
-          toast.success(response.message);
-        } else {
-          toast.error(response.message);
-        }
-      } catch (e) {
-        toast.error("Failed to delete customer");
-      }
-    }
-  };
-
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
-  const totalRows = tableData.length;
-
   // Modal content for both Specs and Contacts
   const PrescriptionModalContent = ({ specsData, contactsData }) => (
     <>
@@ -605,6 +543,107 @@ const ViewCustomer = () => {
       )}
     </>
   );
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "_id",
+        header: "SRNO",
+        cell: ({ table, row }) => (
+          <div className="text-left">
+            {(pagination.page - 1) * pagination.limit +
+              table?.getSortedRowModel()?.flatRows?.indexOf(row) +
+              1}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "phone",
+        header: "Phone",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "prescriptions",
+        header: "Prescriptions",
+        cell: ({ getValue, row }) => (
+          <div className="text-left d-flex align-items-center gap-2">
+            {getValue()?.length > 0 && (
+              <button
+                className="btn btn-sm btn-outline-primary d-flex align-items-center"
+                onClick={() => handleViewPrescriptions(row.original._id)}
+                title="View Prescriptions"
+                disabled={loading}
+              >
+                <FaEye size={16} />
+                <span className="ms-2">View</span>
+              </button>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "action",
+        header: "Action",
+        cell: ({ row }) => (
+          <div className="d-flex gap-2 align-items-center">
+            <FiEdit2
+              size={18}
+              className="text-primary cursor-pointer"
+              onClick={() => handleEdit(row.original)}
+            />
+            <MdDeleteOutline
+              size={24}
+              className="text-danger cursor-pointer"
+              onClick={() => handleDelete(row.original._id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [loading, pagination.page, pagination.limit]
+  );
+
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: pagination.limit,
+      },
+    },
+  });
+
+  const handleEdit = (store) => {
+    navigate(`/customer/${store?._id}`);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete?")) {
+      try {
+        const response = await userService.deleteCustomer(id);
+        if (response.success) {
+          fetchCustomers(pagination.page, debouncedSearch);
+          toast.success(response.message);
+        } else {
+          toast.error(response.message);
+        }
+      } catch (e) {
+        toast.error("Failed to delete customer");
+      }
+    }
+  };
+
+  const handlePageClick = ({ selected }) => {
+    const selectedPage = selected + 1; // react-paginate is 0-based
+    setPagination((prev) => ({ ...prev, page: selectedPage }));
+  };
 
   return (
     <div className="container-fluid px-4 py-5">
@@ -681,33 +720,40 @@ const ViewCustomer = () => {
                       </tbody>
                     </table>
                   </div>
-                  <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                  <div className="d-flex justify-content-between align-items-center mt-3">
                     <div>
-                      Showing {startRow} to {endRow} of {totalRows} results
+                      Showing {pagination.pagingCounter} to{" "}
+                      {Math.min(
+                        pagination.pagingCounter + pagination.limit - 1,
+                        pagination.totalDocs
+                      )}{" "}
+                      of {pagination.totalDocs} entries
                     </div>
-                    <div className="btn-group">
-                      <button
-                        className="btn btn-outline-secondary"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage() || loading}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        className="btn btn-outline-secondary"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage() || loading}
-                      >
-                        Next
-                      </button>
-                    </div>
+                    <ReactPaginate
+                      previousLabel={pagination.hasPrevPage ? "Previous" : null}
+                      nextLabel={pagination.hasNextPage ? "Next" : null}
+                      breakLabel="..."
+                      pageCount={pagination.totalPages}
+                      onPageChange={handlePageClick}
+                      containerClassName="pagination mb-0"
+                      pageClassName="page-item"
+                      pageLinkClassName="page-link"
+                      previousClassName="page-item"
+                      previousLinkClassName="page-link"
+                      nextClassName="page-item"
+                      nextLinkClassName="page-link"
+                      breakClassName="page-item"
+                      breakLinkClassName="page-link"
+                      activeClassName="active"
+                      disabledClassName="disabled"
+                      forcePage={pagination.page - 1} // react-paginate is 0-based
+                    />
                   </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Unified Prescription Modal */}
           <Modal
             show={showModal}
             onHide={() => setShowModal(false)}

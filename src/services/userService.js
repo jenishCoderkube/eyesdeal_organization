@@ -146,16 +146,20 @@ export const userService = {
       };
     }
   },
-  getCustomers: async () => {
+  getCustomers: async ({ page = 1, limit = 10, search = "" } = {}) => {
     try {
       const response = await api.get(USER_ENDPOINTS.GET_CUSTOMERS, {
         params: {
           role: "customer",
+          page,
+          limit,
+          search, // backend should handle filtering by name/phone/etc.
         },
       });
+
       return {
         success: true,
-        data: response.data,
+        data: response.data, // contains { docs, totalPages, totalDocs, page }
       };
     } catch (error) {
       return {
@@ -164,6 +168,7 @@ export const userService = {
       };
     }
   },
+
   updateCustomer: async (data) => {
     try {
       const response = await api.patch(USER_ENDPOINTS.UPDATE_CUSTOMER, data);
@@ -313,7 +318,10 @@ export const userService = {
   },
   addMarketingReference: async (data) => {
     try {
-      const response = await api.post(USER_ENDPOINTS.ADD_MARKETING_REFERENCE, data);
+      const response = await api.post(
+        USER_ENDPOINTS.ADD_MARKETING_REFERENCE,
+        data
+      );
       return {
         success: true,
         data: response.data,
@@ -322,13 +330,17 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error?.response?.data?.message || "Error adding marketing reference!",
+        message:
+          error?.response?.data?.message || "Error adding marketing reference!",
       };
     }
   },
   updateMarketingReference: async (data) => {
     try {
-      const response = await api.patch(USER_ENDPOINTS.UPDATE_MARKETING_REFERENCE, data);
+      const response = await api.patch(
+        USER_ENDPOINTS.UPDATE_MARKETING_REFERENCE,
+        data
+      );
       return {
         success: true,
         data: response.data,
@@ -337,13 +349,17 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error?.response?.data?.message || "Error updating marketing reference!",
+        message:
+          error?.response?.data?.message ||
+          "Error updating marketing reference!",
       };
     }
   },
   getMarketingReferenceById: async (id) => {
     try {
-      const response = await api.get(`${USER_ENDPOINTS.GET_MARKETING_REFERENCE_BY_ID}/${id}`);
+      const response = await api.get(
+        `${USER_ENDPOINTS.GET_MARKETING_REFERENCE_BY_ID}/${id}`
+      );
       return {
         success: true,
         data: response.data,
@@ -352,7 +368,8 @@ export const userService = {
       return {
         success: false,
         message:
-          error?.response?.data?.message || "Error fetching marketing reference details!",
+          error?.response?.data?.message ||
+          "Error fetching marketing reference details!",
       };
     }
   },
@@ -369,7 +386,9 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error?.response?.data?.message || "Error deleting marketing reference!",
+        message:
+          error?.response?.data?.message ||
+          "Error deleting marketing reference!",
       };
     }
   },
@@ -385,8 +404,10 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error?.response?.data?.message || "Error checking marketing reference existence!",
+        message:
+          error?.response?.data?.message ||
+          "Error checking marketing reference existence!",
       };
     }
-  }
+  },
 };
