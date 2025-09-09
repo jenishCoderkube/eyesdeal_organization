@@ -136,7 +136,7 @@ const LensModal = ({ show, onHide, lensData }) => {
                 {lensData?.sale?.otherCharges || "N/A"}
               </div>
 
-              <div className="col-md-3 fw-bold text-success">
+              <div className="col-md-3 fw-bold ">
                 <strong>Net Amount:</strong>{" "}
                 {lensData?.sale?.netAmount || "0.00"}
               </div>
@@ -203,18 +203,7 @@ const LensModal = ({ show, onHide, lensData }) => {
                     <th className="w-25">Lens Material</th>
                     <td>{lensData?.lens?.item?.lensMaterial || "N/A"}</td>
                   </tr>
-                  <tr>
-                    <th>Lens Technology</th>
-                    <td>{lensData?.lens?.item?.lensTechnology || "N/A"}</td>
-                  </tr>
-                  <tr>
-                    <th>Disposability</th>
-                    <td>{lensData?.lens?.item?.disposability || "N/A"}</td>
-                  </tr>
-                  <tr>
-                    <th>Prescription Type</th>
-                    <td>{lensData?.lens?.item?.prescriptionType || "N/A"}</td>
-                  </tr>
+
                   <tr>
                     <th>Gender</th>
                     <td>{lensData?.lens?.item?.gender || "Unisex / N/A"}</td>
