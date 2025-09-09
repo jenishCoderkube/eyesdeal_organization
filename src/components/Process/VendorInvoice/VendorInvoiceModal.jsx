@@ -12,6 +12,8 @@ const TAX_OPTIONS = [
 ];
 
 function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
+  console.log("selectedJobs", selectedJobs);
+
   const [rows, setRows] = useState([]);
 
   // Initialize rows from selectedJobs
@@ -91,21 +93,33 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
       invoiceDate: Yup.date().required("Invoice date is required"),
     }),
     onSubmit: (values) => {
-      const payload = rows.map((r) => ({
-        _id: r._id,
-        price: r.price,
-        taxAmount: r.taxAmount,
-        taxRate: r.taxRate,
-        taxType: r.taxType.toLowerCase(),
-        amount: r.total,
-        fillStatus: "filled",
-        notes: r.notes || null,
-        invoiceNumber: values.invoiceNumber,
-        invoiceDate: values.invoiceDate.getTime(),
-        gstType: "",
-      }));
-      console.log("payload", payload);
+      const payload = rows.map((r) => {
+        const job = selectedJobs.find((j) => j._id === r._id);
 
+        return {
+          _id: r._id,
+          lens: {
+            item: job?.lens?.item?._id || null,
+            barcode: job?.lens?.barcode || null,
+            sku: job?.lens?.sku || null,
+            mrp: job?.lens?.mrp || 0,
+            srp: job?.lens?.srp || 0,
+            costPrice: parseFloat(r.price) || 0, // updated costPrice
+          },
+          price: parseFloat(r.price) || 0,
+          taxAmount: r.taxAmount,
+          taxRate: r.taxRate,
+          taxType: r.taxType.toLowerCase(),
+          amount: r.total,
+          fillStatus: "filled",
+          notes: r.notes || null,
+          invoiceNumber: values.invoiceNumber,
+          invoiceDate: values.invoiceDate.getTime(),
+          gstType: "",
+        };
+      });
+
+      console.log("payload", payload);
       onSubmit(payload);
     },
   });

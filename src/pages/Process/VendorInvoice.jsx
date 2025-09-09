@@ -296,6 +296,8 @@ function VendorInvoice() {
 
   const handleModalSubmit = useCallback(
     async (invoiceData) => {
+      console.log(invoiceData);
+
       try {
         setLoading(true);
 
@@ -322,23 +324,23 @@ function VendorInvoice() {
 
           const payload = {
             _id: row._id,
+            lens: row.lens, // ✅ include full lens object
             price,
             taxAmount,
             taxRate,
             taxType: taxType.toLowerCase(),
             amount: total,
-            status: "filled",
+            fillStatus: "filled", // ✅ match your example key
             notes: row.notes || null,
             invoiceNumber: row.invoiceNumber,
             invoiceDate: row.invoiceDate,
-            gstType: "",
+            gstType: row.gstType || "",
           };
 
           const response = await vendorInvoiceService.createVendorInvoice({
             store: formik.values.store?.value,
             vendor: formik.values.vendor?.value,
-
-            ...payload, // single item per API call
+            ...payload, // ✅ send exact payload structure
           });
 
           if (!response.success) {
