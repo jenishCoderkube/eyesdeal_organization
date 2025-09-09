@@ -683,7 +683,11 @@ function ShopProcess() {
       const hasRightLens = !!fullOrder.rightLens;
 
       // Validation for left lens
-      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+      if (
+        hasLeftLens &&
+        fullOrder.currentLeftJobWork?.status !== "filled" &&
+        fullOrder.currentLeftJobWork?.status !== "received"
+      ) {
         failedOrders.push({
           orderId: order.orderId,
           message: "Please first receive Left lens vendor jobwork",
@@ -694,6 +698,7 @@ function ShopProcess() {
       // Validation for right lens
       if (
         hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "filled" &&
         fullOrder.currentRightJobWork?.status !== "received"
       ) {
         failedOrders.push({
@@ -1236,7 +1241,11 @@ function ShopProcess() {
       const hasRightLens = !!fullOrder.rightLens;
 
       // Validation for left lens
-      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+      if (
+        hasLeftLens &&
+        fullOrder.currentLeftJobWork?.status !== "filled" &&
+        fullOrder.currentLeftJobWork?.status !== "received"
+      ) {
         failedOrders.push({
           orderId: order.orderId,
           message: "Please first receive Left lens vendor jobwork",
@@ -1247,6 +1256,7 @@ function ShopProcess() {
       // Validation for right lens
       if (
         hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "filled" &&
         fullOrder.currentRightJobWork?.status !== "received"
       ) {
         failedOrders.push({
@@ -1320,7 +1330,11 @@ function ShopProcess() {
       const hasRightLens = !!fullOrder.rightLens;
 
       // Validation for left lens
-      if (hasLeftLens && fullOrder.currentLeftJobWork?.status !== "received") {
+      if (
+        hasLeftLens &&
+        fullOrder.currentLeftJobWork?.status !== "filled" &&
+        fullOrder.currentLeftJobWork?.status !== "received"
+      ) {
         failedOrders.push({
           orderId: order.orderId,
           message: "Please first receive Left lens vendor jobwork",
@@ -1331,6 +1345,7 @@ function ShopProcess() {
       // Validation for right lens
       if (
         hasRightLens &&
+        fullOrder.currentRightJobWork?.status !== "filled" &&
         fullOrder.currentRightJobWork?.status !== "received"
       ) {
         failedOrders.push({
