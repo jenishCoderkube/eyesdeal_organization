@@ -208,6 +208,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.brand
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -225,6 +226,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameType
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -242,6 +244,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameShape
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -264,6 +267,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.gender
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -281,6 +285,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameMaterial
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -298,6 +303,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameColor
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -315,6 +321,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameSize
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -332,6 +339,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.prescriptionType
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
@@ -349,6 +357,7 @@ function ProductFilterForm({ onSubmit }) {
                   (option) => option.value === values.frameCollection
                 )}
                 placeholder="Select..."
+                isClearable={true}
                 classNamePrefix="react-select"
               />
             </div>
