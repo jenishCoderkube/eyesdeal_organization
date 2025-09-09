@@ -730,8 +730,8 @@ const ViewCustomer = () => {
                       of {pagination.totalDocs} entries
                     </div>
                     <ReactPaginate
-                      previousLabel={pagination.hasPrevPage ? "Previous" : null}
-                      nextLabel={pagination.hasNextPage ? "Next" : null}
+                      previousLabel={pagination.hasPrevPage ? "Previous" : ""}
+                      nextLabel={pagination.hasNextPage ? "Next" : ""}
                       breakLabel="..."
                       pageCount={pagination.totalPages}
                       onPageChange={handlePageClick}

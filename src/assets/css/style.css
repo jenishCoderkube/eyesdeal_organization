@@ -1577,3 +1577,7 @@ h6 {
 .dropdown-item {
   font-size: 0.8rem !important;
 }
+
+.page-item.disabled a:empty {
+  display: none;
+}
