@@ -684,52 +684,54 @@ const InventoryForm = () => {
             </div>
           </div>
           <div className="table-responsive px-2">
-            {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-            
-            <table className="table table-sm">
-              <thead className="text-xs text-uppercase text-muted bg-light border">
-                <tr>
-                  <th className="custom-perchase-th">Barcode</th>
-                  <th className="custom-perchase-th">Photo</th>
-                  <th className="custom-perchase-th">SKU</th>
-                  <th className="custom-perchase-th">MRP</th>
-                  <th className="custom-perchase-th">Stock</th>
-                  <th className="custom-perchase-th">Sold</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {inventory?.docs?.length > 0 ? (
-                  inventory.docs.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td>{item.product?.newBarcode}</td>
-                      <td>
-                        <img
-                          src={item.photo}
-                          alt="Product"
-                          width="40"
-                          height="40"
-                        />
-                      </td>
-                      <td>{item.product?.sku}</td>
-                      <td>{item.product?.MRP}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.sold}</td>
-                    </tr>
-                  ))
-                ) : (
+            {loadingInventory ? (
+              <div className="d-flex justify-content-center">
+                <h4>Loading Data...</h4>
+              </div>
+            ) : (
+              <table className="table table-sm">
+                <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="text-center add_power_title py-3"
-                    >
-                      No data available
-                    </td>
+                    <th className="custom-perchase-th">Barcode</th>
+                    <th className="custom-perchase-th">Photo</th>
+                    <th className="custom-perchase-th">SKU</th>
+                    <th className="custom-perchase-th">MRP</th>
+                    <th className="custom-perchase-th">Stock</th>
+                    <th className="custom-perchase-th">Sold</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-}
+                </thead>
+                <tbody className="text-sm">
+                  {inventory?.docs?.length > 0 ? (
+                    inventory.docs.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td>{item.product?.newBarcode}</td>
+                        <td>
+                          <img
+                            src={item.photo}
+                            alt="Product"
+                            width="40"
+                            height="40"
+                          />
+                        </td>
+                        <td>{item.product?.sku}</td>
+                        <td>{item.product?.MRP}</td>
+                        <td>{item.quantity}</td>
+                        <td>{item.sold}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="text-center add_power_title py-3"
+                      >
+                        No data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">

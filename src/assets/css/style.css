@@ -1297,12 +1297,12 @@ h6 {
 }
 
 .header_title {
-  font-size: 1.88rem;        
-  letter-spacing: -0.01em;    
-  line-height: 1.33;          
+  font-size: 1.88rem;
+  letter-spacing: -0.01em;
+  line-height: 1.33;
   margin-bottom: 2rem;
   font-weight: 400;
-  color: black       
+  color: black;
 }
 
 .product_head_title {
@@ -1443,10 +1443,10 @@ h6 {
   animation: spin 1s linear infinite;
 }
 
-.common-text-color{ 
+.common-text-color {
   color: #6366f1 !important;
 }
-.common-tab-border-color{ 
+.common-tab-border-color {
   border-color: #6366f1 !important;
 }
 .custom-button-bgcolor {
@@ -1472,7 +1472,7 @@ h6 {
 .custom-hover-border:disabled {
   border-color: #dee2e6; /* Ensure disabled state doesn't show dark border */
 }
-.common-tabledata-minwidth{
+.common-tabledata-minwidth {
   min-width: 100px !important;
 }
 @keyframes spin {
@@ -1485,11 +1485,11 @@ h6 {
 }
 
 /* loader css end */
-.invalid-feedback-color{
+.invalid-feedback-color {
   color: rgb(224, 71, 71);
   font-size: 14px;
 }
-.country-name{
+.country-name {
   margin-left: 30px !important;
 }
 .remove-icon {
@@ -1497,7 +1497,6 @@ h6 {
   left: -25px;
   top: -12px;
 }
-
 
 /* General component styles */
 .truncate {
@@ -1513,7 +1512,7 @@ h6 {
 
 .card {
   border-radius: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 }
 
 /* React-Select styles */
@@ -1572,4 +1571,9 @@ h6 {
 .react-select__multi-value__remove:hover {
   background-color: #dc3545;
   color: white;
+}
+
+.nav-link,
+.dropdown-item {
+  font-size: 0.8rem !important;
 }
