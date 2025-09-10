@@ -348,7 +348,7 @@ function PrescriptionModel({
                         </thead>
                       </table>
                     </div>
-                    <div className="d-flex justify-content-between align-items-center mt-3">
+                    <div className="d-flex justify-content-between align-items-center mt-3 mb-2">
                       <div>
                         <p className="mb-0 small text-muted">
                           Showing <strong>{currentIndex + 1}</strong> of{" "}
