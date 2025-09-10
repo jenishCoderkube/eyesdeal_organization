@@ -2,17 +2,19 @@ import api from "./api";
 
 // Recall endpoints
 const RECALL_ENDPOINTS = {
-  GET_RECALL_BY_STORE: (storeId) => `/report/recall/store?store=${storeId}`,
+  GET_RECALL_BY_STORE: (storeId, page, limit) =>
+    `/report/recall/store?store=${storeId}&page=${page}&limit=${limit}`,
+
   UPDATE_NOTE_RECALL: `/report/recall`,
   GET_RECALL_REPORT: `/report/recall`,
 };
 
 // Recall service functions
 export const recallService = {
-  getRecallByStore: async (storeId) => {
+  getRecallByStore: async (storeId, page, limit) => {
     try {
       const response = await api.get(
-        RECALL_ENDPOINTS.GET_RECALL_BY_STORE(storeId)
+        RECALL_ENDPOINTS.GET_RECALL_BY_STORE(storeId, page, limit)
       );
       return {
         success: response.data.success,
@@ -58,7 +60,8 @@ export const recallService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Error fetching recall report",
+        message:
+          error.response?.data?.message || "Error fetching recall report",
       };
     }
   },

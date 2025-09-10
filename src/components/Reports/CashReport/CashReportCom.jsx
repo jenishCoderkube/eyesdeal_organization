@@ -14,7 +14,12 @@ const CashReportCom = () => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    fetchCashbook({ fromDate: yesterday.getTime(), toDate: today.getTime(), type: defaultType, mode: defaultMode });
+    fetchCashbook({
+      fromDate: yesterday.getTime(),
+      toDate: today.getTime(),
+      type: defaultType,
+      mode: defaultMode,
+    });
   }, []);
 
   const fetchCashbook = ({ fromDate, toDate, type, mode }) => {
@@ -22,41 +27,48 @@ const CashReportCom = () => {
       fromDate,
       toDate,
       ...(type && type.length && { type }),
-      ...(mode && mode.length && { mode })
+      ...(mode && mode.length && { mode }),
     };
-    reportService.getCashbook(payload)
-      .then(res => {
-        const combinedDocs = res.data
-          ?.flatMap(entry => {
-            const docs = entry?.data?.data?.docs || [];
-            return docs.map(doc => ({ ...doc, mode: entry.mode }));
-          });
+    reportService
+      .getCashbook(payload)
+      .then((res) => {
+        const combinedDocs = res.data?.flatMap((entry) => {
+          const docs = entry?.data?.data?.docs || [];
+          return docs.map((doc) => ({ ...doc, mode: entry.mode }));
+        });
         setFilteredData(combinedDocs);
       })
-      .catch(e => console.log("Failed to get jobWorks: ", e))
-  }
+      .catch((e) => console.log("Failed to get jobWorks: ", e));
+  };
 
-  const fetchCashbookWithFilter = ({ fromDate, toDate, limit, type, stores, mode }) => {
+  const fetchCashbookWithFilter = ({
+    fromDate,
+    toDate,
+    limit,
+    type,
+    stores,
+    mode,
+  }) => {
     const payload = {
       fromDate,
       toDate,
       limit,
       ...(type && type.length && { type }),
       ...(stores && stores.length && { stores }),
-      ...(mode && mode.length && { mode })
+      ...(mode && mode.length && { mode }),
     };
-    reportService.getCashbook(payload)
-      .then(res => {
-        const combinedDocs = res.data
-          ?.flatMap(entry => {
-            const docs = entry?.data?.data?.docs || [];
-            return docs.map(doc => ({ ...doc, mode: entry.mode }));
-          });
+    reportService
+      .getCashbook(payload)
+      .then((res) => {
+        const combinedDocs = res.data?.flatMap((entry) => {
+          const docs = entry?.data?.data?.docs || [];
+          return docs.map((doc) => ({ ...doc, mode: entry.mode }));
+        });
 
         setFilteredData(combinedDocs);
       })
-      .catch(e => console.log("Failed to get jobWorks: ", e))
-  }
+      .catch((e) => console.log("Failed to get jobWorks: ", e));
+  };
 
   const handleFormSubmit = (values) => {
     const { from, to, type = [], store = [], mode = [] } = values;
@@ -64,9 +76,9 @@ const CashReportCom = () => {
     const fromTimestamp = new Date(from).getTime();
     const toTimestamp = new Date(to).getTime();
 
-    const typenames = type.map(t => t.value);
-    const storeIds = store.map(s => s.value);
-    const modenames = mode.map(m => m.value);
+    const typenames = type.map((t) => t.value);
+    const storeIds = store.map((s) => s.value);
+    const modenames = mode.map((m) => m.value);
 
     if (modenames.length === 0) {
       setFilteredData([]);
@@ -74,7 +86,11 @@ const CashReportCom = () => {
       return;
     }
 
-    if (modenames.length === 0 && typenames.length === 0 && storeIds.length === 0) {
+    if (
+      modenames.length === 0 &&
+      typenames.length === 0 &&
+      storeIds.length === 0
+    ) {
       setFilteredData([]);
       console.warn("No filters selected. Skipping API call.");
       return;
@@ -83,7 +99,7 @@ const CashReportCom = () => {
     fetchCashbookWithFilter({
       fromDate: fromTimestamp,
       toDate: toTimestamp,
-      limit: 1000,
+      limit: 10000,
       type: typenames,
       stores: storeIds,
       mode: modenames,
