@@ -8,9 +8,10 @@ import PreviousNotesModel from "../../components/ReCall/PreviousNotesModel";
 import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
 import RescheduleRecallDateModal from "../../components/ReCall/RescheduleRecallDateModal";
-import ReactPaginate from "react-paginate"; // Added import for react-paginate
+import ReactPaginate from "react-paginate";
 import { recallService } from "../../services/recallService";
 
+// Debounce function to limit API calls
 const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {
@@ -19,11 +20,28 @@ const debounce = (func, delay) => {
   };
 };
 
+// Validate recall data to ensure required fields are present
+const validateRecallData = (recall) => {
+  if (!recall?._id) return false;
+  if (!recall?.salesId) return false;
+  if (!recall.salesId.createdAt) return false;
+  if (!recall.salesId.customerName) return false;
+  if (!recall.salesId.customerPhone) return false;
+  if (
+    recall.salesId.netAmount === undefined ||
+    recall.salesId.netAmount === null
+  )
+    return false;
+  if (!recall.recallDate) return false;
+  if (!Array.isArray(recall.salesId.orders)) return false;
+  return true;
+};
+
 function RecallReportCom() {
   const [tableData, setTableData] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [NotesModalVisible, setNotesModalVisible] = useState(false);
+  const [notesModalVisible, setNotesModalVisible] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -37,15 +55,19 @@ function RecallReportCom() {
   });
 
   const lastFetchParams = useRef(null);
+  const debouncedFetchRef = useRef(null);
 
-  const fetchRecallData = useCallback(
-    debounce(async (storeId, page) => {
-      const callKey = JSON.stringify({ store: storeId, page });
+  // Initialize debounced fetch function once
+  useEffect(() => {
+    debouncedFetchRef.current = debounce(async (storeId, page, limit) => {
+      const callKey = JSON.stringify({ store: storeId, page, limit });
 
       if (lastFetchParams.current === callKey) {
+        console.log("Skipping duplicate API call:", callKey);
         return;
       }
 
+      console.log("Fetching data with params:", callKey);
       setLoading(true);
       lastFetchParams.current = callKey;
 
@@ -53,14 +75,15 @@ function RecallReportCom() {
         const response = await recallService.getRecallByStore(
           storeId,
           page,
-          pagination.limit
+          limit
         );
-        console.log("response is<<<<", response);
 
         if (response.success) {
           const recalls = response.data?.docs || [];
+          const validRecalls = recalls.filter(validateRecallData);
+
           setTableData(
-            recalls.map((recall) => ({
+            validRecalls.map((recall) => ({
               _id: recall._id,
               lastInvoiceDate: new Date(recall.salesId.createdAt)
                 .toLocaleDateString("en-GB")
@@ -79,40 +102,49 @@ function RecallReportCom() {
                 productSku: order.product?.sku || "N/A",
                 lensSku: order.lens?.sku || "N/A",
                 status: order.status || "N/A",
-                leftLens: order?.leftLens?.displayName,
-                rightLens: order?.rightLens?.displayName,
+                leftLens: order?.leftLens?.displayName || "N/A",
+                rightLens: order?.rightLens?.displayName || "N/A",
               })),
               fullSale: recall.salesId,
-              updateNotes: recall?.updateNotes,
-              rescheduleNotes: recall?.rescheduleNotes,
-              recallStatus: recall?.recallStatus,
+              updateNotes: recall?.updateNotes || "",
+              rescheduleNotes: recall?.rescheduleNotes || "",
+              recallStatus: recall?.recallStatus || "N/A",
             }))
           );
-          setPagination({
-            totalDocs: response.data.totalDocs || 0,
-            totalPages: response.data.totalPages || 1,
-            page: response.data.page || page,
-            limit: response.data.limit || pagination.limit,
-          });
+          if (response.data.page !== pagination.page) {
+            setPagination({
+              totalDocs: response.data.totalDocs || 0,
+              totalPages: response.data.totalPages || 1,
+              page: response.data.page || page,
+              limit: response.data.limit || limit,
+            });
+          }
         } else {
+          console.error("API error:", response.message);
           toast.error(response.message);
           setTableData([]);
         }
       } catch (error) {
-        console.log("error is<<<<", error);
+        console.error("Error fetching recall data:", error);
         toast.error("Error fetching recall data");
         setTableData([]);
       } finally {
         setLoading(false);
       }
-    }, 300),
-    [pagination.limit]
-  );
+    }, 300);
+  }, []);
 
+  // Fetch data when storeId, page, or limit changes
   useEffect(() => {
-    const storeId = "64e30076c68b7b37a98b4b4c";
-    fetchRecallData(storeId, pagination.page);
-  }, [fetchRecallData, pagination.page]);
+    const user = JSON.parse(localStorage.getItem("user"));
+    const storeId = user?.stores[0];
+    if (storeId && debouncedFetchRef.current) {
+      debouncedFetchRef.current(storeId, pagination.page, pagination.limit);
+    } else {
+      console.warn("No storeId or debouncedFetchRef available");
+      toast.error("Unable to fetch data: No store ID found");
+    }
+  }, [pagination.page]);
 
   const toggleSplit = (index) => {
     setExpandedRows((prev) =>
@@ -121,6 +153,10 @@ function RecallReportCom() {
   };
 
   const openNotesModal = (row) => {
+    if (!row) {
+      toast.error("Invalid row data for notes");
+      return;
+    }
     setSelectedNotes(row);
     setNotesModalVisible(true);
   };
@@ -131,6 +167,10 @@ function RecallReportCom() {
   };
 
   const openCustomerNameModal = (row) => {
+    if (!row?.fullSale) {
+      toast.error("Invalid row data for customer modal");
+      return;
+    }
     setSelectedRow(row.fullSale);
     setShowCustomerModal(true);
   };
@@ -141,6 +181,10 @@ function RecallReportCom() {
   };
 
   const openWhatsAppModal = (row) => {
+    if (!row) {
+      toast.error("Invalid row data for WhatsApp modal");
+      return;
+    }
     setSelectedRow(row);
     setShowWhatsAppModal(true);
   };
@@ -151,7 +195,10 @@ function RecallReportCom() {
   };
 
   const openRecallNoteModal = (row) => {
-    console.log("row<<<<<", row);
+    if (!row) {
+      toast.error("Invalid row data for recall note modal");
+      return;
+    }
     setSelectedRow(row);
     setRecallNoteModal(true);
   };
@@ -161,7 +208,6 @@ function RecallReportCom() {
     setSelectedRow(null);
   };
 
-  // Handle pagination
   const handlePageChange = ({ selected }) => {
     const newPage = selected + 1; // react-paginate uses 0-based indexing
     setPagination((prev) => ({ ...prev, page: newPage }));
@@ -169,6 +215,48 @@ function RecallReportCom() {
 
   return (
     <div className="mt-4 max-width-90 mx-auto px-3">
+      <style>
+        {`
+          .pagination {
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+          }
+          .pagination .page-item {
+            margin: 0;
+          }
+          .pagination .page-link {
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.2s;
+            cursor: pointer;
+            background-color: #fff;
+          }
+          .pagination .page-link:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+          }
+          .pagination .active .page-link {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+          }
+          .pagination .disabled .page-link {
+            color: #6c757d;
+            cursor: not-allowed;
+            background-color: #f8f9fa;
+          }
+          .pagination .break-link {
+            cursor: default;
+            background-color: transparent;
+            border: none;
+          }
+        `}
+      </style>
       <div className="table-responsive overflow-x-auto">
         {loading ? (
           <div
@@ -194,7 +282,7 @@ function RecallReportCom() {
               alignItems: "center",
             }}
           >
-            <p>No recall data available.</p>
+            <p>No valid recall data available.</p>
           </div>
         ) : (
           <>
@@ -207,25 +295,15 @@ function RecallReportCom() {
                   className="text-uppercase small fw-semibold"
                   style={{ backgroundColor: "#f8fafc", color: "#64748b" }}
                 >
-                  <th className="py-3 custom-perchase-th px-2">
-                    Last Invoice Date
-                  </th>
-                  <th className="py-3 custom-perchase-th px-2">
-                    Customer Name
-                  </th>
-                  <th className="py-3 custom-perchase-th px-2">
-                    Customer Number
-                  </th>
-                  <th className="py-3 custom-perchase-th px-2">
-                    Total Invoice Value
-                  </th>
-                  <th className="py-3 custom-perchase-th px-2">Recall Date</th>
-                  <th className="py-3 custom-perchase-th px-2">
-                    Previous Notes
-                  </th>
-                  <th className="py-3 custom-perchase-th px-2"></th>
-                  <th className="py-3 custom-perchase-th px-2">Action</th>
-                  <th className="py-3 custom-perchase-th px-2">Chat</th>
+                  <th className="py-3 px-2">Last Invoice Date</th>
+                  <th className="py-3 px-2">Customer Name</th>
+                  <th className="py-3 px-2">Customer Number</th>
+                  <th className="py-3 px-2">Total Invoice Value</th>
+                  <th className="py-3 px-2">Recall Date</th>
+                  <th className="py-3 px-2">Previous Notes</th>
+                  <th className="py-3 px-2"></th>
+                  <th className="py-3 px-2">Action</th>
+                  <th className="py-3 px-2">Chat</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,7 +311,12 @@ function RecallReportCom() {
                   <React.Fragment key={row._id}>
                     <tr style={{ borderTop: "1px solid #dee2e6" }}>
                       <td className="py-3 px-2">{row.lastInvoiceDate}</td>
-                      <td className="py-3 px-2">{row.customerName}</td>
+                      <td
+                        className="py-3 px-2 text-primary text-decoration-underline cursor-pointer"
+                        onClick={() => openCustomerNameModal(row)}
+                      >
+                        {row.customerName}
+                      </td>
                       <td className="py-3 px-2">{row.customerNumber}</td>
                       <td className="py-3 px-2 text-primary">
                         {row.totalInvoiceValue}
@@ -267,7 +350,6 @@ function RecallReportCom() {
                           <button
                             className="btn btn-primary btn-sm"
                             style={{ minWidth: "80px" }}
-                            onClick={() => openRecallNoteModal(row)} // Assuming Reschedule uses the same modal for now
                           >
                             Reschedule
                           </button>
@@ -320,38 +402,45 @@ function RecallReportCom() {
                 ))}
               </tbody>
             </table>
-            {/* Pagination Section */}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4">
-              <div className="text-sm">
-                Showing <span className="fw-bold">{tableData.length}</span> of{" "}
-                <span className="fw-bold">{pagination.totalDocs}</span> results
+              <div className="text-sm mb-3 mb-sm-0">
+                Showing{" "}
+                <span className="fw-bold">
+                  {(pagination.page - 1) * pagination.limit + 1}
+                </span>{" "}
+                –{" "}
+                <span className="fw-bold">
+                  {(pagination.page - 1) * pagination.limit + tableData.length}
+                </span>{" "}
+                of <span className="fw-bold">{pagination.totalDocs}</span>{" "}
+                results
               </div>
+
               <ReactPaginate
                 previousLabel="← Previous"
                 nextLabel="Next →"
                 pageCount={pagination.totalPages}
                 onPageChange={handlePageChange}
-                containerClassName="pagination d-flex list-unstyled align-items-center"
-                pageClassName="me-2"
-                pageLinkClassName="btn border border-secondary text-muted"
-                previousClassName="me-2"
-                previousLinkClassName="btn border border-secondary text-muted"
-                nextClassName=""
-                nextLinkClassName="btn border border-secondary text-muted"
+                containerClassName="pagination"
+                pageClassName="page-item"
+                pageLinkClassName="page-link"
+                previousClassName="page-item"
+                previousLinkClassName="page-link"
+                nextClassName="page-item"
+                nextLinkClassName="page-link"
                 activeClassName="active"
-                activeLinkClassName="bg-indigo-500 text-white"
                 disabledClassName="disabled"
                 breakLabel="..."
-                breakClassName="me-2"
-                breakLinkClassName="btn border border-secondary text-muted"
-                forcePage={pagination.page - 1} // Adjust for 0-based indexing
+                breakClassName="page-item"
+                breakLinkClassName="page-link break-link"
+                forcePage={pagination.page - 1}
               />
             </div>
           </>
         )}
       </div>
 
-      {NotesModalVisible && selectedNotes && (
+      {notesModalVisible && selectedNotes && (
         <PreviousNotesModel
           closeNotesModal={closeNotesModal}
           selectedNotes={selectedNotes}
