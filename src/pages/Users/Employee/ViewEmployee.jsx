@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-table";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
+import ReactPaginate from "react-paginate";
+import { useDebounce } from "use-debounce";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -23,21 +25,65 @@ const ViewEmployees = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 100,
+    totalDocs: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+    nextPage: null,
+    prevPage: null,
+    pagingCounter: 1,
+  });
+
+  const [debouncedSearch] = useDebounce(searchQuery, 1300);
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
+    fetchEmployees(pagination.page, debouncedSearch);
+  }, [pagination.page, debouncedSearch]);
 
-  const fetchEmployees = async () => {
-    userService
-      .getEmployees(currentPage)
-      .then((res) => {
-        console.log("res: ", res?.data);
-        setEmployees(res.data?.data?.docs);
-      })
-      .catch((e) => console.log("Failed to get employees: ", e));
+  const fetchEmployees = async (page, search) => {
+    setLoading(true);
+    try {
+      const response = await userService.getEmployees({
+        page,
+        limit: pagination.limit,
+        search,
+      });
+
+      if (response.success) {
+        const {
+          docs,
+          totalDocs,
+          totalPages,
+          page,
+          hasNextPage,
+          hasPrevPage,
+          nextPage,
+          prevPage,
+          pagingCounter,
+        } = response.data.data;
+        setEmployees(docs || []);
+        setPagination((prev) => ({
+          ...prev,
+          page,
+          totalDocs,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+          nextPage,
+          prevPage,
+          pagingCounter,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching customers", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Custom global filter function
@@ -45,18 +91,26 @@ const ViewEmployees = () => {
     () => (data, query) => {
       if (!query) return data;
       const lowerQuery = query.toLowerCase();
+      console.log("datkfdhfjkdhfa", data);
       return data.filter((item) =>
         [
-          String(item.id),
-          item.Name,
-          String(item.Phone),
-          item.Role,
-          Array.isArray(item.Store)
-            ? item.Store.join(", ")
-            : String(item.Store),
-          item.JoiningDate,
-          item.ActiveEmployee,
-        ].some((field) => field.toLowerCase().includes(lowerQuery))
+          String(item._id),
+          item.name,
+          item.email,
+          String(item.phone),
+          item.role,
+          item.city,
+          item.state,
+          item.country,
+          item.pincode,
+          Array.isArray(item.storesData)
+            ? item.storesData.map((s) => s.name).join(", ")
+            : "",
+          item.joiningDate,
+          String(item.isActive),
+        ]
+          .filter(Boolean) // remove null/undefined
+          .some((field) => field.toLowerCase().includes(lowerQuery))
       );
     },
     []
@@ -72,10 +126,11 @@ const ViewEmployees = () => {
 
     return () => clearTimeout(debouncedFilter.timeout);
   }, [searchQuery, employees, filterGlobally]);
+  console.log("filterdata", filteredData);
 
-  // Handle search input change
   const handleSearch = (value) => {
     setSearchQuery(value);
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
   };
 
   // Use filtered data if available, otherwise use full dataset
@@ -85,11 +140,13 @@ const ViewEmployees = () => {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "_id",
         header: "SRNO",
-        cell: ({ getValue, table, row }) => (
+        cell: ({ table, row }) => (
           <div className="text-left">
-            {table?.getSortedRowModel()?.flatRows?.indexOf(row) + 1}
+            {(pagination.page - 1) * pagination.limit +
+              table?.getSortedRowModel()?.flatRows?.indexOf(row) +
+              1}
           </div>
         ),
       },
@@ -200,10 +257,11 @@ const ViewEmployees = () => {
         ),
       },
     ],
-    []
+    [loading, pagination.page, pagination.limit]
   );
 
   // @tanstack/react-table setup
+  console.log("kfjhkdjshfjksdhfjkdshf", tableData);
   const table = useReactTable({
     data: tableData,
     columns,
@@ -212,7 +270,7 @@ const ViewEmployees = () => {
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 100,
+        pageSize: pagination.limit,
       },
     },
   });
@@ -233,12 +291,10 @@ const ViewEmployees = () => {
     }
   };
 
-  // Calculate the range of displayed rows
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData?.length);
-  const totalRows = tableData.length;
+  const handlePageClick = ({ selected }) => {
+    const selectedPage = selected + 1; // react-paginate is 0-based
+    setPagination((prev) => ({ ...prev, page: selectedPage }));
+  };
 
   return (
     <div className="container-fluid px-4 py-5">
@@ -270,71 +326,84 @@ const ViewEmployees = () => {
                   />
                 </div>
               </div>
-              <div className="table-responsive ">
-                <table className="table table-sm">
-                  <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} role="row">
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-3 text-left custom-perchase-th"
-                            role="columnheader"
-                          >
-                            <div className="font-semibold text-left  break-words">
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className="text-sm">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} role="row">
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="px-2 first:pl-5 last:pr-5 py-3"
-                            role="cell"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mt-3 px-3">
-                <div>
-                  Showing {startRow} to {endRow} of {totalRows} results
+              {loading ? (
+                <div className="text-center my-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
                 </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="table-responsive ">
+                    <table className="table table-sm">
+                      <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+                        {table.getHeaderGroups().map((headerGroup) => (
+                          <tr key={headerGroup.id}>
+                            {headerGroup.headers.map((header) => (
+                              <th
+                                key={header.id}
+                                className="p-3 text-left custom-perchase-th"
+                              >
+                                <div className="font-semibold text-left  break-words">
+                                  {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                      )}
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        ))}
+                      </thead>
+                      <tbody className="text-sm">
+                        {table.getRowModel().rows.map((row) => (
+                          <tr key={row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="p-3">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                    <div>
+                      Showing {pagination.pagingCounter} to{" "}
+                      {Math.min(
+                        pagination.pagingCounter + pagination.limit - 1,
+                        pagination.totalDocs
+                      )}{" "}
+                      of {pagination.totalDocs} entries
+                    </div>
+                    <ReactPaginate
+                      previousLabel={pagination.hasPrevPage ? "Previous" : ""}
+                      nextLabel={pagination.hasNextPage ? "Next" : ""}
+                      breakLabel="..."
+                      pageCount={pagination.totalPages}
+                      onPageChange={handlePageClick}
+                      containerClassName="pagination mb-0"
+                      pageClassName="page-item"
+                      pageLinkClassName="page-link"
+                      previousClassName="page-item"
+                      previousLinkClassName="page-link"
+                      nextClassName="page-item"
+                      nextLinkClassName="page-link"
+                      breakClassName="page-item"
+                      breakLinkClassName="page-link"
+                      activeClassName="active"
+                      disabledClassName="disabled"
+                      forcePage={pagination.page - 1}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

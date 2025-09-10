@@ -24,7 +24,9 @@ export const packageService = {
   },
   getPackagesProducs: async (page = 1, limit = 10, packageId) => {
     try {
-      const response = await api.get(`packageOffer/${packageId}`);
+      const response = await api.get(
+        `packageOffer/${packageId}?page=${page}&limit=${limit}`
+      );
       // The actual data is in response.data.message
       return {
         success: response.data.success,

@@ -90,14 +90,15 @@ export const userService = {
       };
     }
   },
-  getEmployees: async (page) => {
+  getEmployees: async ({ page = 1, limit = 10, search = "" } = {}) => {
     try {
       const response = await api.get(USER_ENDPOINTS.GET_EMPLOYEES, {
         params: {
           "role[$ne]": "customer",
           populate: true,
-          page: page,
-          limit: 300,
+          page,
+          limit,
+          search,
         },
       });
       return {
