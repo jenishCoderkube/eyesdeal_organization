@@ -163,7 +163,7 @@ const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
   return params.toString();
 };
 
-const buildProductStoreParams = (productIds, page, limit, populate) => {
+const buildProductStoreParams = (productIds, page, limit, populate, search) => {
   const params = new URLSearchParams();
 
   if (page) params.append("page", page);
@@ -174,6 +174,9 @@ const buildProductStoreParams = (productIds, page, limit, populate) => {
 
   if (populate) {
     params.append("populate", populate);
+  }
+  if (search) {
+    params.append("search", search);
   }
   // Store IDs
   productIds.forEach((productIds, index) => {
@@ -613,9 +616,15 @@ export const inventoryService = {
     }
   },
 
-  getProductStore: async (productIds = [], page, limit, populate) => {
+  getProductStore: async (productIds = [], page, limit, populate, search) => {
     try {
-      let params = buildProductStoreParams(productIds, page, limit, populate);
+      let params = buildProductStoreParams(
+        productIds,
+        page,
+        limit,
+        populate,
+        search
+      );
       const response = await api.get(
         INVENTORY_ENDPOINTS.UNIVERSALSEARCHGET(params)
       );

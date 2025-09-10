@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
 import { Offcanvas } from "react-bootstrap";
+import ReactPaginate from "react-paginate";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
@@ -9,11 +10,12 @@ import moment from "moment/moment";
 const StockOutTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [stockData, setStockData] = useState([]);
+  const [stockData, setStockData] = useState({ docs: [], totalPages: 1 });
+  const [currentPage, setCurrentPage] = useState(0);
   const [showOffcanvas, setShowOffCanvas] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
-
   const [showData, setShowData] = useState([]);
+  const itemsPerPage = 20;
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -51,55 +53,62 @@ const StockOutTable = () => {
   };
 
   useEffect(() => {
-    getCollectionData();
-  }, []);
+    getCollectionData(currentPage + 1);
+  }, [currentPage]);
 
-  const getCollectionData = async () => {
+  const getCollectionData = async (page) => {
     setLoadingInventory(true);
 
     const params = {
       "optimize[from]": user?.stores?.[0],
-      page: 1,
-      limit: 20,
+      page: page,
+      limit: itemsPerPage,
+      search: searchQuery.trim() ? searchQuery : "",
     };
     const queryString = new URLSearchParams(params).toString();
 
     try {
       const response = await inventoryService.stockTransfer(queryString);
       if (response.success) {
-        setStockData(response?.data?.data);
+        setStockData({
+          docs: response?.data?.data?.docs || [],
+          totalPages: response?.data?.data?.totalPages || 1,
+        });
       } else {
         toast.error(response.message);
       }
     } catch (error) {
       console.error("error:", error);
+      toast.error("Failed to fetch stock data");
     } finally {
       setLoadingInventory(false);
     }
   };
 
+  // Handle search with debounce
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setCurrentPage(0); // Reset to first page on new search
+      getCollectionData(1);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const exportProduct = async (item) => {
-    const finalData = [];
+    const finalData = item?.map((product) => ({
+      "Product Name": product?.productId?.displayName,
+      "Product Sku": product?.productId?.sku,
+      Barcode: product?.productId?.newBarcode,
+      "Stock Quantity": product?.stockQuantity,
+      Mrp: product?.productId?.MRP,
+    }));
 
-    item?.forEach((item) => {
-      const selected = item?.productId;
-      finalData.push({
-        "Product Name": selected?.displayName,
-        "Product Sku": selected?.sku,
-        Barcode: selected?.newBarcode,
-        "Stock Quantity": item?.stockQuantity,
-        Mrp: selected?.MRP,
-      });
-    });
-
-    const finalPayload = {
-      data: finalData,
-    };
+    const finalPayload = { data: finalData };
     setLoading(true);
 
     try {
       const response = await inventoryService.exportCsv(finalPayload);
-
       if (response.success) {
         const csvData = response.data;
         const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
@@ -115,6 +124,7 @@ const StockOutTable = () => {
       }
     } catch (error) {
       console.error("Export error:", error);
+      toast.error("Failed to export CSV");
     } finally {
       setLoading(false);
     }
@@ -123,6 +133,10 @@ const StockOutTable = () => {
   const btnClick = (item) => {
     setShowData(item);
     setShowOffCanvas(true);
+  };
+
+  const handlePageClick = (event) => {
+    setCurrentPage(event.selected);
   };
 
   return (
@@ -136,7 +150,7 @@ const StockOutTable = () => {
             <input
               type="search"
               className="form-control border-start-0 py-2"
-              placeholder="Search..."
+              placeholder="Search by store, status, date, product..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -167,22 +181,28 @@ const StockOutTable = () => {
                   <tbody className="text-sm">
                     {filteredData.length > 0 ? (
                       filteredData.map((item, index) => (
-                        <tr key={item.id || index}>
-                          <td style={{ minWidth: "50px" }}>{index + 1}</td>
+                        <tr key={item._id || index}>
+                          <td style={{ minWidth: "50px" }}>
+                            {currentPage * itemsPerPage + index + 1}
+                          </td>
                           <td style={{ minWidth: "110px" }}>
                             {moment(item.createdAt).format("YYYY-MM-DD")}
                           </td>
                           <td style={{ minWidth: "180px", maxWidth: "200px" }}>
-                            {item.from.storeNumber}/{item.from.name}
+                            {item.from?.storeNumber}/{item.from?.name}
                           </td>
                           <td style={{ minWidth: "180px", maxWidth: "200px" }}>
-                            {item.to.storeNumber}/{item.to.name}
+                            {item.to?.storeNumber}/{item.to?.name}
                           </td>
                           <td style={{ minWidth: "160px" }}>
                             {item.products?.length}
                           </td>
                           <td style={{ minWidth: "150px" }}>
-                            {item.products?.length}
+                            {item.products?.reduce(
+                              (sum, product) =>
+                                sum + (product?.stockQuantity || 0),
+                              0
+                            )}
                           </td>
                           <td>{item.status}</td>
                           <td className="d-flex align-items-center gap-2">
@@ -197,8 +217,9 @@ const StockOutTable = () => {
                               type="button"
                               className="btn custom-button-bgcolor btn-sm"
                               onClick={() => exportProduct(item?.products)}
+                              disabled={loading}
                             >
-                              Download
+                              {loading ? "Downloading..." : "Download"}
                             </button>
                           </td>
                         </tr>
@@ -216,18 +237,40 @@ const StockOutTable = () => {
             </div>
             <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
               <div className="text-sm text-muted mb-3 mb-sm-0">
-                Showing <span className="fw-medium">1</span> to{" "}
-                <span className="fw-medium">{filteredData.length}</span> of{" "}
-                <span className="fw-medium">{filteredData.length}</span> results
+                Showing{" "}
+                <span className="fw-medium">
+                  {currentPage * itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="fw-medium">
+                  {Math.min(
+                    (currentPage + 1) * itemsPerPage,
+                    stockData.totalDocs || filteredData.length
+                  )}
+                </span>{" "}
+                of{" "}
+                <span className="fw-medium">
+                  {stockData.totalDocs || filteredData.length}
+                </span>{" "}
+                results
               </div>
-              <div className="btn-group">
-                <button type="button" className="btn btn-outline-primary">
-                  Previous
-                </button>
-                <button type="button" className="btn btn-outline-primary">
-                  Next
-                </button>
-              </div>
+              <ReactPaginate
+                previousLabel={"Previous"}
+                nextLabel={"Next"}
+                breakLabel={"..."}
+                pageCount={stockData.totalPages}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={5}
+                onPageChange={handlePageClick}
+                containerClassName={"pagination btn-group"}
+                pageClassName={"btn btn-outline-primary"}
+                previousClassName={"btn btn-outline-primary"}
+                nextClassName={"btn btn-outline-primary"}
+                breakClassName={"btn btn-outline-primary"}
+                activeClassName={"active"}
+                disabledClassName={"disabled"}
+                forcePage={currentPage}
+              />
             </div>
           </div>
         </div>

@@ -3,18 +3,24 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import { FaSearch } from "react-icons/fa";
+import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
 import moment from "moment";
 
 const ViewProductForm = () => {
-  const [inventory, setInventory] = useState([]);
+  const [inventory, setInventory] = useState({
+    docs: [],
+    totalPages: 1,
+    totalDocs: 0,
+  });
   const [searchQuery, setSearchQuery] = useState("");
-  const [productData, setProductData] = useState([]);
+  const [productData, setProductData] = useState({ docs: [] });
   const [loadingInventory, setLoadingInventory] = useState(false);
-
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 20;
 
   const productOptions = productData?.docs?.map((vendor) => ({
     value: vendor._id,
@@ -27,8 +33,8 @@ const ViewProductForm = () => {
       product: Yup.array().notRequired(),
     }),
     onSubmit: (values) => {
-      console.log("Form submitted:", values);
-      getInventoryData(values);
+      setCurrentPage(0); // Reset to first page on submit
+      getInventoryData(values, 1);
     },
   });
 
@@ -43,28 +49,35 @@ const ViewProductForm = () => {
       }
     } catch (error) {
       console.error("error:", error);
+      toast.error("Failed to fetch products");
     } finally {
       setLoading(false);
     }
   };
 
-  const getInventoryData = async (values) => {
+  const getInventoryData = async (values, page) => {
     const productIds = values?.product?.map((option) => option.value);
     setLoadingInventory(true);
     try {
       const response = await inventoryService.getProductStore(
         productIds,
-        1,
-        20,
-        true
+        page,
+        itemsPerPage,
+        true,
+        searchQuery.trim() ? searchQuery : ""
       );
       if (response.success) {
-        setInventory(response?.data?.data);
+        setInventory({
+          docs: response?.data?.data?.docs || [],
+          totalPages: response?.data?.data?.totalPages || 1,
+          totalDocs: response?.data?.data?.totalDocs || 0,
+        });
       } else {
         toast.error(response.message);
       }
     } catch (error) {
       console.error("error:", error);
+      toast.error("Failed to fetch inventory data");
     } finally {
       setLoadingInventory(false);
     }
@@ -79,13 +92,28 @@ const ViewProductForm = () => {
     []
   );
 
+  // Handle search with debounce
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim()) {
+        setCurrentPage(0);
+        getInventoryData(formik.values, 1);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, formik.values]);
+
+  const handlePageClick = (event) => {
+    setCurrentPage(event.selected);
+    getInventoryData(formik.values, event.selected + 1);
+  };
+
   return (
     <div className="card-body px-3 py-1">
       <form onSubmit={formik.handleSubmit}>
         <div className="row row-cols-1 g-3">
           <div className="col position-relative">
-            {" "}
-            {/* Added position-relative for spinner */}
             <label className="form-label font-weight-500" htmlFor="product">
               Product
             </label>
@@ -95,7 +123,7 @@ const ViewProductForm = () => {
               isMulti
               onChange={(option) => formik.setFieldValue("product", option)}
               onBlur={() => formik.setFieldTouched("product", true)}
-              placeholder="Select..."
+              placeholder="Select products..."
               classNamePrefix="react-select"
               className={
                 formik.touched.product && formik.errors.product
@@ -105,33 +133,54 @@ const ViewProductForm = () => {
               onInputChange={(value) => {
                 debouncedGetProduct(value);
               }}
-              // Removed isLoading and loadingMessage
               noOptionsMessage={({ inputValue }) =>
-                inputValue
-                  ? loading && (
-                      <div
-                        className="spinner-border spinner-border-sm text-primary"
-                        role="status"
-                      >
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                    )
-                  : "No options"
+                inputValue ? (
+                  loading ? (
+                    <div
+                      className="spinner-border spinner-border-sm text-primary"
+                      role="status"
+                    >
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  ) : (
+                    "No products found"
+                  )
+                ) : (
+                  "Type to search products"
+                )
               }
             />
             {formik.touched.product && formik.errors.product && (
               <div className="text-danger mt-1">{formik.errors.product}</div>
             )}
           </div>
+          <div className="col position-relative">
+            <label className="form-label font-weight-500">Search</label>
+            <div className="input-group">
+              <span className="input-group-text bg-white border-end-0">
+                <FaSearch className="text-muted" style={{ color: "#94a3b8" }} />
+              </span>
+              <input
+                type="search"
+                className="form-control border-start-0 py-2"
+                placeholder="Search by barcode, SKU, store, or brand..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
         <div className="mt-4">
-          <button type="submit" className="btn custom-button-bgcolor">
-            Submit
+          <button
+            type="submit"
+            className="btn custom-button-bgcolor"
+            disabled={loadingInventory}
+          >
+            {loadingInventory ? "Loading..." : "Submit"}
           </button>
         </div>
       </form>
 
-      {/* Rest of your code (table, etc.) remains unchanged */}
       <div className="card p-0 shadow-none border mt-5">
         <div className="card-body p-0">
           <div className="table-responsive mt-3 px-2">
@@ -157,9 +206,9 @@ const ViewProductForm = () => {
                 <tbody className="text-sm">
                   {inventory?.docs?.length > 0 ? (
                     inventory.docs.map((item, index) => (
-                      <tr key={item.id || index}>
+                      <tr key={item._id || index}>
                         <td style={{ minWidth: "70px" }}>
-                          {item.product?.oldBarcode}
+                          {item.product?.newBarcode}
                         </td>
                         <td style={{ minWidth: "100px" }}>
                           {moment(item.product?.createdAt).format("YYYY-MM-DD")}
@@ -203,19 +252,37 @@ const ViewProductForm = () => {
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              Showing{" "}
+              <span className="fw-medium">
+                {currentPage * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="fw-medium">
+                {Math.min(
+                  (currentPage + 1) * itemsPerPage,
+                  inventory.totalDocs
+                )}
+              </span>{" "}
+              of <span className="fw-medium">{inventory.totalDocs}</span>{" "}
               results
             </div>
-            <div className="btn-group">
-              <button type="button" className="btn btn-outline-primary">
-                Previous
-              </button>
-              <button type="button" className="btn btn-outline-primary">
-                Next
-              </button>
-            </div>
+            <ReactPaginate
+              previousLabel={"Previous"}
+              nextLabel={"Next"}
+              breakLabel={"..."}
+              pageCount={inventory.totalPages}
+              marginPagesDisplayed={2}
+              pageRangeDisplayed={5}
+              onPageChange={handlePageClick}
+              containerClassName={"pagination btn-group"}
+              pageClassName={"btn btn-outline-primary"}
+              previousClassName={"btn btn-outline-primary"}
+              nextClassName={"btn btn-outline-primary"}
+              breakClassName={"btn btn-outline-primary"}
+              activeClassName={"active"}
+              disabledClassName={"disabled"}
+              forcePage={currentPage}
+            />
           </div>
         </div>
       </div>
