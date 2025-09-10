@@ -10,25 +10,37 @@ const CashReportCom = () => {
   const defaultMode = ["cash", "bank", "card"];
 
   useEffect(() => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const now = new Date();
+    const from = new Date(now);
+    from.setHours(0, 0, 0, 0); // start of today (align with ViewCashbook)
+
+    const to = new Date(now);
+    to.setHours(23, 59, 59, 999); // end of today (align with ViewCashbook)
 
     fetchCashbook({
-      fromDate: yesterday.getTime(),
-      toDate: today.getTime(),
+      fromDate: from.getTime(),
+      toDate: to.getTime(),
       type: defaultType,
       mode: defaultMode,
     });
   }, []);
 
-  const fetchCashbook = ({ fromDate, toDate, type, mode }) => {
+  const fetchCashbook = ({ fromDate, toDate, type, mode, store }) => {
     const payload = {
       fromDate,
       toDate,
       ...(type && type.length && { type }),
+      ...(store && store.length && { store }),
+
       ...(mode && mode.length && { mode }),
     };
+    // Log initial fetch dates
+    console.log("Initial fetchCashbook dates:", {
+      fromDate,
+      toDate,
+      fromLocal: new Date(fromDate).toLocaleString(),
+      toLocal: new Date(toDate).toLocaleString(),
+    });
     reportService
       .getCashbook(payload)
       .then((res) => {
@@ -57,6 +69,16 @@ const CashReportCom = () => {
       ...(stores && stores.length && { stores }),
       ...(mode && mode.length && { mode }),
     };
+    // Log filtered fetch dates
+    console.log("Filtered fetchCashbook dates:", {
+      fromDate,
+      toDate,
+      fromLocal: new Date(fromDate).toLocaleString(),
+      toLocal: new Date(toDate).toLocaleString(),
+      type,
+      stores,
+      mode,
+    });
     reportService
       .getCashbook(payload)
       .then((res) => {
@@ -73,12 +95,28 @@ const CashReportCom = () => {
   const handleFormSubmit = (values) => {
     const { from, to, type = [], store = [], mode = [] } = values;
 
-    const fromTimestamp = new Date(from).getTime();
-    const toTimestamp = new Date(to).getTime();
+    const fromStart = new Date(from);
+    fromStart.setHours(0, 0, 0, 0); // normalize to start of day
+    const toEnd = new Date(to);
+    toEnd.setHours(23, 59, 59, 999); // normalize to end of day
+
+    const fromTimestamp = fromStart.getTime();
+    const toTimestamp = toEnd.getTime();
 
     const typenames = type.map((t) => t.value);
     const storeIds = store.map((s) => s.value);
     const modenames = mode.map((m) => m.value);
+
+    // Log form submit dates
+    console.log("Form submit dates:", {
+      fromDate: fromTimestamp,
+      toDate: toTimestamp,
+      fromLocal: new Date(fromTimestamp).toLocaleString(),
+      toLocal: new Date(toTimestamp).toLocaleString(),
+      type: typenames,
+      stores: storeIds,
+      mode: modenames,
+    });
 
     if (modenames.length === 0) {
       setFilteredData([]);
