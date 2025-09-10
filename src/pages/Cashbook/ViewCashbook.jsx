@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import moment from "moment/moment";
 import { debounce } from "lodash";
 import { useFormik } from "formik";
+import ReactPaginate from "react-paginate"; // Added import for react-paginate
 
 const ViewCashbook = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +105,7 @@ const ViewCashbook = () => {
   useEffect(() => {
     cashBook(searchQuery, currentPage);
   }, [currentPage]);
+
   useEffect(() => {
     const storedStoreId = user?.stores?.[0];
     if (storedStoreId && storeData.length > 0) {
@@ -120,6 +122,7 @@ const ViewCashbook = () => {
       }
     }
   }, [storeData]);
+
   const cashBook = async (search = "", page = 1) => {
     const storeId = formData?.store?.map((option) => option.value);
     setLoading(true);
@@ -155,6 +158,7 @@ const ViewCashbook = () => {
     setCurrentPage(1); // Reset to first page on search
     debouncedSearch(query);
   };
+
   // Calculate Opening & Closing
   const calculateOpeningClosing = (data) => {
     if (!data || data.length === 0) return { opening: 0, closing: 0 };
@@ -176,11 +180,10 @@ const ViewCashbook = () => {
 
   const { opening, closing } = calculateOpeningClosing(cashBooks?.docs);
 
-  // Handle pagination
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= cashBooks.totalPages) {
-      setCurrentPage(newPage);
-    }
+  // Handle pagination for react-paginate
+  const handlePageChange = ({ selected }) => {
+    const newPage = selected + 1; // react-paginate uses 0-based indexing
+    setCurrentPage(newPage);
   };
 
   return (
@@ -231,11 +234,6 @@ const ViewCashbook = () => {
                   placeholder="Select..."
                   classNamePrefix="react-select"
                 />
-                {/* <input
-                  name="store"
-                  type="hidden"
-                  value={formData.store ? formData.store.value : ""}
-                /> */}
               </div>
               <div className="col-12 col-md-6 col-lg-3">
                 <label
@@ -275,14 +273,6 @@ const ViewCashbook = () => {
               </div>
             </div>
           </form>
-          {/* <div className="d-flex flex-column flex-md-row gap-4">
-            <h6 className="fw-bold">
-              Opening Balance: <span>{openingBalance}</span>
-            </h6>
-            <h6 className="fw-bold">
-              Closing Balance: <span>{closingBalance}</span>
-            </h6>
-          </div> */}
           <div className="card shadow-none border">
             <div className="card-header border-0 px-4 pt-3">
               <h5 className="fw-bold pt-3">Cashbooks</h5>
@@ -381,45 +371,27 @@ const ViewCashbook = () => {
               Showing <span className="fw-bold">{cashBooks.docs.length}</span>{" "}
               of <span className="fw-bold">{cashBooks.totalDocs}</span> results
             </div>
-            <nav aria-label="Navigation">
-              <ul className="d-flex list-unstyled align-items-center">
-                <li className="me-2">
-                  <button
-                    className="btn border border-secondary text-muted"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={!cashBooks.hasPrevPage}
-                  >
-                    &lt;- Previous
-                  </button>
-                </li>
-                {Array.from(
-                  { length: cashBooks.totalPages },
-                  (_, i) => i + 1
-                ).map((page) => (
-                  <li key={page} className="me-2">
-                    <button
-                      className={`btn border border-secondary ${
-                        currentPage === page
-                          ? "bg-indigo-500 text-white"
-                          : "text-muted"
-                      }`}
-                      onClick={() => handlePageChange(page)}
-                    >
-                      {page}
-                    </button>
-                  </li>
-                ))}
-                <li>
-                  <button
-                    className="btn border border-secondary text-muted"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={!cashBooks.hasNextPage}
-                  >
-                    Next -&gt;
-                  </button>
-                </li>
-              </ul>
-            </nav>
+            {/* Updated Pagination with react-paginate */}
+            <ReactPaginate
+              previousLabel="← Previous"
+              nextLabel="Next →"
+              pageCount={cashBooks.totalPages}
+              onPageChange={handlePageChange}
+              containerClassName="pagination d-flex list-unstyled align-items-center"
+              pageClassName="me-2"
+              pageLinkClassName="btn border border-secondary text-muted"
+              previousClassName="me-2"
+              previousLinkClassName="btn border border-secondary text-muted"
+              nextClassName=""
+              nextLinkClassName="btn border border-secondary text-muted"
+              activeClassName="active"
+              activeLinkClassName="bg-indigo-500 text-white"
+              disabledClassName="disabled"
+              breakLabel="..."
+              breakClassName="me-2"
+              breakLinkClassName="btn border border-secondary text-muted"
+              forcePage={currentPage - 1} // react-paginate uses 0-based indexing
+            />
           </div>
         </div>
       </div>

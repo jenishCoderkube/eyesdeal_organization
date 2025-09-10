@@ -1,13 +1,7 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import { FiEdit2 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
@@ -18,15 +12,8 @@ import { IoIosAddCircle, IoIosClose } from "react-icons/io";
 import EditVendorModal from "../../../components/Users/Vendor/EditVendorModal";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
-
-// Debounce utility function
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
+import ReactPaginate from "react-paginate";
+import { useDebounce } from "use-debounce";
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -54,165 +41,112 @@ const validationSchema = Yup.object({
 
 const AddVendors = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(null);
   const [vendors, setVendors] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editVendor, setEditVendor] = useState(null);
-  const [showcontactInput, setShowContactInput] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [formData, setFormData] = useState([
-    {
-      name: "",
-      phone: "",
-    },
-  ]);
+  const [loading, setLoading] = useState(false);
+  const [debouncedSearch] = useDebounce(searchQuery, 400);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    totalDocs: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   useEffect(() => {
-    fetchVendors();
-  }, []);
+    const controller = new AbortController();
+    fetchVendors(pagination.page, debouncedSearch, controller.signal);
+    return () => controller.abort(); // Cancel request on cleanup
+  }, [pagination.page, debouncedSearch]);
 
-  const fetchVendors = (searchKey = "") => {
-    userService
-      .getVendors(searchKey)
-      .then((res) => {
-        setVendors(res.data?.data?.docs);
-        setDataLoaded(true);
-      })
-      .catch((e) => console.log("Error fetching vendors: ", e));
+  const fetchVendors = async (page = 1, search = "") => {
+    setLoading(true);
+    const controller = new AbortController(); // Create AbortController
+    try {
+      const res = await userService.getVendors(
+        {
+          page,
+          limit: pagination.limit,
+          search,
+        },
+        { signal: controller.signal } // Pass signal to API call
+      );
+      if (res.success) {
+        setVendors(res.data?.data?.docs || []);
+        setPagination({
+          page: res.data?.data?.page || 1,
+          limit: res.data?.data?.limit || 20,
+          totalDocs: res.data?.data?.totalDocs || 0,
+          totalPages: res.data?.data?.totalPages || 0,
+          hasNextPage: res.data?.data?.hasNextPage || false,
+          hasPrevPage: res.data?.data?.hasPrevPage || false,
+        });
+      } else {
+        toast.error(res.message);
+      }
+    } catch (error) {
+      if (error.name === "AbortError") {
+        console.log("Request aborted");
+      } else {
+        console.error("Error fetching vendors:", error);
+        toast.error("Failed to fetch vendors");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Debounced filter
-  useEffect(() => {
-    if (!dataLoaded) return;
-    const debouncedFilter = debounce((query) => {
-      fetchVendors(query);
-    }, 200);
-
-    debouncedFilter(searchQuery);
-
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery]);
-
-  // Handle search
   const handleSearch = (value) => {
     setSearchQuery(value);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (event) => {
+    setPagination((prev) => ({ ...prev, page: event.selected + 1 }));
   };
 
   const addVendor = async (data) => {
     const response = await userService.addVendor(data);
     if (response.success) {
       toast.success(response.message);
-      fetchVendors();
+      fetchVendors(pagination.page, debouncedSearch);
       setShowForm(false);
     } else {
       toast.error(response.message);
     }
   };
 
-  // Table data
-  const tableData = filteredData || vendors;
-
-  // Table columns
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "_id",
-        header: "SRNO",
-        cell: ({ row }) => (
-          <div className="text-left break-words">{row.index + 1}</div>
-        ),
-      },
-      {
-        accessorKey: "companyName",
-        header: "Company Name",
-        cell: ({ getValue }) => (
-          <div className="text-left break-words">{getValue()}</div>
-        ),
-      },
-      {
-        accessorKey: "phone",
-        header: "Phone",
-        cell: ({ getValue }) => (
-          <div className="text-left break-words">{getValue()}</div>
-        ),
-      },
-      {
-        accessorKey: "type",
-        header: "Type",
-        cell: ({ getValue }) => (
-          <div className="text-left break-words">
-            {getValue() === "lens_vendor"
-              ? "Lens Vendor"
-              : getValue() === "frame_vendor"
-              ? "Frame Vendor"
-              : "Accessory Vendor"}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "email",
-        header: "Email",
-        cell: ({ getValue }) => (
-          <div className="text-left break-words">{getValue() || "-"}</div>
-        ),
-      },
-      {
-        id: "action",
-        header: "Action",
-        cell: ({ row }) => (
-          <div className="d-flex align-items-center">
-            <FiEdit2
-              size={18}
-              className="text-primary cursor-pointer me-2"
-              onClick={() => handleEdit(row.original)}
-            />
-            <MdDeleteOutline
-              size={24}
-              className="text-danger cursor-pointer"
-              onClick={() => handleDelete(row.original._id)}
-            />
-          </div>
-        ),
-      },
-    ],
-    []
-  );
-
-  // Table setup
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 100,
-      },
-    },
-  });
-
-  // Handle edit
-  const handleEdit = (vendor) => {
-    setEditVendor(vendor);
-    setShowEditModal(true);
-  };
-
-  // Handle delete
-  const handleDelete = async (id) => {
-    alert("Are you sure you want to delete?");
-    console.log(`Delete vendor with id: ${id}`);
-    const response = await userService.deleteVendor(id);
+  const updateVendor = async (data) => {
+    const response = await userService.updateVendor(data);
     if (response.success) {
-      fetchVendors();
       toast.success(response.message);
+      fetchVendors(pagination.page, debouncedSearch);
+      setShowEditModal(false);
     } else {
       toast.error(response.message);
     }
   };
 
-  // Formik for create form
+  const handleEdit = (vendor) => {
+    setEditVendor(vendor);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete?")) {
+      const response = await userService.deleteVendor(id);
+      if (response.success) {
+        toast.success(response.message);
+        fetchVendors(pagination.page, debouncedSearch);
+      } else {
+        toast.error(response.message);
+      }
+    }
+  };
+
   const createFormik = useFormik({
     initialValues: {
       companyName: "",
@@ -241,17 +175,6 @@ const AddVendors = () => {
     },
   });
 
-  const updateVendor = async (data) => {
-    const response = await userService.updateVendor(data);
-    if (response.success) {
-      toast.success(response.message);
-      fetchVendors();
-      setShowEditModal(false);
-    } else {
-      toast.error(response.message);
-    }
-  };
-
   const handleAddPhone = () => {
     createFormik.setFieldValue("contactNumber", [
       ...createFormik.values.contactNumber,
@@ -259,7 +182,26 @@ const AddVendors = () => {
     ]);
   };
 
-  // Country, state, city options
+  const handleNameChange = (e, index) => {
+    const { value } = e.target;
+    let contactNumber = [...createFormik.values.contactNumber];
+    contactNumber[index].name = value;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handlePhoneChange = (phone, index) => {
+    let contactNumber = [...createFormik.values.contactNumber];
+    contactNumber[index].phone = phone;
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
+  const handleRemoveContact = (contactIndex) => {
+    const contactNumber = createFormik.values.contactNumber.filter(
+      (item, index) => index !== contactIndex
+    );
+    createFormik.setFieldValue("contactNumber", contactNumber);
+  };
+
   const countryOptions = Country.getAllCountries().map((country) => ({
     value: country.isoCode,
     label: country.name,
@@ -285,7 +227,6 @@ const AddVendors = () => {
         }))
       : [];
 
-  // Handle country/state changes
   const handleCountryChange = (option, formik) => {
     formik.setFieldValue("country", option);
     formik.setFieldValue("state", null);
@@ -297,41 +238,12 @@ const AddVendors = () => {
     formik.setFieldValue("city", null);
   };
 
-  // Type options
   const typeOptions = [
     { value: "lens_vendor", label: "Lens Vendor" },
     { value: "frame_vendor", label: "Frame Vendor" },
     { value: "accessory_vendor", label: "Accessory Vendor" },
   ];
 
-  // Pagination
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData.length);
-  const totalRows = tableData.length;
-
-  const handleNameChange = (e, index) => {
-    const { value } = e.target;
-    let contactNumber = createFormik.values.contactNumber;
-    contactNumber[index].name = value;
-    createFormik.setFieldValue("contactNumber", contactNumber);
-  };
-
-  const handlePhoneChange = (phone, index) => {
-    let contactNumber = createFormik.values.contactNumber;
-    contactNumber[index].phone = phone;
-    createFormik.setFieldValue("contactNumber", contactNumber);
-  };
-
-  const handleRemoveContact = (contactIndex) => {
-    const contactNumber = createFormik.values.contactNumber.filter(
-      (item, index) => index !== contactIndex
-    );
-    createFormik.setFieldValue("contactNumber", contactNumber);
-  };
-
-  // Render form
   const renderForm = (formik) => (
     <div className="card-body">
       <form
@@ -420,7 +332,6 @@ const AddVendors = () => {
             Contact Person
           </label>
           <br />
-          {/* <IoIosAddCircle onClick={handleAddPhone} size={24} /> */}
           <button
             className="btn btn-outline-primary"
             onClick={(e) => {
@@ -431,7 +342,7 @@ const AddVendors = () => {
             Add Phone
           </button>
           {createFormik.values.contactNumber.map((contact, index) => (
-            <div className="ms-3 mt-3">
+            <div className="ms-3 mt-3" key={index}>
               <div className="w-100 position-relative">
                 <IoIosClose
                   size={25}
@@ -439,25 +350,31 @@ const AddVendors = () => {
                   className="remove-icon"
                   onClick={() => handleRemoveContact(index)}
                 />
-                <label className="form-label fw-medium" htmlFor="companyName">
+                <label
+                  className="form-label fw-medium"
+                  htmlFor={`name-${index}`}
+                >
                   Name
                 </label>
                 <input
                   type="text"
-                  className="w-full form-control"
-                  name="name"
+                  className="w-100 form-control"
+                  name={`name-${index}`}
                   placeholder="Enter name"
                   value={contact?.name}
                   onChange={(e) => handleNameChange(e, index)}
                 />
               </div>
               <div className="w-100 mt-3">
-                <label className="form-label fw-medium" htmlFor="phone">
+                <label
+                  className="form-label fw-medium"
+                  htmlFor={`phone-${index}`}
+                >
                   Phone <span className="text-danger">*</span>
                 </label>
                 <PhoneInput
                   country={"in"}
-                  inputClass={`form-control "is-invalid`}
+                  inputClass="form-control"
                   containerClass="w-100"
                   value={contact?.phone}
                   onChange={(phone) => handlePhoneChange(phone, index)}
@@ -596,7 +513,7 @@ const AddVendors = () => {
               className="bg-primary text-white btn"
               onClick={() => setShowForm((prev) => !prev)}
             >
-              Create Vendor
+              {showForm ? "Close Form" : "Create Vendor"}
             </button>
           </div>
           {showForm && renderForm(createFormik)}
@@ -622,65 +539,95 @@ const AddVendors = () => {
                 </div>
               </div>
               <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom border">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} role="row">
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-3 text-left custom-perchase-th"
-                            role="columnheader"
-                          >
-                            <div className="fw-semibold text-left break-words">
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
+                <table className="table table-sm table-bordered">
+                  <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
+                    <tr>
+                      <th className="p-3 text-left">SRNO</th>
+                      <th className="p-3 text-left">Company Name</th>
+                      <th className="p-3 text-left">Phone</th>
+                      <th className="p-3 text-left">Type</th>
+                      <th className="p-3 text-left">Email</th>
+                      <th className="p-3 text-left">Action</th>
+                    </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} role="row">
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="p-3" role="cell">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
+                    {loading ? (
+                      <tr>
+                        <td colSpan="6" className="text-center p-3">
+                          Loading...
+                        </td>
                       </tr>
-                    ))}
+                    ) : vendors.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="text-center p-3">
+                          No vendors found
+                        </td>
+                      </tr>
+                    ) : (
+                      vendors.map((vendor, index) => (
+                        <tr key={vendor._id}>
+                          <td className="p-3">
+                            {(pagination.page - 1) * pagination.limit +
+                              index +
+                              1}
+                          </td>
+                          <td className="p-3">{vendor.companyName}</td>
+                          <td className="p-3">{vendor.phone}</td>
+                          <td className="p-3">
+                            {vendor.type === "lens_vendor"
+                              ? "Lens Vendor"
+                              : vendor.type === "frame_vendor"
+                              ? "Frame Vendor"
+                              : "Accessory Vendor"}
+                          </td>
+                          <td className="p-3">{vendor.email || "-"}</td>
+                          <td className="p-3">
+                            <div className="d-flex align-items-center">
+                              <FiEdit2
+                                size={18}
+                                className="text-primary cursor-pointer me-2"
+                                onClick={() => handleEdit(vendor)}
+                              />
+                              <MdDeleteOutline
+                                size={24}
+                                className="text-danger cursor-pointer"
+                                onClick={() => handleDelete(vendor._id)}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
               <div className="d-flex justify-content-between align-items-center mt-3 px-3">
                 <div>
-                  Showing {startRow} to {endRow} of {totalRows} results
+                  Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                  {Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.totalDocs
+                  )}{" "}
+                  of {pagination.totalDocs} results
                 </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                  >
-                    Next
-                  </button>
-                </div>
+                <ReactPaginate
+                  breakLabel="..."
+                  nextLabel="Next >"
+                  onPageChange={handlePageChange}
+                  pageRangeDisplayed={3}
+                  pageCount={pagination.totalPages}
+                  previousLabel="< Prev"
+                  renderOnZeroPageCount={null}
+                  forcePage={pagination.page - 1}
+                  containerClassName="pagination mb-0"
+                  pageClassName="page-item"
+                  pageLinkClassName="page-link"
+                  previousClassName="page-item"
+                  previousLinkClassName="page-link"
+                  nextClassName="page-item"
+                  nextLinkClassName="page-link"
+                  activeClassName="active"
+                />
               </div>
             </div>
           </div>

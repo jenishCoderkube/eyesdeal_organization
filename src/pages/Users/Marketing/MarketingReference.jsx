@@ -222,7 +222,7 @@ const ViewReferences = () => {
           </div>
           {/* Create Form */}
           <div className="card shadow-none mt-3 border-0">
-            <div className="card-body p-0">
+            <div className="card-body p-3">
               <form onSubmit={formik.handleSubmit}>
                 <div className="mb-2">
                   <label className="form-label font-weight-500" htmlFor="name">

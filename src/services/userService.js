@@ -221,12 +221,15 @@ export const userService = {
       };
     }
   },
-  getVendors: async (search = "") => {
+  getVendors: async ({ page, limit = 20, search = "" }, { signal }) => {
     try {
       const response = await api.get(USER_ENDPOINTS.GET_VENDORS, {
         params: {
+          page: page,
           search: search,
+          limit: limit,
         },
+        signal,
       });
       return {
         success: true,

@@ -246,9 +246,16 @@ function RecallReportCom() {
                     </td>
                     <td
                       className="py-3 px-2 cursor-pointer"
+                      style={{
+                        cursor: "pointer",
+                      }}
                       onClick={() => openWhatsAppModal(row)}
                     >
-                      <FaWhatsapp size={30} color="green" />
+                      <FaWhatsapp
+                        size={30}
+                        color="green"
+                        className="cursor-pointer"
+                      />
                     </td>
                   </tr>
                   {expandedRows.includes(index) && (
