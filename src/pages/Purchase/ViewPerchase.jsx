@@ -211,20 +211,25 @@ function ViewPurchase() {
 
   const handleDownload = async (e, invoice) => {
     e.preventDefault();
-    let finalData = [];
-    invoice?.jobWorks?.forEach((job) => {
-      const lens = job?.lens;
-      const quantity = job?.sale?.totalQuantity || 1;
-      for (let i = 0; i < quantity; i++) {
-        finalData.push({
-          sku: lens?.sku,
-          barcode: lens?.barcode,
-          price: lens?.mrp,
-        });
-      }
-    });
+
+    const lens = invoice?.lens;
+    if (!lens?.item) {
+      toast.error("No lens data found in invoice");
+      return;
+    }
+
+    // Build CSV rows (newBarcode, sku, MRP)
+    const finalData = [
+      {
+        sku: lens.item?.sku,
+        barcode: lens.item?.newBarcode,
+        price: lens.item?.MRP,
+      },
+    ];
+
     const result = { data: finalData };
     setLoading(true);
+
     try {
       const response = await purchaseService.exportCsv(result);
       if (response.success) {
@@ -234,6 +239,64 @@ function ViewPurchase() {
         const link = document.createElement("a");
         link.href = url;
         link.setAttribute("download", `invoice_${invoice?.invoiceNumber}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("Export CSV error:", error);
+      toast.error("Failed to export CSV");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDownloadforPurchase = async (e, invoice) => {
+    e.preventDefault();
+    console.log("products", invoice?.products);
+
+    const products = invoice?.products;
+    if (!products?.length) {
+      toast.error("No products found in invoice");
+      return;
+    }
+
+    // Build CSV rows (newBarcode, sku, MRP) safely
+    const finalData = products
+      .filter(
+        (p) =>
+          p?.product &&
+          p?.product?.sku &&
+          p?.product?.newBarcode &&
+          p?.product?.MRP
+      ) // ✅ only valid products
+      .map((p) => ({
+        sku: p.product.sku,
+        barcode: p.product.newBarcode,
+        price: p.product.MRP,
+      }));
+
+    if (!finalData.length) {
+      toast.error("No valid product data to export");
+      return;
+    }
+
+    const result = { data: finalData };
+    setLoading(true);
+
+    try {
+      const response = await purchaseService.exportCsv(result);
+      if (response.success) {
+        const csvData = response.data;
+        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `invoice_${invoice?.invoiceNumber || "purchase"}.csv`
+        );
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -502,7 +565,9 @@ function ViewPurchase() {
                           </td>
                           <td>
                             <div
-                              onClick={(e) => handleDownload(e, item)}
+                              onClick={(e) =>
+                                handleDownloadforPurchase(e, item)
+                              }
                               className="btn btn-sm btn-primary"
                             >
                               DOWNLOAD
@@ -541,6 +606,7 @@ function ViewPurchase() {
                   <li className="me-3">
                     <button
                       className="btn bg-white border"
+                      type="button"
                       onClick={() => {
                         const newPage = currentPage - 1;
                         setCurrentPage(newPage);
@@ -556,6 +622,7 @@ function ViewPurchase() {
                   <li>
                     <button
                       className="btn bg-white border"
+                      type="button"
                       onClick={() => {
                         const newPage = currentPage + 1;
                         setCurrentPage(newPage);
