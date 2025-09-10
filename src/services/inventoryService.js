@@ -531,6 +531,8 @@ export const inventoryService = {
     limit
   ) => {
     try {
+      console.log("storeIds", storeIds);
+
       let params = buildInventoryStoreParams(
         _t,
         brand,

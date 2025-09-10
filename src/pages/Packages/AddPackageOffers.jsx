@@ -58,7 +58,7 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
     }
   }, [initialData, show]);
 
-  // Calculate total price for each pair
+  // // Calculate total price for each pair
   // useEffect(() => {
   //   setPairs((prevPairs) =>
   //     prevPairs.map((pair) => {

@@ -5,6 +5,7 @@ import Select from "react-select";
 import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
 import { FaSearch } from "react-icons/fa";
+import ReactPaginate from "react-paginate";
 
 const GroupInventoryForm = () => {
   // Options for select fields
@@ -13,7 +14,7 @@ const GroupInventoryForm = () => {
   const [categoryData, setCategoryData] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [inventoryTotal, setInventoryTotal] = useState([]);
-    const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const user = JSON.parse(localStorage.getItem("user"));
@@ -131,16 +132,15 @@ const GroupInventoryForm = () => {
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      getInventoryData();
-      getInventoryTotal();
+      getInventoryData(formik.values, 1); // Pass formik.values and reset to page 1
+      getInventoryTotal(formik.values, 1); // Pass formik.values and reset to page 1
     }, 500); // 500ms delay
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [searchQuery, formik.values]);
 
-  const getInventoryData = async (values) => {
+  const getInventoryData = async (values = formik.values, page = 1) => {
     const storeId = values?.stores?.map((option) => option.value);
-
     const brandId = values?.brand?.map((option) => option.value);
 
     setLoadingInventory(true);
@@ -149,7 +149,7 @@ const GroupInventoryForm = () => {
       const response = await inventoryService.getGroupStore(
         brandId,
         storeId || user?.stores,
-        1,
+        page, // Use page parameter
         searchQuery,
         20
       );
@@ -164,9 +164,9 @@ const GroupInventoryForm = () => {
       setLoadingInventory(false);
     }
   };
-  const getInventoryTotal = async (values) => {
-    const storeId = values?.stores?.map((option) => option.value);
 
+  const getInventoryTotal = async (values = formik.values, page = 1) => {
+    const storeId = values?.stores?.map((option) => option.value);
     const brandId = values?.brand?.map((option) => option.value);
 
     setLoading(true);
@@ -175,7 +175,7 @@ const GroupInventoryForm = () => {
       const response = await inventoryService.getGroupStoreTotal(
         brandId,
         storeId || user?.stores,
-        1,
+        page, // Use page parameter
         searchQuery,
         20
       );
@@ -190,7 +190,11 @@ const GroupInventoryForm = () => {
       setLoading(false);
     }
   };
-
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1; // React Paginate is 0-based, API is 1-based
+    getInventoryData(formik.values, selectedPage);
+    getInventoryTotal(formik.values, selectedPage);
+  };
   const getStores = async () => {
     setLoading(true);
     try {
@@ -318,55 +322,78 @@ const GroupInventoryForm = () => {
             </div>
           </div>
           <div className="table-responsive px-2">
-             {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-           
-            <table className="table table-sm">
-              <thead className="text-xs text-uppercase text-muted bg-light border">
-                <tr>
-                  <th className="custom-perchase-th">Brand</th>
-
-                  <th className="custom-perchase-th">Model</th>
-
-                  <th className="custom-perchase-th">Stock</th>
-                  <th className="custom-perchase-th">Sold</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {inventory?.docs?.length > 0 ? (
-                  inventory.docs.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td>{item.brand}</td>
-                      <td>{item.model}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.sold}</td>
-                    </tr>
-                  ))
-                ) : (
+            {loadingInventory ? (
+              <div className="d-flex justify-content-center">
+                <h4>Loading Data...</h4>
+              </div>
+            ) : (
+              <table className="table table-sm">
+                <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="text-center custom-perchase-th py-3"
-                    >
-                      No data available
-                    </td>
+                    <th className="custom-perchase-th">Brand</th>
+
+                    <th className="custom-perchase-th">Model</th>
+
+                    <th className="custom-perchase-th">Stock</th>
+                    <th className="custom-perchase-th">Sold</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-}
+                </thead>
+                <tbody className="text-sm">
+                  {inventory?.docs?.length > 0 ? (
+                    inventory.docs.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td>{item.brand}</td>
+                        <td>{item.model}</td>
+                        <td>{item.quantity}</td>
+                        <td>{item.sold}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="text-center custom-perchase-th py-3"
+                      >
+                        No data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
-              <span className="fw-medium">{inventory?.docs?.length}</span>{" "}
+              Showing{" "}
+              <span className="fw-medium">
+                {(inventory?.page - 1) * inventory?.limit + 1}
+              </span>{" "}
+              to{" "}
+              <span className="fw-medium">
+                {Math.min(
+                  inventory?.page * inventory?.limit,
+                  inventory?.totalDocs
+                )}
+              </span>{" "}
+              of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <div className="btn-group">
-              <button className="btn btn-outline-primary">Previous</button>
-              <button className="btn btn-outline-primary">Next</button>
-            </div>
+            <ReactPaginate
+              previousLabel={"Previous"}
+              nextLabel={"Next"}
+              breakLabel={"..."}
+              pageCount={inventory?.totalPages || 1}
+              marginPagesDisplayed={2}
+              pageRangeDisplayed={3}
+              onPageChange={handlePageClick}
+              containerClassName={"btn-group ms-sm-auto"}
+              pageClassName={"btn btn-outline-primary"}
+              previousClassName={"btn btn-outline-primary"}
+              nextClassName={"btn btn-outline-primary"}
+              breakClassName={"btn btn-outline-primary"}
+              activeClassName={"active"}
+              disabledClassName={"disabled"}
+            />
           </div>
         </div>
         {/* <ImageSliderModal

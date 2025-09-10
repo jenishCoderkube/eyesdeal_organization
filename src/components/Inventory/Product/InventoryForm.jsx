@@ -7,7 +7,7 @@ import { inventoryService } from "../../../services/inventoryService";
 import ImageSliderModalProduct from "../../../components/Products/ViewProducts/ImageSliderModalProduct";
 import { FaSearch } from "react-icons/fa";
 import { defalutImageBasePath } from "../../../utils/constants";
-
+import ReactPaginate from "react-paginate";
 const InventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -73,7 +73,7 @@ const InventoryForm = () => {
         .min(1, "At least one store is required")
         .required("Store is required"),
       selectedProduct: Yup.object().nullable().required("Product is required"),
-      brand: Yup.object().nullable().required("Brand is required"),
+      // brand: Yup.object().nullable().required("Brand is required"),
     }),
     onSubmit: (values) => {
       getInventoryData(values);
@@ -282,7 +282,7 @@ const InventoryForm = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  const getInventoryData = async (values) => {
+  const getInventoryData = async (values, page = 1) => {
     const storeId = values?.stores?.map((option) => option.value);
 
     setLoadingInventory(true);
@@ -300,7 +300,7 @@ const InventoryForm = () => {
         values?.frameCollection?.value,
         values?.prescriptionType?.value,
         storeId || user?.stores,
-        1,
+        page, // Use the page parameter
         searchQuery,
         20
       );
@@ -315,7 +315,10 @@ const InventoryForm = () => {
       setLoadingInventory(false);
     }
   };
-
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1; // React Paginate is 0-based, API is 1-based
+    getInventoryData(formik.values, selectedPage);
+  };
   const exportProduct = async (e) => {
     e.preventDefault();
 
@@ -503,7 +506,7 @@ const InventoryForm = () => {
           </div>
           <div className="col">
             <label className="form-label font-weight-500" htmlFor="brand">
-              Brand <span className="text-danger">*</span>
+              Brand
             </label>
             <Select
               options={brandOptions}
@@ -766,16 +769,36 @@ const InventoryForm = () => {
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="font-weight-500">1</span> to{" "}
-              <span className="font-weight-500">{inventory?.docs?.length}</span>{" "}
-              of{" "}
-              <span className="font-weight-500">{inventory?.docs?.length}</span>{" "}
+              Showing{" "}
+              <span className="fw-medium">
+                {(inventory?.page - 1) * inventory?.limit + 1}
+              </span>{" "}
+              to{" "}
+              <span className="fw-medium">
+                {Math.min(
+                  inventory?.page * inventory?.limit,
+                  inventory?.totalDocs
+                )}
+              </span>{" "}
+              of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <div className="btn-group">
-              <button className="btn btn-outline-primary">Previous</button>
-              <button className="btn btn-outline-primary">Next</button>
-            </div>
+            <ReactPaginate
+              previousLabel={"Previous"}
+              nextLabel={"Next"}
+              breakLabel={"..."}
+              pageCount={inventory?.totalPages || 1}
+              marginPagesDisplayed={2}
+              pageRangeDisplayed={3}
+              onPageChange={handlePageClick}
+              containerClassName={"btn-group"}
+              pageClassName={"btn btn-outline-primary"}
+              previousClassName={"btn btn-outline-primary"}
+              nextClassName={"btn btn-outline-primary"}
+              breakClassName={"btn btn-outline-primary"}
+              activeClassName={"active"}
+              disabledClassName={"disabled"}
+            />
           </div>
         </div>
         {/* <ImageSliderModal

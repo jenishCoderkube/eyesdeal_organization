@@ -8,6 +8,7 @@ import { FaSearch } from "react-icons/fa";
 import moment from "moment";
 import { defalutImageBasePath } from "../../../utils/constants";
 import ImageSliderModalProduct from "../../../components/Products/ViewProducts/ImageSliderModalProduct";
+import ReactPaginate from "react-paginate";
 const StoreInventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -68,14 +69,17 @@ const StoreInventoryForm = () => {
     validationSchema: Yup.object({
       stores: Yup.array().notRequired(),
       selectedProduct: Yup.object().notRequired(),
-      brand: Yup.object().notRequired(),
     }),
     onSubmit: (values) => {
       getInventoryData(values);
       getInventoryGetCount(values);
     },
   });
-
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1; // React Paginate is 0-based, API is 1-based
+    getInventoryData(formik.values, selectedPage);
+    getInventoryGetCount(formik.values, selectedPage);
+  };
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
     label: `${vendor.name}`,
@@ -271,17 +275,9 @@ const StoreInventoryForm = () => {
     }
   };
 
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      getInventoryData();
-      getInventoryGetCount();
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
-
-  const getInventoryData = async (values = formik.values) => {
+  const getInventoryData = async (values = formik.values, page = 1) => {
     const storeId = values?.stores?.map((option) => option.value);
+    const storedStoreId = user?.stores;
 
     setLoadingInventory(true);
 
@@ -297,8 +293,8 @@ const StoreInventoryForm = () => {
         values?.frameColor?.value,
         values?.frameCollection?.value,
         values?.prescriptionType?.value,
-        storeId || user?.stores,
-        1,
+        storeId?.length !== 0 ? storeId : storedStoreId || storedStoreId,
+        page, // Use page parameter
         searchQuery,
         20
       );
@@ -314,8 +310,9 @@ const StoreInventoryForm = () => {
     }
   };
 
-  const getInventoryGetCount = async (values = formik.values) => {
+  const getInventoryGetCount = async (values = formik.values, page = 1) => {
     const storeId = values?.stores?.map((option) => option.value);
+    const storedStoreId = user?.stores;
 
     setLoading(true);
     try {
@@ -330,8 +327,9 @@ const StoreInventoryForm = () => {
         values?.frameColor?.value,
         values?.frameCollection?.value,
         values?.prescriptionType?.value,
-        storeId || user?.stores,
-        1,
+        storeId?.length !== 0 ? storeId : storedStoreId || storedStoreId,
+
+        page,
         searchQuery,
         20
       );
@@ -373,7 +371,33 @@ const StoreInventoryForm = () => {
       setLoading(false);
     }
   };
+  // useEffect(() => {
+  //   const storedStoreId = user?.stores?.[0];
+  //   if (storedStoreId && storeData.length > 0) {
+  //     const defaultStore = storeData.find(
+  //       (store) => store._id === storedStoreId
+  //     );
+  //     if (defaultStore) {
+  //       const newStores = [
+  //         { value: defaultStore._id, label: defaultStore.name },
+  //       ];
+  //       formik.setFieldValue("stores", newStores);
+  //       // Trigger initial API calls only once after setting the default store
+  //       getInventoryData({ ...formik.values, stores: newStores }, 1);
+  //       getInventoryGetCount({ ...formik.values, stores: newStores }, 1);
+  //     }
+  //   }
+  // }, [storeData]);
 
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      // Only trigger API calls for search query changes if stores are set
+      getInventoryData(formik.values, 1);
+      getInventoryGetCount(formik.values, 1);
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
   const exportProduct = async (e) => {
     e.preventDefault();
 
@@ -865,37 +889,36 @@ const StoreInventoryForm = () => {
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
-              Showing <span className="fw-medium">1</span> to{" "}
-              <span className="fw-medium">{inventory?.docs?.length || 0}</span>{" "}
+              Showing{" "}
+              <span className="fw-medium">
+                {(inventory?.page - 1) * inventory?.limit + 1}
+              </span>{" "}
+              to{" "}
+              <span className="fw-medium">
+                {Math.min(
+                  inventory?.page * inventory?.limit,
+                  inventory?.totalDocs
+                )}
+              </span>{" "}
               of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <div className="btn-group">
-              <button
-                className="btn btn-outline-primary"
-                disabled={!inventory?.hasPrevPage || loading}
-                onClick={() =>
-                  getInventoryData({
-                    ...formik.values,
-                    page: inventory?.prevPage,
-                  })
-                }
-              >
-                Previous
-              </button>
-              <button
-                className="btn btn-outline-primary"
-                disabled={!inventory?.hasNextPage || loading}
-                onClick={() =>
-                  getInventoryData({
-                    ...formik.values,
-                    page: inventory?.nextPage,
-                  })
-                }
-              >
-                Next
-              </button>
-            </div>
+            <ReactPaginate
+              previousLabel={"Previous"}
+              nextLabel={"Next"}
+              breakLabel={"..."}
+              pageCount={inventory?.totalPages || 1}
+              marginPagesDisplayed={2}
+              pageRangeDisplayed={3}
+              onPageChange={handlePageClick}
+              containerClassName={"btn-group"}
+              pageClassName={"btn btn-outline-primary"}
+              previousClassName={"btn btn-outline-primary"}
+              nextClassName={"btn btn-outline-primary"}
+              breakClassName={"btn btn-outline-primary"}
+              activeClassName={"active"}
+              disabledClassName={"disabled"}
+            />
           </div>
         </div>
       </div>

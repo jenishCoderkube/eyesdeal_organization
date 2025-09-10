@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Select from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -7,6 +7,7 @@ import styles from "../../assets/css/Stores/AddStores.module.css";
 import { storeService } from "../../services/storeService";
 import { toast } from "react-toastify";
 import { uploadImage } from "../../utils/constants";
+
 const AddStore = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -27,10 +28,13 @@ const AddStore = () => {
   const [errors, setErrors] = useState({});
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("+91");
-  const [newPhoto, setNewPhoto] = useState(null);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [showPhotoInput, setShowPhotoInput] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState({
+    email: null,
+    phone: null,
+  });
+  const photoInputRef = useRef(null);
 
   // Fetch countries
   const countryOptions = Country.getAllCountries().map((country) => ({
@@ -91,52 +95,113 @@ const AddStore = () => {
   };
 
   const handleAddEmail = () => {
-    if (
-      showEmailInput &&
-      newEmail.trim() &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        emails: [...prev.emails, newEmail],
-      }));
-      setNewEmail("");
-      setShowEmailInput(false); // Hide input after adding
-    } else if (!showEmailInput) {
-      setShowEmailInput(true); // Show input on first click
+    if (newEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      if (!formData.emails.includes(newEmail)) {
+        if (editingIndex.email !== null) {
+          // Update existing email
+          setFormData((prev) => {
+            const updatedEmails = [...prev.emails];
+            updatedEmails[editingIndex.email] = newEmail;
+            return { ...prev, emails: updatedEmails };
+          });
+          setEditingIndex((prev) => ({ ...prev, email: null }));
+        } else {
+          // Add new email
+          setFormData((prev) => ({
+            ...prev,
+            emails: [...prev.emails, newEmail],
+          }));
+        }
+        setNewEmail("");
+      } else {
+        toast.error("Duplicate email");
+      }
     } else {
-      alert("Please enter a valid email");
+      toast.error("Please enter a valid email");
     }
+  };
+
+  const handleEditEmail = (index) => {
+    setNewEmail(formData.emails[index]);
+    setEditingIndex((prev) => ({ ...prev, email: index }));
+  };
+
+  const handleDeleteEmail = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      emails: prev.emails.filter((_, i) => i !== index),
+    }));
   };
 
   const handleAddPhone = () => {
-    if (showPhoneInput && newPhone.length > 3) {
-      setFormData((prev) => ({
-        ...prev,
-        phones: [...prev.phones, newPhone],
-      }));
-      setNewPhone("+91");
-      setShowPhoneInput(false); // Hide input after adding
-    } else if (!showPhoneInput) {
-      setShowPhoneInput(true); // Show input on first click
+    if (newPhone.length > 3) {
+      if (!formData.phones.includes(newPhone)) {
+        if (editingIndex.phone !== null) {
+          // Update existing phone
+          setFormData((prev) => {
+            const updatedPhones = [...prev.phones];
+            updatedPhones[editingIndex.phone] = newPhone;
+            return { ...prev, phones: updatedPhones };
+          });
+          setEditingIndex((prev) => ({ ...prev, phone: null }));
+        } else {
+          // Add new phone
+          setFormData((prev) => ({
+            ...prev,
+            phones: [...prev.phones, newPhone],
+          }));
+        }
+        setNewPhone("+91");
+      } else {
+        toast.error("Duplicate phone number");
+      }
     } else {
-      alert("Please enter a valid phone number");
+      toast.error("Please enter a valid phone number");
     }
   };
 
-  const handleAddPhoto = () => {
-    if (showPhotoInput && newPhoto) {
-      setFormData((prev) => ({
-        ...prev,
-        photos: [...prev.photos, newPhoto],
-      }));
-      setNewPhoto(null);
-      setShowPhotoInput(false); // Hide input after adding
-    } else if (!showPhotoInput) {
-      setShowPhotoInput(true); // Show input on first click
-    } else {
-      alert("Please select a photo");
+  const handleEditPhone = (index) => {
+    setNewPhone(formData.phones[index]);
+    setEditingIndex((prev) => ({ ...prev, phone: index }));
+  };
+
+  const handleDeletePhone = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      phones: prev.phones.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const res = await uploadImage(file, file.name);
+      if (!formData.photos.includes(res)) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, res],
+        }));
+      } else {
+        toast.error("Duplicate photo");
+      }
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+    } catch (error) {
+      toast.error("Photo upload failed");
+    } finally {
+      setIsUploadingPhoto(false);
     }
+  };
+
+  const handleDeletePhoto = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -156,6 +221,7 @@ const AddStore = () => {
     };
     console.log("Form submitted:", payload);
 
+    setIsSubmitting(true);
     try {
       const response = await storeService.createStore(payload);
       if (response?.success) {
@@ -175,11 +241,15 @@ const AddStore = () => {
           photos: [],
           activeInWebsite: false,
         });
+        setNewEmail("");
+        setNewPhone("+91");
       }
     } catch (error) {
       console.log("Error creating store:", error);
+      toast.error("Error creating store");
+    } finally {
+      setIsSubmitting(false);
     }
-    // Add API call or further submission logic here
   };
 
   return (
@@ -187,7 +257,7 @@ const AddStore = () => {
       <h1 className={`h2 mt-4 text-dark fw-bold ${styles.store_add_title}`}>
         Add Stores
       </h1>
-      <div className=" shadow-sm px-md-5">
+      <div className="shadow-sm px-md-5">
         <div className="card-body p-md-5 p-2">
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
@@ -336,25 +406,42 @@ const AddStore = () => {
                     className="btn custom-button-bgcolor"
                     onClick={handleAddEmail}
                   >
-                    Add
+                    {editingIndex.email !== null ? "Update" : "Add"}
                   </button>
                 </div>
-                {showEmailInput && (
-                  <div className="input-group mb-3">
-                    <input
-                      type="email"
-                      className="form-control"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="Enter email"
-                    />
-                  </div>
-                )}
+                <div className="input-group mb-3">
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter email"
+                  />
+                </div>
                 {formData.emails.length > 0 && (
                   <ul className="list-group mb-3">
                     {formData.emails.map((email, index) => (
-                      <li key={index} className="list-group-item">
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
                         {email}
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary me-2"
+                            onClick={() => handleEditEmail(index)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeleteEmail(index)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -362,28 +449,46 @@ const AddStore = () => {
               </div>
               <div className="col-12">
                 <div className="d-flex align-items-center gap-3 mb-2">
-                  <h3 className="h6 mb-0 font-weight-500">Phones</h3>
+                  <h5 className="h6 mb-0 font-weight-500">Phones</h5>
                   <button
                     type="button"
                     className="btn custom-button-bgcolor"
                     onClick={handleAddPhone}
                   >
-                    Add
+                    {editingIndex.phone !== null ? "Update" : "Add"}
                   </button>
                 </div>
-                {showPhoneInput && (
-                  <PhoneInput
-                    country={"in"}
-                    value={newPhone}
-                    onChange={(phone) => setNewPhone(phone)}
-                    inputClass="form-control w-100"
-                  />
-                )}
+                <PhoneInput
+                  country={"in"}
+                  value={newPhone}
+                  onChange={(phone) => setNewPhone(phone)}
+                  inputClass="form-control w-100"
+                  placeholder="Enter phone number"
+                />
                 {formData.phones.length > 0 && (
                   <ul className="list-group mt-3 mb-3">
                     {formData.phones.map((phone, index) => (
-                      <li key={index} className="list-group-item">
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
                         {phone}
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary me-2"
+                            onClick={() => handleEditPhone(index)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeletePhone(index)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -391,34 +496,40 @@ const AddStore = () => {
               </div>
               <div className="col-12">
                 <div className="d-flex align-items-center gap-3 mb-2">
-                  <h3 className="h6 mb-0 font-weight-500">Photos</h3>
-                  <button
-                    type="button"
-                    className="btn custom-button-bgcolor"
-                    onClick={handleAddPhoto}
-                  >
-                    Add
-                  </button>
+                  <h5 className="h6 mb-0 font-weight-500">Photos</h5>
                 </div>
-                {showPhotoInput && (
-                  <input
-                    type="file"
-                    className="form-control mb-3"
-                    onChange={async (e) => {
-                      let res = await uploadImage(
-                        e.target.files[0],
-                        e.target.files[0]?.name
-                      );
-                      setNewPhoto(res);
-                    }}
-                    accept="image/*"
-                  />
+                <input
+                  type="file"
+                  className="form-control mb-3"
+                  onChange={handlePhotoChange}
+                  accept="image/*"
+                  ref={photoInputRef}
+                />
+                {isUploadingPhoto && (
+                  <div className="text-info mb-3">
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Uploading image...
+                  </div>
                 )}
                 {formData.photos.length > 0 && (
                   <ul className="list-group mb-3">
                     {formData.photos.map((photo, index) => (
-                      <li key={index} className="list-group-item">
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
                         {photo}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDeletePhoto(index)}
+                        >
+                          Delete
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -444,8 +555,23 @@ const AddStore = () => {
                 </div>
               </div>
               <div className="col-12">
-                <button type="submit" className="btn custom-button-bgcolor">
-                  Create
+                <button
+                  type="submit"
+                  className="btn custom-button-bgcolor"
+                  disabled={isSubmitting || isUploadingPhoto}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create"
+                  )}
                 </button>
               </div>
             </div>

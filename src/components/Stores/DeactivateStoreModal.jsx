@@ -3,7 +3,13 @@ import { IoMdClose } from "react-icons/io";
 import Select from "react-select";
 import { storeService } from "../../services/storeService";
 import { toast } from "react-toastify";
-const DeactivateStoreModal = ({ show, onHide, storeData, stores }) => {
+const DeactivateStoreModal = ({
+  show,
+  onHide,
+  storeData,
+  stores,
+  onUpdate,
+}) => {
   const [formData, setFormData] = useState({
     sendStore: null,
     confirmation: "",
@@ -67,6 +73,7 @@ const DeactivateStoreModal = ({ show, onHide, storeData, stores }) => {
       const response = await storeService.deactivateInventory(payload);
       if (response?.success) {
         toast.success(response?.message);
+        onUpdate(); // Refresh the store list
         setFormData("");
       }
     } catch (error) {

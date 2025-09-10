@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -7,7 +7,7 @@ import { storeService } from "../../services/storeService";
 import { toast } from "react-toastify";
 import { uploadImage } from "../../utils/constants";
 
-const EditStoreModal = ({ show, onHide, storeData }) => {
+const EditStoreModal = ({ show, onHide, storeData, onUpdate }) => {
   const [formData, setFormData] = useState({
     SystemId: "",
     storeNumber: "",
@@ -29,40 +29,13 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
   const [errors, setErrors] = useState({});
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("+91");
-  const [newPhoto, setNewPhoto] = useState(null);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [showPhotoInput, setShowPhotoInput] = useState(false);
-
-  // Populate form with store data when modal opens
-  useEffect(() => {
-    if (storeData) {
-      const selectedCountry = countryOptions.find(
-        (c) => c.label === storeData.country
-      );
-      const selectedState = stateOptions.find(
-        (s) => s.label === storeData.state
-      );
-      const selectedCity = cityOptions.find((c) => c.label === storeData.city);
-      setFormData({
-        SystemId: storeData._id || "",
-        storeNumber: storeData.storeNumber || "",
-        name: storeData.name || "",
-        locationUrl: storeData?.locationUrl,
-        address: storeData?.address,
-        companyName: storeData?.companyName,
-        country: selectedCountry || "",
-        state: selectedState || "",
-        city: selectedCity || "",
-        pincode: storeData?.pincode,
-        GSTNumber: storeData?.GSTNumber,
-        emails: storeData?.emails || [],
-        phones: storeData?.phones || [],
-        photos: storeData?.photos || [],
-        activeInWebsite: storeData.activeInWebsite || false,
-      });
-    }
-  }, [storeData]);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState({
+    email: null,
+    phone: null,
+  });
+  const photoInputRef = useRef(null);
 
   // Fetch countries
   const countryOptions = Country.getAllCountries().map((country) => ({
@@ -88,6 +61,63 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
           })
         )
       : [];
+
+  // Populate form with store data when modal opens
+  useEffect(() => {
+    if (storeData) {
+      const selectedCountry = countryOptions.find(
+        (c) =>
+          c.label.toLowerCase() === storeData.country?.toLowerCase() ||
+          c.value === storeData.country
+      );
+
+      const states = selectedCountry
+        ? State.getStatesOfCountry(selectedCountry.value).map((s) => ({
+            value: s.isoCode,
+            label: s.name,
+          }))
+        : [];
+
+      const selectedState = states.find(
+        (s) =>
+          s.label.toLowerCase() === storeData.state?.toLowerCase() ||
+          s.value === storeData.state
+      );
+
+      const cities =
+        selectedCountry && selectedState
+          ? City.getCitiesOfState(
+              selectedCountry.value,
+              selectedState.value
+            ).map((c) => ({
+              value: c.name,
+              label: c.name,
+            }))
+          : [];
+
+      const selectedCity = cities.find(
+        (c) => c.label.toLowerCase() === storeData.city?.toLowerCase()
+      );
+
+      setFormData({
+        SystemId: storeData._id || "",
+        storeNumber: storeData.storeNumber || "",
+        name: storeData.name || "",
+        locationUrl: storeData.locationUrl || "",
+        address: storeData.address || "",
+        companyName: storeData.companyName || "",
+        country: selectedCountry || null,
+        state: selectedState || null,
+        city: selectedCity || null,
+        pincode: storeData.pincode || "",
+        GSTNumber: storeData.GSTNumber || "",
+        emails: storeData.emails || [],
+        phones: storeData.phones || [],
+        photos: storeData.photos || [],
+        activeInWebsite: storeData.activeInWebsite || false,
+      });
+    }
+  }, [storeData]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -119,52 +149,113 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
   };
 
   const handleAddEmail = () => {
-    if (
-      showEmailInput &&
-      newEmail.trim() &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        emails: [...prev.emails, newEmail],
-      }));
-      setNewEmail("");
-      setShowEmailInput(false);
-    } else if (!showEmailInput) {
-      setShowEmailInput(true);
+    if (newEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      if (!formData.emails.includes(newEmail)) {
+        if (editingIndex.email !== null) {
+          // Update existing email
+          setFormData((prev) => {
+            const updatedEmails = [...prev.emails];
+            updatedEmails[editingIndex.email] = newEmail;
+            return { ...prev, emails: updatedEmails };
+          });
+          setEditingIndex((prev) => ({ ...prev, email: null }));
+        } else {
+          // Add new email
+          setFormData((prev) => ({
+            ...prev,
+            emails: [...prev.emails, newEmail],
+          }));
+        }
+        setNewEmail("");
+      } else {
+        toast.error("Duplicate email");
+      }
     } else {
-      alert("Please enter a valid email");
+      toast.error("Please enter a valid email");
     }
+  };
+
+  const handleEditEmail = (index) => {
+    setNewEmail(formData.emails[index]);
+    setEditingIndex((prev) => ({ ...prev, email: index }));
+  };
+
+  const handleDeleteEmail = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      emails: prev.emails.filter((_, i) => i !== index),
+    }));
   };
 
   const handleAddPhone = () => {
-    if (showPhoneInput && newPhone.length > 3) {
-      setFormData((prev) => ({
-        ...prev,
-        phones: [...prev.phones, newPhone],
-      }));
-      setNewPhone("+91");
-      setShowPhoneInput(false);
-    } else if (!showPhoneInput) {
-      setShowPhoneInput(true);
+    if (newPhone.length > 3) {
+      if (!formData.phones.includes(newPhone)) {
+        if (editingIndex.phone !== null) {
+          // Update existing phone
+          setFormData((prev) => {
+            const updatedPhones = [...prev.phones];
+            updatedPhones[editingIndex.phone] = newPhone;
+            return { ...prev, phones: updatedPhones };
+          });
+          setEditingIndex((prev) => ({ ...prev, phone: null }));
+        } else {
+          // Add new phone
+          setFormData((prev) => ({
+            ...prev,
+            phones: [...prev.phones, newPhone],
+          }));
+        }
+        setNewPhone("+91");
+      } else {
+        toast.error("Duplicate phone number");
+      }
     } else {
-      alert("Please enter a valid phone number");
+      toast.error("Please enter a valid phone number");
     }
   };
 
-  const handleAddPhoto = () => {
-    if (showPhotoInput && newPhoto) {
-      setFormData((prev) => ({
-        ...prev,
-        photos: [...prev.photos, newPhoto],
-      }));
-      setNewPhoto(null);
-      setShowPhotoInput(false);
-    } else if (!showPhotoInput) {
-      setShowPhotoInput(true);
-    } else {
-      alert("Please select a photo");
+  const handleEditPhone = (index) => {
+    setNewPhone(formData.phones[index]);
+    setEditingIndex((prev) => ({ ...prev, phone: index }));
+  };
+
+  const handleDeletePhone = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      phones: prev.phones.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const res = await uploadImage(file, file.name);
+      if (!formData.photos.includes(res)) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, res],
+        }));
+      } else {
+        toast.error("Duplicate photo");
+      }
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+    } catch (error) {
+      toast.error("Photo upload failed");
+    } finally {
+      setIsUploadingPhoto(false);
     }
+  };
+
+  const handleDeletePhoto = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -175,8 +266,6 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
       return;
     }
     setErrors({});
-    console.log("Updated store data:", formData);
-    // Add API call to update store here
 
     const payload = {
       ...formData,
@@ -186,46 +275,31 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
       country: formData?.country?.label
         ? formData?.country?.label
         : formData?.country,
+      emails: formData.emails || [],
+      phones: formData.phones || [],
+      photos: formData.photos || [],
     };
 
+    setIsSubmitting(true);
     try {
       const response = await storeService.updateStore(payload);
-      
       if (response?.data?.success) {
         toast.success(response?.data?.message);
-        setFormData({
-          name: "",
-          locationUrl: "",
-          address: "",
-          companyName: "",
-          country: null,
-          state: null,
-          city: null,
-          pincode: "",
-          GSTNumber: "",
-          emails: [],
-          phones: [],
-          photos: [],
-          activeInWebsite: false,
-        });
+        onUpdate();
+        onHide();
       }
     } catch (error) {
-      console.log("Error creating store:", error);
+      console.log("Error updating store:", error);
+      toast.error("Error updating store");
+    } finally {
+      setIsSubmitting(false);
     }
-    onHide(); // Close modal after submission
   };
-  // Handle click on backdrop to close modal
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onHide();
     }
-  };
-
-  const handleRemovePhoto = (indexToRemove) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      photos: prevData.photos.filter((_, index) => index !== indexToRemove),
-    }));
   };
 
   return (
@@ -257,7 +331,10 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                   <form onSubmit={handleSubmit}>
                     <div className="row g-3">
                       <div className="col-12 mt-3">
-                        <label htmlFor="name" className="form-label fw-medium">
+                        <label
+                          htmlFor="SystemId"
+                          className="form-label fw-medium"
+                        >
                           System Id <span className="text-danger">*</span>
                         </label>
                         <input
@@ -277,8 +354,11 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                         )}
                       </div>
                       <div className="col-12 mt-3">
-                        <label htmlFor="name" className="form-label fw-medium">
-                          storeNumber <span className="text-danger">*</span>
+                        <label
+                          htmlFor="storeNumber"
+                          className="form-label fw-medium"
+                        >
+                          Store Number <span className="text-danger">*</span>
                         </label>
                         <input
                           type="text"
@@ -352,7 +432,6 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           </div>
                         )}
                       </div>
-
                       <div className="col-12 mt-3">
                         <label
                           htmlFor="companyName"
@@ -367,6 +446,75 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                           value={formData.companyName}
                           onChange={(e) =>
                             handleInputChange("companyName", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="col-12 mt-3">
+                        <label className="form-label fw-medium">
+                          Country <span className="text-danger">*</span>
+                        </label>
+                        <Select
+                          options={countryOptions}
+                          value={formData.country}
+                          onChange={(option) =>
+                            handleInputChange("country", option)
+                          }
+                          placeholder="Select Country..."
+                        />
+                        {errors.country && (
+                          <div className="text-danger mt-1">
+                            {errors.country}
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-12 mt-3">
+                        <label className="form-label fw-medium">
+                          State <span className="text-danger">*</span>
+                        </label>
+                        <Select
+                          options={stateOptions}
+                          value={formData.state}
+                          onChange={(option) =>
+                            handleInputChange("state", option)
+                          }
+                          placeholder="Select State..."
+                          isDisabled={!formData.country}
+                        />
+                        {errors.state && (
+                          <div className="text-danger mt-1">{errors.state}</div>
+                        )}
+                      </div>
+                      <div className="col-12 mt-3">
+                        <label className="form-label fw-medium">
+                          City <span className="text-danger">*</span>
+                        </label>
+                        <Select
+                          options={cityOptions}
+                          value={formData.city}
+                          onChange={(option) =>
+                            handleInputChange("city", option)
+                          }
+                          placeholder="Select City..."
+                          isDisabled={!formData.state}
+                        />
+                        {errors.city && (
+                          <div className="text-danger mt-1">{errors.city}</div>
+                        )}
+                      </div>
+                      <div className="col-12 mt-3">
+                        <label
+                          htmlFor="pincode"
+                          className="form-label fw-medium"
+                        >
+                          Pincode
+                        </label>
+                        <input
+                          type="text"
+                          id="pincode"
+                          className="form-control"
+                          value={formData.pincode}
+                          onChange={(e) =>
+                            handleInputChange("pincode", e.target.value)
                           }
                         />
                       </div>
@@ -386,79 +534,6 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             handleInputChange("GSTNumber", e.target.value)
                           }
                         />
-                        <div className="col-12 mt-3">
-                          <label className="form-label fw-medium">
-                            Country <span className="text-danger">*</span>
-                          </label>
-                          <Select
-                            options={countryOptions}
-                            value={formData.country}
-                            onChange={(option) =>
-                              handleInputChange("country", option)
-                            }
-                            placeholder="Select Country..."
-                          />
-                          {errors.country && (
-                            <div className="text-danger mt-1">
-                              {errors.country}
-                            </div>
-                          )}
-                        </div>
-                        <div className="col-12 mt-3">
-                          <label className="form-label fw-medium">
-                            State <span className="text-danger">*</span>
-                          </label>
-                          <Select
-                            options={stateOptions}
-                            value={formData.state}
-                            onChange={(option) =>
-                              handleInputChange("state", option)
-                            }
-                            placeholder="Select State..."
-                            isDisabled={!formData.country}
-                          />
-                          {errors.state && (
-                            <div className="text-danger mt-1">
-                              {errors.state}
-                            </div>
-                          )}
-                        </div>
-                        <div className="col-12 mt-3">
-                          <label className="form-label fw-medium">
-                            City <span className="text-danger">*</span>
-                          </label>
-                          <Select
-                            options={cityOptions}
-                            value={formData.city}
-                            onChange={(option) =>
-                              handleInputChange("city", option)
-                            }
-                            placeholder="Select City..."
-                            isDisabled={!formData.state}
-                          />
-                          {errors.city && (
-                            <div className="text-danger mt-1">
-                              {errors.city}
-                            </div>
-                          )}
-                        </div>
-                        <div className="col-12 mt-3">
-                          <label
-                            htmlFor="pincode"
-                            className="form-label fw-medium"
-                          >
-                            Pincode
-                          </label>
-                          <input
-                            type="text"
-                            id="pincode"
-                            className="form-control"
-                            value={formData.pincode}
-                            onChange={(e) =>
-                              handleInputChange("pincode", e.target.value)
-                            }
-                          />
-                        </div>
                       </div>
                       <div className="col-12 mt-3">
                         <div className="d-flex align-items-center gap-3 mb-2">
@@ -468,25 +543,42 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                             className="btn custom-button-bgcolor"
                             onClick={handleAddEmail}
                           >
-                            Add
+                            {editingIndex.email !== null ? "Update" : "Add"}
                           </button>
                         </div>
-                        {showEmailInput && (
-                          <div className="input-group mb-3">
-                            <input
-                              type="email"
-                              className="form-control"
-                              value={newEmail}
-                              onChange={(e) => setNewEmail(e.target.value)}
-                              placeholder="Enter email"
-                            />
-                          </div>
-                        )}
+                        <div className="input-group mb-3">
+                          <input
+                            type="email"
+                            className="form-control"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="Enter email"
+                          />
+                        </div>
                         {formData.emails.length > 0 && (
                           <ul className="list-group mb-3">
                             {formData.emails.map((email, index) => (
-                              <li key={index} className="list-group-item">
+                              <li
+                                key={index}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                              >
                                 {email}
+                                <div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-primary me-2"
+                                    onClick={() => handleEditEmail(index)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeleteEmail(index)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -494,28 +586,46 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                       </div>
                       <div className="col-12 mt-3">
                         <div className="d-flex align-items-center gap-3 mb-2">
-                          <h3 className="h6 mb-0 fw-medium">Phones</h3>
+                          <h5 className="h6 mb-0 fw-medium">Phones</h5>
                           <button
                             type="button"
                             className="btn custom-button-bgcolor"
                             onClick={handleAddPhone}
                           >
-                            Add
+                            {editingIndex.phone !== null ? "Update" : "Add"}
                           </button>
                         </div>
-                        {showPhoneInput && (
-                          <PhoneInput
-                            country={"in"}
-                            value={newPhone}
-                            onChange={(phone) => setNewPhone(phone)}
-                            inputClass="form-control w-100"
-                          />
-                        )}
+                        <PhoneInput
+                          country={"in"}
+                          value={newPhone}
+                          onChange={(phone) => setNewPhone(phone)}
+                          inputClass="form-control w-100"
+                          placeholder="Enter phone number"
+                        />
                         {formData.phones.length > 0 && (
                           <ul className="list-group mt-3 mb-3">
                             {formData.phones.map((phone, index) => (
-                              <li key={index} className="list-group-item">
+                              <li
+                                key={index}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                              >
                                 {phone}
+                                <div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-primary me-2"
+                                    onClick={() => handleEditPhone(index)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeletePhone(index)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -523,42 +633,40 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                       </div>
                       <div className="col-12 mt-3">
                         <div className="d-flex align-items-center gap-3 mb-2">
-                          <h3 className="h6 mb-0 fw-medium">Photos</h3>
-                          <button
-                            type="button"
-                            className="btn custom-button-bgcolor"
-                            onClick={handleAddPhoto}
-                          >
-                            Add
-                          </button>
+                          <h5 className="h6 mb-0 fw-medium">Photos</h5>
                         </div>
-                        {showPhotoInput && (
-                          <input
-                            type="file"
-                            className="form-control mb-3"
-                            onChange={async (e) => {
-                              let res = await uploadImage(
-                                e.target.files[0],
-                                e.target.files[0]?.name
-                              );
-                              setNewPhoto(res);
-                            }}
-                            accept="image/*"
-                          />
+                        <input
+                          type="file"
+                          className="form-control mb-3"
+                          onChange={handlePhotoChange}
+                          accept="image/*"
+                          ref={photoInputRef}
+                        />
+                        {isUploadingPhoto && (
+                          <div className="text-info mb-3">
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            ></span>
+                            Uploading image...
+                          </div>
                         )}
                         {formData.photos.length > 0 && (
-                          <ul className="list-group">
+                          <ul className="list-group mb-3">
                             {formData.photos.map((photo, index) => (
                               <li
                                 key={index}
                                 className="list-group-item d-flex justify-content-between align-items-center"
                               >
                                 {photo}
-                                <i
-                                  role="button"
-                                  className="bi bi-x fs-4 text-danger cursor-pointer"
-                                  onClick={() => handleRemovePhoto(index)}
-                                ></i>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() => handleDeletePhoto(index)}
+                                >
+                                  Delete
+                                </button>
                               </li>
                             ))}
                           </ul>
@@ -589,9 +697,21 @@ const EditStoreModal = ({ show, onHide, storeData }) => {
                       <div className="col-12 mt-3">
                         <button
                           type="submit"
-                          className="btn custom-button-bgcolor"
+                          className="btn custom-button-bgcolor d-flex align-items-center justify-content-center"
+                          disabled={isSubmitting || isUploadingPhoto}
                         >
-                          Update
+                          {isSubmitting ? (
+                            <>
+                              <span
+                                className="spinner-border spinner-border-sm me-2"
+                                role="status"
+                                aria-hidden="true"
+                              ></span>
+                              Updating...
+                            </>
+                          ) : (
+                            "Update"
+                          )}
                         </button>
                       </div>
                     </div>
