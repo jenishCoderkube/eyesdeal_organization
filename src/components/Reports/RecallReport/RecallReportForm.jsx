@@ -179,7 +179,9 @@ const RecallReportForm = () => {
                     <h6>Folders</h6>
                     <div className="row mt-3">
                       <div className="col-auto">
-                        <button className="btn btn-primary">Back</button>
+                        <button type="button" className="btn btn-primary">
+                          Back
+                        </button>
                       </div>
                       {folders.map((folder, index) => (
                         <div key={index} className="col-3 text-center mb-3">

@@ -83,7 +83,7 @@ const ImageSliderModal = ({ show, onHide, images }) => {
         )}
       </Modal.Body>
       <Modal.Footer>
-        <button className="btn btn-secondary" onClick={onHide}>
+        <button type="button" className="btn btn-secondary" onClick={onHide}>
           Close
         </button>
       </Modal.Footer>

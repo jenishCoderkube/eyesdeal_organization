@@ -79,7 +79,7 @@ const LensModal = ({ show, onHide, lensData }) => {
           <div className="bg-white rounded shadow-lg w-100 max-h-[90vh] overflow-auto">
             <div className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
               <div className="font-semibold fs-5">LENS DETAILS</div>
-              <button className="p-0" onClick={onHide}>
+              <button type="button" className="p-0" onClick={onHide}>
                 <i className="bi bi-x fs-1"></i>
               </button>
             </div>

@@ -12,7 +12,7 @@ const ViewProductForm = () => {
   const [inventory, setInventory] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [productData, setProductData] = useState([]);
-    const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -109,13 +109,13 @@ const ViewProductForm = () => {
               noOptionsMessage={({ inputValue }) =>
                 inputValue
                   ? loading && (
-                    <div
-                      className="spinner-border spinner-border-sm text-primary"
-                      role="status"
-                    >
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                  )
+                      <div
+                        className="spinner-border spinner-border-sm text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    )
                   : "No options"
               }
             />
@@ -135,59 +135,71 @@ const ViewProductForm = () => {
       <div className="card p-0 shadow-none border mt-5">
         <div className="card-body p-0">
           <div className="table-responsive mt-3 px-2">
-             {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-           
-            <table className="table table-sm">
-              <thead className="text-xs text-uppercase text-muted bg-light border">
-                <tr>
-                  <th className="custom-perchase-th">Barcode</th>
-                  <th className="custom-perchase-th">Date</th>
-                  <th className="custom-perchase-th">Photo</th>
-                  <th className="custom-perchase-th">Store</th>
-                  <th className="custom-perchase-th">Sku</th>
-                  <th className="custom-perchase-th">Brand</th>
-                  <th className="custom-perchase-th">Mrp</th>
-                  <th className="custom-perchase-th">Stock</th>
-                  <th className="custom-perchase-th">Sold</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {inventory?.docs?.length > 0 ? (
-                  inventory.docs.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td style={{ minWidth: "70px" }}>{item.product?.oldBarcode}</td>
-                      <td style={{ minWidth: "100px" }}>{moment(item.product?.createdAt).format("YYYY-MM-DD")}</td>
-                      <td>
-                        <img
-                          style={{ minWidth: "100px" }}
-                          src={item.photo}
-                          alt="Product"
-                          width="40"
-                          height="40"
-                        />
-                      </td>
-                      <td style={{minWidth:"180px"}}>{item.store?.name}</td>
-                      <td style={{minWidth:"180px"}}>{item.product?.sku}</td>
-                      <td style={{minWidth:"180px"}}>{item.product?.brand?.name} {item.product?.__t}</td>
-                      <td>{item.product?.MRP}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.sold}</td>
-                    </tr>
-                  ))
-                ) : (
+            {loadingInventory ? (
+              <div className="d-flex justify-content-center">
+                <h4>Loading Data...</h4>
+              </div>
+            ) : (
+              <table className="table table-sm">
+                <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <td
-                      colSpan="9"
-                      className="text-center add_power_title py-3"
-                    >
-                      No data available
-                    </td>
+                    <th className="custom-perchase-th">Barcode</th>
+                    <th className="custom-perchase-th">Date</th>
+                    <th className="custom-perchase-th">Photo</th>
+                    <th className="custom-perchase-th">Store</th>
+                    <th className="custom-perchase-th">Sku</th>
+                    <th className="custom-perchase-th">Brand</th>
+                    <th className="custom-perchase-th">Mrp</th>
+                    <th className="custom-perchase-th">Stock</th>
+                    <th className="custom-perchase-th">Sold</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-}
+                </thead>
+                <tbody className="text-sm">
+                  {inventory?.docs?.length > 0 ? (
+                    inventory.docs.map((item, index) => (
+                      <tr key={item.id || index}>
+                        <td style={{ minWidth: "70px" }}>
+                          {item.product?.oldBarcode}
+                        </td>
+                        <td style={{ minWidth: "100px" }}>
+                          {moment(item.product?.createdAt).format("YYYY-MM-DD")}
+                        </td>
+                        <td>
+                          <img
+                            style={{ minWidth: "100px" }}
+                            src={item.photo}
+                            alt="Product"
+                            width="40"
+                            height="40"
+                          />
+                        </td>
+                        <td style={{ minWidth: "180px" }}>
+                          {item.store?.name}
+                        </td>
+                        <td style={{ minWidth: "180px" }}>
+                          {item.product?.sku}
+                        </td>
+                        <td style={{ minWidth: "180px" }}>
+                          {item.product?.brand?.name} {item.product?.__t}
+                        </td>
+                        <td>{item.product?.MRP}</td>
+                        <td>{item.quantity}</td>
+                        <td>{item.sold}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="9"
+                        className="text-center add_power_title py-3"
+                      >
+                        No data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
             <div className="text-sm text-muted mb-3 mb-sm-0">
@@ -197,8 +209,12 @@ const ViewProductForm = () => {
               results
             </div>
             <div className="btn-group">
-              <button className="btn btn-outline-primary">Previous</button>
-              <button className="btn btn-outline-primary">Next</button>
+              <button type="button" className="btn btn-outline-primary">
+                Previous
+              </button>
+              <button type="button" className="btn btn-outline-primary">
+                Next
+              </button>
             </div>
           </div>
         </div>

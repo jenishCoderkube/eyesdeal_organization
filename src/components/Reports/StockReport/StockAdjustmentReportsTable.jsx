@@ -33,7 +33,7 @@ const StockAdjustmentReportsTable = ({ data, storeidsData }) => {
     if (debouncedQuery.trim()) {
       fetchStockReportWithFilter({
         search: debouncedQuery,
-        storesids: storeidsData
+        storesids: storeidsData,
       });
     }
   }, [debouncedQuery]);
@@ -43,19 +43,20 @@ const StockAdjustmentReportsTable = ({ data, storeidsData }) => {
   };
 
   const fetchStockReportWithFilter = ({ search, storesids }) => {
-    reportService.getStockReport({ search, storesids })
-      .then(res => {
+    reportService
+      .getStockReport({ search, storesids })
+      .then((res) => {
         setFilteredData(res.data?.data?.docs);
       })
-      .catch(e => console.log("Failed to get pruchaselog: ", e))
-  }
+      .catch((e) => console.log("Failed to get pruchaselog: ", e));
+  };
 
   const columns = useMemo(
     () => [
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "createdAt",
@@ -71,21 +72,27 @@ const StockAdjustmentReportsTable = ({ data, storeidsData }) => {
         accessorKey: "store",
         header: "Store Name",
         size: 230,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         id: "ProductBarcode",
         accessorKey: "product",
         header: "Barcode",
         size: 30,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.oldBarcode}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.oldBarcode}</div>
+        ),
       },
       {
         id: "ProductSKU",
         accessorKey: "product",
         header: "SKU",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.sku}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.sku}</div>
+        ),
       },
       {
         accessorKey: "stock",
@@ -155,7 +162,11 @@ const StockAdjustmentReportsTable = ({ data, storeidsData }) => {
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>
@@ -191,9 +202,9 @@ const StockAdjustmentReportsTable = ({ data, storeidsData }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

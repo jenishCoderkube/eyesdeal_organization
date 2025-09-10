@@ -39,9 +39,9 @@ const CashReportsTable = ({ data }) => {
         });
         setFilteredData(filtered);
       } else {
-        setFilteredData(data); 
+        setFilteredData(data);
       }
-    }, 300); 
+    }, 300);
 
     return () => clearTimeout(handler);
   }, [searchQuery]);
@@ -51,7 +51,7 @@ const CashReportsTable = ({ data }) => {
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "createdAt",
@@ -67,7 +67,9 @@ const CashReportsTable = ({ data }) => {
         accessorKey: "store",
         header: "Store Name",
         size: 230,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "mode",
@@ -146,7 +148,11 @@ const CashReportsTable = ({ data }) => {
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>
@@ -182,9 +188,9 @@ const CashReportsTable = ({ data }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

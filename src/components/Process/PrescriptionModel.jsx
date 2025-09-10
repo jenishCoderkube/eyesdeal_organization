@@ -100,6 +100,7 @@ function PrescriptionModel({
               <div className="d-flex gap-3 pb-2" style={{ minWidth: "600px" }}>
                 {custstatus.map((status) => (
                   <button
+                    type="button"
                     key={status}
                     onClick={() => setActiveCustStatus(status)}
                     className={`bg-transparent border-0 pb-2 px-1 fw-medium 
@@ -357,6 +358,7 @@ function PrescriptionModel({
                       </div>
                       <div className="d-flex gap-2">
                         <button
+                          type="button"
                           className="btn border"
                           onClick={handlePrevious}
                           disabled={currentIndex === 0}
@@ -364,6 +366,7 @@ function PrescriptionModel({
                           Previous
                         </button>
                         <button
+                          type="button"
                           className="btn border"
                           onClick={handleNext}
                           disabled={
@@ -605,6 +608,7 @@ function PrescriptionModel({
                       </div>
                       <div className="d-flex gap-2">
                         <button
+                          type="button"
                           className="btn border"
                           onClick={handlePrevious}
                           disabled={currentIndex === 0}
@@ -612,6 +616,7 @@ function PrescriptionModel({
                           Previous
                         </button>
                         <button
+                          type="button"
                           className="btn border"
                           onClick={handleNext}
                           disabled={

@@ -234,7 +234,11 @@ const SalesReportsTable = ({ data, amountData }) => {
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
         <p className="mb-0 fw-normal text-black">Total Amount: {amountData}</p>
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
           <button

@@ -11,7 +11,7 @@ const StockOutTable = () => {
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
   const [showOffcanvas, setShowOffCanvas] = useState(false);
-    const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const [showData, setShowData] = useState([]);
 
@@ -27,9 +27,9 @@ const StockOutTable = () => {
     return (stockData?.docs || []).filter((item) => {
       return (
         item.from?.name?.toLowerCase().includes(lowerQuery) ||
-        String(item.from?.storeNumber).includes(lowerQuery) || 
+        String(item.from?.storeNumber).includes(lowerQuery) ||
         item.to?.name?.toLowerCase().includes(lowerQuery) ||
-        String(item.to?.storeNumber).toLowerCase().includes(lowerQuery) || 
+        String(item.to?.storeNumber).toLowerCase().includes(lowerQuery) ||
         item.status?.toLowerCase().includes(lowerQuery) ||
         moment(item.createdAt).format("YYYY-MM-DD").includes(lowerQuery) ||
         item.products?.some(
@@ -38,7 +38,9 @@ const StockOutTable = () => {
               ?.toLowerCase()
               .includes(lowerQuery) ||
             product.productId?.sku?.toLowerCase().includes(lowerQuery) ||
-            String(product.productId?.newBarcode)?.toLowerCase().includes(lowerQuery)
+            String(product.productId?.newBarcode)
+              ?.toLowerCase()
+              .includes(lowerQuery)
         )
       );
     });
@@ -144,65 +146,73 @@ const StockOutTable = () => {
         <div className="card p-0 shadow-none mt-3">
           <div className="card-body p-0">
             <div className="table-responsive px-2">
-               {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-           
-              <table className="table table-sm">
-                <thead className="text-xs text-uppercase text-muted bg-light border">
-                  <tr>
-                    <th className="custom-perchase-th">Srno</th>
-                    <th className="custom-perchase-th">Date</th>
-                    <th className="custom-perchase-th">From</th>
-                    <th className="custom-perchase-th">To</th>
-                    <th className="custom-perchase-th">Number of Products</th>
-                    <th className="custom-perchase-th">Stock Quantity</th>
-                    <th className="custom-perchase-th">Status</th>
-                    <th className="custom-perchase-th">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {filteredData.length > 0 ? (
-                    filteredData.map((item, index) => (
-                      <tr key={item.id || index}>
-                        <td style={{minWidth:"50px"}}>{index + 1}</td>
-                        <td style={{minWidth:"110px"}}>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
-                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
-                          {item.from.storeNumber}/{item.from.name}
-                        </td>
-                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
-                          {item.to.storeNumber}/{item.to.name}
-                        </td>
-                        <td style={{minWidth:"160px"}}>{item.products?.length}</td>
-                        <td style={{minWidth:"150px"}}>{item.products?.length}</td> 
-                        <td>{item.status}</td>
-                        <td className="d-flex align-items-center gap-2" >
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 text-primary"
-                            onClick={() => btnClick(item?.products)}
-                          >
-                            <i className="bi bi-eye"></i>
-                          </button>
-                          <button
-                            type="button"
-                            className="btn custom-button-bgcolor btn-sm"
-                            onClick={() => exportProduct(item?.products)}
-                          >
-                            Download
-                          </button>
+              {loadingInventory ? (
+                <div className="d-flex justify-content-center">
+                  <h4>Loading Data...</h4>
+                </div>
+              ) : (
+                <table className="table table-sm">
+                  <thead className="text-xs text-uppercase text-muted bg-light border">
+                    <tr>
+                      <th className="custom-perchase-th">Srno</th>
+                      <th className="custom-perchase-th">Date</th>
+                      <th className="custom-perchase-th">From</th>
+                      <th className="custom-perchase-th">To</th>
+                      <th className="custom-perchase-th">Number of Products</th>
+                      <th className="custom-perchase-th">Stock Quantity</th>
+                      <th className="custom-perchase-th">Status</th>
+                      <th className="custom-perchase-th">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {filteredData.length > 0 ? (
+                      filteredData.map((item, index) => (
+                        <tr key={item.id || index}>
+                          <td style={{ minWidth: "50px" }}>{index + 1}</td>
+                          <td style={{ minWidth: "110px" }}>
+                            {moment(item.createdAt).format("YYYY-MM-DD")}
+                          </td>
+                          <td style={{ minWidth: "180px", maxWidth: "200px" }}>
+                            {item.from.storeNumber}/{item.from.name}
+                          </td>
+                          <td style={{ minWidth: "180px", maxWidth: "200px" }}>
+                            {item.to.storeNumber}/{item.to.name}
+                          </td>
+                          <td style={{ minWidth: "160px" }}>
+                            {item.products?.length}
+                          </td>
+                          <td style={{ minWidth: "150px" }}>
+                            {item.products?.length}
+                          </td>
+                          <td>{item.status}</td>
+                          <td className="d-flex align-items-center gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 text-primary"
+                              onClick={() => btnClick(item?.products)}
+                            >
+                              <i className="bi bi-eye"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn custom-button-bgcolor btn-sm"
+                              onClick={() => exportProduct(item?.products)}
+                            >
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="8" className="text-center py-3">
+                          No data available
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="8" className="text-center py-3">
-                        No data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-}
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
             <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
               <div className="text-sm text-muted mb-3 mb-sm-0">
@@ -211,8 +221,12 @@ const StockOutTable = () => {
                 <span className="fw-medium">{filteredData.length}</span> results
               </div>
               <div className="btn-group">
-                <button className="btn btn-outline-primary">Previous</button>
-                <button className="btn btn-outline-primary">Next</button>
+                <button type="button" className="btn btn-outline-primary">
+                  Previous
+                </button>
+                <button type="button" className="btn btn-outline-primary">
+                  Next
+                </button>
               </div>
             </div>
           </div>

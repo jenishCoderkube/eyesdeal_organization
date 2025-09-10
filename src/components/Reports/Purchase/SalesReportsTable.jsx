@@ -17,8 +17,8 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   const [newamountData, setNewAmountData] = useState(amountData);
 
   useEffect(() => {
-    setNewAmountData(amountData)
-  }, [amountData])
+    setNewAmountData(amountData);
+  }, [amountData]);
 
   useEffect(() => {
     if (Array.isArray(data)) {
@@ -49,12 +49,13 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   };
 
   const fetchPurchaseLog = (search) => {
-    reportService.getPurchaseLogBySearch(search)
-      .then(res => {
+    reportService
+      .getPurchaseLogBySearch(search)
+      .then((res) => {
         setFilteredData(res.data?.data?.docs);
       })
-      .catch(e => console.log("Failed to get pruchaselog: ", e))
-  }
+      .catch((e) => console.log("Failed to get pruchaselog: ", e));
+  };
 
   // const fetchAmount = (dateFrom, dateTo, search) => {
   //   reportService.getAmountBySearch(dateFrom, dateTo, search)
@@ -63,25 +64,29 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   //     })
   //     .catch(e => console.log("Failed to get amount: ", e))
   // }
-  
+
   const columns = useMemo(
     () => [
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "store",
         header: "Store Name",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "vendor",
         header: "Vendor Name",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.companyName}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.companyName}</div>
+        ),
       },
       {
         accessorKey: "createdAt",
@@ -163,9 +168,15 @@ const PurchaseReportsTable = ({ data, amountData }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {newamountData}</p>
+        <p className="mb-0 fw-normal text-black">
+          Total Amount: {newamountData}
+        </p>
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>
@@ -197,14 +208,13 @@ const PurchaseReportsTable = ({ data, amountData }) => {
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
                     style={{ minWidth: `${header.getSize()}px` }}
-
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

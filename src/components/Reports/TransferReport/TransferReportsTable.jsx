@@ -11,7 +11,13 @@ import moment from "moment";
 import { reportService } from "../../../services/reportService";
 import { toast } from "react-toastify";
 
-const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) => {
+const TransferReportsTable = ({
+  data,
+  fromDate,
+  toDate,
+  StoreFrom,
+  Storeto,
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -47,17 +53,23 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
     setSearchQuery(value);
   };
 
-  const fetchTransferStockWithFilter = async ({ search, fromDate, toDate, storeFromid, storeToid }) => {
+  const fetchTransferStockWithFilter = async ({
+    search,
+    fromDate,
+    toDate,
+    storeFromid,
+    storeToid,
+  }) => {
     try {
       const payload = {
         fromDate,
         toDate,
         ...(storeFromid && storeFromid.length && { storeFromid }),
         ...(storeToid && storeToid.length && { storeToid }),
-        search
+        search,
       };
-      const response = await reportService.getTransferStock(payload)
-      
+      const response = await reportService.getTransferStock(payload);
+
       if (response.success) {
         const formattedData = processData(response?.data?.data?.docs);
         setFilteredData(formattedData);
@@ -67,7 +79,7 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
     } catch (error) {
       console.error("Login error:", error);
     }
-  }
+  };
 
   const processData = (rawData) => {
     const processed = [];
@@ -85,7 +97,7 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
             from: fromName,
             to: toName,
             sku: entry.sku || "",
-            stockQty: Qty
+            stockQty: Qty,
           });
         });
       }
@@ -98,7 +110,7 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "date",
@@ -176,9 +188,12 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>
@@ -214,9 +229,9 @@ const TransferReportsTable = ({ data, fromDate, toDate, StoreFrom, Storeto }) =>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

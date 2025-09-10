@@ -303,10 +303,14 @@ function CustModel({ closeCustModal, activeStatus }) {
                     </div>
                     <div className="d-flex gap-2">
                       <div>
-                        <button className="btn border">Previous</button>
+                        <button type="button" className="btn border">
+                          Previous
+                        </button>
                       </div>
                       <div>
-                        <button className="btn border">Next</button>
+                        <button type="button" className="btn border">
+                          Next
+                        </button>
                       </div>
                     </div>
                   </div>

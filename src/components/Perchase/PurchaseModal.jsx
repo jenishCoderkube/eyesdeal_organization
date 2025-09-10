@@ -252,7 +252,12 @@ const PurchaseModal = ({
               <div className="font-semibold fs-5">
                 Store: {purchase.store.name}
               </div>
-              <button variant="link" className="p-0" onClick={onHide}>
+              <button
+                type="button"
+                variant="link"
+                className="p-0"
+                onClick={onHide}
+              >
                 <i className="bi bi-x fs-1"></i>
               </button>
             </div>

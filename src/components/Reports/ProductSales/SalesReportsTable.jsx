@@ -17,8 +17,8 @@ const SalesReportsTable = ({ data, amountData }) => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
-    setFilteredData(data)
-  }, [data])
+    setFilteredData(data);
+  }, [data]);
 
   const handleSearch = (value) => {
     setSearchQuery(value);
@@ -42,7 +42,7 @@ const SalesReportsTable = ({ data, amountData }) => {
     try {
       const response = await reportService.getOrdersBySearch(value);
       if (response.success) {
-        setFilteredData(response.data.data.docs)
+        setFilteredData(response.data.data.docs);
       } else {
         console.error(response.message);
       }
@@ -56,8 +56,7 @@ const SalesReportsTable = ({ data, amountData }) => {
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>
-        ),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "store",
@@ -97,13 +96,10 @@ const SalesReportsTable = ({ data, amountData }) => {
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-          const brandName = product?.item?.brand?.name ?? lens?.item?.brand?.name ?? "";
+          const brandName =
+            product?.item?.brand?.name ?? lens?.item?.brand?.name ?? "";
           const type = product?.item?.__t ?? lens?.item?.__t ?? "";
-          return (
-            <div className="text-left">
-              {brandName + " " + type}
-            </div>
-          );
+          return <div className="text-left">{brandName + " " + type}</div>;
         },
       },
       {
@@ -116,11 +112,7 @@ const SalesReportsTable = ({ data, amountData }) => {
 
           const barcode = product?.barcode ?? lens?.barcode ?? "";
 
-          return (
-            <div className="text-left">
-              {barcode}
-            </div>
-          );
+          return <div className="text-left">{barcode}</div>;
         },
       },
       {
@@ -134,11 +126,7 @@ const SalesReportsTable = ({ data, amountData }) => {
 
           const sku = product?.sku ?? lens?.sku ?? "";
 
-          return (
-            <div className="text-left">
-              {sku}
-            </div>
-          );
+          return <div className="text-left">{sku}</div>;
         },
       },
       {
@@ -152,11 +140,7 @@ const SalesReportsTable = ({ data, amountData }) => {
 
           const mrp = product?.mrp ?? lens?.mrp ?? "";
 
-          return (
-            <div className="text-left">
-              {mrp}
-            </div>
-          );
+          return <div className="text-left">{mrp}</div>;
         },
       },
       {
@@ -168,13 +152,10 @@ const SalesReportsTable = ({ data, amountData }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
 
-          const perPieceDiscount = product?.perPieceDiscount ?? lens?.perPieceDiscount ?? "";
+          const perPieceDiscount =
+            product?.perPieceDiscount ?? lens?.perPieceDiscount ?? "";
 
-          return (
-            <div className="text-left">
-              {perPieceDiscount}
-            </div>
-          );
+          return <div className="text-left">{perPieceDiscount}</div>;
         },
       },
       {
@@ -185,12 +166,9 @@ const SalesReportsTable = ({ data, amountData }) => {
         cell: ({ row }) => {
           const product = row.original?.product;
           const lens = row.original?.lens;
-          const perPieceAmount = product?.perPieceAmount ?? lens?.perPieceAmount ?? "";
-          return (
-            <div className="text-left">
-              {perPieceAmount}
-            </div>
-          );
+          const perPieceAmount =
+            product?.perPieceAmount ?? lens?.perPieceAmount ?? "";
+          return <div className="text-left">{perPieceAmount}</div>;
         },
       },
     ],
@@ -249,10 +227,15 @@ const SalesReportsTable = ({ data, amountData }) => {
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
         <p className="mb-0 fw-normal text-black">Total Amount: {amountData}</p>
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
           <button
+            type="button"
             className="btn btn-primary btn-sm"
             onClick={exportCustomerData}
           >
@@ -291,9 +274,9 @@ const SalesReportsTable = ({ data, amountData }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>

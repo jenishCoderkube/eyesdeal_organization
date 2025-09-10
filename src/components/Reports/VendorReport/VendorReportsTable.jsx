@@ -179,7 +179,11 @@ const VendorReportsTable = ({ storesNames, data }) => {
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 mb-4">
         <div className="ms-md-auto d-flex ">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>

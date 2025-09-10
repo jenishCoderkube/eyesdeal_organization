@@ -67,6 +67,7 @@ function OrdersModel({ closeOrderModel, SalesOrderData }) {
             <div className="d-flex gap-3 pb-2">
               {custstatus.map((status) => (
                 <button
+                  type="button"
                   key={status}
                   onClick={() => setActiveCustStatus(status)}
                   className={`bg-transparent border-0 pb-2 px-1 fw-medium ${
@@ -211,10 +212,12 @@ function OrdersModel({ closeOrderModel, SalesOrderData }) {
                     </p>
                   </div>
                   <div className="d-flex gap-2">
-                    <button className="btn btn-outline-secondary">
+                    <button type="button" className="btn btn-outline-secondary">
                       Previous
                     </button>
-                    <button className="btn btn-outline-secondary">Next</button>
+                    <button type="button" className="btn btn-outline-secondary">
+                      Next
+                    </button>
                   </div>
                 </div>
               </>

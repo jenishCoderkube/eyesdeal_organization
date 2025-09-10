@@ -36,7 +36,9 @@ const StockInTable = () => {
               ?.toLowerCase()
               .includes(lowerQuery) ||
             product.productId?.sku?.toLowerCase().includes(lowerQuery) ||
-            String(product.productId?.newBarcode)?.toLowerCase().includes(lowerQuery)
+            String(product.productId?.newBarcode)
+              ?.toLowerCase()
+              .includes(lowerQuery)
         )
       );
     });
@@ -161,10 +163,10 @@ const StockInTable = () => {
                       <tr key={item.id || index}>
                         <td>{index + 1}</td>
                         <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
-                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
+                        <td style={{ minWidth: "180px", maxWidth: "200px" }}>
                           {item.from.storeNumber}/{item.from.name}
                         </td>
-                        <td style={{minWidth:"180px", maxWidth:"200px"}}>
+                        <td style={{ minWidth: "180px", maxWidth: "200px" }}>
                           {item.to.storeNumber}/{item.to.name}
                         </td>
                         <td>{item.products?.length}</td>
@@ -208,8 +210,12 @@ const StockInTable = () => {
                 <span className="fw-medium">{filteredData.length}</span> results
               </div>
               <div className="btn-group">
-                <button className="btn btn-outline-primary">Previous</button>
-                <button className="btn btn-outline-primary">Next</button>
+                <button type="button" className="btn btn-outline-primary">
+                  Previous
+                </button>
+                <button type="button" className="btn btn-outline-primary">
+                  Next
+                </button>
               </div>
             </div>
           </div>

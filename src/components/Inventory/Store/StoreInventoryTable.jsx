@@ -306,12 +306,17 @@ const InventoryTable = () => {
           </p>
           <p className="mb-0 fw-normal text-black">Total Sold: {totalSold}</p>
           <button
+            type="button"
             className="btn btn-primary ms-md-auto"
             onClick={exportProduct}
           >
             Export Product
           </button>
-          <button className="btn btn-primary" onClick={exportProductCP}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProductCP}
+          >
             Export Product CP
           </button>
         </div>

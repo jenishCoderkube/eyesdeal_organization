@@ -34,7 +34,7 @@ const GstReportsTable = ({ data, storesIdsData }) => {
     if (debouncedQuery.trim()) {
       fetchOrders({
         search: debouncedQuery,
-        stores: storesIdsData
+        stores: storesIdsData,
       });
     }
   }, [debouncedQuery]);
@@ -48,18 +48,18 @@ const GstReportsTable = ({ data, storesIdsData }) => {
       search,
       ...(stores && stores.length && { stores }),
     };
-    reportService.fetchOrders(payload)
-      .then(res => {
+    reportService
+      .fetchOrders(payload)
+      .then((res) => {
         const formattedData = processData(res.data?.data?.docs);
         setFormattedData(formattedData);
       })
-      .catch(e => console.log("Failed to get pruchaselog: ", e))
-  }
+      .catch((e) => console.log("Failed to get pruchaselog: ", e));
+  };
 
   const processData = (rawData) => {
     const processed = [];
     rawData.forEach((item) => {
-
       const date = moment(item.createdAt).format("YYYY-MM-DD");
       const billNumber = item.billNumber;
       const godownName = item.store?.name || "";
@@ -69,19 +69,19 @@ const GstReportsTable = ({ data, storesIdsData }) => {
       let paymentSummary = {
         cash: 0,
         upi: 0,
-        card: 0
+        card: 0,
       };
 
-      item.sale?.receivedAmount.forEach(entry => {
+      item.sale?.receivedAmount.forEach((entry) => {
         const method = entry.method?.toLowerCase();
         if (method == "cash") {
-          paymentSummary.cash += entry.amount
+          paymentSummary.cash += entry.amount;
         }
         if (method == "bank") {
-          paymentSummary.upi += entry.amount
+          paymentSummary.upi += entry.amount;
         }
         if (method == "card") {
-          paymentSummary.card += entry.amount
+          paymentSummary.card += entry.amount;
         }
       });
 
@@ -94,11 +94,24 @@ const GstReportsTable = ({ data, storesIdsData }) => {
           totalQty,
           netAmount,
           sku: item.product.sku || "",
-          item: [item.product.item.brand?.name, item.product.item.__t].filter(Boolean).join(" ") || "",
-          rate: (Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0),
-          cgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
-          sgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
-          narration: ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.product.sku} ` || "",
+          item:
+            [item.product.item.brand?.name, item.product.item.__t]
+              .filter(Boolean)
+              .join(" ") || "",
+          rate:
+            (Number(item.product.perPieceAmount) || 0) -
+            (Number(item.product.item.perPieceTax) || 0),
+          cgst:
+            ((Number(item.product.perPieceAmount) || 0) -
+              (Number(item.product.item.perPieceTax) || 0)) *
+            0.06,
+          sgst:
+            ((Number(item.product.perPieceAmount) || 0) -
+              (Number(item.product.item.perPieceTax) || 0)) *
+            0.06,
+          narration:
+            ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.product.sku} ` ||
+            "",
           cash: paymentSummary.cash,
           upi: paymentSummary.upi,
           card: paymentSummary.card,
@@ -114,11 +127,24 @@ const GstReportsTable = ({ data, storesIdsData }) => {
           totalQty,
           netAmount,
           sku: item.lens.sku || "",
-          item: [item.lens.item.brand?.name, item.lens.item.__t].filter(Boolean).join(" ") || "",
-          rate: (Number(item.lens.perPieceAmount) || 0) - (Number(item.lens.item.perPieceTax) || 0),
-          cgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
-          sgst: ((Number(item.product.perPieceAmount) || 0) - (Number(item.product.item.perPieceTax) || 0)) * 0.06,
-          narration: ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.lens.sku} ` || "",
+          item:
+            [item.lens.item.brand?.name, item.lens.item.__t]
+              .filter(Boolean)
+              .join(" ") || "",
+          rate:
+            (Number(item.lens.perPieceAmount) || 0) -
+            (Number(item.lens.item.perPieceTax) || 0),
+          cgst:
+            ((Number(item.product.perPieceAmount) || 0) -
+              (Number(item.product.item.perPieceTax) || 0)) *
+            0.06,
+          sgst:
+            ((Number(item.product.perPieceAmount) || 0) -
+              (Number(item.product.item.perPieceTax) || 0)) *
+            0.06,
+          narration:
+            ` ${item.store?.name}-${item.sale?.customerName}-${item.billNumber}-${item.lens.sku} ` ||
+            "",
           cash: paymentSummary.cash,
           upi: paymentSummary.upi,
           card: paymentSummary.card,
@@ -134,7 +160,7 @@ const GstReportsTable = ({ data, storesIdsData }) => {
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "date",
@@ -276,9 +302,12 @@ const GstReportsTable = ({ data, storesIdsData }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-
         <div className="ms-md-auto d-flex gap-2">
-          <button className="btn btn-primary" onClick={exportProduct}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportProduct}
+          >
             Download
           </button>
         </div>
@@ -310,14 +339,13 @@ const GstReportsTable = ({ data, storesIdsData }) => {
                     key={header.id}
                     className="p-3 text-left custom-perchase-th"
                     style={{ minWidth: `${header.getSize()}px` }}
-
                   >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>
