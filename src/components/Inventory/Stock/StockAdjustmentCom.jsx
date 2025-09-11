@@ -297,7 +297,7 @@ const StockAdjustmentCom = () => {
 
                         <th className="custom-perchase-th">quantity</th>
                         <th className="custom-perchase-th">reason</th>
-                        <th className="custom-perchase-th">sku</th>
+                        <th className="custom-perchase-th">sksu</th>
                         <th className="custom-perchase-th">Action</th>
                       </tr>
                     </thead>

@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { debounce } from "lodash";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
-import moment from "moment";
+// moment not used
 
 const AddStockTransferCom = () => {
   const [from, setFrom] = useState(null);
@@ -18,11 +18,24 @@ const AddStockTransferCom = () => {
 
   // Handle quantity change for a specific product
   const handleQuantityChange = (productId, value) => {
-    const quantity = Math.max(1, parseInt(value) || 1); // Ensure quantity is at least 1
+    // Allow free typing (including empty) to avoid forcing leading '1'
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.productId === productId ? { ...item, stockQuantity: value } : item
+      )
+    );
+  };
+
+  const handleQuantityBlur = (productId, value, availableStock) => {
+    const numeric = parseInt(value, 10);
+    const clamped = Math.min(
+      Math.max(isNaN(numeric) ? 1 : numeric, 1),
+      availableStock
+    );
     setProducts((prev) =>
       prev.map((item) =>
         item.productId === productId
-          ? { ...item, stockQuantity: Math.min(quantity, item.availableStock) }
+          ? { ...item, stockQuantity: clamped }
           : item
       )
     );
@@ -97,7 +110,11 @@ const AddStockTransferCom = () => {
 
     // Validate quantities against available stock
     for (const product of products) {
-      if (product.stockQuantity > product.availableStock) {
+      const qty = Math.min(
+        Math.max(Number(product.stockQuantity) || 1, 1),
+        product.availableStock
+      );
+      if (qty > product.availableStock) {
         toast.error(
           `Requested quantity for ${product.label} exceeds available stock (${product.availableStock})`
         );
@@ -108,10 +125,16 @@ const AddStockTransferCom = () => {
     const payload = {
       from: from.value,
       to: to.value,
-      products: products.map(({ productId, stockQuantity }) => ({
-        productId,
-        stockQuantity,
-      })),
+      products: products.map(({ productId, stockQuantity, availableStock }) => {
+        const qty = Math.min(
+          Math.max(Number(stockQuantity) || 1, 1),
+          availableStock
+        );
+        return {
+          productId,
+          stockQuantity: qty,
+        };
+      }),
     };
 
     setLoading(true);
@@ -300,13 +323,18 @@ const AddStockTransferCom = () => {
                             <td>
                               <input
                                 type="number"
-                                min="1"
-                                max={item.availableStock}
                                 value={item.stockQuantity}
                                 onChange={(e) =>
                                   handleQuantityChange(
                                     item.productId,
                                     e.target.value
+                                  )
+                                }
+                                onBlur={(e) =>
+                                  handleQuantityBlur(
+                                    item.productId,
+                                    e.target.value,
+                                    item.availableStock
                                   )
                                 }
                                 className="form-control form-control-sm w-75"

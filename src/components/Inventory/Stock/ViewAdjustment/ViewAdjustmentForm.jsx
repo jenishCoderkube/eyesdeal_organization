@@ -11,7 +11,15 @@ const ViewAdjustmentForm = () => {
   const [loading, setLoading] = useState(false);
   const [storeData, setStoreData] = useState([]);
   const [inventory, setInventory] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+  const [searchQuery] = useState("");
   const [loadingInventory, setLoadingInventory] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -28,14 +36,16 @@ const ViewAdjustmentForm = () => {
     }),
     onSubmit: (values) => {
       console.log("Form submitted:", values);
-      // alert("Form submitted successfully!");
-      getInventoryData(values);
+      // Reset to first page on new filter
+      setPagination((p) => ({ ...p, page: 1 }));
+      getInventoryData(values, 1, pagination.limit);
     },
   });
 
   useEffect(() => {
     getStores();
     getInventoryData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getProduct = async (search) => {
@@ -77,7 +87,7 @@ const ViewAdjustmentForm = () => {
         getProduct(value);
       }
     }, 1000),
-    [] // empty dependency to persist across re-renders
+    []
   );
 
   const productOptions = productData?.docs?.map((vendor) => ({
@@ -90,7 +100,11 @@ const ViewAdjustmentForm = () => {
     label: `${vendor.name}`,
   }));
 
-  const getInventoryData = async (values) => {
+  const getInventoryData = async (
+    values = formik.values,
+    page = pagination.page,
+    limit = pagination.limit
+  ) => {
     const storeId = values?.stores?.map((option) => option.value);
     console.log("storeId", storeId);
     console.log("values", values);
@@ -100,12 +114,39 @@ const ViewAdjustmentForm = () => {
       const response = await inventoryService.getAdjustment(
         values?.selectedProduct?.value,
         storeId,
-        1,
+        page,
         searchQuery,
-        20
+        limit
       );
       if (response.success) {
-        setInventory(response?.data?.data);
+        const container = response?.data?.data;
+        setInventory(container);
+        // Update pagination if available
+        const totalDocs =
+          container?.totalDocs ??
+          container?.total ??
+          (container?.docs?.length || 0);
+        const currentPage = container?.page ?? page;
+        const currentLimit = container?.limit ?? limit;
+        const totalPages =
+          container?.totalPages ??
+          Math.ceil((totalDocs || 0) / (currentLimit || 1));
+        const hasPrevPage =
+          typeof container?.hasPrevPage === "boolean"
+            ? container.hasPrevPage
+            : currentPage > 1;
+        const hasNextPage =
+          typeof container?.hasNextPage === "boolean"
+            ? container.hasNextPage
+            : currentPage < totalPages;
+        setPagination({
+          page: currentPage,
+          limit: currentLimit,
+          totalDocs,
+          totalPages,
+          hasPrevPage,
+          hasNextPage,
+        });
       } else {
         toast.error(response.message);
       }
@@ -131,6 +172,7 @@ const ViewAdjustmentForm = () => {
         ]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeData]);
 
   return (
@@ -249,15 +291,52 @@ const ViewAdjustmentForm = () => {
       </div>
       <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
         <div className="text-sm text-muted mb-3 mb-sm-0">
-          Showing <span className="fw-medium">1</span> to{" "}
-          <span className="fw-medium">{inventory?.docs?.length}</span> of{" "}
-          <span className="fw-medium">{inventory?.docs?.length}</span> results
+          {(() => {
+            const startRow =
+              pagination.totalDocs === 0
+                ? 0
+                : (pagination.page - 1) * pagination.limit + 1;
+            const endRow = Math.min(
+              pagination.page * pagination.limit,
+              pagination.totalDocs
+            );
+            return (
+              <>
+                Showing <span className="fw-medium">{startRow}</span> to{" "}
+                <span className="fw-medium">{endRow}</span> of{" "}
+                <span className="fw-medium">{pagination.totalDocs}</span>{" "}
+                results
+              </>
+            );
+          })()}
         </div>
         <div className="btn-group">
-          <button type="button" className="btn btn-outline-primary">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() =>
+              getInventoryData(
+                formik.values,
+                pagination.page - 1,
+                pagination.limit
+              )
+            }
+            disabled={!pagination.hasPrevPage || loadingInventory}
+          >
             Previous
           </button>
-          <button type="button" className="btn btn-outline-primary">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() =>
+              getInventoryData(
+                formik.values,
+                pagination.page + 1,
+                pagination.limit
+              )
+            }
+            disabled={!pagination.hasNextPage || loadingInventory}
+          >
             Next
           </button>
         </div>

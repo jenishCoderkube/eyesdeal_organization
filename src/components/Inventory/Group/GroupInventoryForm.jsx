@@ -151,7 +151,7 @@ const GroupInventoryForm = () => {
         storeId || user?.stores,
         page, // Use page parameter
         searchQuery,
-        20
+        10
       );
       if (response.success) {
         setInventory(response?.data?.data);
@@ -177,7 +177,7 @@ const GroupInventoryForm = () => {
         storeId || user?.stores,
         page, // Use page parameter
         searchQuery,
-        20
+        10
       );
       if (response.success) {
         setInventoryTotal(response?.data?.data.docs);
@@ -215,6 +215,8 @@ const GroupInventoryForm = () => {
     setLoading(true);
     try {
       const response = await inventoryService.getBrand();
+      console.log(response, "datass");
+
       if (response.success) {
         setCategoryData(response?.data?.data);
       } else {

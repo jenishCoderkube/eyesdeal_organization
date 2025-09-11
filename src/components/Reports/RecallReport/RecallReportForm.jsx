@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import { reportService } from "../../../services/reportService";
 import { recallService } from "../../../services/recallService";
@@ -17,6 +17,14 @@ const RecallReportForm = () => {
   const [reportData, setReportData] = useState([]);
   const [selectedNotes, setSelectedNotes] = useState("");
   const [expandedRows, setExpandedRows] = useState([]); // New state for expanded rows
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
   const user = JSON.parse(localStorage.getItem("user"));
 
   // Static data for folders
@@ -39,9 +47,13 @@ const RecallReportForm = () => {
       to: new Date(),
     },
     onSubmit: (values) => {
-      fetchReportData(values);
+      // Reset to first page on filter submit
+      setPagination((p) => ({ ...p, page: 1 }));
+      fetchReportData(values, 1, pagination.limit);
     },
   });
+
+  // Fetch today's report on mount
 
   // Options for Select Store
   const storeOptions = storeData?.map((vendor) => ({
@@ -70,7 +82,7 @@ const RecallReportForm = () => {
         ]);
       }
     }
-  }, [storeData]);
+  }, [storeData, formik, user]);
 
   useEffect(() => {
     getStores();
@@ -93,13 +105,18 @@ const RecallReportForm = () => {
     }
   };
 
-  const fetchReportData = async (formValues) => {
+  const fetchReportData = async (
+    formValues,
+    page = pagination.page,
+    limit = pagination.limit
+  ) => {
     setLoading(true);
     try {
       const body = {
-        stores: formValues.store.map((store) => store.value) || [
-          "638b1a079f67a63ea1e1ba01",
-        ],
+        stores:
+          Array.isArray(formValues.store) && formValues.store.length > 0
+            ? formValues.store.map((store) => store.value)
+            : ["638b1a079f67a63ea1e1ba01"],
         // stores: ["638b1a079f67a63ea1e1ba01"],
 
         status:
@@ -108,31 +125,76 @@ const RecallReportForm = () => {
           .toLocaleDateString("en-GB")
           .replace(/\//g, "-"),
         endDate: formValues.to.toLocaleDateString("en-GB").replace(/\//g, "-"),
+        page,
+        limit,
       };
 
       const result = await recallService.getRecallReport(body);
       if (result.success) {
-        const mappedData = result.data.data.map((item, index) => ({
+        // Normalize response and docs for both paginated and non-paginated shapes
+        const raw = result.data;
+        const dataNode = raw?.data ?? raw;
+        const sourceArray = Array.isArray(dataNode?.docs)
+          ? dataNode.docs
+          : Array.isArray(dataNode)
+          ? dataNode
+          : Array.isArray(raw)
+          ? raw
+          : [];
+
+        const mappedData = sourceArray.map((item, index) => ({
           id: index + 1,
-          lastInvoiceDate: new Date(item.createdAt).toISOString().split("T")[0],
-          customerName: item.salesId.customerName,
-          customerNumber: item.salesId.customerPhone,
-          totalInvoiceValue: `$${item.salesId.netAmount.toFixed(2)}`,
-          recallDate: new Date(item.recallDate).toISOString().split("T")[0],
-          previousNotes: item.updateNotes || "No notes",
-          orders: item.salesId.orders.map((order, orderIndex) => ({
-            id: `${item._id}-${orderIndex + 1}`,
-            lensSku: order.lens?.sku || "N/A",
-            leftlensSku: order.leftLens?.sku || "N/A",
-            rightlensSku: order.rightLens?.sku || "N/A",
-
-            status: order.status || "N/A",
-            productSku: order.product?.sku || "N/A",
-          })), // Map orders for nested table
+          lastInvoiceDate: item?.createdAt
+            ? new Date(item.createdAt).toISOString().split("T")[0]
+            : "N/A",
+          customerName: item?.salesId?.customerName || "N/A",
+          customerNumber: item?.salesId?.customerPhone || "N/A",
+          totalInvoiceValue:
+            typeof item?.salesId?.netAmount === "number"
+              ? `$${item.salesId.netAmount.toFixed(2)}`
+              : "$0.00",
+          recallDate: item?.recallDate
+            ? new Date(item.recallDate).toISOString().split("T")[0]
+            : "N/A",
+          previousNotes: item?.updateNotes || "No notes",
+          orders: Array.isArray(item?.salesId?.orders)
+            ? item.salesId.orders.map((order, orderIndex) => ({
+                id: `${item?._id || "row"}-${orderIndex + 1}`,
+                lensSku: order?.lens?.sku || "N/A",
+                leftlensSku: order?.leftLens?.sku || "N/A",
+                rightlensSku: order?.rightLens?.sku || "N/A",
+                status: order?.status || "N/A",
+                productSku: order?.product?.sku || "N/A",
+              }))
+            : [], // Map orders for nested table
         }));
-        console.log("Mapped Data:", mappedData.orders);
-
         setReportData(mappedData);
+        // Compute pagination even if flags are missing
+        const totalDocs =
+          (dataNode && (dataNode.totalDocs ?? dataNode.total)) ??
+          sourceArray.length;
+        const currentPage = dataNode?.page ?? page;
+        const currentLimit = dataNode?.limit ?? limit;
+        const totalPages =
+          dataNode?.totalPages ??
+          Math.ceil((totalDocs || 0) / (currentLimit || 1));
+        const hasPrevPage =
+          typeof dataNode?.hasPrevPage === "boolean"
+            ? dataNode.hasPrevPage
+            : currentPage > 1;
+        const hasNextPage =
+          typeof dataNode?.hasNextPage === "boolean"
+            ? dataNode.hasNextPage
+            : currentPage < totalPages;
+
+        setPagination({
+          page: currentPage,
+          limit: currentLimit,
+          totalDocs,
+          totalPages,
+          hasPrevPage,
+          hasNextPage,
+        });
       } else {
         toast.error(result.message);
         setReportData([]);
@@ -145,7 +207,11 @@ const RecallReportForm = () => {
       setLoading(false);
     }
   };
-
+  const fetchOnMountRef = useRef(fetchReportData);
+  useEffect(() => {
+    const today = new Date();
+    fetchOnMountRef.current({ store: [], from: today, to: today });
+  }, []);
   // Toggle row expansion
   const toggleSplit = (index) => {
     setExpandedRows((prev) =>
@@ -306,148 +372,203 @@ const RecallReportForm = () => {
             </form>
 
             {/* Table */}
-            <div className="table-responsive">
-              <table
-                className="table custom-table1"
-                style={{ minWidth: "900px", borderCollapse: "collapse" }}
-              >
-                <thead className="custom-th">
-                  <tr>
-                    <th>Last Invoice Date</th>
-                    <th>Customer Name</th>
-                    <th>Customer Number</th>
-                    <th>Total Invoice Value</th>
-                    <th>Recall Date</th>
-                    <th>Previous Notes</th>
-                    <th></th> {/* Column for expand arrow */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      <tr style={{ borderTop: "1px solid #dee2e6" }}>
-                        <td>{item.lastInvoiceDate}</td>
-                        <td>{item.customerName}</td>
-                        <td>{item.customerNumber}</td>
-                        <td style={{ color: "blue", cursor: "pointer" }}>
-                          {item.totalInvoiceValue}
-                        </td>
-                        <td>{item.recallDate}</td>
-                        <td>
-                          <span
-                            style={{
-                              textDecoration: "underline",
-                              color: "blue",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => {
-                              setSelectedNotes(item.previousNotes);
-                              setShowNotesModal(true);
-                            }}
-                          >
-                            View Notes
-                          </span>
-                        </td>
-                        <td
-                          className="text-center cursor-pointer"
-                          onClick={() => toggleSplit(index)}
-                        >
-                          {expandedRows.includes(index) ? (
-                            <FaAngleDown />
-                          ) : (
-                            <FaAngleRight />
-                          )}
-                        </td>
-                        <td></td>
-                      </tr>
-                      {expandedRows.includes(index) && (
-                        <tr>
-                          <td colSpan={8} className="p-0">
-                            <div className="table-responsive">
-                              <table
-                                className="table mb-0"
-                                style={{
-                                  minWidth: "900px",
-                                  borderCollapse: "collapse",
-                                  border: "none",
-                                }}
-                              >
-                                <thead>
-                                  <tr
-                                    className="small text-primary-emphasis bg-light"
-                                    style={{
-                                      fontWeight: "bold",
-                                      border: "none",
-                                    }}
-                                  >
-                                    <th
-                                      className="py-2 px-2"
-                                      style={{ border: "none" }}
-                                    >
-                                      Product Sku
-                                    </th>
-                                    <th
-                                      className="py-2 px-2"
-                                      style={{ border: "none" }}
-                                    >
-                                      Left Lens SKU
-                                    </th>
-                                    <th
-                                      className="py-2 px-2"
-                                      style={{ border: "none" }}
-                                    >
-                                      Right Lens SKU
-                                    </th>
-                                    <th
-                                      className="py-2 px-2"
-                                      style={{ border: "none" }}
-                                    >
-                                      Status
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {item.orders.map((order) => (
-                                    <tr
-                                      key={order.id}
-                                      style={{ border: "none" }}
-                                    >
-                                      <td
-                                        className="py-1 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        {order.productSku || order.lensSku}
-                                      </td>
-                                      <td
-                                        className="py-1 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        {order.leftlensSku}
-                                      </td>
-                                      <td
-                                        className="py-1 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        {order.rightlensSku}
-                                      </td>
-                                      <td
-                                        className="py-1 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        {order.status}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+            {loading ? (
+              <div className="d-flex justify-content-center align-items-center py-5">
+                <h4>Loading Data...</h4>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table
+                  className="table custom-table1"
+                  style={{ minWidth: "900px", borderCollapse: "collapse" }}
+                >
+                  <thead className="custom-th">
+                    <tr>
+                      <th>Last Invoice Date</th>
+                      <th>Customer Name</th>
+                      <th>Customer Number</th>
+                      <th>Total Invoice Value</th>
+                      <th>Recall Date</th>
+                      <th>Previous Notes</th>
+                      <th></th> {/* Column for expand arrow */}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.map((item, index) => (
+                      <React.Fragment key={item.id}>
+                        <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                          <td>{item.lastInvoiceDate}</td>
+                          <td>{item.customerName}</td>
+                          <td>{item.customerNumber}</td>
+                          <td style={{ color: "blue", cursor: "pointer" }}>
+                            {item.totalInvoiceValue}
                           </td>
+                          <td>{item.recallDate}</td>
+                          <td>
+                            <span
+                              style={{
+                                textDecoration: "underline",
+                                color: "blue",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => {
+                                setSelectedNotes(item.previousNotes);
+                                setShowNotesModal(true);
+                              }}
+                            >
+                              View Notes
+                            </span>
+                          </td>
+                          <td
+                            className="text-center cursor-pointer"
+                            onClick={() => toggleSplit(index)}
+                          >
+                            {expandedRows.includes(index) ? (
+                              <FaAngleDown />
+                            ) : (
+                              <FaAngleRight />
+                            )}
+                          </td>
+                          <td></td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+                        {expandedRows.includes(index) && (
+                          <tr>
+                            <td colSpan={8} className="p-0">
+                              <div className="table-responsive">
+                                <table
+                                  className="table mb-0"
+                                  style={{
+                                    minWidth: "900px",
+                                    borderCollapse: "collapse",
+                                    border: "none",
+                                  }}
+                                >
+                                  <thead>
+                                    <tr
+                                      className="small text-primary-emphasis bg-light"
+                                      style={{
+                                        fontWeight: "bold",
+                                        border: "none",
+                                      }}
+                                    >
+                                      <th
+                                        className="py-2 px-2"
+                                        style={{ border: "none" }}
+                                      >
+                                        Product Sku
+                                      </th>
+                                      <th
+                                        className="py-2 px-2"
+                                        style={{ border: "none" }}
+                                      >
+                                        Left Lens SKU
+                                      </th>
+                                      <th
+                                        className="py-2 px-2"
+                                        style={{ border: "none" }}
+                                      >
+                                        Right Lens SKU
+                                      </th>
+                                      <th
+                                        className="py-2 px-2"
+                                        style={{ border: "none" }}
+                                      >
+                                        Status
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {item.orders.map((order) => (
+                                      <tr
+                                        key={order.id}
+                                        style={{ border: "none" }}
+                                      >
+                                        <td
+                                          className="py-1 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          {order.productSku || order.lensSku}
+                                        </td>
+                                        <td
+                                          className="py-1 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          {order.leftlensSku}
+                                        </td>
+                                        <td
+                                          className="py-1 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          {order.rightlensSku}
+                                        </td>
+                                        <td
+                                          className="py-1 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          {order.status}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {/* Pagination Footer */}
+            <div className="d-flex justify-content-between align-items-center mt-3">
+              {(() => {
+                const startRow =
+                  pagination.totalDocs === 0
+                    ? 0
+                    : (pagination.page - 1) * pagination.limit + 1;
+                const endRow = Math.min(
+                  pagination.page * pagination.limit,
+                  pagination.totalDocs
+                );
+                return (
+                  <p className="mb-0">
+                    Showing <span className="fw-medium">{startRow}</span> to{" "}
+                    <span className="fw-medium">{endRow}</span> of{" "}
+                    <span className="fw-medium">{pagination.totalDocs}</span>{" "}
+                    results
+                  </p>
+                );
+              })()}
+              <div className="btn-group">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() =>
+                    fetchReportData(
+                      formik.values,
+                      pagination.page - 1,
+                      pagination.limit
+                    )
+                  }
+                  disabled={!pagination.hasPrevPage || loading}
+                >
+                  Previous
+                </button>
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() =>
+                    fetchReportData(
+                      formik.values,
+                      pagination.page + 1,
+                      pagination.limit
+                    )
+                  }
+                  disabled={!pagination.hasNextPage || loading}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>

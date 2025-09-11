@@ -152,7 +152,7 @@ const buildGroupStoreParams = (brandId, storeIds, page, search, limit) => {
   }
 
   brandId.forEach((brandId, index) => {
-    params.append(`optimize[brand][$in][${index}]`, brandId);
+    params.append(`product.brand._id[$in][${index}]`, brandId);
   });
 
   // Store IDs

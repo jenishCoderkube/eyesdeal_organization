@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
 
 import { Offcanvas } from "react-bootstrap";
@@ -9,12 +9,20 @@ import { toast } from "react-toastify";
 import moment from "moment";
 
 const StockSaleOutTable = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery, setSearchQuery] = useState("");
 
-  const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
   const [showOffcanvas, setShowOffCanvas] = useState(false);
-    const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
   const [showData, setShowData] = useState([]);
 
@@ -25,23 +33,53 @@ const StockSaleOutTable = () => {
   };
 
   useEffect(() => {
-    getCollectionData();
+    getCollectionData(pagination.page, pagination.limit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getCollectionData = async () => {
+  const getCollectionData = async (
+    page = pagination.page,
+    limit = pagination.limit
+  ) => {
     setLoadingInventory(true);
 
     const params = {
       "optimize[from]": user?.stores?.[0],
-      page: 1,
-      limit: 20,
+      page,
+      limit,
     };
     const queryString = new URLSearchParams(params).toString();
 
     try {
       const response = await inventoryService.stockReceive(queryString);
       if (response.success) {
-        setStockData(response?.data?.data);
+        const container = response?.data?.data;
+        setStockData(container);
+        const totalDocs =
+          container?.totalDocs ??
+          container?.total ??
+          (container?.docs?.length || 0);
+        const currentPage = container?.page ?? page;
+        const currentLimit = container?.limit ?? limit;
+        const totalPages =
+          container?.totalPages ??
+          Math.ceil((totalDocs || 0) / (currentLimit || 1));
+        const hasPrevPage =
+          typeof container?.hasPrevPage === "boolean"
+            ? container.hasPrevPage
+            : currentPage > 1;
+        const hasNextPage =
+          typeof container?.hasNextPage === "boolean"
+            ? container.hasNextPage
+            : currentPage < totalPages;
+        setPagination({
+          page: currentPage,
+          limit: currentLimit,
+          totalDocs,
+          totalPages,
+          hasPrevPage,
+          hasNextPage,
+        });
       } else {
         toast.error(response.message);
       }
@@ -71,7 +109,7 @@ const StockSaleOutTable = () => {
     };
     console.log("finalPayload", finalPayload);
 
-    setLoading(true);
+    setExportLoading(true);
 
     try {
       const response = await inventoryService.exportCsv(finalPayload);
@@ -96,7 +134,7 @@ const StockSaleOutTable = () => {
     } catch (error) {
       console.error("Login error:", error);
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
 
@@ -123,90 +161,115 @@ const StockSaleOutTable = () => {
         </div> */}
         </div>
         <div className="table-responsive px-2">
-           {
-              loadingInventory ? <div className="d-flex justify-content-center"><h4>Loading Data...</h4></div> :
-           
-          <table className="table table-sm ">
-            <thead className="text-xs text-uppercase text-muted bg-light border">
-              <tr>
-                <th className="custom-perchase-th">Srno</th>
+          {loadingInventory ? (
+            <div className="d-flex justify-content-center">
+              <h4>Loading Data...</h4>
+            </div>
+          ) : (
+            <table className="table table-sm ">
+              <thead className="text-xs text-uppercase text-muted bg-light border">
+                <tr>
+                  <th className="custom-perchase-th">Srno</th>
 
-                <th className="custom-perchase-th">Date</th>
-                <th className="custom-perchase-th">from</th>
-                <th className="custom-perchase-th">to</th>
-                <th className="custom-perchase-th">number of products</th>
-                <th className="custom-perchase-th">Stock quantity</th>
-                <th className="custom-perchase-th">status</th>
+                  <th className="custom-perchase-th">Date</th>
+                  <th className="custom-perchase-th">from</th>
+                  <th className="custom-perchase-th">to</th>
+                  <th className="custom-perchase-th">number of products</th>
+                  <th className="custom-perchase-th">Stock quantity</th>
+                  <th className="custom-perchase-th">status</th>
 
-                <th className="custom-perchase-th">action</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {stockData?.docs?.length > 0 ? (
-                stockData.docs.map((item, index) => (
-                  <tr key={item.id || index}>
-                    <td>{index + 1}</td>
-                    <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
+                  <th className="custom-perchase-th">action</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {stockData?.docs?.length > 0 ? (
+                  stockData.docs.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td>{index + 1}</td>
+                      <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
 
-                    <td>
-                      {item.from.storeNumber}/{item.from.name}
-                    </td>
+                      <td>
+                        {item.from.storeNumber}/{item.from.name}
+                      </td>
 
-                    <td>
-                      {item.to.storeNumber}/{item.to.name}
-                    </td>
-                    <td>{item.products?.length}</td>
-                    <td>{item.products?.length}</td>
-                    <td>{item.status}</td>
-                    <td>
-                      <div className="d-flex align-items-center gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-link p-0 text-primary"
-                          onClick={() => btnClick(item?.products)}
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn custom-button-bgcolor"
-                          onClick={() => exportProduct(item?.products)}
-                        >
-                          Download
-                        </button>
-                      </div>
+                      <td>
+                        {item.to.storeNumber}/{item.to.name}
+                      </td>
+                      <td>{item.products?.length}</td>
+                      <td>{item.products?.length}</td>
+                      <td>{item.status}</td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-link p-0 text-primary"
+                            onClick={() => btnClick(item?.products)}
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn custom-button-bgcolor"
+                            onClick={() => exportProduct(item?.products)}
+                            disabled={exportLoading}
+                          >
+                            {exportLoading ? "Downloading..." : "Download"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      className="text-center add_power_title py-3"
+                    >
+                      No data available
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center add_power_title py-3">
-                    No data available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-}
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
         <div className="d-flex flex-column px-3 pb-2 flex-sm-row justify-content-between align-items-center mt-3">
           <div className="text-sm text-muted mb-3 mb-sm-0">
-            {/* Showing <span className="fw-medium">{startRow}</span> to{" "} */}
-            {/* <span className="fw-medium">{endRow}</span> of{" "} */}
-            {/* <span className="fw-medium">{totalRows}</span> results */}
+            {(() => {
+              const startRow =
+                pagination.totalDocs === 0
+                  ? 0
+                  : (pagination.page - 1) * pagination.limit + 1;
+              const endRow = Math.min(
+                pagination.page * pagination.limit,
+                pagination.totalDocs
+              );
+              return (
+                <>
+                  Showing <span className="fw-medium">{startRow}</span> to{" "}
+                  <span className="fw-medium">{endRow}</span> of{" "}
+                  <span className="fw-medium">{pagination.totalDocs}</span>{" "}
+                  results
+                </>
+              );
+            })()}
           </div>
           <div className="btn-group">
             <button
               className="btn btn-outline-primary"
-              // onClick={() => table.previousPage()}
-              // disabled={!table.getCanPreviousPage()}
+              onClick={() =>
+                getCollectionData(pagination.page - 1, pagination.limit)
+              }
+              disabled={!pagination.hasPrevPage || loadingInventory}
             >
               Previous
             </button>
             <button
               className="btn btn-outline-primary"
-              // onClick={() => table.nextPage()}
-              // disabled={!table.getCanNextPage()}
+              onClick={() =>
+                getCollectionData(pagination.page + 1, pagination.limit)
+              }
+              disabled={!pagination.hasNextPage || loadingInventory}
             >
               Next
             </button>
