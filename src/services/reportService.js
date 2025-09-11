@@ -550,15 +550,16 @@ export const reportService = {
       };
     }
   },
-  fetchInventoryReport: async ({ page, manageStock, search }) => {
+  fetchInventoryReport: async ({ page, manageStock, limit, search }) => {
     try {
       const params = {
         populate: true,
-        limit: 400,
+
         search,
       };
 
       if (page) params.page = page;
+      if (limit) params.limit = limit;
       if (manageStock) params["product.manageStock"] = manageStock;
 
       const response = await api.get(REPORTS_ENDPOINTS.PRODUCT_INVENTORY, {

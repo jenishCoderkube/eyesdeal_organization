@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useDebounce } from "use-debounce";
 import { toast } from "react-toastify";
 import "react-datepicker/dist/react-datepicker.css";
@@ -15,7 +15,7 @@ import { reportService } from "../../../services/reportService";
 import moment from "moment";
 
 const EmployeeIncentiveReportCom = () => {
-  // State for filters, data, and UI
+  // State for filters, data, UI, and expanded rows
   const [employeeData, setEmployeeData] = useState([]);
   const [filters, setFilters] = useState({
     employee: null,
@@ -36,6 +36,7 @@ const EmployeeIncentiveReportCom = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
+  const [expandedRows, setExpandedRows] = useState({});
 
   // Load employee data
   useEffect(() => {
@@ -49,11 +50,16 @@ const EmployeeIncentiveReportCom = () => {
       const payload = { role, limit: 300 };
       const res = await reportService.getEmployeeData(payload);
       if (res.success) {
+        console.log(
+          "[Incentive] Employees fetched:",
+          res.data.data.docs.length
+        );
         setEmployeeData(res.data.data.docs);
       } else {
         toast.error(res.message || "Failed to load employees");
       }
     } catch (e) {
+      console.error("[Incentive] getEmployees error:", e);
       toast.error("Failed to load employees");
     } finally {
       setLoading(false);
@@ -75,28 +81,49 @@ const EmployeeIncentiveReportCom = () => {
         search: search || "",
       };
 
-      // Only include date filters if provided
       if (filtersOverride.from && filtersOverride.to && !search) {
         payload.fromDate = new Date(filtersOverride.from).getTime();
         payload.toDate = new Date(filtersOverride.to).getTime();
       }
 
+      console.log("[Incentive] fetchData payload:", {
+        ...payload,
+        fromLocal: payload.fromDate
+          ? new Date(payload.fromDate).toLocaleString()
+          : null,
+        toLocal: payload.toDate
+          ? new Date(payload.toDate).toLocaleString()
+          : null,
+      });
+
       const res = await reportService.getIncentiveData(payload);
       if (res.success) {
-        const formattedData = processData(res.data.data.docs);
+        const rawDocs = res.data.data.docs || [];
+        console.log(
+          "[Incentive] Raw API response docs:",
+          rawDocs.length,
+          rawDocs
+        );
+        const formattedData = processData(rawDocs);
+        console.log(
+          "[Incentive] Formatted data rows:",
+          formattedData.length,
+          formattedData
+        );
         setOrders(formattedData);
         setPagination({
-          page: res.data.data.page,
-          limit: res.data.data.limit,
-          totalDocs: res.data.data.totalDocs,
-          totalPages: res.data.data.totalPages,
-          hasNextPage: res.data.data.hasNextPage,
-          hasPrevPage: res.data.data.hasPrevPage,
+          page: res.data.data.page || 1,
+          limit: res.data.data.limit || pagination.limit,
+          totalDocs: res.data.data.totalDocs || 0,
+          totalPages: res.data.data.totalPages || 0,
+          hasNextPage: res.data.data.hasNextPage || false,
+          hasPrevPage: res.data.data.hasPrevPage || false,
         });
       } else {
         toast.error(res.message || "Failed to fetch incentive data");
       }
     } catch (e) {
+      console.error("[Incentive] fetchData error:", e);
       toast.error("Failed to fetch incentive data");
     } finally {
       setLoading(false);
@@ -109,74 +136,153 @@ const EmployeeIncentiveReportCom = () => {
         salesRep: filtersOverride.employee?.value || "",
       };
 
-      // Only include date filters if provided
       if (filtersOverride.from && filtersOverride.to) {
         payload.fromDate = new Date(filtersOverride.from).getTime();
         payload.toDate = new Date(filtersOverride.to).getTime();
       }
 
+      console.log("[Incentive] fetchAmount payload:", {
+        ...payload,
+        fromLocal: payload.fromDate
+          ? new Date(payload.fromDate).toLocaleString()
+          : null,
+        toLocal: payload.toDate
+          ? new Date(payload.toDate).toLocaleString()
+          : null,
+      });
+
       const res = await reportService.getIncentiveAmount(payload);
       if (res.success) {
+        console.log("[Incentive] Amount data:", res.data.data?.docs?.[0]);
         setAmountData(res.data.data?.docs?.[0]?.totalIncentiveAmount || 0);
       } else {
         toast.error(res.message || "Failed to fetch incentive amount");
       }
     } catch (e) {
+      console.error("[Incentive] fetchAmount error:", e);
       toast.error("Failed to fetch incentive amount");
     }
   };
 
-  // Process data for product and lens entries
+  // Process data for single row per order
   const processData = (rawData) => {
-    const processed = [];
-    rawData.forEach((item, index) => {
-      if (item.lens && item.product) {
-        const date = moment(item.createdAt).format("DD/MM/YYYY");
-        const billNumber = item.billNumber;
+    const processed = rawData.map((item, index) => {
+      const date = moment(item.createdAt).format("DD/MM/YYYY");
+      const billNumber = item.billNumber || "-";
 
-        processed.push({
-          id: `${index}-product`,
+      // Aggregate data from product, rightLens, leftLens
+      const primaryItem = item.product || item.rightLens || item.leftLens || {};
+      const brand =
+        primaryItem.item?.brand?.name || primaryItem.item?.__t || "Unknown";
+      const sku = primaryItem.sku || "-";
+      const mrp = [item.product, item.rightLens, item.leftLens]
+        .filter(Boolean)
+        .reduce((sum, i) => sum + (Number(i.mrp) || 0), 0);
+      const discount = [item.product, item.rightLens, item.leftLens]
+        .filter(Boolean)
+        .reduce((sum, i) => sum + (Number(i.perPieceDiscount) || 0), 0);
+      const incentiveAmount = [item.product, item.rightLens, item.leftLens]
+        .filter(Boolean)
+        .reduce((sum, i) => sum + (Number(i.incentiveAmount) || 0), 0);
+      const percentage = mrp
+        ? (((discount || 0) / mrp) * 100).toFixed(2) + "%"
+        : "-";
+
+      // Store details for dropdown
+      const details = [];
+      if (item.product?.item?.displayName) {
+        details.push({
           type: "Product",
-          date,
-          billNumber,
+          displayName: item.product.item.displayName,
           brand:
-            [item.product?.item?.brand?.name, item.product?.item?.__t]
+            [item.product.item.brand?.name, item.product.item.__t]
               .filter(Boolean)
               .join(" ") || "-",
-          sku: item.product?.sku || "-",
-          mrp: item.product?.mrp || 0,
-          discount: item.product?.perPieceDiscount || 0,
-          percentage: item.product?.mrp
+          sku: item.product.sku || "-",
+          mrp: item.product.mrp || 0,
+          discount: item.product.perPieceDiscount || 0,
+          percentage: item.product.mrp
             ? (
-                ((item.product?.perPieceDiscount || 0) / item.product.mrp) *
+                ((item.product.perPieceDiscount || 0) / item.product.mrp) *
                 100
               ).toFixed(2) + "%"
             : "-",
-          incentiveAmount: item.product?.incentiveAmount || 0,
-        });
-
-        processed.push({
-          id: `${index}-lens`,
-          type: "Lens",
-          date,
-          billNumber,
-          brand:
-            [item.lens?.item?.brand?.name, item.lens?.item?.__t]
-              .filter(Boolean)
-              .join(" ") || "-",
-          sku: item.lens?.sku || "-",
-          mrp: item.lens?.mrp || 0,
-          discount: item.lens?.perPieceDiscount || 0,
-          percentage: item.lens?.mrp
-            ? (
-                ((item.lens?.perPieceDiscount || 0) / item.lens.mrp) *
-                100
-              ).toFixed(2) + "%"
-            : "-",
-          incentiveAmount: item.lens?.incentiveAmount || 0,
+          incentiveAmount: item.product.incentiveAmount || 0,
         });
       }
+      if (item.rightLens?.displayName) {
+        details.push({
+          type: "Right Lens",
+          displayName: item.rightLens.displayName,
+          brand: item.rightLens.item?.brand?.name || "Lens",
+          sku: item.rightLens.sku || "-",
+          mrp: item.rightLens.mrp || 0,
+          discount: item.rightLens.perPieceDiscount || 0,
+          percentage: item.rightLens.mrp
+            ? (
+                ((item.rightLens.perPieceDiscount || 0) / item.rightLens.mrp) *
+                100
+              ).toFixed(2) + "%"
+            : "-",
+          incentiveAmount: item.rightLens.incentiveAmount || 0,
+        });
+      }
+      if (item.leftLens?.displayName) {
+        details.push({
+          type: "Left Lens",
+          displayName: item.leftLens.displayName,
+          brand: item.leftLens.item?.brand?.name || "Lens",
+          sku: item.leftLens.sku || "-",
+          mrp: item.leftLens.mrp || 0,
+          discount: item.leftLens.perPieceDiscount || 0,
+          percentage: item.leftLens.mrp
+            ? (
+                ((item.leftLens.perPieceDiscount || 0) / item.leftLens.mrp) *
+                100
+              ).toFixed(2) + "%"
+            : "-",
+          incentiveAmount: item.leftLens.incentiveAmount || 0,
+        });
+      }
+      if (item.lens?.item?.displayName) {
+        details.push({
+          type: "Lens",
+          displayName: item.lens.item.displayName,
+          brand:
+            [item.lens.item.brand?.name, item.lens.item.__t]
+              .filter(Boolean)
+              .join(" ") || "-",
+          sku: item.lens.sku || "-",
+          mrp: item.lens.mrp || 0,
+          discount: item.lens.perPieceDiscount || 0,
+          percentage: item.lens.mrp
+            ? (
+                ((item.lens.perPieceDiscount || 0) / item.lens.mrp) *
+                100
+              ).toFixed(2) + "%"
+            : "-",
+          incentiveAmount: item.lens.incentiveAmount || 0,
+        });
+      }
+
+      return {
+        id: `${index}`,
+        date,
+        billNumber,
+        brand,
+        sku,
+        mrp,
+        discount,
+        percentage,
+        incentiveAmount,
+        details, // For dropdown
+      };
     });
+    console.log(
+      "[Incentive] Processed data rows:",
+      processed.length,
+      processed
+    );
     return processed;
   };
 
@@ -190,11 +296,9 @@ const EmployeeIncentiveReportCom = () => {
   // Trigger API on debounced search
   useEffect(() => {
     if (debouncedSearch.trim()) {
-      // Exclude dates when search has a value
       fetchData(1, { ...filters, from: null, to: null }, debouncedSearch);
       fetchAmount({ ...filters, from: null, to: null });
     } else {
-      // Include dates when search is empty
       fetchData(1, filters, debouncedSearch);
       fetchAmount(filters);
     }
@@ -208,11 +312,9 @@ const EmployeeIncentiveReportCom = () => {
         page: 1,
         limit: 100000,
         salesRep: filters.employee?.value || "",
-        // search: debouncedSearch || "",
       };
 
-      // Include date filters for export
-      if (filters.from && filters.to) {
+      if (filters.from && filters.to && !debouncedSearch) {
         payload.fromDate = new Date(filters.from).getTime();
         payload.toDate = new Date(filters.to).getTime();
       }
@@ -224,6 +326,7 @@ const EmployeeIncentiveReportCom = () => {
       }
 
       const formattedData = processData(res.data.data.docs);
+      console.log("[Incentive] Export data rows:", formattedData.length);
       const finalData = formattedData.map((item, index) => ({
         SRNO: index + 1,
         Date: item.date,
@@ -256,6 +359,7 @@ const EmployeeIncentiveReportCom = () => {
         toast.error(response.message || "Failed to export CSV");
       }
     } catch (error) {
+      console.error("[Incentive] Export error:", error);
       toast.error("Failed to export incentive report");
     } finally {
       setDownloadLoading(false);
@@ -265,6 +369,27 @@ const EmployeeIncentiveReportCom = () => {
   // Table columns
   const columns = useMemo(
     () => [
+      {
+        header: "Expand",
+        size: 50,
+        cell: ({ row }) => (
+          <div className="text-left">
+            {row.original.details?.length > 0 && (
+              <button
+                className="btn btn-link p-0"
+                onClick={() =>
+                  setExpandedRows((prev) => ({
+                    ...prev,
+                    [row.id]: !prev[row.id],
+                  }))
+                }
+              >
+                {expandedRows[row.id] ? <FaChevronUp /> : <FaChevronDown />}
+              </button>
+            )}
+          </div>
+        ),
+      },
       {
         header: "SRNO",
         size: 50,
@@ -335,7 +460,7 @@ const EmployeeIncentiveReportCom = () => {
         ),
       },
     ],
-    []
+    [expandedRows]
   );
 
   // React Table setup
@@ -406,7 +531,9 @@ const EmployeeIncentiveReportCom = () => {
       {/* Top Bar */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3">
         <div className="d-flex flex-column flex-md-row align-items-center gap-3 mb-2 mb-md-0">
-          <p className="mb-0">Total Incentive Amount: {amountData}</p>
+          <p className="mb-0">
+            Total Incentive Amount: {amountData?.toFixed(2) || 0}
+          </p>
         </div>
         <button
           className="btn btn-sm btn-success"
@@ -463,7 +590,7 @@ const EmployeeIncentiveReportCom = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="9" className="text-center">
+                <td colSpan="10" className="text-center">
                   <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                   </div>
@@ -471,20 +598,59 @@ const EmployeeIncentiveReportCom = () => {
               </tr>
             ) : orders.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
+                <React.Fragment key={row.id}>
+                  <tr>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="p-3">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                  {expandedRows[row.id] && row.original.details?.length > 0 && (
+                    <tr>
+                      <td colSpan="10" className="p-3">
+                        <div className="bg-light p-3">
+                          <h6>Order Details</h6>
+                          <table className="table table-bordered table-sm">
+                            <thead>
+                              <tr>
+                                <th>Type</th>
+                                <th>Display Name</th>
+                                <th>Brand</th>
+                                <th>SKU</th>
+                                <th>MRP</th>
+                                <th>Discount</th>
+                                <th>Percentage</th>
+                                <th>Incentive Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {row.original.details.map((detail, index) => (
+                                <tr key={`${row.id}-detail-${index}`}>
+                                  <td>{detail.type}</td>
+                                  <td>{detail.displayName || "-"}</td>
+                                  <td>{detail.brand}</td>
+                                  <td>{detail.sku}</td>
+                                  <td>{detail.mrp || 0}</td>
+                                  <td>{detail.discount || 0}</td>
+                                  <td>{detail.percentage}</td>
+                                  <td>{detail.incentiveAmount || 0}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <tr>
-                <td colSpan="9" className="text-center">
+                <td colSpan="10" className="text-center">
                   No results found
                 </td>
               </tr>
@@ -503,14 +669,20 @@ const EmployeeIncentiveReportCom = () => {
         <div className="btn-group">
           <button
             className="btn btn-outline-primary"
-            onClick={() => fetchData(pagination.page - 1)}
+            onClick={() => {
+              fetchData(pagination.page - 1);
+              fetchAmount(filters);
+            }}
             disabled={!pagination.hasPrevPage}
           >
             Previous
           </button>
           <button
             className="btn btn-outline-primary"
-            onClick={() => fetchData(pagination.page + 1)}
+            onClick={() => {
+              fetchData(pagination.page + 1);
+              fetchAmount(filters);
+            }}
             disabled={!pagination.hasNextPage}
           >
             Next
