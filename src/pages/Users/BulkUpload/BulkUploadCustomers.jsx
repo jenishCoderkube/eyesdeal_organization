@@ -31,7 +31,78 @@ const BulkUploadCustomers = () => {
       bulkUploadFile: null,
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
+      try {
+        // Call bulk upload API
+        const uploadResponse = await inventoryService.bulkUploadexport(
+          values.store.value,
+          values.bulkUploadFile
+        );
+
+        if (uploadResponse.success) {
+          toast.success(uploadResponse.data.message || "Upload complete");
+
+          // Iterate over the uploaded data and call updateInventoryData for each record
+          // const docs = uploadResponse.data.data.docs || [];
+          // setTotalCount(docs.length);
+
+          // if (docs.length === 0) {
+          //   toast.warn("No records found in the uploaded file");
+          //   return;
+          // }
+
+          // let errorCount = 0;
+          // for (const doc of docs) {
+          //   // Validate and sanitize quantity
+          //   const quantity = parseFloat(doc.quantity);
+          //   if (isNaN(quantity) || quantity < 0) {
+          //     toast.error(
+          //       `Invalid quantity for Barcode ${doc.Barcode}: ${
+          //         doc.quantity || "missing"
+          //       }`
+          //     );
+          //     errorCount++;
+          //     setProcessedCount((prev) => prev + 1); // Increment even for skipped records
+          //     continue;
+          //   }
+
+          //   // Prepare payload
+          //   const payload = {
+          //     ...doc,
+          //     store: values.store.value,
+          //     quantity: quantity,
+          //   };
+
+          //   console.log(`Sending payload for Barcode ${doc.Barcode}:`, payload);
+
+          //   const updateResponse = await inventoryService.updateInventoryData(
+          //     payload
+          //   );
+          //   setProcessedCount((prev) => prev + 1); // Increment after each API call
+          //   if (!updateResponse.success) {
+          //     toast.error(
+          //       `Failed to update inventory for Barcode ${doc.Barcode}: ${updateResponse.message}`
+          //     );
+          //     errorCount++;
+          //   }
+          // }
+
+          // if (errorCount === 0) {
+          //   toast.success("All inventory records updated successfully");
+          // } else {
+          //   toast.warn(`${errorCount} record(s) failed to update`);
+          // }
+        }
+      } catch (error) {
+        // toast.error("Error processing bulk upload");
+        console.error("Bulk upload error:", error);
+      } finally {
+        setLoading(false);
+        setShowLoader(false);
+        setProcessedCount(0);
+        setTotalCount(0);
+        formik.resetForm();
+      }
       console.log("Bulk Upload Customers:", {
         store: values.store,
         file: values.bulkUploadFile,

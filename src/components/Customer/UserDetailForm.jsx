@@ -202,10 +202,12 @@ const UserDetailForm = ({
     try {
       const response = await saleService.getMarketingReferences();
       if (response.success) {
-        const fetchedOptions = response.data.data.map((ref) => ({
+        const fetchedOptions = response.data.data.docs.map((ref) => ({
           value: ref.name,
           label: ref.name,
         }));
+        console.log(fetchedOptions, "thisisss");
+
         setReferenceOptions(fetchedOptions);
       } else {
         console.log(response.data.message);

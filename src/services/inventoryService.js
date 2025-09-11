@@ -29,6 +29,7 @@ const INVENTORY_ENDPOINTS = {
   STOCKADJUSTMENT: (params) => `/inventory?${params}`,
   ADDSTOCKADJUSTMENT: `/stockAdjustment`,
   BULK_UPLOAD: "/products/upload/bulk-upload-3",
+  BULK_UPLOADEXPORT: "/exportCsv/parse",
   UPDATE_INVENTORY: "/inventory/updateInventoryData",
   INVENTORYFILEUPLOAD: "/inventory/upload",
   PRODUCT_COUNT: (productType, params) =>
@@ -855,6 +856,33 @@ export const inventoryService = {
 
       const response = await api.post(
         INVENTORY_ENDPOINTS.BULK_UPLOAD,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error uploading file",
+      };
+    }
+  },
+  bulkUploadexport: async (storeId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append("store", storeId);
+      formData.append("file", file);
+
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.BULK_UPLOADEXPORT,
         formData,
         {
           headers: {
