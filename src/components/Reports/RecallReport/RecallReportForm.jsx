@@ -394,129 +394,140 @@ const RecallReportForm = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.map((item, index) => (
-                      <React.Fragment key={item.id}>
-                        <tr style={{ borderTop: "1px solid #dee2e6" }}>
-                          <td>{item.lastInvoiceDate}</td>
-                          <td>{item.customerName}</td>
-                          <td>{item.customerNumber}</td>
-                          <td style={{ color: "blue", cursor: "pointer" }}>
-                            {item.totalInvoiceValue}
-                          </td>
-                          <td>{item.recallDate}</td>
-                          <td>
-                            <span
-                              style={{
-                                textDecoration: "underline",
-                                color: "blue",
-                                cursor: "pointer",
-                              }}
-                              onClick={() => {
-                                setSelectedNotes(item.previousNotes);
-                                setShowNotesModal(true);
-                              }}
-                            >
-                              View Notes
-                            </span>
-                          </td>
-                          <td
-                            className="text-center cursor-pointer"
-                            onClick={() => toggleSplit(index)}
-                          >
-                            {expandedRows.includes(index) ? (
-                              <FaAngleDown />
-                            ) : (
-                              <FaAngleRight />
-                            )}
-                          </td>
-                          <td></td>
-                        </tr>
-                        {expandedRows.includes(index) && (
-                          <tr>
-                            <td colSpan={8} className="p-0">
-                              <div className="table-responsive">
-                                <table
-                                  className="table mb-0"
-                                  style={{
-                                    minWidth: "900px",
-                                    borderCollapse: "collapse",
-                                    border: "none",
-                                  }}
-                                >
-                                  <thead>
-                                    <tr
-                                      className="small text-primary-emphasis bg-light"
-                                      style={{
-                                        fontWeight: "bold",
-                                        border: "none",
-                                      }}
-                                    >
-                                      <th
-                                        className="py-2 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        Product Sku
-                                      </th>
-                                      <th
-                                        className="py-2 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        Left Lens SKU
-                                      </th>
-                                      <th
-                                        className="py-2 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        Right Lens SKU
-                                      </th>
-                                      <th
-                                        className="py-2 px-2"
-                                        style={{ border: "none" }}
-                                      >
-                                        Status
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {item.orders.map((order) => (
-                                      <tr
-                                        key={order.id}
-                                        style={{ border: "none" }}
-                                      >
-                                        <td
-                                          className="py-1 px-2"
-                                          style={{ border: "none" }}
-                                        >
-                                          {order.productSku || order.lensSku}
-                                        </td>
-                                        <td
-                                          className="py-1 px-2"
-                                          style={{ border: "none" }}
-                                        >
-                                          {order.leftlensSku}
-                                        </td>
-                                        <td
-                                          className="py-1 px-2"
-                                          style={{ border: "none" }}
-                                        >
-                                          {order.rightlensSku}
-                                        </td>
-                                        <td
-                                          className="py-1 px-2"
-                                          style={{ border: "none" }}
-                                        >
-                                          {order.status}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
+                    {reportData.length > 0 ? (
+                      reportData.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                          <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                            <td>{item.lastInvoiceDate}</td>
+                            <td>{item.customerName}</td>
+                            <td>{item.customerNumber}</td>
+                            <td style={{ color: "blue", cursor: "pointer" }}>
+                              {item.totalInvoiceValue}
                             </td>
+                            <td>{item.recallDate}</td>
+                            <td>
+                              <span
+                                style={{
+                                  textDecoration: "underline",
+                                  color: "blue",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => {
+                                  setSelectedNotes(item.previousNotes);
+                                  setShowNotesModal(true);
+                                }}
+                              >
+                                View Notes
+                              </span>
+                            </td>
+                            <td
+                              className="text-center cursor-pointer"
+                              onClick={() => toggleSplit(index)}
+                            >
+                              {expandedRows.includes(index) ? (
+                                <FaAngleDown />
+                              ) : (
+                                <FaAngleRight />
+                              )}
+                            </td>
+                            <td></td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
+                          {expandedRows.includes(index) && (
+                            <tr>
+                              <td colSpan={8} className="p-0">
+                                <div className="table-responsive">
+                                  <table
+                                    className="table mb-0"
+                                    style={{
+                                      minWidth: "900px",
+                                      borderCollapse: "collapse",
+                                      border: "none",
+                                    }}
+                                  >
+                                    <thead>
+                                      <tr
+                                        className="small text-primary-emphasis bg-light"
+                                        style={{
+                                          fontWeight: "bold",
+                                          border: "none",
+                                        }}
+                                      >
+                                        <th
+                                          className="py-2 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          Product Sku
+                                        </th>
+                                        <th
+                                          className="py-2 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          Left Lens SKU
+                                        </th>
+                                        <th
+                                          className="py-2 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          Right Lens SKU
+                                        </th>
+                                        <th
+                                          className="py-2 px-2"
+                                          style={{ border: "none" }}
+                                        >
+                                          Status
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {item.orders.map((order) => (
+                                        <tr
+                                          key={order.id}
+                                          style={{ border: "none" }}
+                                        >
+                                          <td
+                                            className="py-1 px-2"
+                                            style={{ border: "none" }}
+                                          >
+                                            {order.productSku || order.lensSku}
+                                          </td>
+                                          <td
+                                            className="py-1 px-2"
+                                            style={{ border: "none" }}
+                                          >
+                                            {order.leftlensSku}
+                                          </td>
+                                          <td
+                                            className="py-1 px-2"
+                                            style={{ border: "none" }}
+                                          >
+                                            {order.rightlensSku}
+                                          </td>
+                                          <td
+                                            className="py-1 px-2"
+                                            style={{ border: "none" }}
+                                          >
+                                            {order.status}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="8"
+                          className="text-center add_power_title py-3"
+                        >
+                          No data available
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
