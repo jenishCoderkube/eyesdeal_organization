@@ -131,6 +131,8 @@ function ContactLens({ initialData = {}, mode = "add" }) {
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState([]);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   // Fetch attribute data from API
   useEffect(() => {
     const fetchAttributes = async () => {
@@ -430,7 +432,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log("Form submission triggered with values:", values); // Debug log
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -560,7 +562,7 @@ function ContactLens({ initialData = {}, mode = "add" }) {
         toast.error("An error occurred while processing your request");
       }
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
       console.log("Submission completed, isSubmitting:", false);
     }
   };
@@ -1343,10 +1345,17 @@ function ContactLens({ initialData = {}, mode = "add" }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={isSubmitting}
+                disabled={loadingSubmit}
               >
-                {isSubmitting
-                  ? "Submitting..."
+                {loadingSubmit && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                )}
+                {loadingSubmit
+                  ? "Processing..."
                   : mode === "edit"
                   ? "Update"
                   : "Submit"}

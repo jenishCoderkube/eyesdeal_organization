@@ -72,12 +72,10 @@ const BulkUploadCustomers = () => {
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("store", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
+        formik.setFieldValue("store", {
+          value: defaultStore._id,
+          label: defaultStore.name,
+        });
       }
     }
   }, [storeData]);
@@ -99,7 +97,10 @@ const BulkUploadCustomers = () => {
                     Store <span className="text-danger">*</span>
                   </label>
                   <Select
-                    options={storeOptions}
+                    options={storeData.map((store) => ({
+                      value: store._id,
+                      label: store.name,
+                    }))}
                     value={formik.values.store}
                     onChange={(option) => formik.setFieldValue("store", option)}
                     onBlur={() => formik.setFieldTouched("store", true)}
@@ -111,6 +112,7 @@ const BulkUploadCustomers = () => {
                         : ""
                     }
                   />
+
                   {formik.touched.store && formik.errors.store && (
                     <div className="text-danger mt-1">
                       {formik.errors.store}

@@ -487,18 +487,19 @@ export const inventoryService = {
         INVENTORY_ENDPOINTS.PRODUCT_EXPORT(productType, params.toString()),
         {
           headers: {
-            Accept:
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // For Excel files
+            Accept: "text/csv", // Ask server for CSV
           },
-          responseType: "blob", // Handle binary response for file download
+          responseType: "blob", // Important for binary download
         }
       );
 
-      // Create a downloadable link for the Excel file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Create a downloadable link for the CSV file
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "text/csv" })
+      );
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `${productType}_export.xlsx`);
+      link.setAttribute("download", `${productType}_export.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -506,17 +507,18 @@ export const inventoryService = {
 
       return {
         success: true,
-        message: "Excel file downloaded successfully",
+        message: "CSV file downloaded successfully",
       };
     } catch (error) {
       return {
         success: false,
         message:
           error.response?.data?.message ||
-          `Error downloading ${productType} Excel file`,
+          `Error downloading ${productType} CSV file`,
       };
     }
   },
+
   getInventoryStore: async (
     _t,
     brand,

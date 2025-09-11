@@ -76,6 +76,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState([]);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   // Initialize selectedImage based on mode
   useEffect(() => {
@@ -218,7 +219,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
     { setSubmitting, resetForm, setErrors }
   ) => {
     console.log(`${mode} values:`, values);
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -231,7 +232,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
         } catch (error) {
           console.error("SEO image upload failed:", error);
           toast.error("Failed to upload SEO image");
-          setSubmitting(false);
+          setLoadingSubmit(false);
           return;
         }
       }
@@ -341,7 +342,7 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
         setErrors({ submit: error.message || "Failed to process request" });
       }
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
     }
   };
 
@@ -1099,22 +1100,20 @@ function SpectacleLens({ initialData = {}, mode = "add" }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={loading}
+                disabled={loadingSubmit}
               >
-                {loading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    {mode === "edit" ? "Updating..." : "Submitting..."}
-                  </>
-                ) : mode === "edit" ? (
-                  "Update"
-                ) : (
-                  "Submit"
+                {loadingSubmit && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
                 )}
+                {loadingSubmit
+                  ? "Processing..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>

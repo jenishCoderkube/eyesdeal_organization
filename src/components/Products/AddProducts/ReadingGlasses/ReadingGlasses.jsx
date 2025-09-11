@@ -61,7 +61,7 @@ const validationSchema = Yup.object({
   templeColor: Yup.string().nullable(),
   prescriptionType: Yup.string().nullable(),
   frameCollection: Yup.string().nullable(),
-  frameSize: Yup.string().required("Frame Size is required"),
+  // frameSize: Yup.string().required("Frame Size is required"),
   frameWidth: Yup.string().nullable(),
   frameDimensions: Yup.string().nullable(),
   weight: Yup.string().nullable(),
@@ -200,6 +200,8 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState([]);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   useEffect(() => {
     if (mode !== "add" && initialData?.photos) {
       setSelectedImage(
@@ -525,7 +527,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log("Form submission triggered with values:", values);
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -651,7 +653,7 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
         toast.error("An error occurred while processing your request");
       }
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
       console.log("Submission completed, isSubmitting:", false);
     }
   };
@@ -1620,15 +1622,21 @@ function ReadingGlasses({ initialData = {}, mode = "add" }) {
               }}
             />
 
-            {/* Submit Button */}
             <div className="d-flex gap-3">
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={isSubmitting}
+                disabled={loadingSubmit}
               >
-                {isSubmitting
-                  ? "Submitting..."
+                {loadingSubmit && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                )}
+                {loadingSubmit
+                  ? "Processing..."
                   : mode === "edit"
                   ? "Update"
                   : "Submit"}
