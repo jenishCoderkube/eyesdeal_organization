@@ -168,7 +168,7 @@ const CashReportCom = () => {
 
   // Trigger API on debounced search
   useEffect(() => {
-    if (filters.store.length > 0 && filters.mode.length > 0) {
+    if (filters.mode.length > 0) {
       if (debouncedSearch.trim()) {
         // Exclude dates when search has a value
         fetchData(1, { ...filters, from: null, to: null }, debouncedSearch);
@@ -401,7 +401,7 @@ const CashReportCom = () => {
                 role="status"
               ></span>
             )}
-            Apply Filters
+            Submit
           </button>
         </div>
       </form>
@@ -412,7 +412,7 @@ const CashReportCom = () => {
           <p className="mb-0">Total Amount: {totalAmount}</p>
         </div>
         <button
-          className="btn btn-sm btn-success"
+          className="btn btn-sm btn-primary"
           onClick={handleDownloadReport}
           disabled={downloadLoading}
         >

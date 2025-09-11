@@ -233,7 +233,7 @@ const ProductInventoryReportCom = () => {
                   </button>
                 </div>
               </div>
-              <div className="mb-4 col-md-6 px-3">
+              <div className="mb-4 col-md-12 px-3">
                 <div className="input-group">
                   <span className="input-group-text bg-white border-end-0">
                     <FaSearch

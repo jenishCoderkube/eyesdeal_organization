@@ -349,35 +349,42 @@ const PurchaseReport = () => {
           </button>
         </div>
       </form>
-
-      {/* Actions */}
-      <div className="d-flex justify-content-between align-items-center mt-4">
+      {/* Top Bar */}
+      <div className="d-flex flex-column mt-2 flex-md-row justify-content-between align-items-center mb-3">
         <div className="d-flex flex-column flex-md-row align-items-center gap-3 mb-2 mb-md-0">
-          <p className="mb-0">Total Amount: {amountData?.totalAmount}</p>
-          <p className="mb-0">Profit Loss: {amountData?.ProfitLoss}</p>
-          <p className="mb-0">Total Cost: {amountData?.totalCost}</p>
+          <p className="mb-2 mb-md-0">
+            Total Amount: {amountData?.totalAmount}
+          </p>
+          <p className="mb-2 mb-md-0">Profit Loss: {amountData?.ProfitLoss}</p>
+          <p className="mb-2 mb-md-0">Total Cost: {amountData?.totalCost}</p>
         </div>
-        <div className="d-flex gap-2">
-          <div className="input-group">
-            <span className="input-group-text bg-white border-end-0">
-              <FaSearch className="text-muted" />
-            </span>
-            <input
-              type="search"
-              className="form-control border-start-0"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleDownloadReport}
-          >
-            Download
-          </button>
-        </div>
+        <button
+          className="btn btn-sm btn-primary"
+          onClick={handleDownloadReport}
+          // disabled={downloadLoading}
+        >
+          {/* {downloadLoading && (
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
+          )} */}
+          Download Sales Report
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="input-group mb-3">
+        <span className="input-group-text">
+          <FaSearch />
+        </span>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       {/* Table */}

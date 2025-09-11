@@ -139,9 +139,9 @@ const ProductSalesReportPage = () => {
 
   // ✅ Trigger API when debounced search changes
   useEffect(() => {
-    if (filters.store.length > 0) {
-      fetchData(1, filters, debouncedSearch);
-    }
+    // if (filters.store.length > 0) {
+    fetchData(1, filters, debouncedSearch);
+    // }
   }, [debouncedSearch]);
 
   // ✅ Download Sales Report using API
@@ -267,7 +267,7 @@ const ProductSalesReportPage = () => {
                 role="status"
               ></span>
             )}
-            Apply Filters
+            Submit
           </button>
         </div>
       </form>
@@ -282,7 +282,7 @@ const ProductSalesReportPage = () => {
           <p className="mb-2 mb-md-0">Total Cost: {amountData?.totalCost}</p>
         </div>
         <button
-          className="btn btn-sm btn-success"
+          className="btn btn-sm btn-primary"
           onClick={handleDownloadReport}
           disabled={downloadLoading}
         >

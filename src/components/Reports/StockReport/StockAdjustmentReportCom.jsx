@@ -344,7 +344,7 @@ const StockAdjustmentReportCom = () => {
                 role="status"
               ></span>
             )}
-            Apply Filters
+            Submit
           </button>
         </div>
       </form>
@@ -355,7 +355,7 @@ const StockAdjustmentReportCom = () => {
           <p className="mb-0">Total Stock Adjustment: {totalStockAdjustment}</p>
         </div>
         <button
-          className="btn btn-sm btn-success"
+          className="btn btn-sm btn-primary"
           onClick={handleDownloadReport}
           disabled={downloadLoading}
         >

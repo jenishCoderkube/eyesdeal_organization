@@ -637,39 +637,39 @@ const GstReportCom = () => {
           </div>
           <div className="card shadow-none border p-0 mt-5">
             <h6 className="fw-bold px-3 pt-3">GST Report</h6>
-            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center px-3 mt-3">
-              <div className="mb-4 col-md-6">
-                <div className="input-group">
-                  <span className="input-group-text bg-white border-end-0">
-                    <FaSearch
-                      className="text-muted"
-                      style={{ color: "#94a3b8" }}
-                    />
-                  </span>
-                  <input
-                    type="search"
-                    className="form-control border-start-0 py-2"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
+
+            {/* Top Bar */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center me-3 mb-3">
+              <div></div>
               <button
-                className="btn btn-primary"
-                type="submit"
+                className="btn btn-sm btn-primary"
                 onClick={() => exportToExcel("GstReport")}
                 disabled={loadingDownload || !formattedData.length}
               >
                 {loadingDownload && (
                   <span
-                    className="spinner-border spinner-border-sm me-2"
+                    className="spinner-border spinner-border-sm"
                     role="status"
                   ></span>
                 )}
                 Download
               </button>
             </div>
+
+            {/* Search */}
+            <div className="input-group mb-3">
+              <span className="input-group-text">
+                <FaSearch />
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
             <div className="card-body p-0">
               {/* Search */}
 

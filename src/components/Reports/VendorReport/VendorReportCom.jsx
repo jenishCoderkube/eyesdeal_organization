@@ -154,14 +154,12 @@ const VendorReportCom = () => {
 
   // Trigger API on debounced search
   useEffect(() => {
-    if (filters.store.length > 0) {
-      if (debouncedSearch.trim()) {
-        // Exclude dates when search has a value
-        fetchData(1, { ...filters, from: null, to: null }, debouncedSearch);
-      } else {
-        // Include dates when search is empty
-        fetchData(1, filters, debouncedSearch);
-      }
+    if (debouncedSearch.trim()) {
+      // Exclude dates when search has a value
+      fetchData(1, { ...filters, from: null, to: null }, debouncedSearch);
+    } else {
+      // Include dates when search is empty
+      fetchData(1, filters, debouncedSearch);
     }
   }, [debouncedSearch]);
 
@@ -374,7 +372,7 @@ const VendorReportCom = () => {
                 role="status"
               ></span>
             )}
-            Apply Filters
+            Submit
           </button>
         </div>
       </form>
@@ -385,7 +383,7 @@ const VendorReportCom = () => {
           {/* No total amount or other summary data in original code */}
         </div>
         <button
-          className="btn btn-sm btn-success"
+          className="btn btn-sm btn-primary"
           onClick={handleDownloadReport}
           disabled={downloadLoading}
         >

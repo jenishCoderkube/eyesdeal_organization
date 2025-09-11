@@ -358,7 +358,7 @@ const TransferReportCom = () => {
                 role="status"
               ></span>
             )}
-            Apply Filters
+            Submit
           </button>
         </div>
       </form>
@@ -369,7 +369,7 @@ const TransferReportCom = () => {
           <p className="mb-0">Total Stock Quantity: {totalStockQty}</p>
         </div>
         <button
-          className="btn btn-sm btn-success"
+          className="btn btn-sm btn-primary"
           onClick={handleDownloadReport}
           disabled={downloadLoading}
         >
