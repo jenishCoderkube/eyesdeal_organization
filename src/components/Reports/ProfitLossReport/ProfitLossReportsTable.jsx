@@ -43,18 +43,18 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
   };
 
   const fetchOrders = ({ search }) => {
-    reportService.fetchOrders({ search })
-      .then(res => {
+    reportService
+      .fetchOrders({ search })
+      .then((res) => {
         const formattedData = processData(res.data?.data?.docs);
         setFormattedData(formattedData);
       })
-      .catch(e => console.log("Failed to get pruchaselog: ", e))
-  }
+      .catch((e) => console.log("Failed to get pruchaselog: ", e));
+  };
 
   const processData = (rawData) => {
     const processed = [];
     rawData.forEach((item) => {
-
       const date = moment(item.createdAt).format("YYYY-MM-DD");
       const billNumber = item.billNumber;
       const storeName = item.store?.name || "";
@@ -69,7 +69,10 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
           custName,
           barcode: item.product.barcode || "",
           sku: item.product.sku || "",
-          brand: [item.product.item.brand?.name, item.product.item.__t].filter(Boolean).join(" ") || "",
+          brand:
+            [item.product.item.brand?.name, item.product.item.__t]
+              .filter(Boolean)
+              .join(" ") || "",
           mrp: item.product.mrp || "",
           discount: item.product.perPieceDiscount || "",
           netAmount: item.product.perPieceAmount || "",
@@ -89,7 +92,10 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
           custName,
           barcode: item.lens.barcode || "",
           sku: item.lens.sku || "",
-          brand: [item.lens.item.brand?.name, item.lens.item.__t].filter(Boolean).join(" ") || "",
+          brand:
+            [item.lens.item.brand?.name, item.lens.item.__t]
+              .filter(Boolean)
+              .join(" ") || "",
           mrp: item.lens.mrp || "",
           discount: item.lens.perPieceDiscount || "",
           netAmount: item.lens.perPieceAmount || "",
@@ -108,7 +114,7 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "storeName",
@@ -232,12 +238,16 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
   const startRow = pageIndex * pageSize + 1;
   const endRow = Math.min((pageIndex + 1) * pageSize, formattedData.length);
   const totalRows = formattedData.length;
-  
+
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {amountData?.totalAmount}</p>
-        <p className="mb-0 fw-normal text-black">Total Cost: {amountData?.totalCost}</p>
+        <p className="mb-0 fw-normal text-black">
+          Total Amount: {amountData?.totalAmount}
+        </p>
+        <p className="mb-0 fw-normal text-black">
+          Total Cost: {amountData?.totalCost}
+        </p>
         <p className="mb-0 fw-normal text-black">
           Profit-Loss: {amountData?.ProfitLoss?.toFixed(2)}
         </p>
@@ -278,9 +288,9 @@ const ProfitLossReportsTable = ({ data, amountData }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>
