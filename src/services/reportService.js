@@ -332,17 +332,21 @@ export const reportService = {
       };
     }
   },
-  getIncentiveData: async ({ search, fromDate, toDate, salesRep }) => {
+  getIncentiveData: async ({
+    page,
+    limit,
+    search,
+    fromDate,
+    toDate,
+    salesRep,
+  }) => {
     try {
       const params = {
+        page,
+        limit,
         search,
         populate: true,
       };
-
-      if (!search) {
-        params["$or[0][product.incentiveAmount][$gt]"] = 0;
-        params["$or[1][lens.incentiveAmount][$gt]"] = 0;
-      }
 
       if (fromDate) params["createdAt[$gte]"] = fromDate;
       if (toDate) params["createdAt[$lte]"] = toDate;
@@ -396,10 +400,12 @@ export const reportService = {
   getCashbook: async ({
     fromDate,
     toDate,
+    page,
     limit,
     type = [],
     mode = [],
     stores = [],
+    search,
   }) => {
     try {
       const requests = mode.map(async (modeValue) => {
@@ -407,6 +413,8 @@ export const reportService = {
           populate: true,
         };
 
+        if (page) params.page = page;
+        if (search) params.search = search;
         if (limit) params.limit = limit;
         if (fromDate) params["createdAt[$gte]"] = fromDate;
         if (toDate) params["createdAt[$lte]"] = toDate;
@@ -496,6 +504,8 @@ export const reportService = {
   },
   getStockReport: async ({
     search,
+    page,
+    limit,
     fromDate,
     toDate,
     stores = [],
@@ -506,6 +516,8 @@ export const reportService = {
         populate: true,
         search,
       };
+      if (page) params.page = page;
+      if (limit) params.limit = limit;
 
       if (fromDate) params["createdAt[$gte]"] = fromDate;
       if (toDate) params["createdAt[$lte]"] = toDate;

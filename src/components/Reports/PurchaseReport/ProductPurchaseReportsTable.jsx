@@ -16,8 +16,8 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
   const [newamountData, setNewAmountData] = useState(amountData);
 
   useEffect(() => {
-     setNewAmountData(amountData)
-  },[amountData])
+    setNewAmountData(amountData);
+  }, [amountData]);
 
   useEffect(() => {
     if (Array.isArray(data)) {
@@ -51,16 +51,16 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
         setFilteredData(data);
       }
     }, 300);
-  
+
     return () => clearTimeout(handler);
   }, [searchQuery]);
-  
+
   const columns = useMemo(
     () => [
       {
         header: "SRNO",
         size: 10,
-        cell: ({ row }) => (<div className="text-left">{row.index + 1}</div>),
+        cell: ({ row }) => <div className="text-left">{row.index + 1}</div>,
       },
       {
         accessorKey: "createdAt",
@@ -76,20 +76,26 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
         accessorKey: "store",
         header: "Store Name",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.name}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.name}</div>
+        ),
       },
       {
         accessorKey: "vendor",
         header: "Vendor Name",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()?.companyName}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()?.companyName}</div>
+        ),
       },
       {
         id: "productnewBarcode",
         accessorKey: "products",
         header: "Barcode",
         size: 80,
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].product.newBarcode}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].product.newBarcode}</div>
+        ),
       },
       {
         accessorKey: "invoiceNumber",
@@ -102,34 +108,44 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
         accessorKey: "products",
         header: "SKU",
         size: 200,
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].product.sku}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].product.sku}</div>
+        ),
       },
       {
         id: "productquantity",
         accessorKey: "products",
         header: "QUANTITY",
         size: 30,
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].quantity}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].quantity}</div>
+        ),
       },
       {
         id: "productpurchaseRate",
         accessorKey: "products",
         header: "PURCHASE RATE",
         size: 140,
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].purchaseRate}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].purchaseRate}</div>
+        ),
       },
       {
         id: "producttax",
         accessorKey: "products",
         header: "Tax",
         size: 90,
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].tax}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].tax}</div>
+        ),
       },
       {
         id: "producttotalAmount",
         accessorKey: "products",
         header: "TOTAL AMOUNT",
-        cell: ({ getValue }) => <div className="text-left">{getValue()[0].totalAmount}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue()[0].totalAmount}</div>
+        ),
       },
     ],
     []
@@ -182,7 +198,9 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
   return (
     <div className="card-body p-0">
       <div className="d-flex flex-column px-3 flex-md-row gap-3 mb-4">
-        <p className="mb-0 fw-normal text-black">Total Amount: {newamountData}</p>
+        <p className="mb-0 fw-normal text-black">
+          Total Amount: {newamountData}
+        </p>
         <div className="ms-md-auto d-flex gap-2">
           <button className="btn btn-primary" onClick={exportProduct}>
             Download
@@ -220,9 +238,9 @@ const ProductPurchaseReportsTable = ({ data, amountData }) => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>
