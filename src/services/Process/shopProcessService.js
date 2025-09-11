@@ -15,10 +15,13 @@ const buildPurchaseLogParams = (
   endDate,
   storeIds = [],
   status,
-  search = ""
+  search = "",
+  page,
+  limit
 ) => {
   const params = new URLSearchParams();
-
+  if (page) params.append("page", page);
+  if (limit) params.append("limit", limit);
   if (startDate) params.append("createdAt[$gte]", startDate);
   if (endDate) params.append("createdAt[$lte]", endDate);
 
@@ -110,7 +113,9 @@ export const shopProcessService = {
         filters.endDate ? filters.endDate : null,
         filters.stores,
         filters.status,
-        filters.search
+        filters.search,
+        filters.page,
+        filters.limit
       );
       const response = await api.get(`${AUTH_ENDPOINTS.SALES}?${params}`);
       return {

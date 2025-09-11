@@ -84,10 +84,10 @@ function ShopProcess() {
     delivered: 0,
     returned: 0,
   });
-
+  let dataLimit = 100;
   const [pagination, setPagination] = useState({
     totalDocs: 0,
-    limit: 100,
+    limit: dataLimit,
     page: 1,
     totalPages: 1,
     hasPrevPage: false,
@@ -119,7 +119,7 @@ function ShopProcess() {
     search: "",
     status: "inWorkshop",
     page: 1,
-    limit: 100,
+    limit: dataLimit,
   });
   const lastSalesCallParams = useRef(null);
 
@@ -146,7 +146,7 @@ function ShopProcess() {
         search: values.search,
         status: getStatusForTab(activeStatus),
         page: 1,
-        limit: 100,
+        limit: dataLimit,
       };
       isInitialLoad.current = false;
       currentFilters.current = newFilters;
@@ -201,7 +201,7 @@ function ShopProcess() {
     setSelectedRows([]);
     setPagination({
       totalDocs: 0,
-      limit: 100,
+      limit: dataLimit,
       page: 1,
       totalPages: 1,
       hasPrevPage: false,
@@ -253,6 +253,7 @@ function ShopProcess() {
         } else if (users.stores.length) {
           params.stores = users.stores;
         }
+        console.log("Fetching sales with params:", params);
 
         let response;
         response = await shopProcessService.getSales(params); // Use shopProcessService for all statuses
@@ -316,7 +317,7 @@ function ShopProcess() {
           );
           setPagination({
             totalDocs: response.data.data.totalDocs || 0,
-            limit: response.data.data.limit || 100,
+            limit: response.data.data.limit || dataLimit,
             page: response.data.data.page || 1,
             totalPages: response.data.data.totalPages || 1,
             hasPrevPage: response.data.data.hasPrevPage || false,
@@ -471,7 +472,7 @@ function ShopProcess() {
         search: "",
         status: getStatusForTab(activeStatus),
         page: 1,
-        limit: 100,
+        limit: dataLimit,
       };
       currentFilters.current = filters;
       await fetchSalesAndCounts(filters, true);
@@ -1541,71 +1542,6 @@ function ShopProcess() {
         </div>
       );
     }
-
-    // if (activeStatus === "New Order" || activeStatus === "In Fitting") {
-    //   return (
-    //     <>
-    //       <table className="table table-sm">
-    //         <thead className="table-light border text-xs text-uppercase">
-    //           {table.getHeaderGroups().map((headerGroup) => (
-    //             <tr key={headerGroup.id}>
-    //               {headerGroup.headers.map((header) => (
-    //                 <th
-    //                   key={header.id}
-    //                   className="py-3 text-left custom-perchase-th"
-    //                 >
-    //                   {flexRender(
-    //                     header.column.columnDef.header,
-    //                     header.getContext()
-    //                   )}
-    //                 </th>
-    //               ))}
-    //             </tr>
-    //           ))}
-    //         </thead>
-    //         <tbody>
-    //           {table.getRowModel().rows.map((row) => (
-    //             <tr key={row.id}>
-    //               {row.getVisibleCells().map((cell) => (
-    //                 <td key={cell.id}>
-    //                   {flexRender(
-    //                     cell.column.columnDef.cell,
-    //                     cell.getContext()
-    //                   )}
-    //                 </td>
-    //               ))}
-    //             </tr>
-    //           ))}
-    //         </tbody>
-    //       </table>
-    //       {combinedData.length !== 0 && (
-    //         <div className="d-flex p-2 flex-column flex-sm-row justify-content-between align-items-center mt-3 px-3">
-    //           <div className="text-sm text-muted mb-3 mb-sm-0">
-    //             Showing <span className="fw-medium">{startRow}</span> to{" "}
-    //             <span className="fw-medium">{endRow}</span> of{" "}
-    //             <span className="fw-medium">{totalRows}</span> results
-    //           </div>
-    //           <div className="btn-group">
-    //             <Button
-    //               variant="outline-primary"
-    //               onClick={() => handlePageChange(pagination.prevPage)}
-    //               disabled={!pagination.hasPrevPage}
-    //             >
-    //               Previous
-    //             </Button>
-    //             <Button
-    //               variant="outline-primary"
-    //               onClick={() => handlePageChange(pagination.nextPage)}
-    //               disabled={!pagination.hasNextPage}
-    //             >
-    //               Next
-    //             </Button>
-    //           </div>
-    //         </div>
-    //       )}
-    //     </>
-    //   );
-    // }
 
     return (
       <>
