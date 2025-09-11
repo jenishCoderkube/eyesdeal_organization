@@ -15,7 +15,8 @@ const REPORTS_ENDPOINTS = {
   CASH_BOOK: `/cashbook/`,
   TRANSFER_STOCK: `/report/transfer/stock`,
   STOCKADJUSTMENT: `/stockAdjustment`,
-  PRODUCT_INVENTORY: `/report/productInventory/stock`
+  PRODUCT_INVENTORY: `/report/productInventory/stock`,
+  EXPORT: `/exportCsv`,
 };
 
 // Auth service functions
@@ -88,7 +89,7 @@ export const reportService = {
       const response = await api.get(REPORTS_ENDPOINTS.ORDERS, {
         params: {
           search,
-          populate: true
+          populate: true,
         },
       });
       return {
@@ -102,13 +103,23 @@ export const reportService = {
       };
     }
   },
-  fetchOrders: async ({ page, fromDate, toDate, search, stores = [], brands = [] }) => {
+  fetchOrders: async ({
+    page,
+    fromDate,
+    limit = 100,
+    toDate,
+    search,
+    stores = [],
+    brands = [],
+  }) => {
     try {
       const params = {
         populate: true,
       };
 
       if (page) params.page = page;
+      if (limit) params.limit = limit;
+
       if (fromDate) params["createdAt[$gte]"] = fromDate;
       if (toDate) params["createdAt[$lte]"] = toDate;
       if (search) params.search = search;
@@ -141,11 +152,33 @@ export const reportService = {
       };
     }
   },
-  getAmount: async ({ search, fromDate, toDate, stores = [], brands = [], vendors = [], page }) => {
+  exportCsv: async (data) => {
+    try {
+      const response = await api.post(REPORTS_ENDPOINTS.EXPORT, data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getAmount: async ({
+    search,
+    fromDate,
+    toDate,
+    stores = [],
+    brands = [],
+    vendors = [],
+    page,
+  }) => {
     try {
       const params = {
         populate: true,
-        search
+        search,
       };
 
       if (page) params.page = page;
@@ -192,7 +225,7 @@ export const reportService = {
     try {
       const params = {
         populate: true,
-        search
+        search,
       };
 
       if (page) params.page = page;
@@ -218,7 +251,15 @@ export const reportService = {
       };
     }
   },
-  getJobWorksData: async ({ search, page, fromDate, toDate, status = [], stores = [], vendor = [] }) => {
+  getJobWorksData: async ({
+    search,
+    page,
+    fromDate,
+    toDate,
+    status = [],
+    stores = [],
+    vendor = [],
+  }) => {
     try {
       const params = {
         populate: true,
@@ -277,7 +318,9 @@ export const reportService = {
         });
       }
 
-      const response = await api.get(REPORTS_ENDPOINTS.GET_EMPLOYEE, { params });
+      const response = await api.get(REPORTS_ENDPOINTS.GET_EMPLOYEE, {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -325,7 +368,7 @@ export const reportService = {
     try {
       const params = {
         populate: true,
-        search
+        search,
       };
 
       if (fromDate) params["createdAt[$gte]"] = fromDate;
@@ -336,7 +379,9 @@ export const reportService = {
         params[`sale.salesRep[$in][0]`] = salesRep;
       }
 
-      const response = await api.get(REPORTS_ENDPOINTS.GET_INCENTIVE_AMOUNT, { params });
+      const response = await api.get(REPORTS_ENDPOINTS.GET_INCENTIVE_AMOUNT, {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -348,7 +393,14 @@ export const reportService = {
       };
     }
   },
-  getCashbook: async ({ fromDate, toDate, limit, type = [], mode = [], stores = [] }) => {
+  getCashbook: async ({
+    fromDate,
+    toDate,
+    limit,
+    type = [],
+    mode = [],
+    stores = [],
+  }) => {
     try {
       const requests = mode.map(async (modeValue) => {
         const params = {
@@ -392,11 +444,20 @@ export const reportService = {
       };
     }
   },
-  getTransferStock: async ({ page, search, fromDate, toDate, storeFrom = [], storeTo = [], storeFromid, storeToid }) => {
+  getTransferStock: async ({
+    page,
+    search,
+    fromDate,
+    toDate,
+    storeFrom = [],
+    storeTo = [],
+    storeFromid,
+    storeToid,
+  }) => {
     try {
       const params = {
         populate: true,
-        search
+        search,
       };
 
       if (page) params.page = page;
@@ -419,7 +480,9 @@ export const reportService = {
         params[`optimize[to][$in][0]`] = storeToid;
       }
 
-      const response = await api.get(REPORTS_ENDPOINTS.TRANSFER_STOCK, { params });
+      const response = await api.get(REPORTS_ENDPOINTS.TRANSFER_STOCK, {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -431,23 +494,29 @@ export const reportService = {
       };
     }
   },
-  getStockReport: async ({ search, fromDate, toDate, stores = [], storesids = [] }) => {
+  getStockReport: async ({
+    search,
+    fromDate,
+    toDate,
+    stores = [],
+    storesids = [],
+  }) => {
     try {
       const params = {
         populate: true,
-        search
+        search,
       };
 
       if (fromDate) params["createdAt[$gte]"] = fromDate;
       if (toDate) params["createdAt[$lte]"] = toDate;
-      
+
       // Stores
       if (stores.length) {
         stores.forEach((storeId, index) => {
           params[`optimize[store][$in][${index}]`] = storeId;
         });
       }
-      
+
       // Stores
       if (storesids.length) {
         storesids.forEach((storesid, index) => {
@@ -455,7 +524,9 @@ export const reportService = {
         });
       }
 
-      const response = await api.get(REPORTS_ENDPOINTS.STOCKADJUSTMENT, { params });
+      const response = await api.get(REPORTS_ENDPOINTS.STOCKADJUSTMENT, {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -472,13 +543,15 @@ export const reportService = {
       const params = {
         populate: true,
         limit: 400,
-        search
+        search,
       };
 
       if (page) params.page = page;
       if (manageStock) params["product.manageStock"] = manageStock;
 
-      const response = await api.get(REPORTS_ENDPOINTS.PRODUCT_INVENTORY, { params });
+      const response = await api.get(REPORTS_ENDPOINTS.PRODUCT_INVENTORY, {
+        params,
+      });
 
       return {
         success: true,
@@ -512,15 +585,23 @@ export const reportService = {
       };
     }
   },
-  getPurchaseLog: async ({ page, fromDate, toDate, stores = [], vendors = [] }) => {
+  getPurchaseLog: async ({
+    page,
+    limit,
+    fromDate,
+    toDate,
+    stores = [],
+    vendors = [],
+    search,
+  }) => {
     try {
-      const params = {
-        // populate: true,
-      };
+      const params = {};
 
-      if (page) {
-        params.page = page;
-      }
+      if (page) params.page = page;
+      if (limit) params.limit = limit;
+
+      if (search) params.search = search; // 👈 just send it as-is
+
       if (fromDate) params["createdAt[$gte]"] = fromDate;
       if (toDate) params["createdAt[$lte]"] = toDate;
 
@@ -531,11 +612,10 @@ export const reportService = {
         });
       }
 
-      // Brands (applied on both product and lens)
+      // Vendors
       if (vendors.length) {
-        vendors.forEach((brandId, index) => {
-          const id = brandId;
-          params[`optimize[vendor][$in][${index}]`] = id;
+        vendors.forEach((vendorId, index) => {
+          params[`optimize[vendor][$in][${index}]`] = vendorId;
         });
       }
 
@@ -575,7 +655,7 @@ export const reportService = {
     try {
       const response = await api.get(REPORTS_ENDPOINTS.PURCHASELOG, {
         params: {
-          search
+          search,
         },
       });
       return {
