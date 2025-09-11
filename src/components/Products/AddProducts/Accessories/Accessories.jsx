@@ -56,6 +56,8 @@ function Accessories({ initialData = {}, mode = "add" }) {
   // State for loading
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   const [attributeOptions, setAttributeOptions] = useState({
     brands: [],
     units: [],
@@ -188,7 +190,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -283,7 +285,7 @@ function Accessories({ initialData = {}, mode = "add" }) {
         toast.error("An error occurred while processing your request");
       }
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
     }
   };
 
@@ -778,8 +780,23 @@ function Accessories({ initialData = {}, mode = "add" }) {
 
             {/* Submit Button */}
             <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loadingSubmit}
+              >
+                {loadingSubmit && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                )}
+                {loadingSubmit
+                  ? "Processing..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>

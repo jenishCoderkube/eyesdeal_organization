@@ -115,6 +115,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
 
   // State for loading
   const [loading, setLoading] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   // State for attribute options
   const [attributeOptions, setAttributeOptions] = useState({
@@ -264,7 +265,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
     { setSubmitting, resetForm, setErrors }
   ) => {
     console.log(`${mode} values:`, values);
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -277,7 +278,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
         } catch (error) {
           console.error("SEO image upload failed:", error);
           toast.error("Failed to upload SEO image");
-          setSubmitting(false);
+          setLoadingSubmit(false);
           return;
         }
       }
@@ -389,7 +390,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
       toast.error(`Error: ${error.message || "Failed to process request"}`);
       setErrors({ submit: error.message || "Failed to process request" });
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
     }
   };
 
@@ -1375,9 +1376,9 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={loading}
+                disabled={loadingSubmit}
               >
-                {loading ? (
+                {loadingSubmit ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-2"

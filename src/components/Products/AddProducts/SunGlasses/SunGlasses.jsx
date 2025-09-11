@@ -167,6 +167,8 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
   // State for modal and selected image
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   useEffect(() => {
     if (mode !== "add") {
       setSelectedImage(
@@ -392,7 +394,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     console.log(`${mode} values:`, values);
-    setSubmitting(true);
+    setLoadingSubmit(true);
 
     try {
       // Handle image upload for seoImage
@@ -505,7 +507,7 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
         toast.error("An error occurred while processing your request");
       }
     } finally {
-      setSubmitting(false);
+      setLoadingSubmit(false);
     }
   };
 
@@ -1473,10 +1475,24 @@ function SunGlasses({ initialData = {}, mode = "add" }) {
               }}
             />
 
-            {/* Submit Button */}
             <div className="d-flex gap-3">
-              <button type="submit" className="btn btn-primary">
-                {mode === "edit" ? "Update" : "Submit"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loadingSubmit}
+              >
+                {loadingSubmit && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                )}
+                {loadingSubmit
+                  ? "Processing..."
+                  : mode === "edit"
+                  ? "Update"
+                  : "Submit"}
               </button>
             </div>
           </Form>
