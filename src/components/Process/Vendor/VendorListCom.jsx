@@ -8,6 +8,7 @@ const VendorListCom = () => {
   const [vendors, setVendors] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({
     totalDocs: 0,
     limit: 100,
@@ -156,14 +157,10 @@ const VendorListCom = () => {
       setLoading(false);
     }
   };
-
-  // Handle page change
-  const handlePageChange = async (page) => {
+  const fetchJobWorks = async (filters) => {
     setLoading(true);
     try {
-      const newFilters = { ...currentFilters, page };
-      setCurrentFilters(newFilters);
-      const response = await vendorshopService.getJobWorks(newFilters);
+      const response = await vendorshopService.getJobWorks(filters);
       if (response.success) {
         setFilteredData(response.data.data.docs || []);
         setPagination({
@@ -175,6 +172,46 @@ const VendorListCom = () => {
           hasNextPage: response.data.data.hasNextPage,
           prevPage: response.data.data.prevPage,
           nextPage: response.data.data.nextPage,
+        });
+      } else {
+        setFilteredData([]);
+      }
+    } catch (err) {
+      console.error("Error fetching job works:", err);
+      setFilteredData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle search change (debounced if needed)
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    fetchJobWorks({
+      ...currentFilters,
+      page: 1,
+      search: query, // <-- pass search value to API
+    });
+  };
+
+  // Handle page change
+  const handlePageChange = async (page) => {
+    setLoading(true);
+    try {
+      const newFilters = { ...currentFilters, page };
+      setCurrentFilters(newFilters);
+      const response = await vendorshopService.getJobWorks(newFilters);
+      if (response.success) {
+        setFilteredData(response?.data?.data?.docs || []);
+        setPagination({
+          totalDocs: response?.data?.data?.totalDocs,
+          limit: response?.data?.data?.limit,
+          page: response?.data?.data?.page,
+          totalPages: response?.data?.data?.totalPages,
+          hasPrevPage: response?.data?.data?.hasPrevPage,
+          hasNextPage: response?.data?.data?.hasNextPage,
+          prevPage: response?.data?.data?.prevPage,
+          nextPage: response?.data?.data?.nextPage,
         });
       } else {
         setFilteredData([]);
@@ -217,6 +254,8 @@ const VendorListCom = () => {
               loading={loading}
               pagination={pagination}
               onPageChange={handlePageChange}
+              onSearchChange={handleSearchChange} // <-- pass
+              searchQuery={searchQuery} // <-- pass
             />
           </div>
         </div>

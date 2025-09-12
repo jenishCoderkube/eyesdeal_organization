@@ -19,8 +19,14 @@ const debounce = (func, wait) => {
   };
 };
 
-const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+const VendorListTable = ({
+  data,
+  loading,
+  pagination,
+  onPageChange,
+  onSearchChange,
+  searchQuery,
+}) => {
   const [filteredData, setFilteredData] = useState(data);
   const [selectedRows, setSelectedRows] = useState([]);
   const [showVendorModal, setShowVendorModal] = useState(false);
@@ -571,8 +577,7 @@ const VendorListTable = ({ data, loading, pagination, onPageChange }) => {
             className="form-control border-start-0 py-2"
             placeholder="Search..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={loading}
+            onChange={(e) => onSearchChange(e.target.value)} // <-- send to parent
           />
         </div>
         <div className="d-flex gap-2 mt-4">
