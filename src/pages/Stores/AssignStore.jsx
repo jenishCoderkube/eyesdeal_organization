@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 const AssignStore = () => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [storeOptions, setStoreOptions] = useState(null);
-
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     getData();
   }, []);
@@ -52,6 +52,7 @@ const AssignStore = () => {
     };
 
     try {
+      setLoading(true);
       const response = await storeService.assignStore(bodyData);
 
       if (response?.data.success) {
@@ -72,6 +73,8 @@ const AssignStore = () => {
     } catch (error) {
       console.log("err", error);
       toast.error("Failed to assign store");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,8 +117,23 @@ const AssignStore = () => {
                   />
                 </div>
                 <div>
-                  <button type="submit" className="btn custom-button-bgcolor">
-                    Submit
+                  <button
+                    type="submit"
+                    className="btn custom-button-bgcolor"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Loading...
+                      </>
+                    ) : (
+                      "Submit"
+                    )}
                   </button>
                 </div>
               </form>

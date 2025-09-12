@@ -3,15 +3,13 @@ import { FaSearch } from "react-icons/fa";
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { toast } from "react-toastify";
 import EditReferenceModal from "../../../components/Users/Marketing/EditReferenceModal";
 import { userService } from "../../../services/userService";
-import { toast } from "react-toastify";
-// import EditReferenceModal from "./EditReferenceModal";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -29,60 +27,80 @@ const validationSchema = Yup.object({
 
 const ViewReferences = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState(null);
   const [references, setReferences] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editReference, setEditReference] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
-  // Custom global filter function
-  const filterGlobally = useMemo(
-    () => (data, query) => {
-      if (!query) return data;
-      const lowerQuery = query.toLowerCase();
-      return data.filter((item) =>
-        [item.id, item.name].some((field) =>
-          field.toLowerCase().includes(lowerQuery)
-        )
-      );
-    },
-    []
-  );
-
-  useEffect(() => {
-    fetchMarketingReferences();
-  }, []);
-
-  const fetchMarketingReferences = () => {
-    userService
-      .getMarketingReferences()
-      .then((res) => setReferences(res.data?.data))
-      .catch((e) => console.log("Failed to fetch marketing references: ", e));
+  // Fetch marketing references
+  const fetchMarketingReferences = async (
+    page = 1,
+    limit = 10,
+    search = ""
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await userService.getMarketingReferences({
+        page,
+        limit,
+        search,
+      });
+      if (res.success) {
+        setReferences(res?.data?.data?.docs || []);
+        setPagination({
+          page: res?.data?.data?.page,
+          limit: res?.data?.data?.limit,
+          totalDocs: res?.data?.data?.totalDocs,
+          totalPages: res?.data?.data?.totalPages,
+          hasNextPage: res?.data?.data?.hasNextPage,
+          hasPrevPage: res?.data?.data?.hasPrevPage,
+        });
+      } else {
+        throw new Error(
+          res?.data?.data?.message || "Failed to fetch references"
+        );
+      }
+    } catch (e) {
+      console.error("Failed to fetch marketing references: ", e);
+      setError("Failed to load references. Please try again.");
+      toast.error("Failed to load references.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Debounced filter logic
+  // Fetch data on mount and when page, limit, or search changes
   useEffect(() => {
-    const debouncedFilter = debounce((query) => {
-      setFilteredData(filterGlobally(references, query));
-    }, 200);
+    const debouncedFetch = debounce(() => {
+      fetchMarketingReferences(pagination.page, pagination.limit, searchQuery);
+    }, 300);
 
-    debouncedFilter(searchQuery);
+    debouncedFetch();
 
-    return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, references, filterGlobally]);
+    return () => clearTimeout(debouncedFetch.timeout);
+  }, [pagination.page, pagination.limit, searchQuery]);
 
   // Handle search input change
-  const handleSearch = (value) => {
-    setSearchQuery(value);
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
   };
-
-  // Use filtered data if available, otherwise use full dataset
-  const tableData = filteredData || references;
 
   // Define columns
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "_id",
         header: "SRNO",
         cell: ({ row }) => (
           <div className="text-left break-words">{row.index + 1}</div>
@@ -93,6 +111,15 @@ const ViewReferences = () => {
         header: "Reference Name",
         cell: ({ getValue }) => (
           <div className="text-left break-words">{getValue()}</div>
+        ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created At",
+        cell: ({ getValue }) => (
+          <div className="text-left break-words">
+            {new Date(getValue()).toLocaleDateString()}
+          </div>
         ),
       },
       {
@@ -140,17 +167,29 @@ const ViewReferences = () => {
     []
   );
 
-  // @tanstack/react-table setup
+  // TanStack table setup
   const table = useReactTable({
-    data: tableData,
+    data: references,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
+    manualPagination: true, // Enable manual pagination
+    state: {
       pagination: {
-        pageIndex: 0,
-        pageSize: 100,
+        pageIndex: pagination.page - 1, // TanStack uses 0-based index, API uses 1-based
+        pageSize: pagination.limit,
       },
+    },
+    pageCount: pagination.totalPages,
+    onPaginationChange: (updater) => {
+      const newPagination = updater({
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit,
+      });
+      setPagination((prev) => ({
+        ...prev,
+        page: newPagination.pageIndex + 1,
+        limit: newPagination.pageSize,
+      }));
     },
   });
 
@@ -162,14 +201,21 @@ const ViewReferences = () => {
 
   // Handle delete
   const handleDelete = async (id) => {
-    alert("Are you sure you want to delete?");
-    console.log(`Delete reference with id: ${id}`);
-    const response = await userService.deleteMarketingReference(id);
-    if (response.success) {
-      fetchMarketingReferences();
-      toast.success(response.message);
-    } else {
-      toast.error(response.message);
+    if (!window.confirm("Are you sure you want to delete?")) return;
+    try {
+      const response = await userService.deleteMarketingReference(id);
+      if (response.success) {
+        toast.success(response.message);
+        fetchMarketingReferences(
+          pagination.page,
+          pagination.limit,
+          searchQuery
+        );
+      } else {
+        toast.error(response.message);
+      }
+    } catch (e) {
+      toast.error("Failed to delete reference.");
     }
   };
 
@@ -179,47 +225,48 @@ const ViewReferences = () => {
       name: "",
     },
     validationSchema,
-    onSubmit: (values) => {
-      addMarketingReference(values);
+    onSubmit: async (values, { resetForm }) => {
+      try {
+        const response = await userService.addMarketingReference(values);
+        if (response.success) {
+          toast.success(response.message);
+          resetForm();
+          fetchMarketingReferences(
+            pagination.page,
+            pagination.limit,
+            searchQuery
+          );
+        } else {
+          toast.error(response.message);
+        }
+      } catch (e) {
+        toast.error("Failed to add reference.");
+      }
     },
   });
 
-  const addMarketingReference = async (data) => {
-    const response = await userService.addMarketingReference(data);
-    if (response.success) {
-      toast.success(response.message);
-      formik.resetForm();
-      fetchMarketingReferences();
-    } else {
-      toast.error(response.message);
-    }
-  };
-
-  const updateMarketingReference = async (data) => {
-    const response = await userService.updateMarketingReference(data);
-    if (response.success) {
-      toast.success(response.message);
-      setShowEditModal(false);
-      fetchMarketingReferences();
-    } else {
-      toast.error(response.message);
-    }
+  // Handle page size change
+  const handlePageSizeChange = (e) => {
+    const newSize = Number(e.target.value);
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
   };
 
   // Calculate the range of displayed rows
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, tableData?.length);
-  const totalRows = tableData?.length;
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="container-fluid px-4 py-8">
       <div className="row justify-content-center">
-        <div className="col-12 col-lg-11 ">
+        <div className="col-12 col-lg-11">
           <div>
             <h1 className="h2 text-dark fw-bold mt-3">Marketing Reference</h1>
           </div>
+
           {/* Create Form */}
           <div className="card shadow-none mt-3 border-0">
             <div className="card-body p-3">
@@ -238,28 +285,27 @@ const ViewReferences = () => {
                     }`}
                     value={formik.values.name}
                     onChange={formik.handleChange}
-                    onBlur={() => {
-                      if (formik.values.name) {
-                        userService
-                          .isMarketingRefernceExists(formik.values.name)
-                          .then((res) => {
-                            if (res.data?.data?._id) {
-                              formik.setFieldError(
-                                "name",
-                                "Marketing Reference with this name already exists"
-                              );
-                            } else {
-                              formik.setFieldError("name", "");
-                            }
-                          })
-                          .catch((e) =>
-                            console.log(
-                              "Failed to check if reference exists: ",
-                              e
-                            )
+                    onBlur={async (e) => {
+                      formik.handleBlur(e);
+                      if (formik.values.name && !formik.errors.name) {
+                        try {
+                          const res =
+                            await userService.isMarketingRefernceExists(
+                              formik.values.name
+                            );
+                          if (res.data?.data?._id) {
+                            formik.setFieldError(
+                              "name",
+                              "Marketing Reference with this name already exists"
+                            );
+                          }
+                        } catch (e) {
+                          console.error(
+                            "Failed to check if reference exists: ",
+                            e
                           );
+                        }
                       }
-                      formik.handleBlur();
                     }}
                     placeholder="Enter reference name"
                   />
@@ -272,14 +318,15 @@ const ViewReferences = () => {
                   className="btn custom-button-bgcolor"
                   disabled={formik.isSubmitting}
                 >
-                  Submit
+                  {formik.isSubmitting ? "Submitting..." : "Submit"}
                 </button>
               </form>
             </div>
           </div>
 
+          {/* References Table */}
           <div
-            className="card shadow-sm "
+            className="card shadow-sm"
             style={{ border: "1px solid #e2e8f0" }}
           >
             <h6 className="fw-bold px-3 pt-3">All References</h6>
@@ -297,75 +344,100 @@ const ViewReferences = () => {
                     className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={handleSearch}
                   />
                 </div>
               </div>
-              <div className="table-responsive px-2">
-                <table className="table table-sm">
-                  <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} role="row">
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-3 text-left custom-perchase-th"
-                            role="columnheader"
-                          >
-                            <div className="font-semibold text-left  break-words">
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </div>
-                          </th>
+              {isLoading && <div className="text-center">Loading...</div>}
+              {error && <div className="text-danger text-center">{error}</div>}
+              {!isLoading && !error && references.length === 0 && (
+                <div className="text-center">No references found.</div>
+              )}
+
+              {!isLoading && !error && references.length > 0 && (
+                <>
+                  <div className="table-responsive px-2">
+                    <table className="table table-sm">
+                      <thead className="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+                        {table.getHeaderGroups().map((headerGroup) => (
+                          <tr key={headerGroup.id} role="row">
+                            {headerGroup.headers.map((header) => (
+                              <th
+                                key={header.id}
+                                className="p-3 text-left custom-perchase-th"
+                                role="columnheader"
+                              >
+                                <div className="font-semibold text-left break-words">
+                                  {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                      )}
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className="text-sm">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} role="row">
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="px-3 first:pl-5 last:pr-5 py-3"
-                            role="cell"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
+                      </thead>
+                      <tbody className="text-sm">
+                        {table.getRowModel().rows.map((row) => (
+                          <tr key={row.id} role="row">
+                            {row.getVisibleCells().map((cell) => (
+                              <td
+                                key={cell.id}
+                                className="px-3 first:pl-5 last:pr-5 py-3"
+                                role="cell"
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </td>
+                            ))}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mt-3 px-3">
-                <div>
-                  Showing {startRow} to {endRow} of {totalRows} results
-                </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                    <div>
+                      Showing {startRow} to {endRow} of {totalRows} results
+                    </div>
+                    <div
+                      className="d-flex align-items-center"
+                      style={{ gap: "1rem" }}
+                    >
+                      <div className="btn-group">
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() =>
+                            setPagination((prev) => ({
+                              ...prev,
+                              page: prev.page - 1,
+                            }))
+                          }
+                          disabled={!pagination.hasPrevPage}
+                        >
+                          Previous
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() =>
+                            setPagination((prev) => ({
+                              ...prev,
+                              page: prev.page + 1,
+                            }))
+                          }
+                          disabled={!pagination.hasNextPage}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -373,7 +445,24 @@ const ViewReferences = () => {
       <EditReferenceModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
-        onSubmit={updateMarketingReference}
+        onSubmit={async (data) => {
+          try {
+            const response = await userService.updateMarketingReference(data);
+            if (response.success) {
+              toast.success(response.message);
+              setShowEditModal(false);
+              fetchMarketingReferences(
+                pagination.page,
+                pagination.limit,
+                searchQuery
+              );
+            } else {
+              toast.error(response.message);
+            }
+          } catch (e) {
+            toast.error("Failed to update reference.");
+          }
+        }}
         editReference={editReference}
       />
     </div>

@@ -5,16 +5,35 @@ import { toast } from "react-toastify";
 import { cashbookService } from "../../services/cashbookService";
 import DeleteModal from "../../components/DeleteModal/DeleteModal";
 import CommonButton from "../../components/CommonButton/CommonButton";
+
+// Debounce utility function
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 const AddExpenseCategory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [formData, setFormData] = useState({
     expenseCategory: "",
   });
   const [errors, setErrors] = useState({});
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -23,31 +42,14 @@ const AddExpenseCategory = () => {
     }
   };
 
-  const handleDelete = async () => {
-    setLoading(true);
-    try {
-      const response = await cashbookService.deleteExpense(deleteId);
-      if (response.success) {
-        console.log("res", response?.data?.message);
-        toast.success(response?.data?.message);
-        setDeleteId(null);
-        getCategoryData();
-      } else {
-        toast.error(response.message);
-      }
-    } catch (error) {
-      console.error("error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.expenseCategory) {
+    if (!formData.expenseCategory.trim()) {
       newErrors.expenseCategory = "Expense Category is a required field";
     }
     return newErrors;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -56,46 +58,77 @@ const AddExpenseCategory = () => {
       return;
     }
     setErrors({});
-    console.log("Form submitted:", formData);
     const body = {
-      name: formData?.expenseCategory,
+      name: formData.expenseCategory.trim(),
     };
 
     setLoading(true);
     try {
       const response = await cashbookService.createExpense(body);
       if (response.success) {
-        console.log("res", response.message);
-        toast.success(response?.data?.message);
-        getCategoryData();
+        toast.success(
+          response.data?.message || "Expense category created successfully"
+        );
         setFormData({ expenseCategory: "" });
+        getCategoryData(pagination.page, pagination.limit, searchQuery);
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Failed to create expense category");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Create expense error:", error);
+      toast.error("Failed to create expense category");
     } finally {
       setLoading(false);
     }
-    // Add API call here (e.g., axios.post)
   };
 
-  useEffect(() => {
-    getCategoryData();
-  }, [searchQuery]);
-
-  const getCategoryData = async () => {
+  const handleDelete = async () => {
     setLoading(true);
     try {
-      const response = await cashbookService.getCategory(searchQuery);
+      const response = await cashbookService.deleteExpense(deleteId);
       if (response.success) {
-        console.log("res", response?.data?.data?.docs);
-        setCategoryData(response?.data?.data?.docs);
+        toast.success(
+          response.data?.message || "Expense category deleted successfully"
+        );
+        setDeleteId(null);
+        getCategoryData(pagination.page, pagination.limit, searchQuery);
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Failed to delete expense category");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Delete error:", error);
+      toast.error("Failed to delete expense category");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryData = async (page = 1, limit = 10, search = "") => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await cashbookService.getCategory({
+        page,
+        limit,
+        search,
+      });
+      if (response.success) {
+        setCategoryData(response.data?.data?.docs || []);
+        setPagination({
+          page: response.data?.data?.page || 1,
+          limit: response.data?.data?.limit || 10,
+          totalDocs: response.data?.data?.totalDocs || 0,
+          totalPages: response.data?.data?.totalPages || 1,
+          hasNextPage: response.data?.data?.hasNextPage || false,
+          hasPrevPage: response.data?.data?.hasPrevPage || false,
+        });
+      } else {
+        throw new Error(response.message || "Failed to fetch categories");
+      }
+    } catch (error) {
+      console.error("Fetch category error:", error);
+      setError("Failed to load categories. Please try again.");
+      toast.error("Failed to load categories");
     } finally {
       setLoading(false);
     }
@@ -103,15 +136,44 @@ const AddExpenseCategory = () => {
 
   const hideDeleteModal = () => {
     setDeleteId(null);
+    setDeleteModal(false);
   };
 
+  // Fetch data on mount and when page, limit, or search changes
   useEffect(() => {
-    if (deleteId) {
-      setDeleteModal(true);
-    } else {
-      setDeleteModal(false);
-    }
+    const debouncedFetch = debounce(() => {
+      getCategoryData(pagination.page, pagination.limit, searchQuery);
+    }, 300);
+
+    debouncedFetch();
+
+    return () => clearTimeout(debouncedFetch.timeout);
+  }, [pagination.page, pagination.limit, searchQuery]);
+
+  // Handle delete modal visibility
+  useEffect(() => {
+    setDeleteModal(!!deleteId);
   }, [deleteId]);
+
+  // Handle search input change
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (e) => {
+    const newSize = Number(e.target.value);
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  };
+
+  // Calculate the range of displayed rows
+  const startRow = (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.totalDocs
+  );
+  const totalRows = pagination.totalDocs;
 
   return (
     <div className="container-fluid py-5 px-4 px-sm-5 px-lg-5">
@@ -120,14 +182,14 @@ const AddExpenseCategory = () => {
           <div className="mb-4">
             <h1 className="h3 text-dark fw-bold">Expense Category</h1>
           </div>
-          <div className=" mt-5">
-            <p className="">Create Expense Category</p>
+          <div className="mt-5">
+            <p>Create Expense Category</p>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="row">
               <div className="col-12">
                 <label
-                  htmlFor="amount"
+                  htmlFor="expenseCategory"
                   className="form-label font-weight-500 text-sm"
                 >
                   Expense Category <span className="text-danger">*</span>
@@ -136,8 +198,9 @@ const AddExpenseCategory = () => {
                   type="text"
                   id="expenseCategory"
                   name="expenseCategory"
-                  className="form-control"
-                  step="0.001"
+                  className={`form-control ${
+                    errors.expenseCategory ? "is-invalid" : ""
+                  }`}
                   value={formData.expenseCategory}
                   onChange={(e) =>
                     handleInputChange("expenseCategory", e.target.value)
@@ -147,7 +210,7 @@ const AddExpenseCategory = () => {
                 {errors.expenseCategory && (
                   <div
                     id="expenseCategoryError"
-                    className="text-danger text-xs mt-1"
+                    className="invalid-feedback text-xs mt-1"
                   >
                     {errors.expenseCategory}
                   </div>
@@ -157,9 +220,9 @@ const AddExpenseCategory = () => {
             <div className="col-12 mt-3">
               <CommonButton
                 loading={loading}
-                buttonText="Submit"
+                buttonText={loading ? "Submitting..." : "Submit"}
                 onClick={handleSubmit}
-                className="btn btn-primary w-auto bg-indigo-500 hover-bg-indigo-600 text-white"
+                className="btn btn-primary w-auto bg-indigo-500 hover:bg-indigo-600 text-white"
               />
             </div>
           </form>
@@ -179,65 +242,118 @@ const AddExpenseCategory = () => {
                     className="form-control border-start-0 py-2"
                     placeholder="Search..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearch}
                   />
                 </div>
               </div>
-              <div className="table-responsive px-2">
-                <table className="table  table-sm">
-                  <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="p-3 text-left custom-perchase-th"
-                      >
-                        SRNO
-                      </th>
-                      <th
-                        scope="col"
-                        className="p-3 text-left custom-perchase-th"
-                      >
-                        Name
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="p-3 text-left custom-perchase-th"
-                      >
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {categoryData?.length > 0 ? (
-                      categoryData?.map((store, index) => (
-                        <tr key={store.id}>
-                          <td className="p-3">{index + 1}</td>
-                          <td className="p-3">{store.name}</td>
-                          <td className="p-3">
-                            <div
-                              className="d-flex gap-2 align-items-center"
-                              role="button"
-                            >
-                              <AiOutlineDelete
-                                size={30}
-                                className="text-danger cursor-pointer"
-                                onClick={() => setDeleteId(store?._id)}
-                              />
-                            </div>
-                          </td>
+              {loading && <div className="text-center">Loading...</div>}
+              {error && <div className="text-danger text-center">{error}</div>}
+              {!loading && !error && categoryData.length === 0 && (
+                <div className="text-center text-muted">
+                  No categories found
+                </div>
+              )}
+              {!loading && !error && categoryData.length > 0 && (
+                <>
+                  <div className="table-responsive px-2">
+                    <table className="table table-sm">
+                      <thead className="text-xs text-uppercase text-muted bg-light border-top border-bottom">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="p-3 text-left custom-perchase-th"
+                          >
+                            SRNO
+                          </th>
+                          <th
+                            scope="col"
+                            className="p-3 text-left custom-perchase-th"
+                          >
+                            Name
+                          </th>
+                          <th
+                            scope="col"
+                            className="p-3 text-left custom-perchase-th"
+                          >
+                            Created At
+                          </th>
+                          <th
+                            scope="col"
+                            className="p-3 text-left custom-perchase-th"
+                          >
+                            Action
+                          </th>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="3" className="text-center p-3 text-muted">
-                          No data found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="text-sm">
+                        {categoryData.map((category, index) => (
+                          <tr key={category._id}>
+                            <td className="p-3">
+                              {(pagination.page - 1) * pagination.limit +
+                                index +
+                                1}
+                            </td>
+                            <td className="p-3">{category.name}</td>
+                            <td className="p-3">
+                              {new Date(
+                                category.createdAt
+                              ).toLocaleDateString()}
+                            </td>
+                            <td className="p-3">
+                              <div
+                                className="d-flex gap-2 align-items-center"
+                                role="button"
+                              >
+                                <AiOutlineDelete
+                                  size={30}
+                                  className="text-danger cursor-pointer"
+                                  onClick={() => setDeleteId(category._id)}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                    <div>
+                      Showing {startRow} to {endRow} of {totalRows} results
+                    </div>
+                    <div
+                      className="d-flex align-items-center"
+                      style={{ gap: "1rem" }}
+                    >
+                      <div className="btn-group">
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() =>
+                            setPagination((prev) => ({
+                              ...prev,
+                              page: prev.page - 1,
+                            }))
+                          }
+                          disabled={!pagination.hasPrevPage}
+                        >
+                          Previous
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() =>
+                            setPagination((prev) => ({
+                              ...prev,
+                              page: prev.page + 1,
+                            }))
+                          }
+                          disabled={!pagination.hasNextPage}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

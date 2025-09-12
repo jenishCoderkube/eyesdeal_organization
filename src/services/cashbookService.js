@@ -4,10 +4,10 @@ import api from "./api";
 // Auth endpoints
 const CASHBOOK_ENDPOINTS = {
   STORES: `/stores`,
-  CATEGORY: (search) =>
+  CATEGORY: ({ page, limit, search }) =>
     search
-      ? `/expenseCategory?search=${encodeURIComponent(search)}`
-      : `/expenseCategory`,
+      ? `/expenseCategory?search=${search}&page=${page}&limit=${limit}`
+      : `/expenseCategory?page=${page}&limit=${limit}`,
   ADDEXPENSE: "/cashbook",
   CREATEEXPENSE: "/expenseCategory",
   DELETEEXPENSE: (id) => `/expenseCategory/${id}`,
@@ -70,9 +70,11 @@ export const cashbookService = {
     }
   },
 
-  getCategory: async (search) => {
+  getCategory: async ({ page, limit, search }) => {
     try {
-      const response = await api.get(CASHBOOK_ENDPOINTS.CATEGORY(search));
+      const response = await api.get(
+        CASHBOOK_ENDPOINTS.CATEGORY({ page, limit, search })
+      );
       return {
         success: true,
         data: response.data,

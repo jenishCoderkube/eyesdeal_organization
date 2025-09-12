@@ -306,9 +306,11 @@ export const userService = {
       };
     }
   },
-  getMarketingReferences: async () => {
+  getMarketingReferences: async ({ page, limit, search }) => {
     try {
-      const response = await api.get(USER_ENDPOINTS.GET_MARKETING_REFERENCES);
+      const response = await api.get(USER_ENDPOINTS.GET_MARKETING_REFERENCES, {
+        params: { page, limit, search },
+      });
       return {
         success: true,
         data: response.data,

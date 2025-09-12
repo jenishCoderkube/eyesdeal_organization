@@ -7,20 +7,10 @@ import CustomerNameModal from "../../components/Process/Vendor/CustomerNameModal
 import PreviousNotesModel from "../../components/ReCall/PreviousNotesModel";
 import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
-import RescheduleRecallDateModal from "../../components/ReCall/RescheduleRecallDateModal";
 import ReactPaginate from "react-paginate";
 import { recallService } from "../../services/recallService";
 
-// Debounce function to limit API calls
-const debounce = (func, delay) => {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-};
-
-// Validate recall data to ensure required fields are present
+// Validate recall data
 const validateRecallData = (recall) => {
   if (!recall?._id) return false;
   if (!recall?.salesId) return false;
@@ -41,6 +31,7 @@ function RecallReportCom() {
   const [tableData, setTableData] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [notesModalVisible, setNotesModalVisible] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -54,164 +45,168 @@ function RecallReportCom() {
     limit: 10,
   });
 
-  const lastFetchParams = useRef(null);
-  const debouncedFetchRef = useRef(null);
-
-  // Initialize debounced fetch function once
-  useEffect(() => {
-    debouncedFetchRef.current = debounce(async (storeId, page, limit) => {
-      const callKey = JSON.stringify({ store: storeId, page, limit });
-
-      if (lastFetchParams.current === callKey) {
-        console.log("Skipping duplicate API call:", callKey);
-        return;
-      }
-
-      console.log("Fetching data with params:", callKey);
-      setLoading(true);
-      lastFetchParams.current = callKey;
-
-      try {
-        const response = await recallService.getRecallByStore(
-          storeId,
-          page,
-          limit
-        );
-
-        if (response.success) {
-          const recalls = response.data?.docs || [];
-          const validRecalls = recalls.filter(validateRecallData);
-
-          setTableData(
-            validRecalls.map((recall) => ({
-              _id: recall._id,
-              lastInvoiceDate: new Date(recall.salesId.createdAt)
-                .toLocaleDateString("en-GB")
-                .split("/")
-                .join("/"),
-              customerName: recall.salesId.customerName,
-              customerNumber: recall.salesId.customerPhone,
-              totalInvoiceValue: recall.salesId.netAmount,
-              recallDate: new Date(recall.recallDate)
-                .toLocaleDateString("en-GB")
-                .split("/")
-                .join("/"),
-              notes: recall.salesId.note || "View Notes",
-              orders: recall.salesId.orders.map((order, index) => ({
-                id: `${recall._id}-${index + 1}`,
-                productSku: order.product?.sku || "N/A",
-                lensSku: order.lens?.sku || "N/A",
-                status: order.status || "N/A",
-                leftLens: order?.leftLens?.displayName || "N/A",
-                rightLens: order?.rightLens?.displayName || "N/A",
-              })),
-              fullSale: recall.salesId,
-              updateNotes: recall?.updateNotes || "",
-              rescheduleNotes: recall?.rescheduleNotes || "",
-              recallStatus: recall?.recallStatus || "N/A",
-            }))
-          );
-          if (response.data.page !== pagination.page) {
-            setPagination({
-              totalDocs: response.data.totalDocs || 0,
-              totalPages: response.data.totalPages || 1,
-              page: response.data.page || page,
-              limit: response.data.limit || limit,
-            });
-          }
-        } else {
-          console.error("API error:", response.message);
-          toast.error(response.message);
-          setTableData([]);
-        }
-      } catch (error) {
-        console.error("Error fetching recall data:", error);
-        toast.error("Error fetching recall data");
-        setTableData([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
-  }, []);
+  const isMounted = useRef(false); // Track component mount status
+  const isFetching = useRef(false); // Track API call in progress
 
   // Fetch data when storeId, page, or limit changes
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const storeId = user?.stores[0];
-    if (storeId && debouncedFetchRef.current) {
-      debouncedFetchRef.current(storeId, pagination.page, pagination.limit);
-    } else {
-      console.warn("No storeId or debouncedFetchRef available");
-      toast.error("Unable to fetch data: No store ID found");
-    }
-  }, [pagination.page]);
+    const storeId = user?.stores?.[0];
 
-  const toggleSplit = (index) => {
+    if (!storeId) {
+      setError("No store ID found. Please ensure you are logged in.");
+      toast.error("No store ID found. Please ensure you are logged in.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isFetching.current) {
+      fetchData(storeId);
+    }
+  }, [pagination.page, pagination.limit]);
+
+  const fetchData = async (storeId) => {
+    console.log("storeid<<<", storeId, {
+      page: pagination.page,
+      limit: pagination.limit,
+    });
+    if (isFetching.current) {
+      console.log("Skipping API call: already fetching");
+      return;
+    }
+
+    isFetching.current = true;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await recallService.getRecallByStore(
+        storeId,
+        pagination.page,
+        pagination.limit
+      );
+
+      if (response.success) {
+        const recalls = response.data?.docs || [];
+        const validRecalls = recalls.filter(validateRecallData);
+
+        setTableData(
+          validRecalls.map((recall) => ({
+            _id: recall._id,
+            lastInvoiceDate: new Date(recall.salesId.createdAt)
+              .toLocaleDateString("en-GB")
+              .split("/")
+              .join("/"),
+            customerName: recall.salesId.customerName,
+            customerNumber: recall.salesId.customerPhone,
+            totalInvoiceValue: recall.salesId.netAmount,
+            recallDate: new Date(recall.recallDate)
+              .toLocaleDateString("en-GB")
+              .split("/")
+              .join("/"),
+            notes: recall.salesId.note || "View Notes",
+            orders: recall.salesId.orders.map((order, index) => ({
+              id: `${recall._id}-${index + 1}`,
+              productSku: order.product?.sku || "N/A",
+              lensSku: order.lens?.sku || "N/A",
+              status: order.status || "N/A",
+              leftLens: order?.leftLens?.displayName || "N/A",
+              rightLens: order?.rightLens?.displayName || "N/A",
+            })),
+            fullSale: recall.salesId,
+            updateNotes: recall?.updateNotes || "",
+            rescheduleNotes: recall?.rescheduleNotes || "",
+            recallStatus: recall?.recallStatus || "N/A",
+          }))
+        );
+
+        setPagination((prev) => ({
+          ...prev,
+          totalDocs: response.data.totalDocs || 0,
+          totalPages: response.data.totalPages || 1,
+          // Only update page if explicitly needed, e.g., if API corrects it
+        }));
+      } else {
+        setError(response.message || "Failed to fetch recall data");
+        toast.error(response.message || "Failed to fetch recall data");
+        setTableData([]);
+      }
+    } catch (error) {
+      const errorMessage = error.message || "Error fetching recall data";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setTableData([]);
+    } finally {
+      setLoading(false);
+      isFetching.current = false;
+    }
+  };
+  const toggleSplit = useCallback((index) => {
     setExpandedRows((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
-  };
+  }, []);
 
-  const openNotesModal = (row) => {
+  const openNotesModal = useCallback((row) => {
     if (!row) {
       toast.error("Invalid row data for notes");
       return;
     }
     setSelectedNotes(row);
     setNotesModalVisible(true);
-  };
+  }, []);
 
-  const closeNotesModal = () => {
+  const closeNotesModal = useCallback(() => {
     setNotesModalVisible(false);
     setSelectedNotes(null);
-  };
+  }, []);
 
-  const openCustomerNameModal = (row) => {
+  const openCustomerNameModal = useCallback((row) => {
     if (!row?.fullSale) {
       toast.error("Invalid row data for customer modal");
       return;
     }
     setSelectedRow(row.fullSale);
     setShowCustomerModal(true);
-  };
+  }, []);
 
-  const closeCustomerNameModal = () => {
+  const closeCustomerNameModal = useCallback(() => {
     setShowCustomerModal(false);
     setSelectedRow(null);
-  };
+  }, []);
 
-  const openWhatsAppModal = (row) => {
+  const openWhatsAppModal = useCallback((row) => {
     if (!row) {
       toast.error("Invalid row data for WhatsApp modal");
       return;
     }
     setSelectedRow(row);
     setShowWhatsAppModal(true);
-  };
+  }, []);
 
-  const closeWhatsAppModal = () => {
+  const closeWhatsAppModal = useCallback(() => {
     setShowWhatsAppModal(false);
     setSelectedRow(null);
-  };
+  }, []);
 
-  const openRecallNoteModal = (row) => {
+  const openRecallNoteModal = useCallback((row) => {
     if (!row) {
       toast.error("Invalid row data for recall note modal");
       return;
     }
     setSelectedRow(row);
     setRecallNoteModal(true);
-  };
+  }, []);
 
-  const closeRecallNoteModal = () => {
+  const closeRecallNoteModal = useCallback(() => {
     setRecallNoteModal(false);
     setSelectedRow(null);
-  };
+  }, []);
 
-  const handlePageChange = ({ selected }) => {
-    const newPage = selected + 1; // react-paginate uses 0-based indexing
+  const handlePageChange = useCallback(({ selected }) => {
+    const newPage = selected + 1; // ReactPaginate uses 0-based indexing
     setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
   return (
     <div className="mt-4 max-width-90 mx-auto px-3">
@@ -255,33 +250,35 @@ function RecallReportCom() {
             background-color: transparent;
             border: none;
           }
+          .error-message {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+          }
+          .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            width: 100%;
+          }
         `}
       </style>
       <div className="table-responsive overflow-x-auto">
         {loading ? (
-          <div
-            style={{
-              width: "100%",
-              height: "300px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <div className="spinner-border m-5" role="status">
-              <span className="sr-only"></span>
+          <div className="loading-container">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
           </div>
+        ) : error ? (
+          <div className="error-message">
+            <p>{error}</p>
+          </div>
         ) : tableData.length === 0 ? (
-          <div
-            style={{
-              width: "100%",
-              height: "300px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+          <div className="loading-container">
             <p>No valid recall data available.</p>
           </div>
         ) : (
@@ -410,7 +407,10 @@ function RecallReportCom() {
                 </span>{" "}
                 –{" "}
                 <span className="fw-bold">
-                  {(pagination.page - 1) * pagination.limit + tableData.length}
+                  {Math.min(
+                    (pagination.page - 1) * pagination.limit + tableData.length,
+                    pagination.totalDocs
+                  )}
                 </span>{" "}
                 of <span className="fw-bold">{pagination.totalDocs}</span>{" "}
                 results

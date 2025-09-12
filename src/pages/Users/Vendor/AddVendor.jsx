@@ -601,34 +601,36 @@ const AddVendors = () => {
                   </tbody>
                 </table>
               </div>
-              <div className="d-flex justify-content-between align-items-center mt-3 px-3">
-                <div>
-                  Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                  {Math.min(
-                    pagination.page * pagination.limit,
-                    pagination.totalDocs
-                  )}{" "}
-                  of {pagination.totalDocs} results
+              {!loading && vendors.length > 0 && (
+                <div className="d-flex justify-content-between align-items-center mt-3 px-3">
+                  <div>
+                    Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                    {Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.totalDocs
+                    )}{" "}
+                    of {pagination.totalDocs} results
+                  </div>
+                  <ReactPaginate
+                    breakLabel="..."
+                    nextLabel="Next >"
+                    onPageChange={handlePageChange}
+                    pageRangeDisplayed={3}
+                    pageCount={pagination.totalPages}
+                    previousLabel="< Prev"
+                    renderOnZeroPageCount={null}
+                    forcePage={pagination.page - 1}
+                    containerClassName="pagination mb-0"
+                    pageClassName="page-item"
+                    pageLinkClassName="page-link"
+                    previousClassName="page-item"
+                    previousLinkClassName="page-link"
+                    nextClassName="page-item"
+                    nextLinkClassName="page-link"
+                    activeClassName="active"
+                  />
                 </div>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Next >"
-                  onPageChange={handlePageChange}
-                  pageRangeDisplayed={3}
-                  pageCount={pagination.totalPages}
-                  previousLabel="< Prev"
-                  renderOnZeroPageCount={null}
-                  forcePage={pagination.page - 1}
-                  containerClassName="pagination mb-0"
-                  pageClassName="page-item"
-                  pageLinkClassName="page-link"
-                  previousClassName="page-item"
-                  previousLinkClassName="page-link"
-                  nextClassName="page-item"
-                  nextLinkClassName="page-link"
-                  activeClassName="active"
-                />
-              </div>
+              )}
             </div>
           </div>
         </div>
