@@ -1,0 +1,585 @@
+import React, { useState, useRef } from "react";
+import Select from "react-select";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { Country, State, City } from "country-state-city";
+import styles from "../../assets/css/Stores/AddStores.module.css";
+import { storeService } from "../../services/storeService";
+import { toast } from "react-toastify";
+import { uploadImage } from "../../utils/constants";
+
+const AddStore = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    locationUrl: "",
+    address: "",
+    companyName: "",
+    country: null,
+    state: null,
+    city: null,
+    pincode: "",
+    GSTNumber: "",
+    emails: [],
+    phones: [],
+    photos: [],
+    activeInWebsite: false,
+  });
+
+  const [errors, setErrors] = useState({});
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("+91");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState({
+    email: null,
+    phone: null,
+  });
+  const photoInputRef = useRef(null);
+
+  // Fetch countries
+  const countryOptions = Country.getAllCountries().map((country) => ({
+    value: country.isoCode,
+    label: country.name,
+  }));
+
+  // Fetch states based on selected country
+  const stateOptions = formData.country
+    ? State.getStatesOfCountry(formData.country.value).map((state) => ({
+        value: state.isoCode,
+        label: state.name,
+      }))
+    : [];
+
+  // Fetch cities based on selected country and state
+  const cityOptions =
+    formData.country && formData.state
+      ? City.getCitiesOfState(formData.country.value, formData.state.value).map(
+          (city) => ({
+            value: city.name,
+            label: city.name,
+          })
+        )
+      : [];
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Store Name is required";
+    if (!formData.address.trim())
+      newErrors.address = "Store Address is required";
+    if (!formData.country) newErrors.country = "Country is required";
+    if (!formData.state) newErrors.state = "State is required";
+    if (!formData.city) newErrors.city = "City is required";
+    return newErrors;
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => {
+      const newFormData = { ...prev, [field]: value };
+
+      // Reset state and city when country changes
+      if (field === "country") {
+        newFormData.state = null;
+        newFormData.city = null;
+      }
+      // Reset city when state changes
+      if (field === "state") {
+        newFormData.city = null;
+      }
+
+      return newFormData;
+    });
+
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: "" });
+    }
+  };
+
+  const handleAddEmail = () => {
+    if (newEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      if (!formData.emails.includes(newEmail)) {
+        if (editingIndex.email !== null) {
+          // Update existing email
+          setFormData((prev) => {
+            const updatedEmails = [...prev.emails];
+            updatedEmails[editingIndex.email] = newEmail;
+            return { ...prev, emails: updatedEmails };
+          });
+          setEditingIndex((prev) => ({ ...prev, email: null }));
+        } else {
+          // Add new email
+          setFormData((prev) => ({
+            ...prev,
+            emails: [...prev.emails, newEmail],
+          }));
+        }
+        setNewEmail("");
+      } else {
+        toast.error("Duplicate email");
+      }
+    } else {
+      toast.error("Please enter a valid email");
+    }
+  };
+
+  const handleEditEmail = (index) => {
+    setNewEmail(formData.emails[index]);
+    setEditingIndex((prev) => ({ ...prev, email: index }));
+  };
+
+  const handleDeleteEmail = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      emails: prev.emails.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAddPhone = () => {
+    if (newPhone.length > 3) {
+      if (!formData.phones.includes(newPhone)) {
+        if (editingIndex.phone !== null) {
+          // Update existing phone
+          setFormData((prev) => {
+            const updatedPhones = [...prev.phones];
+            updatedPhones[editingIndex.phone] = newPhone;
+            return { ...prev, phones: updatedPhones };
+          });
+          setEditingIndex((prev) => ({ ...prev, phone: null }));
+        } else {
+          // Add new phone
+          setFormData((prev) => ({
+            ...prev,
+            phones: [...prev.phones, newPhone],
+          }));
+        }
+        setNewPhone("+91");
+      } else {
+        toast.error("Duplicate phone number");
+      }
+    } else {
+      toast.error("Please enter a valid phone number");
+    }
+  };
+
+  const handleEditPhone = (index) => {
+    setNewPhone(formData.phones[index]);
+    setEditingIndex((prev) => ({ ...prev, phone: index }));
+  };
+
+  const handleDeletePhone = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      phones: prev.phones.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const res = await uploadImage(file, file.name);
+      if (!formData.photos.includes(res)) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, res],
+        }));
+      } else {
+        toast.error("Duplicate photo");
+      }
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+    } catch (error) {
+      toast.error("Photo upload failed");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleDeletePhoto = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
+
+    const payload = {
+      ...formData,
+      city: formData?.city?.label,
+      state: formData?.state?.label,
+      country: formData?.country?.label,
+    };
+    console.log("Form submitted:", payload);
+
+    setIsSubmitting(true);
+    try {
+      const response = await storeService.createStore(payload);
+      if (response?.success) {
+        toast.success(response.message);
+        setFormData({
+          name: "",
+          locationUrl: "",
+          address: "",
+          companyName: "",
+          country: null,
+          state: null,
+          city: null,
+          pincode: "",
+          GSTNumber: "",
+          emails: [],
+          phones: [],
+          photos: [],
+          activeInWebsite: false,
+        });
+        setNewEmail("");
+        setNewPhone("+91");
+      }
+    } catch (error) {
+      console.log("Error creating store:", error);
+      toast.error("Error creating store");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="container-fluid px-md-5 px-2">
+      <h1 className={`h2 mt-4 text-dark fw-bold ${styles.store_add_title}`}>
+        Add Stores
+      </h1>
+      <div className="shadow-sm px-md-5">
+        <div className="card-body p-md-5 p-2">
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-12">
+                <label htmlFor="name" className="form-label font-weight-500">
+                  Store Name <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="form-control"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                />
+                {errors.name && (
+                  <div className="text-danger mt-1">{errors.name}</div>
+                )}
+              </div>
+              <div className="col-12">
+                <label
+                  htmlFor="locationUrl"
+                  className="form-label font-weight-500"
+                >
+                  Location URL
+                </label>
+                <input
+                  type="text"
+                  id="locationUrl"
+                  className="form-control"
+                  value={formData.locationUrl}
+                  onChange={(e) =>
+                    handleInputChange("locationUrl", e.target.value)
+                  }
+                />
+              </div>
+              <div className="col-12">
+                <label htmlFor="address" className="form-label font-weight-500">
+                  Store Address <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  id="address"
+                  className="form-control"
+                  rows="5"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
+                />
+                {errors.address && (
+                  <div className="text-danger mt-1">{errors.address}</div>
+                )}
+              </div>
+              <div className="col-12">
+                <label
+                  htmlFor="companyName"
+                  className="form-label font-weight-500"
+                >
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  id="companyName"
+                  className="form-control"
+                  value={formData.companyName}
+                  onChange={(e) =>
+                    handleInputChange("companyName", e.target.value)
+                  }
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label font-weight-500">
+                  Country <span className="text-danger">*</span>
+                </label>
+                <Select
+                  options={countryOptions}
+                  value={formData.country}
+                  onChange={(option) => handleInputChange("country", option)}
+                  placeholder="Select Country..."
+                />
+                {errors.country && (
+                  <div className="text-danger mt-1">{errors.country}</div>
+                )}
+              </div>
+              <div className="col-12">
+                <label className="form-label font-weight-500">
+                  State <span className="text-danger">*</span>
+                </label>
+                <Select
+                  options={stateOptions}
+                  value={formData.state}
+                  onChange={(option) => handleInputChange("state", option)}
+                  placeholder="Select State..."
+                  isDisabled={!formData.country}
+                />
+                {errors.state && (
+                  <div className="text-danger mt-1">{errors.state}</div>
+                )}
+              </div>
+              <div className="col-12">
+                <label className="form-label font-weight-500">
+                  City <span className="text-danger">*</span>
+                </label>
+                <Select
+                  options={cityOptions}
+                  value={formData.city}
+                  onChange={(option) => handleInputChange("city", option)}
+                  placeholder="Select City..."
+                  isDisabled={!formData.state}
+                />
+                {errors.city && (
+                  <div className="text-danger mt-1">{errors.city}</div>
+                )}
+              </div>
+              <div className="col-12">
+                <label htmlFor="pincode" className="form-label font-weight-500">
+                  Pincode
+                </label>
+                <input
+                  type="text"
+                  id="pincode"
+                  className="form-control"
+                  value={formData.pincode}
+                  onChange={(e) => handleInputChange("pincode", e.target.value)}
+                />
+              </div>
+              <div className="col-12">
+                <label
+                  htmlFor="GSTNumber"
+                  className="form-label font-weight-500"
+                >
+                  GST Number
+                </label>
+                <input
+                  type="text"
+                  id="GSTNumber"
+                  className="form-control"
+                  value={formData.GSTNumber}
+                  onChange={(e) =>
+                    handleInputChange("GSTNumber", e.target.value)
+                  }
+                />
+              </div>
+              <div className="col-12">
+                <div className="d-flex align-items-center gap-3 mb-2">
+                  <h5 className="h6 mb-0 font-weight-500">Emails</h5>
+                  <button
+                    type="button"
+                    className="btn custom-button-bgcolor"
+                    onClick={handleAddEmail}
+                  >
+                    {editingIndex.email !== null ? "Update" : "Add"}
+                  </button>
+                </div>
+                <div className="input-group mb-3">
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter email"
+                  />
+                </div>
+                {formData.emails.length > 0 && (
+                  <ul className="list-group mb-3">
+                    {formData.emails.map((email, index) => (
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
+                        {email}
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary me-2"
+                            onClick={() => handleEditEmail(index)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeleteEmail(index)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="col-12">
+                <div className="d-flex align-items-center gap-3 mb-2">
+                  <h5 className="h6 mb-0 font-weight-500">Phones</h5>
+                  <button
+                    type="button"
+                    className="btn custom-button-bgcolor"
+                    onClick={handleAddPhone}
+                  >
+                    {editingIndex.phone !== null ? "Update" : "Add"}
+                  </button>
+                </div>
+                <PhoneInput
+                  country={"in"}
+                  value={newPhone}
+                  onChange={(phone) => setNewPhone(phone)}
+                  inputClass="form-control w-100"
+                  placeholder="Enter phone number"
+                />
+                {formData.phones.length > 0 && (
+                  <ul className="list-group mt-3 mb-3">
+                    {formData.phones.map((phone, index) => (
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
+                        {phone}
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary me-2"
+                            onClick={() => handleEditPhone(index)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeletePhone(index)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="col-12">
+                <div className="d-flex align-items-center gap-3 mb-2">
+                  <h5 className="h6 mb-0 font-weight-500">Photos</h5>
+                </div>
+                <input
+                  type="file"
+                  className="form-control mb-3"
+                  onChange={handlePhotoChange}
+                  accept="image/*"
+                  ref={photoInputRef}
+                />
+                {isUploadingPhoto && (
+                  <div className="text-info mb-3">
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Uploading image...
+                  </div>
+                )}
+                {formData.photos.length > 0 && (
+                  <ul className="list-group mb-3">
+                    {formData.photos.map((photo, index) => (
+                      <li
+                        key={index}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
+                        {photo}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDeletePhoto(index)}
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="col-12 mt-3">
+                <div className="form-check">
+                  <input
+                    type="checkbox"
+                    id="activeInWebsite"
+                    className="form-check-input p-2 border-3"
+                    checked={formData.activeInWebsite}
+                    onChange={(e) =>
+                      handleInputChange("activeInWebsite", e.target.checked)
+                    }
+                  />
+                  <label
+                    htmlFor="activeInWebsite"
+                    className="form-check-label ms-2"
+                  >
+                    Active In Website
+                  </label>
+                </div>
+              </div>
+              <div className="col-12">
+                <button
+                  type="submit"
+                  className="btn custom-button-bgcolor"
+                  disabled={isSubmitting || isUploadingPhoto}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create"
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AddStore;

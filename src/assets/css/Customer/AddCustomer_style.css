@@ -1,0 +1,200 @@
+.custom-option {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+
+.flag-icon {
+  width: 20px;
+  height: 15px;
+  margin-right: 8px;
+}
+
+.modal-backdrop {
+  background-color: rgba(100, 116, 139, 0.3);
+}
+
+.form-control {
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+}
+
+.table th,
+.table td {
+  padding: 8px;
+  vertical-align: middle;
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid #dee2e6;
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+  border-color: #4338ca;
+}
+
+.react-select__control {
+  border-color: #ced4da;
+  box-shadow: none;
+}
+
+.react-select__control:hover {
+  border-color: #adb5bd;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+.custom-label_user {
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.5715;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.add_power {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.add_power_title {
+  color: #64748b !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.user_main_title{
+ font-weight: 700;
+  font-size: 1.88rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.modal-custom-size {
+  max-width: 95vw !important; /* Wider than modal-xl (which is ~1140px) */
+  width: 95vw !important;
+}
+
+.modal-custom-size .modal-content {
+  max-height: 90vh !important; /* Ensure content fits within viewport height */
+  overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+/* Ensure backdrop remains consistent */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.15s linear;
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+}
+.contact_power_table thead tr th{
+  color: #64748B;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.custom-perchase-th {
+  font-weight: 600;
+  text-align: left;
+  overflow-wrap: break-word;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #64748B !important;
+}
+
+.custom-search-icon {
+  color: #94a3b8 !important;
+}
+.form-control::placeholder {
+  color: #94a3b8;
+  opacity: 1; /* Ensures full visibility, as some browsers reduce opacity */
+}
+/* Remove blue border shadow on focus */
+.form-control:focus {
+box-shadow: none;
+border-color: #ced4da; /* Default Bootstrap border color */
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.navbar_main_title{
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: black !important;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+.shadow-lg {
+  --tw-shadow: 0 10px 15px -3px #00000014, 0 4px 6px -2px #00000003;
+  opacity: "10px";
+}
+.max-width-90 {
+  max-width: 85% !important;
+}
+.max-width-95 {
+  max-width: 90% !important;
+}
+.text-color-purple{
+  color: #6366f1 !important;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.font-weight-600{
+  font-weight: 600 !important;
+  font-size: 14px;
+  color: black;
+}
+.font-size-normal{
+  font-size: 15px;
+  font-weight: 200;
+  color: #1e293b;
+}
+.table-vendor-data-size{
+  font-size: 15px;
+}
+
+.font-weight-500{
+  font-weight: 500 !important;
+  color: black;
+}
+
+/* Media query for small screens (below 576px) */
+@media (max-width: 576px) {
+  .max-width-90 {
+    max-width: 100% !important;
+  }
+  .max-width-95 {
+    max-width: 100% !important;
+  }
+}

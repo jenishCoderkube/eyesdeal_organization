@@ -1,0 +1,39 @@
+        
+.text-custom-indigo {
+    color: rgb(99, 102, 241); /* Same as Tailwind's text-indigo-500 */
+  }
+  .btn:hover {
+    border-color: rgb(203, 213, 225); /* Tailwind's slate-300 */
+  }
+  .custom-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.5715;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .custom-disabled {
+    background-color: #d8d8d880 !important;
+  }
+  
+  .custom-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .custom-th {
+    font-weight: 700;
+    text-align: left;
+    overflow-wrap: break-word;
+    color: #64748B !important;
+  }
+  
+  .custom-select {
+    height: 38px; /* Ensures customer and store fields have same height */
+  }
+
+  
+
+  
+ 
