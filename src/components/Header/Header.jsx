@@ -69,12 +69,12 @@ const menuItems = [
     label: "Users",
     icon: "bi bi-people", // You can change the icon class if needed
     submenu: [
-      { label: "Add Organization", link: "/users/add-organization" },
+      // { label: "Add Organization", link: "/users/add-organization" },
       { label: "Add Customer", link: "/users/addCustomer" },
       { label: "Add Employee", link: "/users/add-employee" },
       { label: "View Customer", link: "/users/view-customer" },
       { label: "View Employee", link: "/users/view-employee" },
-      { label: "View OTP", link: "/users/view-otp" },
+      // { label: "View OTP", link: "/users/view-otp" },
       { label: "Add Vendor", link: "/users/add-vendor" },
       { label: "Marketing Reference", link: "/users/marketing-reference" },
       { label: "Bulk Upload Customer", link: "/users/bulk-upload-customer" },
@@ -94,11 +94,11 @@ const menuItems = [
     icon: "bi bi-box", // You can choose a different icon if you prefer
     submenu: [
       { label: "Add Product", link: "/products/add" },
-      { label: "Bulk Upload", link: "/products/bulk-upload" },
-      { label: "Bulk Edit Product", link: "/products/bulk-edit" },
+      // { label: "Bulk Upload", link: "/products/bulk-upload" },
+      // { label: "Bulk Edit Product", link: "/products/bulk-edit" },
       { label: "View Products", link: "/products/view" },
       { label: "View Product Attributes", link: "/products/view-attributes" },
-      { label: "Add Product Attributes", link: "/products/add-attributes" },
+      // { label: "Add Product Attributes", link: "/products/add-attributes" },
     ],
   },
   {
@@ -135,10 +135,10 @@ const menuItems = [
       { label: "Adjustment Report", link: "/reports/adjustment-report" },
       { label: "ProfitLoss Report", link: "/reports/profitLoss-report" },
       { label: "GST Report", link: "/reports/gst-report" },
-      {
-        label: "Empty Inventory Report",
-        link: "/reports/empty-inventory-report",
-      },
+      // {
+      //   label: "Empty Inventory Report",
+      //   link: "/reports/empty-inventory-report",
+      // },
       {
         label: "Recall Report",
         link: "/recall-report",

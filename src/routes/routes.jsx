@@ -265,15 +265,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "AddOrganization",
-    path: "/users/add-organization",
-    element: (
-      <PrivateRoute>
-        <AddOrganization />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "AddOrganization",
+  //   path: "/users/add-organization",
+  //   element: (
+  //     <PrivateRoute>
+  //       <AddOrganization />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "AddCustomer",
     path: "/users/addCustomer",
@@ -328,15 +328,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "ViewOtp",
-    path: "/users/view-otp",
-    element: (
-      <PrivateRoute>
-        <ViewOtp />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "ViewOtp",
+  //   path: "/users/view-otp",
+  //   element: (
+  //     <PrivateRoute>
+  //       <ViewOtp />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "AddVendors",
     path: "/users/add-vendor",
@@ -535,15 +535,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "BulkUploadProduct",
-    path: "/products/bulk-upload",
-    element: (
-      <PrivateRoute>
-        <BulkUploadProduct />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "BulkUploadProduct",
+  //   path: "/products/bulk-upload",
+  //   element: (
+  //     <PrivateRoute>
+  //       <BulkUploadProduct />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "BulkUploadPackage",
     path: "/package/bulk-upload-package",
@@ -571,15 +571,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "BulkEditProduct",
-    path: "/products/bulk-edit",
-    element: (
-      <PrivateRoute>
-        <BulkEditProduct />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "BulkEditProduct",
+  //   path: "/products/bulk-edit",
+  //   element: (
+  //     <PrivateRoute>
+  //       <BulkEditProduct />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "ViewProductAttributes",
     path: "/products/view-attributes",
@@ -589,15 +589,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "AddProductAttributes",
-    path: "/products/add-attributes",
-    element: (
-      <PrivateRoute>
-        <AddProductAttributes />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "AddProductAttributes",
+  //   path: "/products/add-attributes",
+  //   element: (
+  //     <PrivateRoute>
+  //       <AddProductAttributes />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "ProductSalesReport",
     path: "/reports/product-sales-report",
@@ -697,15 +697,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "ProductInventoryReport",
-    path: "/reports/empty-inventory-report",
-    element: (
-      <PrivateRoute>
-        <ProductInventoryReport />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "ProductInventoryReport",
+  //   path: "/reports/empty-inventory-report",
+  //   element: (
+  //     <PrivateRoute>
+  //       <ProductInventoryReport />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "media-library",
     path: "/media-library",
