@@ -16,6 +16,8 @@ export const recallService = {
       const response = await api.get(
         RECALL_ENDPOINTS.GET_RECALL_BY_STORE(storeId, page, limit)
       );
+      console.log("response from recall by store<<<<", response);
+
       return {
         success: response.data.success,
         data: response.data.data,

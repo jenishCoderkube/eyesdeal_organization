@@ -9,7 +9,7 @@ import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
 import ReactPaginate from "react-paginate";
 import { recallService } from "../../services/recallService";
-
+import { useRecallByStore } from "../../hooks/useRecallByStore";
 // Validate recall data
 const validateRecallData = (recall) => {
   if (!recall?._id) return false;
@@ -28,7 +28,6 @@ const validateRecallData = (recall) => {
 };
 
 function RecallReportCom() {
-  const [tableData, setTableData] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,33 +37,45 @@ function RecallReportCom() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [recallNoteModal, setRecallNoteModal] = useState(false);
-  const [pagination, setPagination] = useState({
-    totalDocs: 0,
-    totalPages: 1,
-    page: 1,
-    limit: 10,
-  });
 
+  const user = JSON.parse(localStorage.getItem("user"));
+  const storeId = user?.stores?.[0];
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10); // can keep fixed limit
+  const { data, isLoading, isError } = useRecallByStore(storeId, page, limit);
   const isMounted = useRef(false); // Track component mount status
   const isFetching = useRef(false); // Track API call in progress
 
-  // Fetch data when storeId, page, or limit changes
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const storeId = user?.stores?.[0];
-
-    if (!storeId) {
-      setError("No store ID found. Please ensure you are logged in.");
-      toast.error("No store ID found. Please ensure you are logged in.");
-      setLoading(false);
-      return;
-    }
-
-    if (!isFetching.current) {
-      fetchData(storeId);
-    }
-  }, [pagination.page, pagination.limit]);
-
+  const pagination = {
+    totalDocs: data?.data?.totalDocs || 0,
+    totalPages: data?.data?.totalPages || 1,
+    page,
+    limit,
+  };
+  const tableData =
+    data?.data?.docs?.filter(validateRecallData).map((recall) => ({
+      _id: recall._id,
+      lastInvoiceDate: new Date(recall.salesId.createdAt).toLocaleDateString(
+        "en-GB"
+      ),
+      customerName: recall.salesId.customerName,
+      customerNumber: recall.salesId.customerPhone,
+      totalInvoiceValue: recall.salesId.netAmount,
+      recallDate: new Date(recall.recallDate).toLocaleDateString("en-GB"),
+      notes: recall.salesId.note || "View Notes",
+      orders: recall.salesId.orders.map((order, index) => ({
+        id: `${recall._id}-${index + 1}`,
+        productSku: order.product?.sku || "N/A",
+        lensSku: order.lens?.sku || "N/A",
+        status: order.status || "N/A",
+        leftLens: order?.leftLens?.displayName || "N/A",
+        rightLens: order?.rightLens?.displayName || "N/A",
+      })),
+      fullSale: recall.salesId,
+      updateNotes: recall?.updateNotes || "",
+      rescheduleNotes: recall?.rescheduleNotes || "",
+      recallStatus: recall?.recallStatus || "N/A",
+    })) || [];
   const fetchData = async (storeId) => {
     console.log("storeid<<<", storeId, {
       page: pagination.page,
@@ -203,10 +214,9 @@ function RecallReportCom() {
     setSelectedRow(null);
   }, []);
 
-  const handlePageChange = useCallback(({ selected }) => {
-    const newPage = selected + 1; // ReactPaginate uses 0-based indexing
-    setPagination((prev) => ({ ...prev, page: newPage }));
-  }, []);
+  const handlePageChange = ({ selected }) => {
+    setPage(selected + 1); // ReactPaginate uses 0-based index
+  };
 
   return (
     <div className="mt-4 max-width-90 mx-auto px-3">
@@ -267,7 +277,7 @@ function RecallReportCom() {
         `}
       </style>
       <div className="table-responsive overflow-x-auto">
-        {loading ? (
+        {isLoading ? (
           <div className="loading-container">
             <div className="spinner-border text-primary" role="status">
               <span className="visually-hidden">Loading...</span>
