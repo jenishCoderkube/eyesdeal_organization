@@ -123,6 +123,23 @@ export const packageService = {
       };
     }
   },
+  getPackageById: async (page, limit, packageId) => {
+    try {
+      const response = await api.get(
+        `${PACKAGE_ENDPOINT}/product/${packageId}?page=${page}&limit=${limit}`
+      );
+      return {
+        success: response.data.success,
+        data: response.data.message?.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching package",
+      };
+    }
+  },
   // Update an existing package
   updatePackageOffers: async (formData) => {
     try {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { dashBoardService } from "../../services/dashboardService";
+import { useGetDashboardStore } from "../../hooks/useGetDashboardStore";
 
 function DashBoardCard() {
   const cardStyle = {
@@ -43,51 +44,30 @@ function DashBoardCard() {
     width: "100%",
   };
 
-  const [cardData, setCardData] = useState([
-    { title: "Today's Sale", value: 0 },
-    { title: "This Week's Sale", value: 0 },
-    { title: "This Month's Sale", value: 0 },
-    { title: "Previous Month's Sale", value: 0 },
-  ]);
-
-  const [salesData, setSalesData] = useState([]);
-  const [purchaseData, setPurchaseData] = useState([]);
-  const [vendorData, setVendorData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { data, isLoading, isError, error } = useGetDashboardStore();
 
-  useEffect(() => {
-    async function fetchDashboard() {
-      try {
-        setLoading(true);
-        let dashboardResponse = await dashBoardService.getDashboard();
-        const mainData = dashboardResponse.data;
-        const apiData = mainData.data[0];
+  const mainData = data?.data;
+  const apiData = mainData?.data?.[0] || {};
 
-        setCardData([
-          { title: "Total Sales (Count)", value: mainData.totalSales },
-          { title: "Total Purchases (Count)", value: mainData.totalPurchases },
-          { title: "Active Vendors", value: mainData.totalVendorsActive },
-          { title: "Today's Sale (Amount)", value: apiData.todaySales },
-          { title: "This Week's Sale (Amount)", value: apiData.weekSales },
-          { title: "This Month's Sale (Amount)", value: apiData.monthSales },
-          {
-            title: "Previous Month's Sale (Amount)",
-            value: apiData.prevMonthSales,
-          },
-        ]);
-        setSalesData(mainData.salesData || []);
-        setPurchaseData(mainData.purchaseData || []);
-        setVendorData(mainData.vendorData || []);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchDashboard();
-  }, []);
+  const cardData = [
+    { title: "Total Sales (Count)", value: mainData?.totalSales || 0 },
+    { title: "Total Purchases (Count)", value: mainData?.totalPurchases || 0 },
+    { title: "Active Vendors", value: mainData?.totalVendorsActive || 0 },
+    { title: "Today's Sale (Amount)", value: apiData.todaySales || 0 },
+    { title: "This Week's Sale (Amount)", value: apiData.weekSales || 0 },
+    { title: "This Month's Sale (Amount)", value: apiData.monthSales || 0 },
+    {
+      title: "Previous Month's Sale (Amount)",
+      value: apiData.prevMonthSales || 0,
+    },
+  ];
 
-  if (loading) {
+  const salesData = mainData?.salesData || [];
+  const purchaseData = mainData?.purchaseData || [];
+  const vendorData = mainData?.vendorData || [];
+
+  if (isLoading) {
     return (
       <div style={loaderStyle}>
         <div className="spinner-border text-primary" role="status">

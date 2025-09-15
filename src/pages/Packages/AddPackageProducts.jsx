@@ -12,6 +12,9 @@ import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/De
 import { productService } from "../../services/productService"; // Adjust path as needed
 import { packageService } from "../../services/packageService"; // Adjust path as needed
 import api from "../../services/api"; // Adjust path as needed
+import { useGetpackageProductStore } from "../../hooks/useGetpackageProductStore";
+import { useQueryClient } from "@tanstack/react-query";
+
 const PackageProductsModal = ({
   show,
   onHide,
@@ -116,74 +119,43 @@ const PackageProductsModal = ({
 
 const AddPackageProducts = () => {
   const { id: packageId } = useParams(); // Get package ID from URL
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [editData, setEditData] = useState(null);
   const [deleteModalShow, setDeleteModalShow] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [pagination, setPagination] = useState({
-    totalDocs: 0,
-    limit: 10,
-    page: 1,
-    totalPages: 1,
-    hasPrevPage: false,
-    hasNextPage: false,
-    prevPage: null,
-    nextPage: null,
-  });
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const queryClient = useQueryClient();
 
-  const fetchPackageProducts = async (page = 1, limit = 10) => {
-    setLoading(true);
-    try {
-      const res = await api.get(
-        `/package/product/${packageId}?page=${page}&limit=${limit}`
-      );
+  const { data, isLoading, isError, error } = useGetpackageProductStore(
+    page,
+    limit,
+    packageId
+  );
 
-      if (res?.data) {
-        setProducts(res.data?.message?.data || []);
+  const products = data?.data || [];
 
-        setPagination({
-          totalDocs: res.data?.message?.totalRecords || 0,
-          limit: res.data?.message?.limit || limit,
-          page: res.data?.message?.currentPage || page,
-          totalPages: res.data?.message?.totalPages || 1,
-          hasPrevPage: (res.data?.message?.currentPage || page) > 1,
-          hasNextPage:
-            (res.data?.message?.currentPage || page) <
-            (res.data?.message?.totalPages || 1),
-          prevPage:
-            (res.data?.message?.currentPage || page) > 1
-              ? (res.data?.message?.currentPage || page) - 1
-              : null,
-          nextPage:
-            (res.data?.message?.currentPage || page) <
-            (res.data?.message?.totalPages || 1)
-              ? (res.data?.message?.currentPage || page) + 1
-              : null,
-        });
-      } else {
-        toast.error(res?.data?.message || "Failed to load package products");
-        setProducts([]);
-        setPagination((prev) => ({ ...prev, totalDocs: 0 }));
-      }
-    } catch (error) {
-      console.error("Error fetching package products:", error);
-      toast.error("Error fetching package products");
-      setProducts([]);
-      setPagination((prev) => ({ ...prev, totalDocs: 0 }));
-    } finally {
-      setLoading(false);
-    }
+  const pagination = {
+    totalDocs: data?.message?.totalRecords || 0,
+    limit: data?.message?.limit || limit,
+    page: data?.message?.currentPage || page,
+    totalPages: data?.message?.totalPages || 1,
+    hasPrevPage: (data?.message?.currentPage || 1) > 1,
+    hasNextPage:
+      (data?.message?.currentPage || 1) < (data?.message?.totalPages || 1),
+    prevPage:
+      (data?.message?.currentPage || 1) > 1
+        ? (data?.message?.currentPage || 1) - 1
+        : null,
+    nextPage:
+      (data?.message?.currentPage || 1) < (data?.message?.totalPages || 1)
+        ? (data?.message?.currentPage || 1) + 1
+        : null,
   };
-
-  useEffect(() => {
-    fetchPackageProducts(1, pagination.limit);
-  }, [packageId]);
-
-  const handlePageChange = (page) => {
-    if (page && page !== pagination.page) {
-      fetchPackageProducts(page, pagination.limit);
+  const handlePageChange = (newPage) => {
+    if (newPage && newPage !== page) {
+      setPage(newPage); // triggers re-fetch via TanStack
     }
   };
 
@@ -286,7 +258,9 @@ const AddPackageProducts = () => {
       },
     },
   });
-
+  const fetchPackageProducts = async (page, limit) => {
+    queryClient.invalidateQueries(["packageProducts", page, limit, packageId]);
+  };
   const handleModalSubmit = async (payload) => {
     try {
       if (payload?._id) {
@@ -377,7 +351,7 @@ const AddPackageProducts = () => {
             ))}
           </thead>
           <tbody className="text-sm">
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={columns.length} className="text-center">
                   Loading...
