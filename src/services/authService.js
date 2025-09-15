@@ -3,7 +3,7 @@ import api from "./api";
 // Auth endpoints
 const AUTH_ENDPOINTS = {
   CHECK_USER: (phone) => `/user/check_user/${phone}`,
-  LOGIN: "/user/login",
+  LOGIN: "/organization/login",
 };
 
 // Auth service functions

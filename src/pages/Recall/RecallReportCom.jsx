@@ -1,14 +1,13 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { FaAngleDown, FaAngleRight } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa6";
+import ReactPaginate from "react-paginate";
 import { toast } from "react-toastify";
 import CustomerNameModal from "../../components/Process/Vendor/CustomerNameModal";
 import PreviousNotesModel from "../../components/ReCall/PreviousNotesModel";
-import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
-import ReactPaginate from "react-paginate";
-import { recallService } from "../../services/recallService";
+import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import { useRecallByStore } from "../../hooks/useRecallByStore";
 // Validate recall data
 const validateRecallData = (recall) => {
@@ -76,82 +75,7 @@ function RecallReportCom() {
       rescheduleNotes: recall?.rescheduleNotes || "",
       recallStatus: recall?.recallStatus || "N/A",
     })) || [];
-  const fetchData = async (storeId) => {
-    console.log("storeid<<<", storeId, {
-      page: pagination.page,
-      limit: pagination.limit,
-    });
-    if (isFetching.current) {
-      console.log("Skipping API call: already fetching");
-      return;
-    }
 
-    isFetching.current = true;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await recallService.getRecallByStore(
-        storeId,
-        pagination.page,
-        pagination.limit
-      );
-
-      if (response.success) {
-        const recalls = response.data?.docs || [];
-        const validRecalls = recalls.filter(validateRecallData);
-
-        setTableData(
-          validRecalls.map((recall) => ({
-            _id: recall._id,
-            lastInvoiceDate: new Date(recall.salesId.createdAt)
-              .toLocaleDateString("en-GB")
-              .split("/")
-              .join("/"),
-            customerName: recall.salesId.customerName,
-            customerNumber: recall.salesId.customerPhone,
-            totalInvoiceValue: recall.salesId.netAmount,
-            recallDate: new Date(recall.recallDate)
-              .toLocaleDateString("en-GB")
-              .split("/")
-              .join("/"),
-            notes: recall.salesId.note || "View Notes",
-            orders: recall.salesId.orders.map((order, index) => ({
-              id: `${recall._id}-${index + 1}`,
-              productSku: order.product?.sku || "N/A",
-              lensSku: order.lens?.sku || "N/A",
-              status: order.status || "N/A",
-              leftLens: order?.leftLens?.displayName || "N/A",
-              rightLens: order?.rightLens?.displayName || "N/A",
-            })),
-            fullSale: recall.salesId,
-            updateNotes: recall?.updateNotes || "",
-            rescheduleNotes: recall?.rescheduleNotes || "",
-            recallStatus: recall?.recallStatus || "N/A",
-          }))
-        );
-
-        setPagination((prev) => ({
-          ...prev,
-          totalDocs: response.data.totalDocs || 0,
-          totalPages: response.data.totalPages || 1,
-          // Only update page if explicitly needed, e.g., if API corrects it
-        }));
-      } else {
-        setError(response.message || "Failed to fetch recall data");
-        toast.error(response.message || "Failed to fetch recall data");
-        setTableData([]);
-      }
-    } catch (error) {
-      const errorMessage = error.message || "Error fetching recall data";
-      setError(errorMessage);
-      toast.error(errorMessage);
-      setTableData([]);
-    } finally {
-      setLoading(false);
-      isFetching.current = false;
-    }
-  };
   const toggleSplit = useCallback((index) => {
     setExpandedRows((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
