@@ -436,7 +436,7 @@ export const inventoryService = {
       }
 
       const queryParams = new URLSearchParams();
-      queryParams.append("activeInERP", true);
+      queryParams.append("optimize[activeInERP]", true);
 
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -444,7 +444,10 @@ export const inventoryService = {
             if (key === "search") {
               queryParams.append("search", value);
             } else if (key === "status") {
-              queryParams.set("activeInERP", value === "active" ? true : false);
+              queryParams.set(
+                "optimize[activeInERP]",
+                value === "active" ? true : false
+              );
             } else {
               queryParams.append(`optimize[${key}]`, value);
             }
