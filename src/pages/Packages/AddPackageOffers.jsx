@@ -59,15 +59,15 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
   }, [initialData, show]);
 
   // // Calculate total price for each pair
-  // useEffect(() => {
-  //   setPairs((prevPairs) =>
-  //     prevPairs.map((pair) => {
-  //       const lensPrice = parseFloat(pair.lensPrice) || 0;
-  //       const framePrice = parseFloat(pair.framePrice) || 0;
-  //       return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
-  //     })
-  //   );
-  // }, [pairs]);
+  useEffect(() => {
+    setPairs((prevPairs) =>
+      prevPairs.map((pair) => {
+        const lensPrice = parseFloat(pair.lensPrice) || 0;
+        const framePrice = parseFloat(pair.framePrice) || 0;
+        return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
+      })
+    );
+  }, [pairs]);
 
   const loadLensOptions = async (inputValue) => {
     try {
