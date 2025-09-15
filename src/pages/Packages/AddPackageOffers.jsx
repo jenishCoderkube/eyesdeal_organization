@@ -58,17 +58,6 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
     }
   }, [initialData, show]);
 
-  // // Calculate total price for each pair
-  useEffect(() => {
-    setPairs((prevPairs) =>
-      prevPairs.map((pair) => {
-        const lensPrice = parseFloat(pair.lensPrice) || 0;
-        const framePrice = parseFloat(pair.framePrice) || 0;
-        return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
-      })
-    );
-  }, [pairs]);
-
   const loadLensOptions = async (inputValue) => {
     try {
       const response = await packageService.getLenses(inputValue);
@@ -83,12 +72,18 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
       return [];
     }
   };
-
+  const calculateTotalPrice = (pairs) => {
+    return pairs.map((pair) => {
+      const lensPrice = parseFloat(pair.lensPrice) || 0;
+      const framePrice = parseFloat(pair.framePrice) || 0;
+      return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
+    });
+  };
   const handlePairChange = (index, field, value) => {
     setPairs((prevPairs) => {
-      const newPairs = [...prevPairs];
-      newPairs[index] = { ...newPairs[index], [field]: value };
-      return newPairs;
+      const updatedPairs = [...prevPairs];
+      updatedPairs[index] = { ...updatedPairs[index], [field]: value };
+      return calculateTotalPrice(updatedPairs); // Recalculate totalPrice
     });
   };
 
