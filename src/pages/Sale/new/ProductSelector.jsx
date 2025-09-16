@@ -32,14 +32,20 @@ export default function ProductSelector({
       const response = await saleService.checkInventory(prodID, storeID);
       if (response?.success) {
         const inv = response.data.data.docs?.[0];
+        const type = inv?.product?.__t;
+        console.log("inv", type);
+
         if (!inv) {
           alert("Product out of stock");
           return null;
         }
-        if ((inv.quantity ?? 0) <= 0) {
+
+        // Only eyeGlasses need stock check
+        if (type === "eyeGlasses" && (inv.quantity ?? 0) <= 0) {
           alert("Product out of stock");
           return null;
         }
+
         return { ...inv.product, quantity: inv.quantity };
       }
       return null;
@@ -78,7 +84,7 @@ export default function ProductSelector({
       taxAmount,
       discount,
       totalAmount,
-      quantity: prod.quantity ?? 1,
+      quantity: prod.quantity ?? 0,
       raw: prod,
     };
   };
@@ -92,7 +98,9 @@ export default function ProductSelector({
     if (!inv) return;
 
     const pairId = uuidv4();
+
     const type = inv.__t; // "eyeGlasses" or "contactLens"
+    console.log("type", type);
 
     if (type === "eyeGlasses") {
       setInventoryPairs((prev) => [
@@ -105,7 +113,7 @@ export default function ProductSelector({
           autoFilledRight: false,
         },
       ]);
-    } else if (type === "contactLens") {
+    } else {
       setInventoryPairs((prev) => [
         ...prev,
         {
@@ -116,10 +124,7 @@ export default function ProductSelector({
           autoFilledRight: false,
         },
       ]);
-    } else {
-      console.warn("unknown product type", type);
     }
-
     // ✅ hide select after adding
     setShowSelect(false);
   };
