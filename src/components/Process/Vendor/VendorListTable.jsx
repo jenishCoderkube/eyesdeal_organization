@@ -26,6 +26,8 @@ const VendorListTable = ({
   onPageChange,
   onSearchChange,
   searchQuery,
+  selectedVendor,
+  selectedStore,
 }) => {
   const [filteredData, setFilteredData] = useState(data);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -242,6 +244,7 @@ const VendorListTable = ({
           year: "numeric",
         }),
         store: jobWork.store.name || "",
+        vendor: jobWork?.vendor?.companyName || "",
         side: jobWork.side || "",
         vendorNote: order.vendorNote || "",
         productName: lensName,
@@ -261,6 +264,7 @@ const VendorListTable = ({
             year: "numeric",
           }),
           store: jobWork.store.name || "",
+          vendor: jobWork?.vendor?.companyName || "",
           side: "left",
           vendorNote: order.vendorNote || "",
           productName: lensName,
@@ -271,35 +275,61 @@ const VendorListTable = ({
         });
       }
     });
-    return { jobWorkData };
+    return { jobWorkData, vendorName: selectedVendor?.label || "" };
   };
 
+  // Handle PDF Download
   // Handle PDF Download
   const handleDownloadPDF = async () => {
     try {
       setIsDownloading(true);
-      const filters = {
-        page: 1,
-        limit: 300,
-        populate: true,
-        status: "pending",
-      };
-      const response = await vendorshopService.getJobWorks(filters);
-      if (response.success && response.data.data.docs) {
-        const transformedData = transformJobWorksData(response.data.data.docs);
-        const pdfResponse = await vendorshopService.downloadJobWorksPDF(
-          transformedData
+
+      let rowsToDownload = [];
+
+      if (selectedRows.length > 0) {
+        // Download only selected rows
+        rowsToDownload = filteredData.filter((item) =>
+          selectedRows.includes(item._id)
         );
-        if (pdfResponse.success) {
-          const url = window.URL.createObjectURL(new Blob([pdfResponse.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "JobWorks.pdf");
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.URL.revokeObjectURL(url);
+      } else {
+        // Download all rows via API
+        const filters = {
+          page: 1,
+          limit: 3000, // bigger limit if you expect more data
+          populate: true,
+          status: "pending",
+          vendors: selectedVendor ? [selectedVendor.value] : "",
+          stores: selectedStore ? selectedStore.map((s) => s.value) : "",
+        };
+
+        const response = await vendorshopService.getJobWorks(filters);
+        console.log("response", response);
+
+        if (response?.success && response?.data?.data?.docs?.length > 0) {
+          rowsToDownload = response.data.data.docs;
+        } else {
+          toast.warn("No data available to download.");
+          return; // stop here if no data
         }
+      }
+
+      // Transform and download
+      const transformedData = transformJobWorksData(rowsToDownload);
+      const pdfResponse = await vendorshopService.downloadJobWorksPDF(
+        transformedData
+      );
+
+      if (pdfResponse?.success) {
+        const url = window.URL.createObjectURL(new Blob([pdfResponse.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "JobWorks.pdf");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        toast.error("Failed to generate PDF.");
       }
     } catch (error) {
       console.error("Error downloading PDF:", error);

@@ -102,7 +102,11 @@ export default function ProductSelector({
     const type = inv.__t; // "eyeGlasses" or "contactLens"
     console.log("type", type);
 
-    if (type === "eyeGlasses") {
+    if (
+      type === "eyeGlasses" ||
+      type === "sunGlasses" ||
+      type === "readingGlasses"
+    ) {
       setInventoryPairs((prev) => [
         ...prev,
         {

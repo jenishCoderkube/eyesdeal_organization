@@ -117,11 +117,14 @@ export const vendorshopService = {
       const params = buildJobWorksParams(filters);
       console.log("getJobWorks params:", params, filters); // Debugging
       const response = await api.get(`${AUTH_ENDPOINTS.JOB_WORKS}?${params}`);
+
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
+      console.log("error", error);
+
       return {
         success: false,
         message: error.response?.data?.message || "Error fetching job works",

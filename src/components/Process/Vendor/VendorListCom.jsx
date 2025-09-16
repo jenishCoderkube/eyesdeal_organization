@@ -7,7 +7,9 @@ const VendorListCom = () => {
   const [stores, setStores] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({
     totalDocs: 0,
@@ -122,6 +124,8 @@ const VendorListCom = () => {
         page: 1,
         limit: 100,
       };
+      setSelectedVendor(values.vendor || null);
+      setSelectedStore(values.store || null);
       setCurrentFilters(filters);
 
       const response = await vendorshopService.getJobWorks(filters);
@@ -153,6 +157,8 @@ const VendorListCom = () => {
     } catch (error) {
       console.error("Error filtering data:", error);
       setFilteredData([]);
+      setSelectedVendor(null);
+      setSelectedStore(null);
     } finally {
       setLoading(false);
     }
@@ -252,6 +258,8 @@ const VendorListCom = () => {
             <VendorListTable
               data={filteredData}
               loading={loading}
+              selectedVendor={selectedVendor}
+              selectedStore={selectedStore}
               pagination={pagination}
               onPageChange={handlePageChange}
               onSearchChange={handleSearchChange} // <-- pass
