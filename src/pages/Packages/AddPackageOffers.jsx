@@ -84,11 +84,19 @@ const PackageModal = ({ show, onHide, onSubmit, initialData, packageId }) => {
     }
   };
 
+  const calculateTotalPrice = (pairs) => {
+    return pairs.map((pair) => {
+      const lensPrice = parseFloat(pair.lensPrice) || 0;
+      const framePrice = parseFloat(pair.framePrice) || 0;
+      return { ...pair, totalPrice: (lensPrice + framePrice).toFixed(2) };
+    });
+  };
+
   const handlePairChange = (index, field, value) => {
     setPairs((prevPairs) => {
-      const newPairs = [...prevPairs];
-      newPairs[index] = { ...newPairs[index], [field]: value };
-      return newPairs;
+      const updatedPairs = [...prevPairs];
+      updatedPairs[index] = { ...updatedPairs[index], [field]: value };
+      return calculateTotalPrice(updatedPairs); // Recalculate totalPrice
     });
   };
 
