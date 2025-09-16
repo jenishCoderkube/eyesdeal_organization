@@ -49,10 +49,10 @@ const menuItems = [
       { label: "Universal Search", link: "/inventory/universal-search" },
       { label: "Bulk Upload Inventory", link: "/inventory/bulk-upload" },
       { label: "Stock Out", link: "/inventory/stock-out" },
-      // { label: "Stock In", link: "/inventory/stock-in" },
+      { label: "Stock In", link: "/inventory/stock-in" },
       // { label: "Stock Sale", link: "/inventory/stock-sale" },
       // { label: "Stock Sale In", link: "/inventory/stock-sale-in" },
-      { label: "Stock Sale Out", link: "/inventory/stock-sale-out" },
+      // { label: "Stock Sale Out", link: "/inventory/stock-sale-out" },
       { label: "Transfer Stock", link: "/inventory/transfer-stock" },
       {
         label: "Bulk Upload Transfer Stock",

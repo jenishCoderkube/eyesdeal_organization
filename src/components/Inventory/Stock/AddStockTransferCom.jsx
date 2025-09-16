@@ -4,7 +4,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { debounce } from "lodash";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
-// moment not used
 
 const AddStockTransferCom = () => {
   const [from, setFrom] = useState(null);
@@ -18,7 +17,6 @@ const AddStockTransferCom = () => {
 
   // Handle quantity change for a specific product
   const handleQuantityChange = (productId, value) => {
-    // Allow free typing (including empty) to avoid forcing leading '1'
     setProducts((prev) =>
       prev.map((item) =>
         item.productId === productId ? { ...item, stockQuantity: value } : item
@@ -41,63 +39,82 @@ const AddStockTransferCom = () => {
     );
   };
 
-  // Handle product selection and removal
-  const handleProductChange = async (selectedOptions) => {
+  // Handle product selection
+  const handleProductChange = async (selectedOption) => {
     if (!from) {
       toast.error("Please select a 'From' store first");
       return;
     }
 
-    // Create a set of selected product IDs for efficient lookup
-    const selectedProductIds = new Set(
-      selectedOptions.map((option) => option.value)
-    );
+    if (!selectedOption) return;
 
-    // Keep existing products that are still selected, preserving their stockQuantity
-    const existingProducts = products.filter((p) =>
-      selectedProductIds.has(p.productId)
-    );
+    setLoading(true);
+    try {
+      const response = await inventoryService.getInventoryByStoreAndProduct(
+        from.value,
+        selectedOption.value
+      );
+      const inventoryItem = response?.data?.data?.docs?.[0];
 
-    // Identify new products to add (not already in products)
-    const newOptions = selectedOptions.filter(
-      (option) => !products.some((p) => p.productId === option.value)
-    );
+      if (response.success && inventoryItem && inventoryItem.quantity > 0) {
+        setProducts((prev) => {
+          const existingProductIndex = prev.findIndex(
+            (p) => p.productId === selectedOption.value
+          );
 
-    const newProducts = [];
-    for (const option of newOptions) {
-      setLoading(true);
-      try {
-        const response = await inventoryService.getInventoryByStoreAndProduct(
-          from.value,
-          option.value
+          if (existingProductIndex !== -1) {
+            // If product exists, increase quantity by 1 (up to available stock) and move to top
+            const updatedProducts = [...prev];
+            const existingProduct = updatedProducts[existingProductIndex];
+            updatedProducts.splice(existingProductIndex, 1); // Remove from current position
+            return [
+              {
+                ...existingProduct,
+                stockQuantity: Math.min(
+                  Number(existingProduct.stockQuantity) + 1,
+                  existingProduct.availableStock
+                ),
+              },
+              ...updatedProducts,
+            ];
+          } else {
+            // Add new product at the start of the array (for top display)
+            return [
+              {
+                productId: selectedOption.value,
+                stockQuantity: 1,
+                label: selectedOption.label,
+                availableStock: inventoryItem.quantity,
+              },
+              ...prev,
+            ];
+          }
+        });
+      } else {
+        toast.error(
+          `${selectedOption.label} is out of stock in the selected store`
         );
-        const inventoryItem = response?.data?.data?.docs?.[0];
-
-        if (response.success && inventoryItem && inventoryItem.quantity > 0) {
-          newProducts.push({
-            productId: option.value,
-            stockQuantity: 1, // Default quantity
-            label: option.label,
-            availableStock: inventoryItem.quantity, // Store available stock
-          });
-        } else {
-          toast.error(`${option.label} is out of stock in the selected store`);
-        }
-      } catch (error) {
-        console.error("Error checking inventory:", error);
-        toast.error(`Failed to check stock for ${option.label}`);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error("Error checking inventory:", error);
+      toast.error(`Failed to check stock for ${selectedOption.label}`);
+    } finally {
+      setLoading(false);
     }
-
-    // Update products state: keep existing products that are still selected + add new products
-    setProducts([...existingProducts, ...newProducts]);
   };
 
   // Handle removing a product via table button
   const handleRemoveProduct = (productId) => {
     setProducts((prev) => prev.filter((item) => item.productId !== productId));
+  };
+
+  // Handle to store change with same store validation
+  const handleToChange = (selectedOption) => {
+    if (selectedOption && from && selectedOption.value === from.value) {
+      toast.error("Cannot transfer to the same store");
+      return;
+    }
+    setTo(selectedOption);
   };
 
   // Handle form submission
@@ -142,7 +159,6 @@ const AddStockTransferCom = () => {
       const response = await inventoryService.createStockTransfer(payload);
       if (response.success) {
         toast.success("Stock transfer successfully");
-        // Reset form
         setTo(null);
         setProducts([]);
       } else {
@@ -235,11 +251,14 @@ const AddStockTransferCom = () => {
       }`,
     })) || [];
 
+  // Filter out already selected products from options
   const productOptions =
-    productData?.docs?.map((vendor) => ({
-      value: vendor._id,
-      label: `${vendor.oldBarcode} ${vendor.sku}`,
-    })) || [];
+    productData?.docs
+      ?.filter((vendor) => !products.some((p) => p.productId === vendor._id))
+      .map((vendor) => ({
+        value: vendor._id,
+        label: `${vendor.oldBarcode} ${vendor.sku}`,
+      })) || [];
 
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
@@ -272,7 +291,7 @@ const AddStockTransferCom = () => {
                 <Select
                   id="to"
                   value={to}
-                  onChange={setTo}
+                  onChange={handleToChange}
                   options={storeOptions}
                   placeholder="Select..."
                   className="w-100"
@@ -285,17 +304,13 @@ const AddStockTransferCom = () => {
                 </label>
                 <Select
                   options={productOptions}
-                  value={products.map((p) => ({
-                    value: p.productId,
-                    label: p.label,
-                  }))}
+                  value={null} // Clear selection after each pick
                   onChange={handleProductChange}
                   placeholder="Select products..."
                   className="basic-select"
                   classNamePrefix="select"
                   onInputChange={debouncedGetProduct}
                   isLoading={loading}
-                  isMulti
                   loadingMessage={() => "Loading..."}
                   noOptionsMessage={({ inputValue }) =>
                     inputValue ? "No products found" : "Type to search"

@@ -118,6 +118,29 @@ const StockInTable = () => {
     }
   };
 
+  const handleApprove = async (itemId, status) => {
+    setLoading(true);
+    try {
+      const payload = {
+        _id: itemId,
+        status: status,
+      };
+      const response = await inventoryService.changeStatus(payload);
+      if (response.success) {
+        toast.success("Stock transfer approved successfully");
+        // Refresh the data to reflect the updated status
+        await getCollectionData();
+      } else {
+        toast.error(response.message || "Failed to approve stock transfer");
+      }
+    } catch (error) {
+      console.error("Error approving stock transfer:", error);
+      toast.error("Failed to approve stock transfer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const btnClick = (item) => {
     setShowData(item);
     setShowOffCanvas(true);
@@ -154,13 +177,14 @@ const StockInTable = () => {
                     <th className="custom-perchase-th">Number of Products</th>
                     <th className="custom-perchase-th">Stock Quantity</th>
                     <th className="custom-perchase-th">Status</th>
+                    <th className="custom-perchase-th">Approval Status</th>
                     <th className="custom-perchase-th">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {filteredData.length > 0 ? (
                     filteredData.map((item, index) => (
-                      <tr key={item.id || index}>
+                      <tr key={item._id || index}>
                         <td>{index + 1}</td>
                         <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
                         <td style={{ minWidth: "180px", maxWidth: "200px" }}>
@@ -172,6 +196,22 @@ const StockInTable = () => {
                         <td>{item.products?.length}</td>
                         <td>{item.products?.length}</td>
                         <td>{item.status}</td>
+                        <td>
+                          {item.status === "pending" ? (
+                            <button
+                              type="button"
+                              className="btn btn-success btn-sm"
+                              onClick={() =>
+                                handleApprove(item._id, item?.status)
+                              }
+                              disabled={loading}
+                            >
+                              Approve
+                            </button>
+                          ) : (
+                            item.status
+                          )}
+                        </td>
                         <td className="d-flex align-items-center gap-2">
                           <button
                             type="button"
@@ -193,7 +233,7 @@ const StockInTable = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan="8"
+                        colSpan="9"
                         className="text-center add_power_title py-3"
                       >
                         No data available
