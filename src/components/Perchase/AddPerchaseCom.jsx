@@ -103,7 +103,11 @@ const AddPerchaseCom = () => {
 
     const taxableAmount = purRate - discAmount;
     const taxAmount = (taxableAmount * tax) / 100;
-    const totalAmount = quantity * (taxableAmount + taxAmount);
+
+    // If taxType is "Inc", add tax to totalAmount
+    const totalAmount =
+      quantity * (taxableAmount + (product.taxType === "Inc" ? taxAmount : 0));
+
     const totalDisc = quantity * discAmount;
 
     return {
@@ -470,7 +474,10 @@ const AddPerchaseCom = () => {
       <form onSubmit={handleSubmit}>
         <div className="row px-3">
           {/* Left Section */}
-          <div className="col-lg-9 col-md-12 px-0">
+          <div
+            className="col-lg-9 col-md-12 px-0"
+            style={{ overflowY: "auto" }}
+          >
             <div className="card rounded-0 h-100 border border-dark p-3">
               <div className="row g-3">
                 <div className="col-12 col-md-3">
@@ -590,7 +597,7 @@ const AddPerchaseCom = () => {
               <div className="table-responsive mt-3">
                 <table
                   className="table table-sm"
-                  style={{ minHeight: "250px" }}
+                  style={{ minHeight: "250px", whiteSpace: "nowrap" }}
                 >
                   <thead className="uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
@@ -598,7 +605,7 @@ const AddPerchaseCom = () => {
                       <th className="px-2 py-3 custom-perchase-th">Barcode</th>
                       <th className="px-2 py-3 custom-perchase-th">SKU</th>
                       <th className="px-2 py-3 custom-perchase-th">Quantity</th>
-                      <th className="px-2 py-3 custom-perchase-th">MRP</th>
+                      <th className="px-2 py-3 custom-perchase-th">MRaaaP</th>
                       <th className="px-2 py-3 custom-perchase-th">PUR Rate</th>
 
                       <th className="px-2 py-3 custom-perchase-th">
