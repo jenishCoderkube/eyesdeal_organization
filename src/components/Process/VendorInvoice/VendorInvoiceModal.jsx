@@ -11,7 +11,7 @@ const TAX_OPTIONS = [
   { value: "Exc", label: "Exc" },
 ];
 
-function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
+function VendorInvoiceModal({ show, onHide, loading, selectedJobs }) {
   console.log("selectedJobs", selectedJobs);
 
   const [rows, setRows] = useState([]);
@@ -24,11 +24,21 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
           const costPrice = job.lens?.item?.costPrice || 0;
           const taxRate = job.lens?.item?.tax || 0;
           const taxType = job.lens?.item?.inclusiveTax ? "Inc" : "Exc";
+          const flatDiscount = 0; // default
+          const otherCharges = 0; // default
+
+          // discount is % of cost price
+          const discountAmount = (costPrice * flatDiscount) / 100;
+
+          // net price after discount + charges
+          const netPrice = costPrice - discountAmount + otherCharges;
+
           const taxAmount =
             taxType === "Inc"
-              ? (costPrice * taxRate) / (100 + taxRate)
-              : (costPrice * taxRate) / 100;
-          const total = taxType === "Inc" ? costPrice : costPrice + taxAmount;
+              ? (netPrice * taxRate) / (100 + taxRate)
+              : (netPrice * taxRate) / 100;
+
+          const total = taxType === "Inc" ? netPrice : netPrice + taxAmount;
 
           return {
             _id: job._id,
@@ -36,6 +46,8 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
             sku: job.lens?.sku || "N/A",
             price: costPrice,
             side: job.side || "N/A",
+            flatDiscount,
+            otherCharges,
             taxRate,
             taxType,
             taxAmount: parseFloat(taxAmount.toFixed(2)),
@@ -46,7 +58,6 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
       );
     }
   }, [selectedJobs]);
-
   // Update row values
   // Update row values
   const updateRow = (id, field, value) => {
@@ -55,25 +66,31 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
         if (row._id === id) {
           const updated = { ...row, [field]: value };
 
-          // Always recalc only when price or taxType changes
+          // Ensure numbers
           const price = parseFloat(updated.price) || 0;
           const taxRate = parseFloat(updated.taxRate) || 0;
+          const flatDiscount = parseFloat(updated.flatDiscount) || 0;
+          const otherCharges = parseFloat(updated.otherCharges) || 0;
           const taxType = updated.taxType || "Inc";
 
-          if (field === "price" || field === "taxType") {
-            if (taxType === "Inc") {
-              updated.taxAmount = parseFloat(
-                ((price * taxRate) / (100 + taxRate)).toFixed(2)
-              );
-              updated.total = price; // amount stays same for inclusive tax
-            } else {
-              updated.taxAmount = parseFloat(
-                ((price * taxRate) / 100).toFixed(2)
-              );
-              updated.total = parseFloat(
-                (price + updated.taxAmount).toFixed(2)
-              );
-            }
+          // Discount is percentage of price
+          const discountAmount = (price * flatDiscount) / 100;
+
+          // Net price after discount + charges
+          const netPrice = price - discountAmount + otherCharges;
+
+          if (taxType === "Inc") {
+            updated.taxAmount = parseFloat(
+              ((netPrice * taxRate) / (100 + taxRate)).toFixed(2)
+            );
+            updated.total = netPrice; // inclusive tax, total = net price
+          } else {
+            updated.taxAmount = parseFloat(
+              ((netPrice * taxRate) / 100).toFixed(2)
+            );
+            updated.total = parseFloat(
+              (netPrice + updated.taxAmount).toFixed(2)
+            );
           }
 
           return updated;
@@ -92,6 +109,38 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
       invoiceNumber: Yup.string().required("Invoice number is required"),
       invoiceDate: Yup.date().required("Invoice date is required"),
     }),
+    // onSubmit: (values) => {
+    //   const payload = rows.map((r) => {
+    //     const job = selectedJobs.find((j) => j._id === r._id);
+
+    //     return {
+    //       _id: r._id,
+    //       lens: {
+    //         item: job?.lens?.item?._id || null,
+    //         barcode: job?.lens?.barcode || null,
+    //         sku: job?.lens?.sku || null,
+    //         mrp: job?.lens?.mrp || 0,
+    //         srp: job?.lens?.srp || 0,
+    //         costPrice: parseFloat(r.price) || 0, // updated costPrice
+    //       },
+    //       price: parseFloat(r.price) || 0,
+    //       flatDiscount: parseFloat(r.flatDiscount) || 0, // 👈 NEW
+    //       otherCharges: parseFloat(r.otherCharges) || 0,
+    //       taxAmount: r.taxAmount,
+    //       taxRate: r.taxRate,
+    //       taxType: r.taxType.toLowerCase(),
+    //       amount: r.total,
+    //       fillStatus: "filled",
+    //       notes: r.notes || null,
+    //       invoiceNumber: values.invoiceNumber,
+    //       invoiceDate: values.invoiceDate.getTime(),
+    //       gstType: "",
+    //     };
+    //   });
+
+    //   console.log("payload", payload);
+    //   onSubmit(payload);
+    // },
     onSubmit: (values) => {
       const payload = rows.map((r) => {
         const job = selectedJobs.find((j) => j._id === r._id);
@@ -99,23 +148,29 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
         return {
           _id: r._id,
           lens: {
-            item: job?.lens?.item?._id || null,
+            item: {
+              _id: job?.lens?.item?._id || null,
+              costPrice: parseFloat(r.price) || 0,
+            },
             barcode: job?.lens?.barcode || null,
             sku: job?.lens?.sku || null,
             mrp: job?.lens?.mrp || 0,
             srp: job?.lens?.srp || 0,
-            costPrice: parseFloat(r.price) || 0, // updated costPrice
+            // updated costPrice
           },
-          price: parseFloat(r.price) || 0,
-          taxAmount: r.taxAmount,
-          taxRate: r.taxRate,
-          taxType: r.taxType.toLowerCase(),
-          amount: r.total,
-          fillStatus: "filled",
-          notes: r.notes || null,
-          invoiceNumber: values.invoiceNumber,
-          invoiceDate: values.invoiceDate.getTime(),
-          gstType: "",
+          status: "completed",
+          // price: parseFloat(r.price) || 0,
+          // flatDiscount: parseFloat(r.flatDiscount) || 0, // 👈 NEW
+          // otherCharges: parseFloat(r.otherCharges) || 0,
+          // taxAmount: r.taxAmount,
+          // taxRate: r.taxRate,
+          // taxType: r.taxType.toLowerCase(),
+          // amount: r.total,
+          // fillStatus: "filled",
+          // notes: r.notes || null,
+          // invoiceNumber: values.invoiceNumber,
+          // invoiceDate: values.invoiceDate.getTime(),
+          // gstType: "",
         };
       });
 
@@ -178,6 +233,8 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
                 <th>Product SKU</th>
                 <th>Price</th>
                 <th>Side</th>
+                <th>Flat Discount</th>
+                <th>Other Charges</th>
                 <th>Tax Rate</th>
                 <th>Tax Type</th>
                 <th>Tax Amount</th>
@@ -200,6 +257,26 @@ function VendorInvoiceModal({ show, onHide, onSubmit, loading, selectedJobs }) {
                     />
                   </td>
                   <td>{row.side}</td>
+                  <td>
+                    <Form.Control
+                      type="number"
+                      value={row.flatDiscount}
+                      onChange={(e) =>
+                        updateRow(row._id, "flatDiscount", e.target.value)
+                      }
+                      disabled={loading}
+                    />
+                  </td>
+                  <td>
+                    <Form.Control
+                      type="number"
+                      value={row.otherCharges}
+                      onChange={(e) =>
+                        updateRow(row._id, "otherCharges", e.target.value)
+                      }
+                      disabled={loading}
+                    />
+                  </td>
                   <td>{row.taxRate}</td>
                   <td style={{ minWidth: "120px" }}>
                     <Select

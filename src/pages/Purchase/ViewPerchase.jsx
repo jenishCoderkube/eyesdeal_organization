@@ -16,9 +16,10 @@ function ViewPurchase() {
   const [store, setStore] = useState([]);
   const [fromDate, setFromDate] = useState(() => {
     const previousDate = new Date();
-    previousDate.setDate(previousDate.getDate() - 1);
+    previousDate.setMonth(previousDate.getMonth() - 1);
     return previousDate;
   });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10); // you can make this selectable
   const [totalResults, setTotalResults] = useState(0);
@@ -50,23 +51,34 @@ function ViewPurchase() {
     getStores();
   }, []);
 
-  // Set default store based on localStorage
+  const [defaultStoreSet, setDefaultStoreSet] = useState(false);
+
+  // Set default store from localStorage once
   useEffect(() => {
+    if (storeData.length === 0 || defaultStoreSet) return;
+
     const storedStoreId = JSON.parse(localStorage.getItem("user"))?.stores?.[0];
-    if (storedStoreId && storeData.length > 0) {
+    if (storedStoreId) {
       const defaultStore = storeData.find(
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        setStore([
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
+        const defaultStoreOption = [
+          { value: defaultStore._id, label: defaultStore.name },
+        ];
+        setStore(defaultStoreOption);
       }
     }
-  }, [storeData]);
+    setDefaultStoreSet(true); // mark that default store has been applied
+  }, [storeData, defaultStoreSet]);
+
+  // Fetch purchase logs when store, vendor, or date changes
+  useEffect(() => {
+    // Only fetch if store is set
+    if (store.length === 0) return;
+
+    getPurchaseLogs();
+  }, [store, vendor, fromDate, toDate]);
 
   const getVendors = async () => {
     setLoading(true);
@@ -130,9 +142,11 @@ function ViewPurchase() {
       setLoading(false);
     }
   };
+
+  const storeId = store.map((option) => option.value);
+
   const getPurchaseLogs = async (page = 1) => {
     const vendorId = vendor.map((option) => option.value);
-    const storeId = store.map((option) => option.value);
     setLoading(true);
     try {
       const response = await purchaseService.getPurchaseLog(

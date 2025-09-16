@@ -40,7 +40,9 @@ function VendorInvoice() {
 
   const users = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
-  const defaultStartDate = new Date();
+  const today = new Date();
+  const defaultStartDate = new Date(today);
+  defaultStartDate.setMonth(defaultStartDate.getMonth() - 1);
   const defaultEndDate = new Date();
 
   const formik = useFormik({
@@ -53,7 +55,7 @@ function VendorInvoice() {
     },
     validationSchema: Yup.object({
       store: Yup.object().nullable().required("Store is required"),
-      vendor: Yup.object().nullable().required("Vendor is required"),
+      // vendor: Yup.object().nullable().required("Vendor is required"),
     }),
     onSubmit: (values) => {
       const filters = {
@@ -65,7 +67,7 @@ function VendorInvoice() {
         page: 1,
         limit: 50,
       };
-      if (!filters.stores.length || !filters.vendors.length) {
+      if (!filters.stores.length) {
         toast.error("Please select both a store and a vendor");
         return;
       }
@@ -296,7 +298,7 @@ function VendorInvoice() {
 
   const handleModalSubmit = useCallback(
     async (invoiceData) => {
-      console.log(invoiceData);
+      console.log(invoiceData, "thussssssss");
 
       try {
         setLoading(true);
@@ -326,6 +328,7 @@ function VendorInvoice() {
             _id: row._id,
             lens: row.lens, // ✅ include full lens object
             price,
+
             taxAmount,
             taxRate,
             taxType: taxType.toLowerCase(),

@@ -207,6 +207,7 @@ const AddPerchaseCom = () => {
           discRate: 0,
           discAmount: 0,
           tax: selectedProduct.tax,
+          taxType: "Inc",
           taxAmount: 0,
           totalDisc: 0,
           totalAmount: 0,
@@ -277,6 +278,7 @@ const AddPerchaseCom = () => {
           discountType: product.discType,
           discountRate: product.discRate,
           discountAmount: product.discAmount,
+          taxType: product.taxType,
           taxAmount: product.taxAmount,
           tax: product.tax,
           totalDiscount: product.totalDisc,
@@ -335,6 +337,10 @@ const AddPerchaseCom = () => {
     getProduct("");
   }, []);
 
+  const TAX_OPTIONS = [
+    { value: "Inc", label: "Inc" },
+    { value: "Exc", label: "Exc" },
+  ];
   const getVendor = async () => {
     setLoading(true);
     try {
@@ -582,7 +588,10 @@ const AddPerchaseCom = () => {
                 )}
               </div>
               <div className="table-responsive mt-3">
-                <table className="table table-sm">
+                <table
+                  className="table table-sm"
+                  style={{ minHeight: "250px" }}
+                >
                   <thead className="uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
                       <th className="px-2 py-3 custom-perchase-th"></th>
@@ -591,6 +600,7 @@ const AddPerchaseCom = () => {
                       <th className="px-2 py-3 custom-perchase-th">Quantity</th>
                       <th className="px-2 py-3 custom-perchase-th">MRP</th>
                       <th className="px-2 py-3 custom-perchase-th">PUR Rate</th>
+
                       <th className="px-2 py-3 custom-perchase-th">
                         DISC Type
                       </th>
@@ -600,6 +610,8 @@ const AddPerchaseCom = () => {
                       <th className="px-2 py-3 custom-perchase-th">
                         DISC Amount
                       </th>
+                      <th className="px-2 py-3 custom-perchase-th">Tax Type</th>
+
                       <th className="px-2 py-3 custom-perchase-th">Tax</th>
                       <th className="px-2 py-3 custom-perchase-th">Tax AMT</th>
                       <th className="px-2 py-3 custom-perchase-th">
@@ -732,6 +744,44 @@ const AddPerchaseCom = () => {
                               className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
                               value={product.discAmount}
+                            />
+                          </td>
+                          <td style={{ minWidth: "120px" }}>
+                            <Select
+                              options={TAX_OPTIONS}
+                              value={TAX_OPTIONS.find(
+                                (t) => t.value === product.taxType
+                              )}
+                              styles={{
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                  fontSize: "10px",
+                                }),
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "35px",
+                                  height: "35px",
+                                  fontSize: "14px",
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontSize: "14px",
+                                  marginTop: "0px", // make sure it's above everything
+                                }),
+                                option: (base) => ({
+                                  ...base,
+                                  padding: "4px 8px",
+                                }),
+                              }}
+                              onChange={(selected) =>
+                                handleProductChange(
+                                  index,
+                                  "taxType",
+                                  selected.value
+                                )
+                              }
+                              isDisabled={loading}
                             />
                           </td>
                           <td className="p-2">
