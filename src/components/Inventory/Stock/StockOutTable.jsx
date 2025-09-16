@@ -1,20 +1,20 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
-import { Offcanvas } from "react-bootstrap";
 import ReactPaginate from "react-paginate";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
+import ProductModal from "./ProductModal";
 
 const StockOutTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState({ docs: [], totalPages: 1 });
   const [currentPage, setCurrentPage] = useState(0);
-  const [showOffcanvas, setShowOffCanvas] = useState(false);
-  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [showData, setShowData] = useState([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
   const itemsPerPage = 20;
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -47,10 +47,6 @@ const StockOutTable = () => {
       );
     });
   }, [searchQuery, stockData]);
-
-  const handleCloseOffcanvas = () => {
-    setShowOffCanvas(false);
-  };
 
   useEffect(() => {
     getCollectionData(currentPage + 1);
@@ -132,7 +128,12 @@ const StockOutTable = () => {
 
   const btnClick = (item) => {
     setShowData(item);
-    setShowOffCanvas(true);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setShowData([]);
   };
 
   const handlePageClick = (event) => {
@@ -276,52 +277,11 @@ const StockOutTable = () => {
         </div>
       </div>
 
-      <Offcanvas
-        show={showOffcanvas}
-        onHide={handleCloseOffcanvas}
-        placement="end"
-        style={{ width: "420px" }}
-      >
-        <Offcanvas.Header className="bg-light border-bottom">
-          <Offcanvas.Title className="text-dark font-semibold">
-            Products
-          </Offcanvas.Title>
-          <button
-            type="button"
-            className="btn-close text-reset"
-            onClick={handleCloseOffcanvas}
-          />
-        </Offcanvas.Header>
-        <Offcanvas.Body className="p-4">
-          <div className="text-xs d-inline-flex font-medium bg-secondary-subtle text-secondary rounded-pill text-black text-center px-2 py-1 mb-4">
-            Number Of Products: {showData?.length}
-          </div>
-          {showData?.map((product, index) => (
-            <div
-              key={index}
-              className="p-3 mb-2 border rounded"
-              style={{ borderColor: "rgb(214, 199, 199)" }}
-            >
-              <p className="my-1">
-                <span className="text-muted">Product Name: </span>
-                {product.productId?.displayName}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Product SKU: </span>
-                {product.productId?.sku}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Barcode: </span>
-                {product.productId?.newBarcode}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Stock Quantity: </span>
-                {product?.stockQuantity}
-              </p>
-            </div>
-          ))}
-        </Offcanvas.Body>
-      </Offcanvas>
+      <ProductModal
+        show={showModal}
+        handleClose={handleCloseModal}
+        products={showData}
+      />
     </>
   );
 };

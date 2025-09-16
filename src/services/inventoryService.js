@@ -1042,11 +1042,11 @@ export const inventoryService = {
       };
     }
   },
-  changeStatus: async (itemId, status) => {
+  changeStatus: async (payload) => {
     try {
-      const response = await api.patch(
+      const response = await api.post(
         INVENTORY_ENDPOINTS.UPDATE_STOCK_STATUS(),
-        { itemId, status }
+        payload
       );
       return {
         success: true,
