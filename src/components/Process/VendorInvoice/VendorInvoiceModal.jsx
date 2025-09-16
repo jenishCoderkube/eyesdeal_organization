@@ -11,7 +11,7 @@ const TAX_OPTIONS = [
   { value: "Exc", label: "Exc" },
 ];
 
-function VendorInvoiceModal({ show, onHide, loading, selectedJobs }) {
+function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
   console.log("selectedJobs", selectedJobs);
 
   const [rows, setRows] = useState([]);
