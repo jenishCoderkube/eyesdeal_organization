@@ -157,7 +157,7 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
           const job = selectedJobs.find((j) => j._id === r._id);
           return {
             _id: r._id,
-            status: "completed",
+            fillStatus: "filled",
             lens: {
               item: {
                 _id: job?.lens?.item?._id || null,

@@ -108,8 +108,8 @@ function VendorInvoice() {
     setDataLoaded(false);
     try {
       const response = await vendorInvoiceService.getJobWorks(filters);
-      if (response.success && response.data.data.data) {
-        const jobWorks = response.data.data.data;
+      if (response.success && response.data.data?.docs) {
+        const jobWorks = response.data.data?.docs;
         console.log("Fetched job works:", jobWorks); // Debug: Log raw job works
         setTableData(
           jobWorks
@@ -154,24 +154,24 @@ function VendorInvoice() {
             })
             .filter(Boolean)
         );
-        console.log("Processed tableData:", tableData); // Debug: Log processed table data
+        console.log("Processed tableData:", response.data.data); // Debug: Log processed table data
         setPagination({
-          totalDocs: response.data.data.totalRecords || 0, // Use totalRecords instead of totalCount
-          limit: response.data.data.limit || 50,
-          page: response.data.data.page || 1,
-          totalPages: response.data.data.totalPages || 0,
+          totalDocs: response.data.data?.totalDocs || 0, // Use totalRecords instead of totalCount
+          limit: response.data.data?.limit || 50,
+          page: response.data.data?.page || 1,
+          totalPages: response.data.data?.totalPages || 0,
           hasPrevPage: (response.data.data.page || 1) > 1,
           hasNextPage:
             (response.data.data.page || 1) <
-            (response.data.data.totalPages || 0),
+            (response.data.data?.totalPages || 0),
           prevPage:
-            (response.data.data.page || 1) > 1
-              ? (response.data.data.page || 1) - 1
+            (response.data.data?.page || 1) > 1
+              ? (response.data.data?.page || 1) - 1
               : null,
           nextPage:
-            (response.data.data.page || 1) <
-            (response.data.data.totalPages || 0)
-              ? (response.data.data.page || 1) + 1
+            (response.data.data?.page || 1) <
+            (response.data.data?.totalPages || 0)
+              ? (response.data.data?.page || 1) + 1
               : null,
         });
       } else {

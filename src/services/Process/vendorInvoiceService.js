@@ -1,7 +1,7 @@
 import api from "../api";
 
 const AUTH_ENDPOINTS = {
-  JOB_WORKS: `/jobWorks/get`,
+  JOB_WORKS: `/jobWorks`,
   VENDORS: `/vendors`,
   STORES: `/stores`,
   CREATE_INVOICE: `/vendors/invoice`,
@@ -47,27 +47,37 @@ const buildJobWorksParams = (
 export const vendorInvoiceService = {
   getJobWorks: async (filters) => {
     try {
-      const params = buildJobWorksParams(
-        filters.startDate,
-        filters.endDate,
-        filters.stores,
-        filters.vendors,
-        filters.search,
-        filters.page,
-        filters.limit
+      const params = new URLSearchParams();
+
+      // vendor filter (single value)
+      if (filters?.vendors?.length > 0) {
+        params.append("vendor._id", filters.vendors[0]);
+      }
+
+      // store filter (single value)
+      if (filters?.stores?.length > 0) {
+        params.append("store._id", filters.stores[0]);
+      }
+
+      // createdAt date filters (milliseconds)
+      if (filters.startDate) {
+        params.append("createdAt[$gte]", filters.startDate.getTime());
+      }
+      if (filters.endDate) {
+        params.append("createdAt[$lte]", filters.endDate.getTime());
+      }
+
+      // extra filters
+      params.append("populate", true);
+
+      // pagination
+      if (filters.page) params.append("page", filters.page);
+      if (filters.limit) params.append("limit", filters.limit);
+
+      const response = await api.get(
+        `${AUTH_ENDPOINTS.JOB_WORKS}?${params.toString()}`
       );
-      const payload = {
-        vendor: filters.vendors,
-        store: filters.stores,
-        startDate: filters?.startDate?.toISOString().split("T")[0],
-        endDate: filters?.endDate?.toISOString().split("T")[0],
-        page: filters.page,
-        limit: filters.limit,
-      };
-      const response = await api.post(
-        `${AUTH_ENDPOINTS.JOB_WORKS}?${params}`,
-        payload
-      );
+
       return {
         success: true,
         data: response.data,
