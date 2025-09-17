@@ -110,6 +110,7 @@ function VendorInvoice() {
       const response = await vendorInvoiceService.getJobWorks(filters);
       if (response.success && response.data.data.data) {
         const jobWorks = response.data.data.data;
+        console.log("Fetched job works:", jobWorks); // Debug: Log raw job works
         setTableData(
           jobWorks
             .map((job) => {
@@ -153,6 +154,7 @@ function VendorInvoice() {
             })
             .filter(Boolean)
         );
+        console.log("Processed tableData:", tableData); // Debug: Log processed table data
         setPagination({
           totalDocs: response.data.data.totalRecords || 0,
           limit: response.data.data.limit || 50,
@@ -203,7 +205,6 @@ function VendorInvoice() {
       setDataLoaded(true);
     }
   }, []);
-
   const debouncedFetchJobWorks = useMemo(
     () => debounce(fetchJobWorks, 300),
     [fetchJobWorks]
@@ -289,14 +290,23 @@ function VendorInvoice() {
   }, []);
 
   const handleSelect = useCallback((id) => {
+    console.log("Selecting row with id:", id); // Debug: Log the ID being selected
     setTableData((prev) =>
-      prev.map((row) =>
-        row._id === id ? { ...row, selected: !row.selected } : row
-      )
+      prev.map((row) => {
+        if (row._id === id) {
+          console.log("Toggling row:", row); // Debug: Log the row being toggled
+          return { ...row, selected: !row.selected };
+        }
+        return row;
+      })
     );
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
+    setSelectedRows((prev) => {
+      const newSelectedRows = prev.includes(id)
+        ? prev.filter((rowId) => rowId !== id)
+        : [...prev, id];
+      console.log("Updated selectedRows:", newSelectedRows); // Debug: Log updated selectedRows
+      return newSelectedRows;
+    });
   }, []);
 
   const handleCreateVendorInvoice = useCallback(() => {
@@ -312,9 +322,7 @@ function VendorInvoice() {
   }, [selectedRows, formik.values]);
 
   const handleModalSubmit = useCallback(
-    async (invoiceData) => {
-      console.log(invoiceData, "thussssssss");
-
+    async (payload) => {
       try {
         setLoading(true);
 
@@ -323,54 +331,28 @@ function VendorInvoice() {
           return;
         }
 
-        // Loop over invoiceData array and call API for each row
-        for (let row of invoiceData) {
-          const price = parseFloat(row.price) || 0;
-          const taxRate = parseFloat(row.taxRate) || 12;
-          const taxType = row.taxType || "inc";
+        // 🔑 instead of looping row-by-row, we now have the modal's payload
+        const response = await vendorInvoiceService.createVendorInvoice({
+          store: payload.store,
+          vendor: payload.vendor,
+          invoiceNumber: payload.invoiceNumber,
+          invoiceDate: payload.invoiceDate,
+          flatDiscount: payload.flatDiscount,
+          otherCharges: payload.otherCharges,
+          totalAmount: payload.totalAmount,
+          totalQuantity: payload.totalQuantity,
+          taxAmount: payload.taxAmount,
+          jobWork: payload.jobWork, // ✅ already structured
+        });
 
-          const taxAmount =
-            taxType.toLowerCase() === "exc"
-              ? parseFloat(((price * taxRate) / 100).toFixed(2))
-              : 0;
-
-          const total =
-            taxType.toLowerCase() === "exc"
-              ? parseFloat((price + taxAmount).toFixed(2))
-              : price;
-
-          const payload = {
-            _id: row._id,
-            lens: row.lens, // ✅ include full lens object
-            price,
-
-            taxAmount,
-            taxRate,
-            taxType: taxType.toLowerCase(),
-            amount: total,
-            status: "filled", // ✅ match your example key
-            notes: row.notes || null,
-            invoiceNumber: row.invoiceNumber,
-            invoiceDate: row.invoiceDate,
-            gstType: row.gstType || "",
-          };
-
-          const response = await vendorInvoiceService.createVendorInvoice({
-            store: formik.values.store?.value,
-            vendor: formik.values.vendor?.value,
-            ...payload, // ✅ send exact payload structure
-          });
-
-          if (!response.success) {
-            toast.error(
-              response.message || `Failed to create invoice for ${payload._id}`
-            );
-          }
+        if (!response.success) {
+          toast.error(response.message || "Failed to create vendor invoice");
+          return;
         }
 
-        toast.success("Vendor invoices created successfully");
+        toast.success("Vendor invoice created successfully");
         setShowModal(false);
-        formik.handleSubmit(); // Refresh table
+        formik.handleSubmit(); // refresh table
       } catch (error) {
         toast.error(error.message || "Something went wrong");
       } finally {

@@ -4,7 +4,7 @@ const AUTH_ENDPOINTS = {
   JOB_WORKS: `/jobWorks/get`,
   VENDORS: `/vendors`,
   STORES: `/stores`,
-  CREATE_INVOICE: `/jobWorks`,
+  CREATE_INVOICE: `/vendors/invoice`,
 };
 
 const buildJobWorksParams = (
@@ -128,7 +128,7 @@ export const vendorInvoiceService = {
     try {
       console.log("Creating vendor invoice with payload:", payload);
 
-      const response = await api.patch(AUTH_ENDPOINTS.CREATE_INVOICE, payload);
+      const response = await api.post(AUTH_ENDPOINTS.CREATE_INVOICE, payload);
       return {
         success: true,
         data: response.data,

@@ -12,8 +12,6 @@ const TAX_OPTIONS = [
 ];
 
 function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
-  console.log("selectedJobs", selectedJobs);
-
   const [rows, setRows] = useState([]);
 
   // Initialize rows from selectedJobs
@@ -27,8 +25,8 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
           const flatDiscount = 0; // default
           const otherCharges = 0; // default
 
-          // discount is % of cost price
-          const discountAmount = (costPrice * flatDiscount) / 100;
+          // discount is flat amount
+          const discountAmount = flatDiscount;
 
           // net price after discount + charges
           const netPrice = costPrice - discountAmount + otherCharges;
@@ -53,12 +51,22 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
             taxAmount: parseFloat(taxAmount.toFixed(2)),
             total: parseFloat(total.toFixed(2)),
             notes: "",
+            lens: {
+              item: {
+                _id: job?.lens?.item?._id || null,
+                costPrice: parseFloat(costPrice) || 0,
+              },
+              barcode: job?.lens?.barcode || null,
+              sku: job?.lens?.sku || null,
+              mrp: job?.lens?.mrp || 0,
+              srp: job?.lens?.srp || 0,
+            },
           };
         })
       );
     }
   }, [selectedJobs]);
-  // Update row values
+
   // Update row values
   const updateRow = (id, field, value) => {
     setRows((prev) =>
@@ -73,25 +81,18 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
           const otherCharges = parseFloat(updated.otherCharges) || 0;
           const taxType = updated.taxType || "Inc";
 
-          // Discount is percentage of price
-          const discountAmount = (price * flatDiscount) / 100;
-
           // Net price after discount + charges
-          const netPrice = price - discountAmount + otherCharges;
+          const netPrice = price - flatDiscount + otherCharges;
 
-          if (taxType === "Inc") {
-            updated.taxAmount = parseFloat(
-              ((netPrice * taxRate) / (100 + taxRate)).toFixed(2)
-            );
-            updated.total = netPrice; // inclusive tax, total = net price
-          } else {
-            updated.taxAmount = parseFloat(
-              ((netPrice * taxRate) / 100).toFixed(2)
-            );
-            updated.total = parseFloat(
-              (netPrice + updated.taxAmount).toFixed(2)
-            );
-          }
+          const taxAmount =
+            taxType === "Inc"
+              ? (netPrice * taxRate) / (100 + taxRate)
+              : (netPrice * taxRate) / 100;
+
+          updated.taxAmount = parseFloat(taxAmount.toFixed(2));
+          updated.total = parseFloat(
+            (taxType === "Inc" ? netPrice : netPrice + taxAmount).toFixed(2)
+          );
 
           return updated;
         }
@@ -99,6 +100,34 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
       })
     );
   };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    const totals = {
+      totalQuantity: rows.length,
+      flatDiscount: 0,
+      otherCharges: 0,
+      taxAmount: 0,
+      totalAmount: 0,
+    };
+
+    rows.forEach((row) => {
+      totals.flatDiscount += parseFloat(row.flatDiscount) || 0;
+      totals.otherCharges += parseFloat(row.otherCharges) || 0;
+      totals.taxAmount += parseFloat(row.taxAmount) || 0;
+      totals.totalAmount += parseFloat(row.total) || 0;
+    });
+
+    // Round to 2 decimal places where applicable
+    totals.flatDiscount = parseFloat(totals.flatDiscount.toFixed(2));
+    totals.otherCharges = parseFloat(totals.otherCharges.toFixed(2));
+    totals.taxAmount = parseFloat(totals.taxAmount.toFixed(2));
+    totals.totalAmount = parseFloat(totals.totalAmount.toFixed(2));
+
+    return totals;
+  };
+
+  const totals = calculateTotals();
 
   const formik = useFormik({
     initialValues: {
@@ -109,72 +138,41 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
       invoiceNumber: Yup.string().required("Invoice number is required"),
       invoiceDate: Yup.date().required("Invoice date is required"),
     }),
-    // onSubmit: (values) => {
-    //   const payload = rows.map((r) => {
-    //     const job = selectedJobs.find((j) => j._id === r._id);
+    onSubmit: async (values) => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const storeId = user?.stores?.[0] || null;
+      const vendorId = selectedJobs?.[0]?.vendor?._id || null;
 
-    //     return {
-    //       _id: r._id,
-    //       lens: {
-    //         item: job?.lens?.item?._id || null,
-    //         barcode: job?.lens?.barcode || null,
-    //         sku: job?.lens?.sku || null,
-    //         mrp: job?.lens?.mrp || 0,
-    //         srp: job?.lens?.srp || 0,
-    //         costPrice: parseFloat(r.price) || 0, // updated costPrice
-    //       },
-    //       price: parseFloat(r.price) || 0,
-    //       flatDiscount: parseFloat(r.flatDiscount) || 0, // 👈 NEW
-    //       otherCharges: parseFloat(r.otherCharges) || 0,
-    //       taxAmount: r.taxAmount,
-    //       taxRate: r.taxRate,
-    //       taxType: r.taxType.toLowerCase(),
-    //       amount: r.total,
-    //       fillStatus: "filled",
-    //       notes: r.notes || null,
-    //       invoiceNumber: values.invoiceNumber,
-    //       invoiceDate: values.invoiceDate.getTime(),
-    //       gstType: "",
-    //     };
-    //   });
-
-    //   console.log("payload", payload);
-    //   onSubmit(payload);
-    // },
-    onSubmit: (values) => {
-      const payload = rows.map((r) => {
-        const job = selectedJobs.find((j) => j._id === r._id);
-
-        return {
-          _id: r._id,
-          lens: {
-            item: {
-              _id: job?.lens?.item?._id || null,
-              costPrice: parseFloat(r.price) || 0,
+      const payload = {
+        store: storeId,
+        vendor: vendorId,
+        invoiceNumber: values.invoiceNumber,
+        invoiceDate: values.invoiceDate.toISOString().split("T")[0],
+        flatDiscount: totals.flatDiscount,
+        otherCharges: totals.otherCharges,
+        totalAmount: totals.totalAmount,
+        totalQuantity: totals.totalQuantity,
+        taxAmount: totals.taxAmount,
+        jobWork: rows.map((r) => {
+          const job = selectedJobs.find((j) => j._id === r._id);
+          return {
+            _id: r._id,
+            status: "completed",
+            lens: {
+              item: {
+                _id: job?.lens?.item?._id || null,
+                costPrice: parseFloat(r.price) || 0,
+              },
+              barcode: job?.lens?.barcode || null,
+              sku: job?.lens?.sku || null,
+              mrp: job?.lens?.mrp || 0,
+              srp: job?.lens?.srp || 0,
             },
-            barcode: job?.lens?.barcode || null,
-            sku: job?.lens?.sku || null,
-            mrp: job?.lens?.mrp || 0,
-            srp: job?.lens?.srp || 0,
-            // updated costPrice
-          },
-          status: "completed",
-          // price: parseFloat(r.price) || 0,
-          // flatDiscount: parseFloat(r.flatDiscount) || 0, // 👈 NEW
-          // otherCharges: parseFloat(r.otherCharges) || 0,
-          // taxAmount: r.taxAmount,
-          // taxRate: r.taxRate,
-          // taxType: r.taxType.toLowerCase(),
-          // amount: r.total,
-          // fillStatus: "filled",
-          // notes: r.notes || null,
-          // invoiceNumber: values.invoiceNumber,
-          // invoiceDate: values.invoiceDate.getTime(),
-          // gstType: "",
-        };
-      });
+          };
+        }),
+      };
 
-      console.log("payload", payload);
+      // ✅ Send to parent instead of making API call here
       onSubmit(payload);
     },
   });
@@ -294,6 +292,45 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
               ))}
             </tbody>
           </Table>
+
+          {/* Totals Summary */}
+          <div className="mt-3">
+            <h5>Summary</h5>
+            <Table bordered size="sm">
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Total Quantity</strong>
+                  </td>
+                  <td>{totals.totalQuantity}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Flat Discount</strong>
+                  </td>
+                  <td>{totals.flatDiscount.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Other Charges</strong>
+                  </td>
+                  <td>{totals.otherCharges.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Tax Amount</strong>
+                  </td>
+                  <td>{totals.taxAmount.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Amount</strong>
+                  </td>
+                  <td>{totals.totalAmount.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </Table>
+          </div>
 
           {/* Footer Buttons */}
           <div className="d-flex justify-content-end mt-3">
