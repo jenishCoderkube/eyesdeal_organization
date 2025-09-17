@@ -161,38 +161,36 @@ const LensModal = ({ show, onHide, purchase }) => {
                 <tbody className="text-sm">
                   {editableLens.length > 0 ? (
                     editableLens.map((lens, index) => (
-                      <tr key={lens._id || index}>
-                        <td className="p-3">{lens.barcode || "N/A"}</td>
-                        <td className="p-3">{lens.sku || "N/A"}</td>
-                        <td className="p-3">
-                          {purchase?.store?.name || "N/A"}
-                        </td>
-                        {console.log("jenish", lens?.lens)}
-                        <td className="p-3">
-                          {/* <input
-                            type="number"
-                            value={lens.costPrice || ""}
-                            onChange={(e) =>
-                              handleCostPriceChange(index, e.target.value)
-                            }
-                            className="form-control form-control-sm"
-                          /> */}
-                          {lens?.lens?.item?.costPrice}
-                          {/* {lens?.barcode} */}
-                        </td>
-                        <td className="p-3">{lens.mrp || "N/A"}</td>
-                        <td className="p-3">{lens.taxRate}%</td>
+                      <React.Fragment key={lens._id || index}>
+                        <tr>
+                          <td className="p-3">{lens.barcode || "N/A"}</td>
+                          <td className="p-3">{lens.sku || "N/A"}</td>
+                          <td className="p-3">
+                            {purchase?.store?.name || "N/A"}
+                          </td>
+                          <td className="p-3">
+                            {lens?.lens?.item?.costPrice || "N/A"}
+                          </td>
+                          <td className="p-3">{lens.mrp}</td>
+                          <td className="p-3">{lens.taxRate}%</td>
+                          <td className="p-3 fw-bold">{lens?.totalAmount}</td>
+                        </tr>
 
-                        <td className="p-3 fw-bold">
-                          {/* {calculateTotal(lens.costPrice, lens.taxRate)} */}
-                          {lens?.lens?.item?.totalAmount}
-                        </td>
-                      </tr>
+                        {/* Nested map for lens.lens if it's an array */}
+                        {Array.isArray(lens.lens) &&
+                          lens.lens.map((innerLens, i) => (
+                            <tr key={`${lens._id || index}-inner-${i}`}>
+                              <td className="p-3" colSpan="7">
+                                {innerLens?.item?.costPrice || "N/A"}
+                              </td>
+                            </tr>
+                          ))}
+                      </React.Fragment>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="p-3 text-center">
-                        No matching lenses found
+                      <td colSpan="7" className="text-center">
+                        No data available
                       </td>
                     </tr>
                   )}

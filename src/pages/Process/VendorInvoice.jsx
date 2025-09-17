@@ -326,6 +326,8 @@ function VendorInvoice() {
 
   const handleModalSubmit = useCallback(
     async (payload) => {
+      console.log("payload", payload);
+
       try {
         setLoading(true);
 
@@ -334,7 +336,6 @@ function VendorInvoice() {
           return;
         }
 
-        // 🔑 instead of looping row-by-row, we now have the modal's payload
         const response = await vendorInvoiceService.createVendorInvoice({
           store: payload.store,
           vendor: payload.vendor,

@@ -148,16 +148,25 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
         vendor: vendorId,
         invoiceNumber: values.invoiceNumber,
         invoiceDate: values.invoiceDate.toISOString().split("T")[0],
+
+        // ✅ invoice-level summary
         flatDiscount: totals.flatDiscount,
         otherCharges: totals.otherCharges,
         totalAmount: totals.totalAmount,
         totalQuantity: totals.totalQuantity,
         taxAmount: totals.taxAmount,
+
+        // ✅ row-wise job work details
         jobWork: rows.map((r) => {
           const job = selectedJobs.find((j) => j._id === r._id);
           return {
             _id: r._id,
             fillStatus: "filled",
+            flatDiscount: parseFloat(r.flatDiscount) || 0,
+            otherCharges: parseFloat(r.otherCharges) || 0,
+            taxAmount: parseFloat(r.taxAmount) || 0,
+            taxType: r.taxType?.toLowerCase() || "inc",
+            totalAmount: parseFloat(r.total) || 0,
             lens: {
               item: {
                 _id: job?.lens?.item?._id || null,
