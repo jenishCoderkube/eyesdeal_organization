@@ -226,24 +226,39 @@ function ViewPurchase() {
       moment(item?.invoiceDate).format("DD-MM-YYYY").includes(searchText)
     );
   });
-
   const handleDownload = async (e, invoice) => {
+    console.log("invoice", invoice);
+
     e.preventDefault();
 
-    const lens = invoice?.lens;
-    if (!lens?.item) {
-      toast.error("No lens data found in invoice");
+    // Check if jobWorks array exists and is not empty
+    const jobWorks = invoice?.jobWorks;
+    if (!jobWorks || jobWorks.length === 0) {
+      toast.error("No job works data found in invoice");
       return;
     }
 
-    // Build CSV rows (newBarcode, sku, MRP)
-    const finalData = [
-      {
-        sku: lens.item?.sku,
-        barcode: lens.item?.newBarcode,
-        price: lens.item?.MRP,
-      },
-    ];
+    // Build CSV rows (newBarcode, sku, MRP, costPrice) from jobWorks
+    const finalData = jobWorks
+      .map((jobWork) => {
+        const lensItem = jobWork?.lens?.item;
+        if (!lensItem) {
+          return null; // Skip if lens item is missing
+        }
+        return {
+          sku: lensItem.sku || "",
+          barcode: lensItem.newBarcode || "",
+          mrp: lensItem.MRP || 0,
+          costPrice: lensItem.costPrice || 0,
+        };
+      })
+      .filter((item) => item !== null); // Remove null entries
+
+    // Check if finalData has any valid entries
+    if (finalData.length === 0) {
+      toast.error("No valid lens data found in job works");
+      return;
+    }
 
     const result = { data: finalData };
     setLoading(true);
