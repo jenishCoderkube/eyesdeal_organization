@@ -494,11 +494,12 @@ function ViewPurchase() {
                                   )
                                 : "N/A"}
                             </td>
+                            {console.log(invoice, "testtttttt")}
                             <td>
-                              {sale?.netAmount ??
-                                job?.amount ??
-                                lens?.item?.totalAmount ??
-                                "N/A"}
+                              {/* {sale?.netAmount ??
+                                job?.amount ?? */}
+                              {invoice?.totalAmount}
+                              {/* "N/A"} */}
                             </td>
                             <td
                               role="button"
@@ -664,7 +665,7 @@ function ViewPurchase() {
         <LensModal
           show={showModal}
           onHide={handleCloseModal}
-          lensData={selectedPurchase}
+          purchase={selectedPurchase}
           filterType={filterType.value}
           onUpdate={() => getInvoices(currentPage)}
           currentPage={currentPage}
