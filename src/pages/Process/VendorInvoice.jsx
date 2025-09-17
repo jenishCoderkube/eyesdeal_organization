@@ -156,19 +156,21 @@ function VendorInvoice() {
         );
         console.log("Processed tableData:", tableData); // Debug: Log processed table data
         setPagination({
-          totalDocs: response.data.data.totalRecords || 0,
+          totalDocs: response.data.data.totalRecords || 0, // Use totalRecords instead of totalCount
           limit: response.data.data.limit || 50,
           page: response.data.data.page || 1,
           totalPages: response.data.data.totalPages || 0,
           hasPrevPage: (response.data.data.page || 1) > 1,
           hasNextPage:
-            (response.data.data.page || 1) < (response.data.data.pages || 0),
+            (response.data.data.page || 1) <
+            (response.data.data.totalPages || 0),
           prevPage:
             (response.data.data.page || 1) > 1
               ? (response.data.data.page || 1) - 1
               : null,
           nextPage:
-            (response.data.data.page || 1) < (response.data.data.pages || 0)
+            (response.data.data.page || 1) <
+            (response.data.data.totalPages || 0)
               ? (response.data.data.page || 1) + 1
               : null,
         });
@@ -237,16 +239,17 @@ function VendorInvoice() {
     (page) => {
       if (page) {
         const newFilters = {
-          store: formik.values.store ? [formik.values.store.value] : [],
-          vendor: formik.values.vendor ? [formik.values.vendor.value] : [],
+          stores: formik.values.store ? [formik.values.store.value] : [], // Use stores as per fetchJobWorks
+          vendors: formik.values.vendor ? [formik.values.vendor.value] : [], // Use vendors as per fetchJobWorks
           startDate: formik.values.startDate,
           endDate: formik.values.endDate,
           search: formik.values.search,
           page,
           limit: 50,
         };
-        if (!newFilters.store.length || !newFilters.vendor.length) {
-          toast.error("Please select both a store and a vendor");
+        if (!newFilters.stores.length) {
+          // Check stores array
+          toast.error("Please select a store");
           return;
         }
         debouncedFetchJobWorks(newFilters);
@@ -414,7 +417,7 @@ function VendorInvoice() {
     pagination.totalDocs > 0
       ? Math.min(pagination.page * pagination.limit, pagination.totalDocs)
       : 0;
-  const totalRows = pagination.totalDocs;
+  const totalRows = pagination.totalDocs; // Ensure this uses totalDocs (mapped to totalCount)
 
   const renderTableContent = useMemo(
     () => () => {
