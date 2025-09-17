@@ -130,7 +130,8 @@ const LensModal = ({ show, onHide, lensData }) => {
                 {lensData?.sale?.totalAmount || "0.00"}
               </div>
               <div className="col-md-4">
-                <strong>Total Tax:</strong> {lensData?.sale?.totalTax || "0.00"}
+                <strong>Total Tax:</strong>{" "}
+                {Math.floor(lensData?.sale?.totalTax) || "0.00"}
               </div>
               <div className="col-md-4">
                 <strong>Discount:</strong>{" "}
@@ -159,7 +160,7 @@ const LensModal = ({ show, onHide, lensData }) => {
                     <th className="p-3 text-left">STORE</th>
                     <th className="p-2 text-left">COST PRICE</th>
                     <th className="p-3 text-left">MRP</th>
-                    <th className="p-3 text-left">SRP</th>
+
                     <th className="p-3 text-left">TAX</th>
                     <th className="p-3 text-left">TOTAL AMOUNT</th>
                   </tr>
@@ -177,9 +178,7 @@ const LensModal = ({ show, onHide, lensData }) => {
                         <td className="p-3">
                           {item.mrp || item.item?.MRP || "N/A"}
                         </td>
-                        <td className="p-3">
-                          {item.srp || item.item?.sellPrice || "N/A"}
-                        </td>
+
                         <td className="p-3">{item.taxRate}%</td>
                         <td className="p-3 fw-bold">
                           {calculateTotal(item.costPrice, item.taxRate)}
@@ -193,26 +192,6 @@ const LensModal = ({ show, onHide, lensData }) => {
                       </td>
                     </tr>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Lens Specifications */}
-          <div className="px-4 py-4">
-            <h6 className="fw-bold mb-3">Lens Specifications</h6>
-            <div className="table-responsive">
-              <table className="table table-bordered table-sm">
-                <tbody>
-                  <tr>
-                    <th className="w-25">Lens Material</th>
-                    <td>{lensData?.lens?.item?.lensMaterial || "N/A"}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Gender</th>
-                    <td>{lensData?.lens?.item?.gender || "Unisex / N/A"}</td>
-                  </tr>
                 </tbody>
               </table>
             </div>

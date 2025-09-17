@@ -457,9 +457,6 @@ function ViewPurchase() {
                       <th scope="col" className="custom-perchase-th">
                         DATE
                       </th>
-                      <th scope="col" className="custom-perchase-th">
-                        CUSTOMER
-                      </th>
 
                       <th scope="col" className="custom-perchase-th">
                         AMOUNT
@@ -492,7 +489,6 @@ function ViewPurchase() {
                                   )
                                 : "N/A"}
                             </td>
-                            <td>{sale?.customerName || "N/A"}</td>
 
                             <td>
                               {sale?.netAmount ??
@@ -565,7 +561,7 @@ function ViewPurchase() {
                         <tr key={index}>
                           <td>{index + 1}</td>
                           <td>{item?.vendor?.companyName}</td>
-                          <td>{item?.store?.companyName}</td>
+                          <td>{item?.store?.name || "N/A"}</td>
                           <td>
                             {moment(item?.invoiceDate).format("DD-MM-YYYY")}
                           </td>

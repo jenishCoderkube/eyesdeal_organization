@@ -94,13 +94,26 @@ export default function ProductSelector({
       console.warn("select or defaultStore missing");
       return;
     }
-    const inv = await fetchInventoryDetails(selected.value, defaultStore.value);
-    if (!inv) return;
 
     const pairId = uuidv4();
-
-    const type = inv.__t; // "eyeGlasses" or "contactLens"
+    const type = selected.data.__t; // Get type from selected product data
     console.log("type", type);
+
+    let inv;
+    if (
+      type === "eyeGlasses" ||
+      type === "sunGlasses" ||
+      type === "readingGlasses"
+    ) {
+      // Call fetchInventoryDetails for glasses
+      inv = await fetchInventoryDetails(selected.value, defaultStore.value);
+      if (!inv) return;
+    } else {
+      // Use provided product data directly for other types (e.g., contactLens)
+      inv = selected.data;
+      // Add quantity from inventory if available, default to 0 if not
+      inv.quantity = inv.inventory?.totalQuantity ?? 0;
+    }
 
     if (
       type === "eyeGlasses" ||
@@ -129,7 +142,8 @@ export default function ProductSelector({
         },
       ]);
     }
-    // ✅ hide select after adding
+
+    // Hide select after adding
     setShowSelect(false);
   };
 

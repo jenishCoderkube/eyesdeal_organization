@@ -216,6 +216,21 @@ function VendorInvoice() {
     initialize();
     return () => debouncedFetchJobWorks.cancel();
   }, [debouncedFetchJobWorks]);
+  // Auto-fetch job works when store & vendor data is ready and default store is set
+  useEffect(() => {
+    if (formik.values.store) {
+      const filters = {
+        stores: formik.values.store ? [formik.values.store.value] : [],
+        vendors: formik.values.vendor ? [formik.values.vendor.value] : [],
+        startDate: formik.values.startDate,
+        endDate: formik.values.endDate,
+        search: formik.values.search,
+        page: 1,
+        limit: 50,
+      };
+      debouncedFetchJobWorks(filters);
+    }
+  }, [formik.values.store]);
 
   const handlePageChange = useCallback(
     (page) => {

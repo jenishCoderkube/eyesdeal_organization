@@ -314,7 +314,7 @@ const PurchaseModal = ({
                     <span className="font-size-normal">
                       {purchase.totalTax ||
                         purchase.jobWorks?.[0]?.sale?.totalTax ||
-                        "N/A"}
+                        "0"}
                     </span>
                   </p>
                 </div>
@@ -324,7 +324,7 @@ const PurchaseModal = ({
                     <span className="font-size-normal">
                       {purchase.totalDiscount ||
                         purchase.jobWorks?.[0]?.sale?.totalDiscount ||
-                        "N/A"}
+                        "0"}
                     </span>
                   </p>
                 </div>
@@ -334,7 +334,7 @@ const PurchaseModal = ({
                     <span className="font-size-normal">
                       {purchase.otherCharges ||
                         purchase.jobWorks?.[0]?.sale?.otherCharges ||
-                        "N/A"}
+                        "0"}
                     </span>
                   </p>
                 </div>
@@ -344,7 +344,7 @@ const PurchaseModal = ({
                     <span className="font-size-normal">
                       {purchase.flatDiscount ||
                         purchase.jobWorks?.[0]?.sale?.flatDiscount ||
-                        "N/A"}
+                        "0"}
                     </span>
                   </p>
                 </div>
@@ -354,7 +354,7 @@ const PurchaseModal = ({
                     <span className="font-size-normal">
                       {purchase.netAmount ||
                         purchase.jobWorks?.[0]?.sale?.netAmount ||
-                        "N/A"}
+                        "0"}
                     </span>
                   </p>
                 </div>
@@ -409,13 +409,16 @@ const PurchaseModal = ({
                           QTY
                         </th>
                         <th className="p-3 text-left custom-perchase-th">
-                          RATE
+                          pure RATE
                         </th>
                         <th className="p-3 text-left custom-perchase-th">
                           TAX (%)
                         </th>
                         <th className="p-3 text-left custom-perchase-th">
                           TAX AMOUNT
+                        </th>
+                        <th className="p-3 text-left custom-perchase-th">
+                          Discount
                         </th>
                         <th className="p-3 text-left custom-perchase-th">
                           TOTAL (Rate + Tax)
@@ -439,6 +442,7 @@ const PurchaseModal = ({
                           const tax = isLens
                             ? item.lens?.item?.tax ?? 0
                             : item.tax ?? 0;
+                          const discount = item?.totalDiscount;
                           const taxAmount = (rate * tax) / 100;
                           const total = rate + taxAmount;
 
@@ -489,6 +493,9 @@ const PurchaseModal = ({
                               )}
                               <td className="p-3 fw-normal">
                                 {taxAmount.toFixed(2)}
+                              </td>
+                              <td className="p-3 fw-normal">
+                                {discount.toFixed(2)}
                               </td>
                               <td className="p-3 fw-normal">
                                 {total.toFixed(2)}

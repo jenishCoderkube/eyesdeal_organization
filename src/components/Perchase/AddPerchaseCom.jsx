@@ -475,7 +475,7 @@ const AddPerchaseCom = () => {
         <div className="row px-3">
           {/* Left Section */}
           <div
-            className="col-lg-9 col-md-12 px-0"
+            className="col-lg-10 col-md-12 px-0"
             style={{ overflowY: "auto" }}
           >
             <div className="card rounded-0 h-100 border border-dark p-3">
@@ -602,29 +602,29 @@ const AddPerchaseCom = () => {
                   <thead className="uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
                       <th className="px-2 py-3 custom-perchase-th"></th>
-                      <th className="px-2 py-3 custom-perchase-th">Barcode</th>
-                      <th className="px-2 py-3 custom-perchase-th">SKU</th>
-                      <th className="px-2 py-3 custom-perchase-th">Quantity</th>
-                      <th className="px-2 py-3 custom-perchase-th">MRaaaP</th>
-                      <th className="px-2 py-3 custom-perchase-th">PUR Rate</th>
+                      <th className="px-3 py-3 custom-perchase-th">Barcode</th>
+                      <th className="px-5 py-3 custom-perchase-th">SKU</th>
+                      <th className="px-3 py-3 custom-perchase-th">Quantity</th>
+                      <th className="px-4 py-3 custom-perchase-th">MRP</th>
+                      <th className="px-3 py-3 custom-perchase-th">PUR Rate</th>
 
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-4 py-3 custom-perchase-th">
                         DISC Type
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         DISC Rate
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         DISC Amount
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">Tax Type</th>
+                      <th className="px-3 py-3 custom-perchase-th">Tax Type</th>
 
-                      <th className="px-2 py-3 custom-perchase-th">Tax</th>
-                      <th className="px-2 py-3 custom-perchase-th">Tax AMT</th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">Tax</th>
+                      <th className="px-3 py-3 custom-perchase-th">Tax AMT</th>
+                      <th className="px-3 py-3 custom-perchase-th">
                         Total DISC
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         Total AMT
                       </th>
                     </tr>
@@ -832,7 +832,7 @@ const AddPerchaseCom = () => {
             </div>
           </div>
           {/* Right Section - Summary */}
-          <div className="col-lg-3 col-md-12 px-0">
+          <div className="col-lg-2 col-md-12 px-0">
             <div className="card h-100 rounded-0 border border-dark p-3">
               <h6 className="mb-3">Add Purchase</h6>
               <div className="mb-3">
