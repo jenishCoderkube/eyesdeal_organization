@@ -42,8 +42,10 @@ function ViewPurchase() {
     { value: "vendor", label: "Purchase" },
     { value: "invoice", label: "Vendor Invoice" },
   ];
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const indexOfFirstRow =
+    totalResults > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+  const indexOfLastRow =
+    totalResults > 0 ? Math.min(currentPage * rowsPerPage, totalResults) : 0;
 
   // Fetch vendors and stores on component mount
   useEffect(() => {
@@ -115,7 +117,6 @@ function ViewPurchase() {
   };
 
   const getInvoices = async (page = 1) => {
-    console.log("Fetching purchase logs for page:", page);
     const vendorId = vendor.map((option) => option.value);
     const storeId = store.map((option) => option.value);
     setLoading(true);
@@ -129,9 +130,9 @@ function ViewPurchase() {
         rowsPerPage // ✅ pass limit
       );
       if (response.success) {
-        setInvoiceData(response?.data?.data?.docs); // page data
+        setInvoiceData(response?.data?.data?.data); // page data
         setTotalPages(response?.data?.data?.totalPages);
-        setTotalResults(response?.data?.data?.totalDocs);
+        setTotalResults(response?.data?.data?.totalRecords);
       } else {
         toast.error(response.message);
       }
@@ -183,12 +184,15 @@ function ViewPurchase() {
   }));
 
   const btnSubmit = (e) => {
+    setCurrentPage(1);
     e.preventDefault();
     if (filterType.value === "vendor") {
-      getPurchaseLogs(currentPage);
+      setPurchaseData([]);
+      getPurchaseLogs(1);
     } else if (filterType.value === "invoice") {
+      setInvoiceData([]);
       const vendorId = vendor.map((option) => option.value); // get selected vendor(s)
-      getInvoices(currentPage);
+      getInvoices(1);
     }
   };
 
@@ -478,7 +482,8 @@ function ViewPurchase() {
 
                         return (
                           <tr key={invoice._id || index}>
-                            <td>{index + 1}</td>
+                            <td>{indexOfFirstRow + index}</td>{" "}
+                            {/* Calculate SRNO */}
                             <td>{invoice?.invoiceNumber || "N/A"}</td>
                             <td>{invoice?.vendor?.companyName || "N/A"}</td>
                             <td>{invoice?.store?.name || "N/A"}</td>
@@ -489,7 +494,6 @@ function ViewPurchase() {
                                   )
                                 : "N/A"}
                             </td>
-
                             <td>
                               {sale?.netAmount ??
                                 job?.amount ??
@@ -559,7 +563,8 @@ function ViewPurchase() {
                     {filteredData?.length > 0 ? (
                       filteredData?.map((item, index) => (
                         <tr key={index}>
-                          <td>{index + 1}</td>
+                          <td>{indexOfFirstRow + index}</td>{" "}
+                          {/* Calculate SRNO */}
                           <td>{item?.vendor?.companyName}</td>
                           <td>{item?.store?.name || "N/A"}</td>
                           <td>
@@ -601,15 +606,9 @@ function ViewPurchase() {
             </div>
             <div className="d-flex px-3 justify-content-between align-items-center">
               <div className="text-muted fw-normal">
-                Showing{" "}
-                <span className="fw-medium">
-                  {totalResults > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}
-                </span>{" "}
-                to{" "}
-                <span className="fw-medium">
-                  {Math.min(currentPage * rowsPerPage, totalResults)}
-                </span>{" "}
-                of <span className="fw-medium">{totalResults}</span> results
+                Showing <span className="fw-medium">{indexOfFirstRow}</span> to{" "}
+                <span className="fw-medium">{indexOfLastRow}</span> of{" "}
+                <span className="fw-medium">{totalResults || 0}</span> results
               </div>
               <nav role="navigation" aria-label="Navigation">
                 <ul className="d-flex justify-content-center list-unstyled">
