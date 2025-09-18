@@ -233,74 +233,76 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
           </div>
 
           {/* Items Table */}
-          <Table striped bordered hover size="sm" className="mt-3">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Product SKU</th>
-                <th>Price</th>
-                <th>Side</th>
-                <th>Flat Discount</th>
-                <th>Other Charges</th>
-                <th>Tax Rate</th>
-                <th>Tax Type</th>
-                <th>Tax Amount</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row._id}>
-                  <td>{row.customerName}</td>
-                  <td>{row.sku}</td>
-                  <td>
-                    <Form.Control
-                      type="number"
-                      value={row.price}
-                      onChange={(e) =>
-                        updateRow(row._id, "price", e.target.value)
-                      }
-                      disabled={loading}
-                    />
-                  </td>
-                  <td>{row.side}</td>
-                  <td>
-                    <Form.Control
-                      type="number"
-                      value={row.flatDiscount}
-                      onChange={(e) =>
-                        updateRow(row._id, "flatDiscount", e.target.value)
-                      }
-                      disabled={loading}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      type="number"
-                      value={row.otherCharges}
-                      onChange={(e) =>
-                        updateRow(row._id, "otherCharges", e.target.value)
-                      }
-                      disabled={loading}
-                    />
-                  </td>
-                  <td>{row.taxRate}</td>
-                  <td style={{ minWidth: "120px" }}>
-                    <Select
-                      options={TAX_OPTIONS}
-                      value={TAX_OPTIONS.find((t) => t.value === row.taxType)}
-                      onChange={(selected) =>
-                        updateRow(row._id, "taxType", selected.value)
-                      }
-                      isDisabled={loading}
-                    />
-                  </td>
-                  <td>{(row.taxAmount ?? 0).toFixed(2)}</td>
-                  <td>{(row.total ?? 0).toFixed(2)}</td>
+          <div className="table-responsive mt-3">
+            <Table striped bordered hover size="sm">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Product SKU</th>
+                  <th>Price</th>
+                  <th>Side</th>
+                  <th>Flat Discount</th>
+                  <th>Other Charges</th>
+                  <th>Tax Rate</th>
+                  <th>Tax Type</th>
+                  <th>Tax Amount</th>
+                  <th>Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row._id}>
+                    <td>{row.customerName}</td>
+                    <td>{row.sku}</td>
+                    <td>
+                      <Form.Control
+                        type="number"
+                        value={row.price}
+                        onChange={(e) =>
+                          updateRow(row._id, "price", e.target.value)
+                        }
+                        disabled={loading}
+                      />
+                    </td>
+                    <td>{row.side}</td>
+                    <td>
+                      <Form.Control
+                        type="number"
+                        value={row.flatDiscount}
+                        onChange={(e) =>
+                          updateRow(row._id, "flatDiscount", e.target.value)
+                        }
+                        disabled={loading}
+                      />
+                    </td>
+                    <td>
+                      <Form.Control
+                        type="number"
+                        value={row.otherCharges}
+                        onChange={(e) =>
+                          updateRow(row._id, "otherCharges", e.target.value)
+                        }
+                        disabled={loading}
+                      />
+                    </td>
+                    <td>{row.taxRate}</td>
+                    <td style={{ minWidth: "120px" }}>
+                      <Select
+                        options={TAX_OPTIONS}
+                        value={TAX_OPTIONS.find((t) => t.value === row.taxType)}
+                        onChange={(selected) =>
+                          updateRow(row._id, "taxType", selected.value)
+                        }
+                        isDisabled={loading}
+                      />
+                    </td>
+                    <td>{(row.taxAmount ?? 0).toFixed(2)}</td>
+                    <td>{(row.total ?? 0).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
 
           {/* Totals Summary */}
           <div className="mt-3">

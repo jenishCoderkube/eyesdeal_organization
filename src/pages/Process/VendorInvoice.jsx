@@ -317,8 +317,8 @@ function VendorInvoice() {
       toast.error("Please select at least one job work");
       return;
     }
-    if (!formik.values.store || !formik.values.vendor) {
-      toast.error("Please select both a store and a vendor");
+    if (!formik.values.store) {
+      toast.error("Please select a store");
       return;
     }
     setShowModal(true);
@@ -331,14 +331,14 @@ function VendorInvoice() {
       try {
         setLoading(true);
 
-        if (!formik.values.store?.value || !formik.values.vendor?.value) {
-          toast.error("Please select both a store and a vendor");
+        if (!formik.values.store?.value) {
+          toast.error("Please select a store");
           return;
         }
 
         const response = await vendorInvoiceService.createVendorInvoice({
           store: payload.store,
-          vendor: payload.vendor,
+          vendor: payload?.vendor,
           invoiceNumber: payload.invoiceNumber,
           invoiceDate: payload.invoiceDate,
           flatDiscount: payload.flatDiscount,
