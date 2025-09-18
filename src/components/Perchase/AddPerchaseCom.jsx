@@ -582,10 +582,10 @@ const AddPerchaseCom = () => {
                   className={`custom-select flex-grow-1 ${
                     errors.product ? "is-invalid" : ""
                   }`}
-                  onInputChange={(value) => {
-                    setProductSearchQuery(value);
-                    debouncedGetProduct(value);
-                  }}
+                  // onInputChange={(value) => {
+                  //   setProductSearchQuery(value);
+                  //   debouncedGetProduct(value);
+                  // }}
                   isLoading={loading}
                 />
                 {errors.product && (

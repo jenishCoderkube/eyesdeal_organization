@@ -227,55 +227,44 @@ const VendorListTable = ({
   };
 
   // Transform job works data to required format
+  // Transform job works data to required format (row wise, same as table)
   const transformJobWorksData = (jobWorks) => {
-    const jobWorkData = [];
-    jobWorks.forEach((jobWork) => {
-      const order = jobWork.order;
-      const sale = jobWork.sale;
-      const powerSpecs = jobWork.powerAtTime?.specs?.right?.distance || {};
+    const jobWorkData = jobWorks.map((jobWork) => {
+      const specs =
+        jobWork.side === "left"
+          ? jobWork.powerAtTime?.specs?.left?.distance || {}
+          : jobWork.powerAtTime?.specs?.right?.distance || {};
+
       const lensName =
         jobWork.lens?.item?.productName || jobWork.lens?.sku || "";
 
-      jobWorkData.push({
-        billNumber: order.billNumber || "",
-        orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-        store: jobWork.store.name || "",
-        vendor: jobWork?.vendor?.companyName || "",
-        side: jobWork.side || "",
-        vendorNote: order.vendorNote || "",
-        productName: lensName,
-        sph: powerSpecs.sph || "",
-        cyl: powerSpecs.cyl || "",
-        axis: powerSpecs.axis || "",
-        add: powerSpecs.add || "",
-      });
-
-      const leftPowerSpecs = jobWork.powerAtTime?.specs?.left?.distance || {};
-      if (leftPowerSpecs && jobWork.side === "both") {
-        jobWorkData.push({
-          billNumber: order.billNumber || "",
-          orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
+      return {
+        _id: jobWork._id, // keep id for traceability
+        billNumber: jobWork.order.billNumber || "",
+        orderDate: new Date(jobWork.sale.createdAt).toLocaleDateString(
+          "en-GB",
+          {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
-          }),
-          store: jobWork.store.name || "",
-          vendor: jobWork?.vendor?.companyName || "",
-          side: "left",
-          vendorNote: order.vendorNote || "",
-          productName: lensName,
-          sph: leftPowerSpecs.sph || "",
-          cyl: leftPowerSpecs.cyl || "",
-          axis: leftPowerSpecs.axis || "",
-          add: leftPowerSpecs.add || "",
-        });
-      }
+          }
+        ),
+        store: jobWork.store.name || "",
+        vendor: jobWork?.vendor?.companyName || "",
+        side: jobWork.side || "",
+        vendorNote: jobWork.order.vendorNote || "",
+        productName: lensName,
+        sph: specs.sph || "",
+        cyl: specs.cyl || "",
+        axis: specs.axis || "",
+        add: specs.add || "",
+      };
     });
-    return { jobWorkData, vendorName: selectedVendor?.label || "" };
+
+    return {
+      jobWorkData,
+      vendorName: selectedVendor?.label || "",
+    };
   };
 
   // Handle PDF Download
