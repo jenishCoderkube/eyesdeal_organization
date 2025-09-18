@@ -48,11 +48,11 @@ export const vendorInvoiceService = {
   getJobWorks: async (filters) => {
     try {
       const params = new URLSearchParams();
-
       // vendor filter (single value)
       if (filters?.vendors?.length > 0) {
         params.append("vendor._id", filters.vendors[0]);
       }
+      params.append("fillStatus%5B%24nin%5D%5B0%5D", "filled");
 
       // store filter (single value)
       if (filters?.stores?.length > 0) {
