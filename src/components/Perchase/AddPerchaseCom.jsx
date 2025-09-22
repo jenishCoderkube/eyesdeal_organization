@@ -94,6 +94,7 @@ const AddPerchaseCom = () => {
     const discRate = parseFloat(product.discRate) || 0;
     const tax = parseFloat(product.tax) || 0;
 
+    // Calculate discount amount (per unit)
     let discAmount = 0;
     if (product.discType === "percentage") {
       discAmount = (purRate * discRate) / 100;
@@ -101,9 +102,22 @@ const AddPerchaseCom = () => {
       discAmount = discRate;
     }
 
-    const taxableAmount = purRate - discAmount;
-    const taxAmount = (taxableAmount * tax) / 100;
-    const totalAmount = quantity * (taxableAmount + taxAmount);
+    let taxableAmount = purRate - discAmount;
+    let taxAmount = 0;
+    let finalUnitRate = taxableAmount;
+
+    if (product.taxType === "Exc") {
+      // Exclusive: tax is added on top
+      taxAmount = (taxableAmount * tax) / 100;
+      finalUnitRate = taxableAmount + taxAmount;
+    } else if (product.taxType === "Inc") {
+      // Inclusive: tax is already in purchase rate
+      taxableAmount = taxableAmount / (1 + tax / 100);
+      taxAmount = taxableAmount * (tax / 100);
+      finalUnitRate = taxableAmount + taxAmount; // actually = taxableAmount * (1 + tax/100)
+    }
+
+    const totalAmount = quantity * finalUnitRate;
     const totalDisc = quantity * discAmount;
 
     return {
@@ -115,8 +129,7 @@ const AddPerchaseCom = () => {
     };
   };
 
-  // Recalculate form totals
-  const updateFormTotals = (updatedProducts) => {
+  const updateFormTotals = (updatedProducts, currentForm = formData) => {
     const totalQuantity = updatedProducts.reduce(
       (sum, p) => sum + (parseFloat(p.quantity) || 0),
       0
@@ -134,10 +147,12 @@ const AddPerchaseCom = () => {
       (sum, p) => sum + (parseFloat(p.totalDisc) || 0),
       0
     );
-    const netAmount =
-      totalAmount +
-      parseFloat(formData.otherCharges || 0) -
-      parseFloat(formData.flatDiscount || 0);
+
+    // Always parse values safely
+    const flatDiscount = parseFloat(currentForm.flatDiscount || 0);
+    const otherCharges = parseFloat(currentForm.otherCharges || 0);
+
+    const netAmount = totalAmount + otherCharges - flatDiscount;
 
     setFormData((prev) => ({
       ...prev,
@@ -153,7 +168,7 @@ const AddPerchaseCom = () => {
     setFormData((prev) => {
       const updatedForm = { ...prev, [name]: value };
 
-      // If discount or charges change, recalc totals
+      // Recalculate totals with the fresh form state
       if (name === "flatDiscount" || name === "otherCharges") {
         updateFormTotals(products, updatedForm);
       }
@@ -207,6 +222,7 @@ const AddPerchaseCom = () => {
           discRate: 0,
           discAmount: 0,
           tax: selectedProduct.tax,
+          taxType: "Inc",
           taxAmount: 0,
           totalDisc: 0,
           totalAmount: 0,
@@ -277,6 +293,7 @@ const AddPerchaseCom = () => {
           discountType: product.discType,
           discountRate: product.discRate,
           discountAmount: product.discAmount,
+          taxType: product.taxType,
           taxAmount: product.taxAmount,
           tax: product.tax,
           totalDiscount: product.totalDisc,
@@ -335,6 +352,10 @@ const AddPerchaseCom = () => {
     getProduct("");
   }, []);
 
+  const TAX_OPTIONS = [
+    { value: "Inc", label: "Inc" },
+    { value: "Exc", label: "Exc" },
+  ];
   const getVendor = async () => {
     setLoading(true);
     try {
@@ -464,7 +485,10 @@ const AddPerchaseCom = () => {
       <form onSubmit={handleSubmit}>
         <div className="row px-3">
           {/* Left Section */}
-          <div className="col-lg-9 col-md-12 px-0">
+          <div
+            className="col-lg-10 col-md-12 px-0"
+            style={{ overflowY: "auto" }}
+          >
             <div className="card rounded-0 h-100 border border-dark p-3">
               <div className="row g-3">
                 <div className="col-12 col-md-3">
@@ -569,10 +593,10 @@ const AddPerchaseCom = () => {
                   className={`custom-select flex-grow-1 ${
                     errors.product ? "is-invalid" : ""
                   }`}
-                  onInputChange={(value) => {
-                    setProductSearchQuery(value);
-                    debouncedGetProduct(value);
-                  }}
+                  // onInputChange={(value) => {
+                  //   setProductSearchQuery(value);
+                  //   debouncedGetProduct(value);
+                  // }}
                   isLoading={loading}
                 />
                 {errors.product && (
@@ -582,30 +606,36 @@ const AddPerchaseCom = () => {
                 )}
               </div>
               <div className="table-responsive mt-3">
-                <table className="table table-sm">
+                <table
+                  className="table table-sm"
+                  style={{ minHeight: "250px", whiteSpace: "nowrap" }}
+                >
                   <thead className="uppercase text-slate-500 bg-slate-50 border-top border-bottom">
                     <tr>
                       <th className="px-2 py-3 custom-perchase-th"></th>
-                      <th className="px-2 py-3 custom-perchase-th">Barcode</th>
-                      <th className="px-2 py-3 custom-perchase-th">SKU</th>
-                      <th className="px-2 py-3 custom-perchase-th">Quantity</th>
-                      <th className="px-2 py-3 custom-perchase-th">MRP</th>
-                      <th className="px-2 py-3 custom-perchase-th">PUR Rate</th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">Barcode</th>
+                      <th className="px-5 py-3 custom-perchase-th">SKU</th>
+                      <th className="px-3 py-3 custom-perchase-th">Quantity</th>
+                      <th className="px-4 py-3 custom-perchase-th">MRP</th>
+                      <th className="px-3 py-3 custom-perchase-th">PUR Rate</th>
+
+                      <th className="px-4 py-3 custom-perchase-th">
                         DISC Type
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         DISC Rate
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         DISC Amount
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">Tax</th>
-                      <th className="px-2 py-3 custom-perchase-th">Tax AMT</th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">Tax Type</th>
+
+                      <th className="px-3 py-3 custom-perchase-th">Tax</th>
+
+                      <th className="px-3 py-3 custom-perchase-th">
                         Total DISC
                       </th>
-                      <th className="px-2 py-3 custom-perchase-th">
+                      <th className="px-3 py-3 custom-perchase-th">
                         Total AMT
                       </th>
                     </tr>
@@ -734,12 +764,42 @@ const AddPerchaseCom = () => {
                               value={product.discAmount}
                             />
                           </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm bg-secondary-subtle"
-                              readOnly
-                              value={product.tax}
+                          <td style={{ minWidth: "120px" }}>
+                            <Select
+                              options={TAX_OPTIONS}
+                              value={TAX_OPTIONS.find(
+                                (t) => t.value === product.taxType
+                              )}
+                              styles={{
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                  fontSize: "10px",
+                                }),
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "35px",
+                                  height: "35px",
+                                  fontSize: "14px",
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontSize: "14px",
+                                  marginTop: "0px", // make sure it's above everything
+                                }),
+                                option: (base) => ({
+                                  ...base,
+                                  padding: "4px 8px",
+                                }),
+                              }}
+                              onChange={(selected) =>
+                                handleProductChange(
+                                  index,
+                                  "taxType",
+                                  selected.value
+                                )
+                              }
+                              isDisabled={loading}
                             />
                           </td>
                           <td className="p-2">
@@ -747,7 +807,7 @@ const AddPerchaseCom = () => {
                               type="number"
                               className="form-control form-control-sm bg-secondary-subtle"
                               readOnly
-                              value={product.taxAmount}
+                              value={product.tax}
                             />
                           </td>
                           <td className="p-2">
@@ -775,7 +835,7 @@ const AddPerchaseCom = () => {
             </div>
           </div>
           {/* Right Section - Summary */}
-          <div className="col-lg-3 col-md-12 px-0">
+          <div className="col-lg-2 col-md-12 px-0">
             <div className="card h-100 rounded-0 border border-dark p-3">
               <h6 className="mb-3">Add Purchase</h6>
               <div className="mb-3">

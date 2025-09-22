@@ -37,6 +37,7 @@ const INVENTORY_ENDPOINTS = {
   PRODUCT_EXPORT: (productType, params) =>
     `/products/${productType}/export?${params}`,
   UPDATE_INVENTORY_STATUS: (id) => `/inventory/status/${id}`,
+  UPDATE_STOCK_STATUS: (id) => `/stockTransfer/changestatus`,
   INVENTORY_BY_STORE: (params) => `/inventory?${params}`,
   STOCKTRANSFER_BULK_UPLOAD: "/stockTransfer/upload/bulk-upload",
   BULK_INVENTORY_UPLOAD: "/inventory/bulk-upload",
@@ -1038,6 +1039,24 @@ export const inventoryService = {
         success: false,
         message:
           error.response?.data?.message || "Error uploading bulk inventory",
+      };
+    }
+  },
+  changeStatus: async (payload) => {
+    try {
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.UPDATE_STOCK_STATUS(),
+        payload
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error updating inventory status",
       };
     }
   },

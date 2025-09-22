@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaEye } from "react-icons/fa";
-import { Offcanvas } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
+import ProductModal from "./ProductModal";
 
 const StockInTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [stockData, setStockData] = useState([]);
-  const [showOffcanvas, setShowOffCanvas] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [showData, setShowData] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -43,10 +43,6 @@ const StockInTable = () => {
       );
     });
   }, [searchQuery, stockData]);
-
-  const handleCloseOffcanvas = () => {
-    setShowOffCanvas(false);
-  };
 
   useEffect(() => {
     getCollectionData();
@@ -118,9 +114,36 @@ const StockInTable = () => {
     }
   };
 
+  const handleApprove = async (itemId, status) => {
+    setLoading(true);
+    try {
+      const payload = {
+        _id: itemId,
+        status: "approved",
+      };
+      const response = await inventoryService.changeStatus(payload);
+      if (response.success) {
+        toast.success("Stock transfer approved successfully");
+        await getCollectionData();
+      } else {
+        toast.error(response.message || "Failed to approve stock transfer");
+      }
+    } catch (error) {
+      console.error("Error approving stock transfer:", error);
+      toast.error("Failed to approve stock transfer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const btnClick = (item) => {
     setShowData(item);
-    setShowOffCanvas(true);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setShowData([]);
   };
 
   return (
@@ -153,14 +176,14 @@ const StockInTable = () => {
                     <th className="custom-perchase-th">To</th>
                     <th className="custom-perchase-th">Number of Products</th>
                     <th className="custom-perchase-th">Stock Quantity</th>
-                    <th className="custom-perchase-th">Status</th>
+                    <th className="custom-perchase-th">Approval Status</th>
                     <th className="custom-perchase-th">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {filteredData.length > 0 ? (
                     filteredData.map((item, index) => (
-                      <tr key={item.id || index}>
+                      <tr key={item._id || index}>
                         <td>{index + 1}</td>
                         <td>{moment(item.createdAt).format("YYYY-MM-DD")}</td>
                         <td style={{ minWidth: "180px", maxWidth: "200px" }}>
@@ -170,8 +193,29 @@ const StockInTable = () => {
                           {item.to.storeNumber}/{item.to.name}
                         </td>
                         <td>{item.products?.length}</td>
-                        <td>{item.products?.length}</td>
-                        <td>{item.status}</td>
+                        <td style={{ minWidth: "150px" }}>
+                          {item.products?.reduce(
+                            (sum, product) =>
+                              sum + (product?.stockQuantity || 0),
+                            0
+                          )}
+                        </td>
+                        <td>
+                          {item.status === "pending" ? (
+                            <button
+                              type="button"
+                              className="btn btn-success btn-sm"
+                              onClick={() =>
+                                handleApprove(item._id, item?.status)
+                              }
+                              disabled={loading}
+                            >
+                              Approve
+                            </button>
+                          ) : (
+                            item.status
+                          )}
+                        </td>
                         <td className="d-flex align-items-center gap-2">
                           <button
                             type="button"
@@ -222,52 +266,11 @@ const StockInTable = () => {
         </div>
       </div>
 
-      <Offcanvas
-        show={showOffcanvas}
-        onHide={handleCloseOffcanvas}
-        placement="end"
-        style={{ width: "420px" }}
-      >
-        <Offcanvas.Header className="bg-light border-bottom">
-          <Offcanvas.Title className="text-dark font-semibold">
-            Products
-          </Offcanvas.Title>
-          <button
-            type="button"
-            className="btn-close text-reset"
-            onClick={handleCloseOffcanvas}
-          />
-        </Offcanvas.Header>
-        <Offcanvas.Body className="p-4">
-          <div className="text-xs d-inline-flex font-medium bg-secondary-subtle text-secondary rounded-pill text-black text-center px-2 py-1 mb-4">
-            Number Of Products: {showData?.length}
-          </div>
-          {showData?.map((product, index) => (
-            <div
-              key={index}
-              className="p-3 mb-2 border rounded"
-              style={{ borderColor: "rgb(214, 199, 199)" }}
-            >
-              <p className="my-1">
-                <span className="text-muted">Product Name: </span>
-                {product.productId?.displayName}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Product SKU: </span>
-                {product.productId?.sku}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Barcode: </span>
-                {product.productId?.newBarcode}
-              </p>
-              <p className="my-1">
-                <span className="text-muted">Stock Quantity: </span>
-                {product?.stockQuantity}
-              </p>
-            </div>
-          ))}
-        </Offcanvas.Body>
-      </Offcanvas>
+      <ProductModal
+        show={showModal}
+        handleClose={handleCloseModal}
+        products={showData}
+      />
     </>
   );
 };

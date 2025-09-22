@@ -122,6 +122,8 @@ export const vendorshopService = {
         data: response.data,
       };
     } catch (error) {
+      console.log("error", error);
+
       return {
         success: false,
         message: error.response?.data?.message || "Error fetching job works",

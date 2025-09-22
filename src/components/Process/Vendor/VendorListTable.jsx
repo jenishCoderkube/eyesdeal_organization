@@ -26,6 +26,8 @@ const VendorListTable = ({
   onPageChange,
   onSearchChange,
   searchQuery,
+  selectedVendor,
+  selectedStore,
 }) => {
   const [filteredData, setFilteredData] = useState(data);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -225,81 +227,98 @@ const VendorListTable = ({
   };
 
   // Transform job works data to required format
+  // Transform job works data to required format (row wise, same as table)
   const transformJobWorksData = (jobWorks) => {
-    const jobWorkData = [];
-    jobWorks.forEach((jobWork) => {
-      const order = jobWork.order;
-      const sale = jobWork.sale;
-      const powerSpecs = jobWork.powerAtTime?.specs?.right?.distance || {};
+    const jobWorkData = jobWorks.map((jobWork) => {
+      const specs =
+        jobWork.side === "left"
+          ? jobWork.powerAtTime?.specs?.left?.distance || {}
+          : jobWork.powerAtTime?.specs?.right?.distance || {};
+
       const lensName =
         jobWork.lens?.item?.productName || jobWork.lens?.sku || "";
 
-      jobWorkData.push({
-        billNumber: order.billNumber || "",
-        orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-        store: jobWork.store.name || "",
-        side: jobWork.side || "",
-        vendorNote: order.vendorNote || "",
-        productName: lensName,
-        sph: powerSpecs.sph || "",
-        cyl: powerSpecs.cyl || "",
-        axis: powerSpecs.axis || "",
-        add: powerSpecs.add || "",
-      });
-
-      const leftPowerSpecs = jobWork.powerAtTime?.specs?.left?.distance || {};
-      if (leftPowerSpecs && jobWork.side === "both") {
-        jobWorkData.push({
-          billNumber: order.billNumber || "",
-          orderDate: new Date(sale.createdAt).toLocaleDateString("en-GB", {
+      return {
+        _id: jobWork._id, // keep id for traceability
+        billNumber: jobWork.order.billNumber || "",
+        orderDate: new Date(jobWork.sale.createdAt).toLocaleDateString(
+          "en-GB",
+          {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
-          }),
-          store: jobWork.store.name || "",
-          side: "left",
-          vendorNote: order.vendorNote || "",
-          productName: lensName,
-          sph: leftPowerSpecs.sph || "",
-          cyl: leftPowerSpecs.cyl || "",
-          axis: leftPowerSpecs.axis || "",
-          add: leftPowerSpecs.add || "",
-        });
-      }
+          }
+        ),
+        store: jobWork.store.name || "",
+        vendor: jobWork?.vendor?.companyName || "",
+        side: jobWork.side || "",
+        vendorNote: jobWork.order.vendorNote || "",
+        productName: lensName,
+        sph: specs.sph || "",
+        cyl: specs.cyl || "",
+        axis: specs.axis || "",
+        add: specs.add || "",
+      };
     });
-    return { jobWorkData };
+
+    return {
+      jobWorkData,
+      vendorName: selectedVendor?.label || "",
+    };
   };
 
+  // Handle PDF Download
   // Handle PDF Download
   const handleDownloadPDF = async () => {
     try {
       setIsDownloading(true);
-      const filters = {
-        page: 1,
-        limit: 300,
-        populate: true,
-        status: "pending",
-      };
-      const response = await vendorshopService.getJobWorks(filters);
-      if (response.success && response.data.data.docs) {
-        const transformedData = transformJobWorksData(response.data.data.docs);
-        const pdfResponse = await vendorshopService.downloadJobWorksPDF(
-          transformedData
+
+      let rowsToDownload = [];
+
+      if (selectedRows.length > 0) {
+        // Download only selected rows
+        rowsToDownload = filteredData.filter((item) =>
+          selectedRows.includes(item._id)
         );
-        if (pdfResponse.success) {
-          const url = window.URL.createObjectURL(new Blob([pdfResponse.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "JobWorks.pdf");
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.URL.revokeObjectURL(url);
+      } else {
+        // Download all rows via API
+        const filters = {
+          page: 1,
+          limit: 3000, // bigger limit if you expect more data
+          populate: true,
+          status: "pending",
+          vendors: selectedVendor ? [selectedVendor.value] : "",
+          stores: selectedStore ? selectedStore.map((s) => s.value) : "",
+        };
+
+        const response = await vendorshopService.getJobWorks(filters);
+        console.log("response", response);
+
+        if (response?.success && response?.data?.data?.docs?.length > 0) {
+          rowsToDownload = response.data.data.docs;
+        } else {
+          toast.warn("No data available to download.");
+          return; // stop here if no data
         }
+      }
+
+      // Transform and download
+      const transformedData = transformJobWorksData(rowsToDownload);
+      const pdfResponse = await vendorshopService.downloadJobWorksPDF(
+        transformedData
+      );
+
+      if (pdfResponse?.success) {
+        const url = window.URL.createObjectURL(new Blob([pdfResponse.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "JobWorks.pdf");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        toast.error("Failed to generate PDF.");
       }
     } catch (error) {
       console.error("Error downloading PDF:", error);

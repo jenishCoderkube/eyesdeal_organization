@@ -9,59 +9,75 @@ const debounce = (func, wait) => {
   };
 };
 
-const LensModal = ({ show, onHide, lensData }) => {
+const LensModal = ({ show, onHide, purchase }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredLens, setFilteredLens] = useState([]);
   const [editableLens, setEditableLens] = useState([]);
+  console.log(editableLens, "thisbis");
+  console.log(purchase, "testing");
 
-  // Load lens data
+  // Load jobWorks data
   useEffect(() => {
-    if (lensData?.lens) {
-      setFilteredLens([lensData.lens]); // ✅ only lens object
+    if (purchase?.jobWorks) {
+      setFilteredLens([purchase.jobWorks]);
     } else {
       setFilteredLens([]);
     }
-  }, [lensData]);
+  }, [purchase]);
 
+  // Process editableLens from jobWorks
   useEffect(() => {
-    if (lensData?.lens) {
-      setEditableLens([
-        {
-          ...lensData.lens,
-          costPrice: lensData.lens.price || lensData.lens.item?.costPrice || 0,
-          taxRate: lensData.lens.taxRate || lensData.lens.item?.tax || 0,
-        },
-      ]);
+    if (purchase?.jobWorks) {
+      const jobWorks = purchase.jobWorks;
+      const lensArray = Object.values(jobWorks).filter((item) => item.lens); // Extract lens entries
+      const formattedLens = lensArray.map((jobWork, index) => ({
+        ...jobWork,
+        costPrice: jobWork.price || jobWork.lens?.costPrice || 0,
+        taxRate: jobWork.taxRate || jobWork.lens?.tax || 12, // Default to 12 if taxRate is missing
+        barcode: jobWork.lens?.barcode || "N/A",
+        sku: jobWork.lens?.sku || "N/A",
+        mrp: jobWork.lens?.mrp || "N/A",
+        displayName: jobWork.lens?.displayName || "N/A",
+      }));
+      setEditableLens(formattedLens);
     } else {
       setEditableLens([]);
     }
-  }, [lensData]);
+  }, [purchase]);
 
   // Filtering
   const filterGlobally = useCallback((data, query) => {
     if (!query || !data) return data;
     const lowerQuery = query.toLowerCase();
-    return data.filter((item) =>
-      [item.barcode, item.sku, item.displayName || item.item?.displayName].some(
-        (field) => field?.toString().toLowerCase().includes(lowerQuery)
+    return data.filter((lens) =>
+      [lens.barcode, lens.sku, lens.displayName].some((field) =>
+        field?.toString().toLowerCase().includes(lowerQuery)
       )
     );
   }, []);
 
   useEffect(() => {
-    if (!lensData?.lens) return;
-    const lensArray = [lensData.lens];
+    if (!purchase?.jobWorks) return;
+    const lensArray = Object.values(purchase.jobWorks).filter(
+      (item) => item.lens
+    );
+    const formattedLens = lensArray.map((jobWork) => ({
+      ...jobWork,
+      barcode: jobWork.lens?.barcode || "N/A",
+      sku: jobWork.lens?.sku || "N/A",
+      displayName: jobWork.lens?.displayName || "N/A",
+    }));
     const debouncedFilter = debounce((query) => {
-      setFilteredLens(filterGlobally(lensArray, query));
+      setFilteredLens(filterGlobally(formattedLens, query));
     }, 200);
     debouncedFilter(searchQuery);
     return () => clearTimeout(debouncedFilter.timeout);
-  }, [searchQuery, lensData, filterGlobally]);
+  }, [searchQuery, purchase, filterGlobally]);
 
   // Handle cost price change
   const handleCostPriceChange = (index, value) => {
     const updated = [...editableLens];
-    updated[index].costPrice = parseFloat(value) || "";
+    updated[index].costPrice = parseFloat(value) || 0;
     setEditableLens(updated);
   };
 
@@ -71,24 +87,6 @@ const LensModal = ({ show, onHide, lensData }) => {
     const tax = parseFloat(taxRate) || 0;
     return (price + price * (tax / 100)).toFixed(2);
   };
-
-  if (!lensData?.lens) {
-    return (
-      <Modal show={show} onHide={onHide} size="lg" centered>
-        <Modal.Body className="p-0">
-          <div className="bg-white rounded shadow-lg w-100 max-h-[90vh] overflow-auto">
-            <div className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
-              <div className="font-semibold fs-5">LENS DETAILS</div>
-              <button type="button" className="p-0" onClick={onHide}>
-                <i className="bi bi-x fs-1"></i>
-              </button>
-            </div>
-            <div className="px-4 py-4 text-center">No lens data available</div>
-          </div>
-        </Modal.Body>
-      </Modal>
-    );
-  }
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -112,38 +110,35 @@ const LensModal = ({ show, onHide, lensData }) => {
             <div className="row g-3">
               <div className="col-md-4">
                 <strong>Vendor:</strong>{" "}
-                {lensData?.vendor?.companyName || "N/A"}
+                {purchase?.vendor?.companyName || "N/A"}
               </div>
               <div className="col-md-4">
-                <strong>invoiceNumber:</strong>{" "}
-                {lensData?.invoiceNumber || "N/A"}
+                <strong>Invoice Number:</strong>{" "}
+                {purchase?.invoiceNumber || "N/A"}
               </div>
               <div className="col-md-4">
-                <strong>Bill Date:</strong> {lensData?.invoiceDate || "N/A"}
+                <strong>Bill Date:</strong> {purchase?.invoiceDate || "N/A"}
+              </div>
+              {console.log(purchase, "ttttttttttttttt")}
+              <div className="col-md-4">
+                <strong>Total Qty:</strong> {purchase?.totalQuantity || "N/A"}
               </div>
               <div className="col-md-4">
-                <strong>Total Qty:</strong>{" "}
-                {lensData?.sale?.totalQuantity || "0"}
+                <strong>Total Amount:</strong> {purchase?.totalAmount || "N/A"}
               </div>
               <div className="col-md-4">
-                <strong>Total Amount:</strong>{" "}
-                {lensData?.sale?.totalAmount || "0.00"}
-              </div>
-              <div className="col-md-4">
-                <strong>Total Tax:</strong> {lensData?.sale?.totalTax || "0.00"}
-              </div>
-              <div className="col-md-4">
-                <strong>Discount:</strong>{" "}
-                {lensData?.sale?.netDiscount || "N/A"}
-              </div>
-              <div className="col-md-4">
-                <strong>Other Charges:</strong>{" "}
-                {lensData?.sale?.otherCharges || "N/A"}
+                <strong>Total Tax:</strong>{" "}
+                {Math.floor(purchase?.taxAmount) || "0.00"}
               </div>
 
-              <div className="col-md-4 fw-bold ">
-                <strong>Net Amount:</strong>{" "}
-                {lensData?.sale?.netAmount || "0.00"}
+              <div className="col-md-4">
+                <strong>Discount:</strong> {purchase?.flatDiscount}
+              </div>
+              <div className="col-md-4">
+                <strong>Other Charges:</strong> {purchase?.otherCharges}
+              </div>
+              <div className="col-md-4 fw-bold">
+                <strong>Net Amount:</strong> {purchase?.totalAmount || "N/A"}
               </div>
             </div>
           </div>
@@ -157,62 +152,48 @@ const LensModal = ({ show, onHide, lensData }) => {
                     <th className="p-3 text-left">BARCODE</th>
                     <th className="p-3 text-left">SKU</th>
                     <th className="p-3 text-left">STORE</th>
-                    <th className="p-2 text-left">COST PRICE</th>
+                    <th className="p-3 text-left">COST PRICE</th>
                     <th className="p-3 text-left">MRP</th>
-                    <th className="p-3 text-left">SRP</th>
                     <th className="p-3 text-left">TAX</th>
                     <th className="p-3 text-left">TOTAL AMOUNT</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {editableLens.length > 0 ? (
-                    editableLens.map((item, index) => (
-                      <tr key={index}>
-                        <td className="p-3">{item.barcode || "N/A"}</td>
-                        <td className="p-3">{item.sku || "N/A"}</td>
-                        <td className="p-3">
-                          {lensData?.store?.name || "N/A"}
-                        </td>
-                        <td className="p-3">{lensData?.price}</td>
-                        <td className="p-3">
-                          {item.mrp || item.item?.MRP || "N/A"}
-                        </td>
-                        <td className="p-3">
-                          {item.srp || item.item?.sellPrice || "N/A"}
-                        </td>
-                        <td className="p-3">{item.taxRate}%</td>
-                        <td className="p-3 fw-bold">
-                          {calculateTotal(item.costPrice, item.taxRate)}
-                        </td>
-                      </tr>
+                    editableLens.map((lens, index) => (
+                      <React.Fragment key={lens._id || index}>
+                        <tr>
+                          <td className="p-3">{lens.barcode || "N/A"}</td>
+                          <td className="p-3">{lens.sku || "N/A"}</td>
+                          <td className="p-3">
+                            {purchase?.store?.name || "N/A"}
+                          </td>
+                          <td className="p-3">
+                            {lens?.lens?.item?.costPrice || "N/A"}
+                          </td>
+                          <td className="p-3">{lens.mrp}</td>
+                          <td className="p-3">{lens.taxRate}%</td>
+                          <td className="p-3 fw-bold">{lens?.totalAmount}</td>
+                        </tr>
+
+                        {/* Nested map for lens.lens if it's an array */}
+                        {Array.isArray(lens.lens) &&
+                          lens.lens.map((innerLens, i) => (
+                            <tr key={`${lens._id || index}-inner-${i}`}>
+                              <td className="p-3" colSpan="7">
+                                {innerLens?.item?.costPrice || "N/A"}
+                              </td>
+                            </tr>
+                          ))}
+                      </React.Fragment>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="p-3 text-center">
-                        No matching lenses found
+                      <td colSpan="7" className="text-center">
+                        No data available
                       </td>
                     </tr>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Lens Specifications */}
-          <div className="px-4 py-4">
-            <h6 className="fw-bold mb-3">Lens Specifications</h6>
-            <div className="table-responsive">
-              <table className="table table-bordered table-sm">
-                <tbody>
-                  <tr>
-                    <th className="w-25">Lens Material</th>
-                    <td>{lensData?.lens?.item?.lensMaterial || "N/A"}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Gender</th>
-                    <td>{lensData?.lens?.item?.gender || "Unisex / N/A"}</td>
-                  </tr>
                 </tbody>
               </table>
             </div>

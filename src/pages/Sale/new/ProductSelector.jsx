@@ -32,14 +32,20 @@ export default function ProductSelector({
       const response = await saleService.checkInventory(prodID, storeID);
       if (response?.success) {
         const inv = response.data.data.docs?.[0];
+        const type = inv?.product?.__t;
+        console.log("inv", type);
+
         if (!inv) {
           alert("Product out of stock");
           return null;
         }
-        if ((inv.quantity ?? 0) <= 0) {
+
+        // Only eyeGlasses need stock check
+        if (type === "eyeGlasses" && (inv.quantity ?? 0) <= 0) {
           alert("Product out of stock");
           return null;
         }
+
         return { ...inv.product, quantity: inv.quantity };
       }
       return null;
@@ -78,7 +84,7 @@ export default function ProductSelector({
       taxAmount,
       discount,
       totalAmount,
-      quantity: prod.quantity ?? 1,
+      quantity: prod.quantity ?? 0,
       raw: prod,
     };
   };
@@ -88,13 +94,32 @@ export default function ProductSelector({
       console.warn("select or defaultStore missing");
       return;
     }
-    const inv = await fetchInventoryDetails(selected.value, defaultStore.value);
-    if (!inv) return;
 
     const pairId = uuidv4();
-    const type = inv.__t; // "eyeGlasses" or "contactLens"
+    const type = selected.data.__t; // Get type from selected product data
+    console.log("type", type);
 
-    if (type === "eyeGlasses") {
+    let inv;
+    if (
+      type === "eyeGlasses" ||
+      type === "sunGlasses" ||
+      type === "readingGlasses"
+    ) {
+      // Call fetchInventoryDetails for glasses
+      inv = await fetchInventoryDetails(selected.value, defaultStore.value);
+      if (!inv) return;
+    } else {
+      // Use provided product data directly for other types (e.g., contactLens)
+      inv = selected.data;
+      // Add quantity from inventory if available, default to 0 if not
+      inv.quantity = inv.inventory?.totalQuantity ?? 0;
+    }
+
+    if (
+      type === "eyeGlasses" ||
+      type === "sunGlasses" ||
+      type === "readingGlasses"
+    ) {
       setInventoryPairs((prev) => [
         ...prev,
         {
@@ -105,7 +130,7 @@ export default function ProductSelector({
           autoFilledRight: false,
         },
       ]);
-    } else if (type === "contactLens") {
+    } else {
       setInventoryPairs((prev) => [
         ...prev,
         {
@@ -116,11 +141,9 @@ export default function ProductSelector({
           autoFilledRight: false,
         },
       ]);
-    } else {
-      console.warn("unknown product type", type);
     }
 
-    // ✅ hide select after adding
+    // Hide select after adding
     setShowSelect(false);
   };
 

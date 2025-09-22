@@ -16,9 +16,10 @@ function ViewPurchase() {
   const [store, setStore] = useState([]);
   const [fromDate, setFromDate] = useState(() => {
     const previousDate = new Date();
-    previousDate.setDate(previousDate.getDate() - 1);
+    previousDate.setMonth(previousDate.getMonth() - 1);
     return previousDate;
   });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10); // you can make this selectable
   const [totalResults, setTotalResults] = useState(0);
@@ -41,8 +42,10 @@ function ViewPurchase() {
     { value: "vendor", label: "Purchase" },
     { value: "invoice", label: "Vendor Invoice" },
   ];
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const indexOfFirstRow =
+    totalResults > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+  const indexOfLastRow =
+    totalResults > 0 ? Math.min(currentPage * rowsPerPage, totalResults) : 0;
 
   // Fetch vendors and stores on component mount
   useEffect(() => {
@@ -50,23 +53,34 @@ function ViewPurchase() {
     getStores();
   }, []);
 
-  // Set default store based on localStorage
+  const [defaultStoreSet, setDefaultStoreSet] = useState(false);
+
+  // Set default store from localStorage once
   useEffect(() => {
+    if (storeData.length === 0 || defaultStoreSet) return;
+
     const storedStoreId = JSON.parse(localStorage.getItem("user"))?.stores?.[0];
-    if (storedStoreId && storeData.length > 0) {
+    if (storedStoreId) {
       const defaultStore = storeData.find(
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        setStore([
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
+        const defaultStoreOption = [
+          { value: defaultStore._id, label: defaultStore.name },
+        ];
+        setStore(defaultStoreOption);
       }
     }
-  }, [storeData]);
+    setDefaultStoreSet(true); // mark that default store has been applied
+  }, [storeData, defaultStoreSet]);
+
+  // Fetch purchase logs when store, vendor, or date changes
+  useEffect(() => {
+    // Only fetch if store is set
+    if (store.length === 0) return;
+
+    getPurchaseLogs();
+  }, [store, vendor, fromDate, toDate]);
 
   const getVendors = async () => {
     setLoading(true);
@@ -103,7 +117,6 @@ function ViewPurchase() {
   };
 
   const getInvoices = async (page = 1) => {
-    console.log("Fetching purchase logs for page:", page);
     const vendorId = vendor.map((option) => option.value);
     const storeId = store.map((option) => option.value);
     setLoading(true);
@@ -117,9 +130,9 @@ function ViewPurchase() {
         rowsPerPage // ✅ pass limit
       );
       if (response.success) {
-        setInvoiceData(response?.data?.data?.docs); // page data
+        setInvoiceData(response?.data?.data?.data); // page data
         setTotalPages(response?.data?.data?.totalPages);
-        setTotalResults(response?.data?.data?.totalDocs);
+        setTotalResults(response?.data?.data?.totalRecords);
       } else {
         toast.error(response.message);
       }
@@ -130,9 +143,11 @@ function ViewPurchase() {
       setLoading(false);
     }
   };
+
+  const storeId = store.map((option) => option.value);
+
   const getPurchaseLogs = async (page = 1) => {
     const vendorId = vendor.map((option) => option.value);
-    const storeId = store.map((option) => option.value);
     setLoading(true);
     try {
       const response = await purchaseService.getPurchaseLog(
@@ -169,12 +184,15 @@ function ViewPurchase() {
   }));
 
   const btnSubmit = (e) => {
+    setCurrentPage(1);
     e.preventDefault();
     if (filterType.value === "vendor") {
-      getPurchaseLogs(currentPage);
+      setPurchaseData([]);
+      getPurchaseLogs(1);
     } else if (filterType.value === "invoice") {
+      setInvoiceData([]);
       const vendorId = vendor.map((option) => option.value); // get selected vendor(s)
-      getInvoices(currentPage);
+      getInvoices(1);
     }
   };
 
@@ -208,24 +226,39 @@ function ViewPurchase() {
       moment(item?.invoiceDate).format("DD-MM-YYYY").includes(searchText)
     );
   });
-
   const handleDownload = async (e, invoice) => {
+    console.log("invoice", invoice);
+
     e.preventDefault();
 
-    const lens = invoice?.lens;
-    if (!lens?.item) {
-      toast.error("No lens data found in invoice");
+    // Check if jobWorks array exists and is not empty
+    const jobWorks = invoice?.jobWorks;
+    if (!jobWorks || jobWorks.length === 0) {
+      toast.error("No job works data found in invoice");
       return;
     }
 
-    // Build CSV rows (newBarcode, sku, MRP)
-    const finalData = [
-      {
-        sku: lens.item?.sku,
-        barcode: lens.item?.newBarcode,
-        price: lens.item?.MRP,
-      },
-    ];
+    // Build CSV rows (newBarcode, sku, MRP, costPrice) from jobWorks
+    const finalData = jobWorks
+      .map((jobWork) => {
+        const lensItem = jobWork?.lens?.item;
+        if (!lensItem) {
+          return null; // Skip if lens item is missing
+        }
+        return {
+          sku: lensItem.sku || "",
+          barcode: lensItem.newBarcode || "",
+          mrp: lensItem.MRP || 0,
+          costPrice: lensItem.costPrice || 0,
+        };
+      })
+      .filter((item) => item !== null); // Remove null entries
+
+    // Check if finalData has any valid entries
+    if (finalData.length === 0) {
+      toast.error("No valid lens data found in job works");
+      return;
+    }
 
     const result = { data: finalData };
     setLoading(true);
@@ -443,9 +476,6 @@ function ViewPurchase() {
                       <th scope="col" className="custom-perchase-th">
                         DATE
                       </th>
-                      <th scope="col" className="custom-perchase-th">
-                        CUSTOMER
-                      </th>
 
                       <th scope="col" className="custom-perchase-th">
                         AMOUNT
@@ -467,7 +497,8 @@ function ViewPurchase() {
 
                         return (
                           <tr key={invoice._id || index}>
-                            <td>{index + 1}</td>
+                            <td>{indexOfFirstRow + index}</td>{" "}
+                            {/* Calculate SRNO */}
                             <td>{invoice?.invoiceNumber || "N/A"}</td>
                             <td>{invoice?.vendor?.companyName || "N/A"}</td>
                             <td>{invoice?.store?.name || "N/A"}</td>
@@ -478,13 +509,12 @@ function ViewPurchase() {
                                   )
                                 : "N/A"}
                             </td>
-                            <td>{sale?.customerName || "N/A"}</td>
-
+                            {console.log(invoice, "testtttttt")}
                             <td>
-                              {sale?.netAmount ??
-                                job?.amount ??
-                                lens?.item?.totalAmount ??
-                                "N/A"}
+                              {/* {sale?.netAmount ??
+                                job?.amount ?? */}
+                              {invoice?.totalAmount}
+                              {/* "N/A"} */}
                             </td>
                             <td
                               role="button"
@@ -549,9 +579,10 @@ function ViewPurchase() {
                     {filteredData?.length > 0 ? (
                       filteredData?.map((item, index) => (
                         <tr key={index}>
-                          <td>{index + 1}</td>
+                          <td>{indexOfFirstRow + index}</td>{" "}
+                          {/* Calculate SRNO */}
                           <td>{item?.vendor?.companyName}</td>
-                          <td>{item?.store?.companyName}</td>
+                          <td>{item?.store?.name || "N/A"}</td>
                           <td>
                             {moment(item?.invoiceDate).format("DD-MM-YYYY")}
                           </td>
@@ -591,15 +622,9 @@ function ViewPurchase() {
             </div>
             <div className="d-flex px-3 justify-content-between align-items-center">
               <div className="text-muted fw-normal">
-                Showing{" "}
-                <span className="fw-medium">
-                  {totalResults > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}
-                </span>{" "}
-                to{" "}
-                <span className="fw-medium">
-                  {Math.min(currentPage * rowsPerPage, totalResults)}
-                </span>{" "}
-                of <span className="fw-medium">{totalResults}</span> results
+                Showing <span className="fw-medium">{indexOfFirstRow}</span> to{" "}
+                <span className="fw-medium">{indexOfLastRow}</span> of{" "}
+                <span className="fw-medium">{totalResults || 0}</span> results
               </div>
               <nav role="navigation" aria-label="Navigation">
                 <ul className="d-flex justify-content-center list-unstyled">
@@ -655,7 +680,7 @@ function ViewPurchase() {
         <LensModal
           show={showModal}
           onHide={handleCloseModal}
-          lensData={selectedPurchase}
+          purchase={selectedPurchase}
           filterType={filterType.value}
           onUpdate={() => getInvoices(currentPage)}
           currentPage={currentPage}
