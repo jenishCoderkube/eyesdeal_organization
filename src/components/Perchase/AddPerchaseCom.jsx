@@ -94,6 +94,7 @@ const AddPerchaseCom = () => {
     const discRate = parseFloat(product.discRate) || 0;
     const tax = parseFloat(product.tax) || 0;
 
+    // Calculate discount amount (per unit)
     let discAmount = 0;
     if (product.discType === "percentage") {
       discAmount = (purRate * discRate) / 100;
@@ -101,13 +102,22 @@ const AddPerchaseCom = () => {
       discAmount = discRate;
     }
 
-    const taxableAmount = purRate - discAmount;
-    const taxAmount = (taxableAmount * tax) / 100;
+    let taxableAmount = purRate - discAmount;
+    let taxAmount = 0;
+    let finalUnitRate = taxableAmount;
 
-    // If taxType is "Inc", add tax to totalAmount
-    const totalAmount =
-      quantity * (taxableAmount + (product.taxType === "Inc" ? taxAmount : 0));
+    if (product.taxType === "Exc") {
+      // Exclusive: tax is added on top
+      taxAmount = (taxableAmount * tax) / 100;
+      finalUnitRate = taxableAmount + taxAmount;
+    } else if (product.taxType === "Inc") {
+      // Inclusive: tax is already in purchase rate
+      taxableAmount = taxableAmount / (1 + tax / 100);
+      taxAmount = taxableAmount * (tax / 100);
+      finalUnitRate = taxableAmount + taxAmount; // actually = taxableAmount * (1 + tax/100)
+    }
 
+    const totalAmount = quantity * finalUnitRate;
     const totalDisc = quantity * discAmount;
 
     return {
@@ -119,8 +129,7 @@ const AddPerchaseCom = () => {
     };
   };
 
-  // Recalculate form totals
-  const updateFormTotals = (updatedProducts) => {
+  const updateFormTotals = (updatedProducts, currentForm = formData) => {
     const totalQuantity = updatedProducts.reduce(
       (sum, p) => sum + (parseFloat(p.quantity) || 0),
       0
@@ -138,10 +147,12 @@ const AddPerchaseCom = () => {
       (sum, p) => sum + (parseFloat(p.totalDisc) || 0),
       0
     );
-    const netAmount =
-      totalAmount +
-      parseFloat(formData.otherCharges || 0) -
-      parseFloat(formData.flatDiscount || 0);
+
+    // Always parse values safely
+    const flatDiscount = parseFloat(currentForm.flatDiscount || 0);
+    const otherCharges = parseFloat(currentForm.otherCharges || 0);
+
+    const netAmount = totalAmount + otherCharges - flatDiscount;
 
     setFormData((prev) => ({
       ...prev,
@@ -157,7 +168,7 @@ const AddPerchaseCom = () => {
     setFormData((prev) => {
       const updatedForm = { ...prev, [name]: value };
 
-      // If discount or charges change, recalc totals
+      // Recalculate totals with the fresh form state
       if (name === "flatDiscount" || name === "otherCharges") {
         updateFormTotals(products, updatedForm);
       }
@@ -620,7 +631,7 @@ const AddPerchaseCom = () => {
                       <th className="px-3 py-3 custom-perchase-th">Tax Type</th>
 
                       <th className="px-3 py-3 custom-perchase-th">Tax</th>
-                      <th className="px-3 py-3 custom-perchase-th">Tax AMT</th>
+
                       <th className="px-3 py-3 custom-perchase-th">
                         Total DISC
                       </th>
@@ -799,14 +810,7 @@ const AddPerchaseCom = () => {
                               value={product.tax}
                             />
                           </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm bg-secondary-subtle"
-                              readOnly
-                              value={product.taxAmount}
-                            />
-                          </td>
+
                           <td className="p-2">
                             <input
                               type="number"

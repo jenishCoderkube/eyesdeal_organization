@@ -434,6 +434,8 @@ const PurchaseModal = ({
                       {editableData
                         .slice(startRow, endRow)
                         .map((item, index) => {
+                          console.log("item", item);
+
                           const rowIndex = startRow + index;
                           const isLens = !!item.lens;
                           const rate = isLens
@@ -444,7 +446,7 @@ const PurchaseModal = ({
                             : item.tax ?? 0;
                           const discount = item?.totalDiscount;
                           const taxAmount = (rate * tax) / 100;
-                          const total = rate + taxAmount;
+                          const total = item?.totalAmount || 0;
 
                           return (
                             <tr key={rowIndex}>
@@ -495,7 +497,7 @@ const PurchaseModal = ({
                                 {taxAmount.toFixed(2)}
                               </td>
                               <td className="p-3 fw-normal">
-                                {discount.toFixed(2)}
+                                {discount.toFixed(2)}({item?.discountType})
                               </td>
                               <td className="p-3 fw-normal">
                                 {total.toFixed(2)}
