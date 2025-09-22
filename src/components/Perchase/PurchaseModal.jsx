@@ -417,6 +417,9 @@ const PurchaseModal = ({
                         <th className="p-3 text-left custom-perchase-th">
                           TAX AMOUNT
                         </th>
+                        {/* <th className="p-3 text-left custom-perchase-th">
+                          Disc Type
+                        </th> */}
                         <th className="p-3 text-left custom-perchase-th">
                           Discount
                         </th>
@@ -496,8 +499,11 @@ const PurchaseModal = ({
                               <td className="p-3 fw-normal">
                                 {taxAmount.toFixed(2)}
                               </td>
+                              {/* <td className="p-3 fw-normal">
+                                {item?.discountType}
+                              </td> */}
                               <td className="p-3 fw-normal">
-                                {discount.toFixed(2)}({item?.discountType})
+                                {discount.toFixed(2)}
                               </td>
                               <td className="p-3 fw-normal">
                                 {total.toFixed(2)}
