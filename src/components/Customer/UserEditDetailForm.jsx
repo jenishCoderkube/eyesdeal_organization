@@ -40,7 +40,7 @@ const UserEditDetailForm = ({
       const response = await saleService.getMarketingReferences();
       if (response.success) {
         setReferenceOptions(
-          response.data.data.map((ref) => ({
+          response.data.data?.docs?.map((ref) => ({
             value: ref.name,
             label: ref.name,
           }))
