@@ -395,6 +395,68 @@ function VendorInvoice() {
         header: "Status",
         cell: ({ getValue }) => <div>{getValue()}</div>,
       },
+      {
+        id: "productSku",
+        header: "Product SKU",
+        cell: ({ row }) => row.original.fullJob?.product?.sku || "N/A",
+      },
+      {
+        id: "lensSku",
+        header: "Lens SKU",
+        cell: ({ row }) => row.original.fullJob?.lens?.sku || "N/A",
+      },
+      {
+        id: "side",
+        header: "Side",
+        cell: ({ row }) =>
+          row.original.fullJob?.side ? (
+            <div style={{ minWidth: "300px" }}>
+              {row.original.fullJob?.side}
+            </div>
+          ) : (
+            "N/A"
+          ),
+      },
+      {
+        id: "vendor",
+        header: "Vendor",
+        cell: ({ row }) => row.original.fullJob?.vendor?.companyName || "N/A",
+      },
+      {
+        id: "totalAmount",
+        header: "Total Amount",
+        cell: ({ row }) => row.original.fullJob?.sale?.totalAmount || "N/A",
+      },
+      {
+        id: "saleNote",
+        header: "Sale Note",
+        cell: ({ row }) => row.original.fullJob?.sale?.note || "N/A",
+      },
+      {
+        id: "powerDetails",
+        header: "Power Details",
+
+        cell: ({ row }) =>
+          row.original.fullJob?.powerAtTime?.specs ? (
+            <div style={{ minWidth: "300px" }}>
+              <strong>Right:</strong> Sph:{" "}
+              {row.original.fullJob.powerAtTime.specs.right?.distance?.sph ||
+                "N/A"}
+              , Add:{" "}
+              {row.original.fullJob.powerAtTime.specs.right?.distance?.add ||
+                "N/A"}
+              <br />
+              <strong>Left:</strong> Sph:{" "}
+              {row.original.fullJob.powerAtTime.specs.left?.distance?.sph ||
+                "N/A"}
+              , Add:{" "}
+              {row.original.fullJob.powerAtTime.specs.left?.distance?.add ||
+                "N/A"}
+            </div>
+          ) : (
+            "N/A"
+          ),
+      },
     ],
     [handleSelect]
   );
@@ -448,27 +510,29 @@ function VendorInvoice() {
 
       return (
         <>
-          <table className="table table-hover table-sm">
-            <thead className="table-light text-uppercase small">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="py-3 px-4">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </th>
-                  ))}
-                  <th className="py-3 px-4"></th>
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <React.Fragment key={row.id}>
-                  <tr>
-                    {console.log("row<<<", row.original)}
+          <div className="table-responsive">
+            <table className="table table-hover table-sm">
+              <thead className="table-light text-uppercase small">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="py-3 px-4"
+                        style={{ minWidth: "140px" }}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="py-3 px-4">
                         {flexRender(
@@ -477,88 +541,12 @@ function VendorInvoice() {
                         )}
                       </td>
                     ))}
-                    <td
-                      className="py-3 px-4 text-center"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => toggleSplit(row.original._id)}
-                    >
-                      {expandedRows.includes(row.original._id) ? (
-                        <FaAngleDown />
-                      ) : (
-                        <FaAngleRight />
-                      )}
-                    </td>
                   </tr>
-                  {expandedRows.includes(row.original._id) && (
-                    <tr>
-                      <td colSpan={7} className="p-0">
-                        <div className="table-responsive">
-                          <table className="table mb-0 table-bordered">
-                            <thead className="table-secondary small">
-                              <tr>
-                                <th className="py-2 px-3">Product SKU</th>
-                                <th className="py-2 px-3">Lens SKU</th>
-                                <th className="py-2 px-3">Side</th>
-                                <th className="py-2 px-3">Vendor</th>
-                                <th className="py-2 px-3">Total Amount</th>
-                                <th className="py-2 px-3">Sale Note</th>
-                                <th className="py-2 px-3">Power Details</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.product?.sku || "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.lens?.sku || "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.side || "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.vendor?.companyName ||
-                                    "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.sale?.totalAmount ||
-                                    "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.sale?.note || "N/A"}
-                                </td>
-                                <td className="py-2 px-3">
-                                  {row.original.fullJob?.powerAtTime?.specs ? (
-                                    <div>
-                                      <strong>Right:</strong> Sph:{" "}
-                                      {row.original.fullJob.powerAtTime.specs
-                                        .right?.distance?.sph || "N/A"}
-                                      , Add:{" "}
-                                      {row.original.fullJob.powerAtTime.specs
-                                        .right?.distance?.add || "N/A"}
-                                      <br />
-                                      <strong>Left:</strong> Sph:{" "}
-                                      {row.original.fullJob.powerAtTime.specs
-                                        .left?.distance?.sph || "N/A"}
-                                      , Add:{" "}
-                                      {row.original.fullJob.powerAtTime.specs
-                                        .left?.distance?.add || "N/A"}
-                                    </div>
-                                  ) : (
-                                    "N/A"
-                                  )}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
           {tableData.length !== 0 && (
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
               <div className="text-muted mb-3 mb-md-0">

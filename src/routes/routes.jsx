@@ -73,6 +73,7 @@ import AddPackageOffers from "../pages/Packages/AddPackageOffers";
 import AddPackageProducts from "../pages/Packages/AddPackageProducts";
 import AddBulkStockTransfer from "../pages/Inventory/AddBulkStockTransfer";
 import AddBulkPurchase from "../pages/Purchase/AddBulkPurchase";
+import StockAudit from "../pages/Inventory/StockAudit";
 
 const routes = [
   {
@@ -487,6 +488,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <StockAdjustment />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "StockAudit",
+    path: "/inventory/stock-audit",
+    element: (
+      <PrivateRoute>
+        <StockAudit />
       </PrivateRoute>
     ),
   },

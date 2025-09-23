@@ -202,7 +202,7 @@ const UserDetailForm = ({
     try {
       const response = await saleService.getMarketingReferences();
       if (response.success) {
-        const fetchedOptions = response.data.data.docs.map((ref) => ({
+        const fetchedOptions = response.data.data.docs?.map((ref) => ({
           value: ref.name,
           label: ref.name,
         }));
@@ -241,6 +241,7 @@ const UserDetailForm = ({
             if (data && data.address) {
               const { country, state, city, town, village } = data.address;
               const resolvedCity = city || town || village || "";
+              console.log("cirt<<", data, resolvedCity);
 
               // Update state with geolocation data
               setGeoLocation({
