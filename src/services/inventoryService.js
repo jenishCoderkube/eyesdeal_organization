@@ -41,6 +41,7 @@ const INVENTORY_ENDPOINTS = {
   INVENTORY_BY_STORE: (params) => `/inventory?${params}`,
   STOCKTRANSFER_BULK_UPLOAD: "/stockTransfer/upload/bulk-upload",
   BULK_INVENTORY_UPLOAD: "/inventory/bulk-upload",
+  ADD_STOCK_AUDIT: "/stockAudit",
 };
 
 const buildInventoryParams = (
@@ -1057,6 +1058,23 @@ export const inventoryService = {
         success: false,
         message:
           error.response?.data?.message || "Error updating inventory status",
+      };
+    }
+  },
+  stockAudit: async (payload) => {
+    try {
+      const response = await api.post(
+        INVENTORY_ENDPOINTS.ADD_STOCK_AUDIT,
+        payload
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error saving stock audit",
       };
     }
   },
