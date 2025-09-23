@@ -123,11 +123,12 @@ const StockAudit = () => {
         const newAuditData = response.data.data.docs.map((item) => ({
           sku: item.product.sku,
           storeQty: item?.quantity || 0,
+          product: item?.product?._id,
           countQty: 0,
           status: "Mismatch",
           barcode:
-            item.product.oldBarcode ||
-            item.product.newBarcode ||
+            item.product?.newBarcode ||
+            item.product?.oldBarcode ||
             item.product.sku,
         }));
         setAuditData(newAuditData);
@@ -184,11 +185,12 @@ const StockAudit = () => {
   const handleSave = async () => {
     const payload = auditData
       .filter((item) => item.countQty > 0) // ✅ only include scanned
-      .map(({ sku, storeQty, countQty, status, barcode }) => {
+      .map(({ sku, storeQty, countQty, status, barcode, product }) => {
         const entry = {
           sku,
           storeQty,
           countQty,
+          product,
           status,
           store: formik.values.store?.value,
           barcode,
