@@ -92,6 +92,12 @@ const StockAudit = () => {
       console.error("Error fetching brands:", error);
     }
   };
+  // ✅ auto fetch when store/category/brand changes
+  useEffect(() => {
+    if (formik.values.store && formik.values.productCategory) {
+      fetchAuditData(formik.values);
+    }
+  }, [formik.values.store, formik.values.productCategory, formik.values.brand]);
 
   const fetchAuditData = async (values) => {
     const storeId = values.store?.value || user?.stores?.[0];
@@ -116,7 +122,7 @@ const StockAudit = () => {
       if (response.success) {
         const newAuditData = response.data.data.docs.map((item) => ({
           sku: item.product.sku,
-          storeQty: item.quantity,
+          storeQty: item?.quantity || 0,
           countQty: 0,
           status: "Mismatch",
           barcode:
@@ -257,7 +263,7 @@ const StockAudit = () => {
             />
           </div>
         </div>
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <button
             type="submit"
             className="btn custom-button-bgcolor"
@@ -265,7 +271,7 @@ const StockAudit = () => {
           >
             {loading ? "Loading..." : "Submit"}
           </button>
-        </div>
+        </div> */}
       </form>
 
       <div className="mt-4 d-flex align-items-end gap-3 flex-wrap">
