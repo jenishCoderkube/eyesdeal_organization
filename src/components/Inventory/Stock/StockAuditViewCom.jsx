@@ -44,7 +44,8 @@ const StockAuditViewCom = () => {
           value: defaultStore._id,
           label: defaultStore.name,
         });
-        formik.handleSubmit();
+        // formik.handleSubmit();
+        fetchAuditData(formik.values, true);
       }
     }
   }, [storeData]);
@@ -62,54 +63,39 @@ const StockAuditViewCom = () => {
     }
   };
 
-  const fetchAuditData = async (values) => {
-    const storeId = values.stores?.value || user?.stores?.[0];
+  // const fetchAuaditData = async () => {
+  //   try {
+  //     const response = await inventoryService.getStockAudit();
+  //     if (response.success) {
+  //       setStoreData(response?.data?.data);
+  //     } else {
+  //       toast.error(response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching stores:", error);
+  //   }
+  // };
+  const fetchAuditData = async (values, isFirstTime = false) => {
+    const storeId = values?.stores?.value || user?.stores?.[0];
     setLoading(true);
+
     try {
-      const mockResponse = {
-        success: true,
-        data: {
-          docs: [
-            {
-              srno: 1,
-              date: "5-5-2025",
-              store: "Bhatar",
-              category: "Eyeglasses",
-              qty: 500,
-            },
-            {
-              srno: 1,
-              date: "5-5-2025",
-              store: "Bhatar",
-              category: "Sunglasses",
-              qty: 500,
-            },
-            {
-              srno: 1,
-              date: "5-5-2025",
-              store: "Navsari",
-              category: "Eyeglasses",
-              qty: 500,
-            },
-            {
-              srno: 1,
-              date: "5-5-2025",
-              store: "Bhatar",
-              category: "Eyeglasses",
-              qty: 500,
-            },
-            {
-              srno: 1,
-              date: "5-5-2025",
-              store: "Bhatar",
-              category: "Eyeglasses",
-              qty: 500,
-            },
-          ],
-        },
-      };
-      if (mockResponse.success) {
-        setAuditData(mockResponse.data.docs);
+      const startDate = isFirstTime
+        ? moment().format("YYYY-MM-DD")
+        : values.dateFrom;
+
+      const endDate = isFirstTime
+        ? moment().format("YYYY-MM-DD")
+        : values.dateTo;
+
+      const response = await inventoryService.getStockAudit({
+        storeId,
+        startDate,
+        endDate,
+      });
+
+      if (response.success) {
+        setAuditData(response.data.data.docs);
       } else {
         toast.error("Failed to fetch audit data");
       }

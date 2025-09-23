@@ -2,6 +2,7 @@ import api from "./api";
 
 // Auth endpoints
 const INVENTORY_ENDPOINTS = {
+  STOCKAUDIT: `/stockAudit`,
   STORES: `/stores`,
   CATEGORY: `/expenseCategory`,
   FRAMETYPE: `/master/frameType`,
@@ -248,6 +249,27 @@ export const inventoryService = {
   getStores: async () => {
     try {
       const response = await api.get(INVENTORY_ENDPOINTS.STORES);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
+  getStockAudit: async (params = {}) => {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const url = query
+        ? `${INVENTORY_ENDPOINTS.STOCKAUDIT}?${query}`
+        : INVENTORY_ENDPOINTS.STOCKAUDIT;
+
+      const response = await api.get(url);
+
       return {
         success: true,
         data: response.data,

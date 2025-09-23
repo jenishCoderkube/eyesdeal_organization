@@ -47,6 +47,8 @@ const StockAudit = () => {
 
   useEffect(() => {
     const storedStoreId = user?.stores?.[0];
+    console.log(storedStoreId, "storeid");
+
     if (storedStoreId && storeData.length > 0) {
       const defaultStore = storeData.find(
         (store) => store._id === storedStoreId
