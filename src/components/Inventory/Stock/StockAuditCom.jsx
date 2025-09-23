@@ -102,21 +102,14 @@ const StockAudit = () => {
   }, [formik.values.store, formik.values.productCategory, formik.values.brand]);
 
   const fetchAuditData = async (values) => {
-    const storeId = values.store?.value || user?.stores?.[0];
+    // const storeId = values.store?.value || user?.stores?.[0];
     setLoading(true);
     try {
       const response = await inventoryService.getInventoryStore(
         values.productCategory?.value || productOptions[0].value,
         values.brand?.value,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        [storeId],
+
+        // [storeId],
         1,
         "",
         9999 // Fetch all to avoid pagination
@@ -319,7 +312,9 @@ const StockAudit = () => {
             <thead className="bg-light">
               <tr>
                 <th>#</th>
+                <th>Audit Date</th>
                 <th>SKU</th>
+                <th>Barcode</th>
                 <th>Store Qty</th>
                 <th>Count Qty</th>
                 <th>Status</th>
@@ -330,7 +325,9 @@ const StockAudit = () => {
                 auditData.map((item, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
+                    <td>{moment(item.auditDate).format("YYYY-MM-DD")}</td>
                     <td>{item.sku}</td>
+                    <td>{item.barcode}</td>
                     <td>{item.storeQty}</td>
                     <td>{item.countQty}</td>
                     <td
@@ -344,7 +341,7 @@ const StockAudit = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="7" className="text-center">
                     No data available
                   </td>
                 </tr>
