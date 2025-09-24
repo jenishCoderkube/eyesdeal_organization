@@ -388,8 +388,8 @@ const ViewCashbook = () => {
             </div>
             {/* Updated Pagination with react-paginate */}
             <ReactPaginate
-              previousLabel={loadingPage ? "Loading..." : "← Previous"}
-              nextLabel={loadingPage ? "Loading..." : "Next →"}
+              previousLabel={"← Previous"}
+              nextLabel={"Next →"}
               pageCount={cashBooks.totalPages}
               onPageChange={handlePageChange}
               containerClassName="pagination justify-content-center"
