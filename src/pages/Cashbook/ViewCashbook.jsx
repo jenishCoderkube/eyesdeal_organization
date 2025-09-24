@@ -230,7 +230,10 @@ const ViewCashbook = () => {
                   options={storeOptions}
                   isMulti
                   value={formik.values.store}
-                  onChange={(option) => handleInputChange("store", option)}
+                  onChange={(selectedOptions) => {
+                    formik.setFieldValue("store", selectedOptions);
+                    handleInputChange("store", selectedOptions);
+                  }}
                   placeholder="Select..."
                   classNamePrefix="react-select"
                 />
