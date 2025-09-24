@@ -388,28 +388,24 @@ const ViewCashbook = () => {
             </div>
             {/* Updated Pagination with react-paginate */}
             <ReactPaginate
-              pageCount={cashBooks.totalPages}
-              onPageChange={handlePageChange}
-              containerClassName="pagination d-flex list-unstyled align-items-center"
-              pageClassName="me-2"
-              pageLinkClassName={`btn border border-secondary text-muted ${
-                loadingPage ? "opacity-50 cursor-not-allowed" : ""
-              }`}
               previousLabel={loadingPage ? "Loading..." : "← Previous"}
               nextLabel={loadingPage ? "Loading..." : "Next →"}
-              previousClassName="me-2"
-              previousLinkClassName={`btn border border-secondary text-muted ${
-                loadingPage ? "opacity-50 cursor-not-allowed" : ""
+              pageCount={cashBooks.totalPages}
+              onPageChange={handlePageChange}
+              containerClassName="pagination justify-content-center"
+              pageClassName="page-item"
+              pageLinkClassName="page-link"
+              previousClassName="page-item"
+              previousLinkClassName={`page-link ${
+                loadingPage ? "disabled" : ""
               }`}
-              nextClassName=""
-              nextLinkClassName={`btn border border-secondary text-muted ${
-                loadingPage ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              activeClassName="bg-blue-500 text-white"
+              nextClassName="page-item"
+              nextLinkClassName={`page-link ${loadingPage ? "disabled" : ""}`}
+              activeClassName="active" // This is key for Bootstrap
               disabledClassName="disabled"
               breakLabel="..."
-              breakClassName="me-2"
-              breakLinkClassName="btn border border-secondary text-muted"
+              breakClassName="page-item"
+              breakLinkClassName="page-link"
               forcePage={currentPage - 1}
             />
           </div>
