@@ -76,7 +76,7 @@ const StockAuditViewCom = () => {
   //   }
   // };
   const fetchAuditData = async (values, isFirstTime = false) => {
-    const storeId = values?.stores?.value || user?.stores?.[0];
+    const store = values?.stores?.value || user?.stores?.[0];
     setLoading(true);
 
     try {
@@ -89,7 +89,7 @@ const StockAuditViewCom = () => {
         : values.dateTo;
 
       const response = await inventoryService.getStockAudit({
-        storeId,
+        store,
         startDate,
         endDate,
       });
@@ -108,8 +108,8 @@ const StockAuditViewCom = () => {
 
   const handleDownload = (data) => {
     const csv = [
-      "SRNO,Date,Store,Category,Qty",
-      `${data.srno},${data.date},${data.store},${data.category},${data.qty}`,
+      "SRNO,Date,Store,Category,Store Qty,Count Qty",
+      `${data?.srno},${data?.date},${data?.store},${data?.category},${data?.qtyStore},${data?.qty}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -190,26 +190,34 @@ const StockAuditViewCom = () => {
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
                   <th className="py-3">Category</th>
-                  <th className="py-3">Qty</th>
+                  <th className="py-3">Store Qty</th>
+
+                  <th className="py-3">Count Qty</th>
                   <th className="py-3">View</th>
                   <th className="py-3">Download</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedData.length > 0 ? (
-                  paginatedData.map((item, index) => (
-                    <tr key={index} className="align-middle">
-                      <td className="py-3">{index + 1}</td>
-                      <td className="py-3">{item.date}</td>
-                      <td className="py-3">{item.store}</td>
-                      <td className="py-3">{item.category}</td>
-                      <td className="py-3">{item.qty}</td>
+                  paginatedData?.map((item, index) => (
+                    <tr key={item._id} className="align-middle">
+                      <td className="py-3">
+                        {index + 1 + currentPage * itemsPerPage}
+                      </td>
+                      <td className="py-3">
+                        {moment(item.auditDate).format("YYYY-MM-DD")}
+                      </td>
+                      <td className="py-3">{item.store?.name}</td>
+                      <td className="py-3">{item.productCategory}</td>
+                      <td className="py-3">{item?.storeQuantity || 0}</td>
+
+                      <td className="py-3">{item.countQuantity}</td>
                       <td className="py-3">
                         <button
                           className="btn btn-outline-primary btn-sm"
                           onClick={() =>
                             alert(
-                              `Viewing details for ${item.category} on ${item.date}`
+                              `Viewing details for ${item.product.displayName} in store ${item.store.name}`
                             )
                           }
                         >
@@ -219,7 +227,16 @@ const StockAuditViewCom = () => {
                       <td className="py-3">
                         <button
                           className="btn btn-outline-primary btn-sm"
-                          onClick={() => handleDownload(item)}
+                          onClick={() =>
+                            handleDownload({
+                              srno: index + 1,
+                              date: item.auditDate,
+                              store: item.store?.name,
+                              category: item.productCategory,
+                              qty: item.countQuantity,
+                              qtyStore: item?.storeQuantity,
+                            })
+                          }
                         >
                           Download
                         </button>
@@ -228,7 +245,7 @@ const StockAuditViewCom = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center py-5">
+                    <td colSpan="8" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
