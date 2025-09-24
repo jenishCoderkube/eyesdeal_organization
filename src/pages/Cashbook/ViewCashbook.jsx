@@ -15,6 +15,8 @@ import ReactPaginate from "react-paginate"; // Added import for react-paginate
 const ViewCashbook = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(false);
+
   const [storeData, setStoreData] = useState([]);
   const [cashBooks, setCashBook] = useState({
     docs: [],
@@ -102,31 +104,38 @@ const ViewCashbook = () => {
     }
   };
 
-  useEffect(() => {
-    cashBook(searchQuery, currentPage);
-  }, [currentPage]);
+  // useEffect(() => {
+  //   cashBook(searchQuery, currentPage);
+  // }, [currentPage]);
 
   useEffect(() => {
-    const storedStoreId = user?.stores?.[0];
-    if (storedStoreId && storeData.length > 0) {
-      const defaultStore = storeData.find(
-        (store) => store._id === storedStoreId
-      );
-      if (defaultStore) {
-        formik.setFieldValue("store", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
+    const setDefaultStore = () => {
+      const storedStoreId = user?.stores?.[0];
+      if (storedStoreId && storeData.length > 0) {
+        const defaultStore = storeData.find(
+          (store) => store._id === storedStoreId
+        );
+        if (defaultStore) {
+          const storeOption = [
+            { value: defaultStore._id, label: defaultStore.name },
+          ];
+          formik.setFieldValue("store", storeOption);
+          handleInputChange("store", storeOption); // update formData
+          // Now fetch data with default store
+          cashBook(searchQuery, 1, storeOption);
+        }
       }
-    }
+    };
+
+    setDefaultStore();
   }, [storeData]);
 
-  const cashBook = async (search = "", page = 1) => {
-    const storeId = formData?.store?.map((option) => option.value);
-    setLoading(true);
+  const cashBook = async (search = "", page = 1, selectedStore = null) => {
+    const storeId = selectedStore
+      ? selectedStore.map((option) => option.value)
+      : formData?.store?.map((option) => option.value);
 
+    setLoading(true);
     try {
       const response = await cashbookService.cashBook(
         formData?.from?.getTime(),
@@ -139,7 +148,6 @@ const ViewCashbook = () => {
         formData?.mode?.value
       );
       if (response.success) {
-        console.log("response", response);
         setCashBook(response?.data?.data);
       } else {
         toast.error(response.message);
@@ -182,8 +190,12 @@ const ViewCashbook = () => {
 
   // Handle pagination for react-paginate
   const handlePageChange = ({ selected }) => {
-    const newPage = selected + 1; // react-paginate uses 0-based indexing
+    const newPage = selected + 1;
     setCurrentPage(newPage);
+    setLoadingPage(true); // start loading for pagination
+    cashBook(searchQuery, newPage, formData.store).finally(() => {
+      setLoadingPage(false); // stop loading when API finishes
+    });
   };
 
   return (
@@ -376,24 +388,29 @@ const ViewCashbook = () => {
             </div>
             {/* Updated Pagination with react-paginate */}
             <ReactPaginate
-              previousLabel="← Previous"
-              nextLabel="Next →"
               pageCount={cashBooks.totalPages}
               onPageChange={handlePageChange}
               containerClassName="pagination d-flex list-unstyled align-items-center"
               pageClassName="me-2"
-              pageLinkClassName="btn border border-secondary text-muted"
+              pageLinkClassName={`btn border border-secondary text-muted ${
+                loadingPage ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              previousLabel={loadingPage ? "Loading..." : "← Previous"}
+              nextLabel={loadingPage ? "Loading..." : "Next →"}
               previousClassName="me-2"
-              previousLinkClassName="btn border border-secondary text-muted"
+              previousLinkClassName={`btn border border-secondary text-muted ${
+                loadingPage ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               nextClassName=""
-              nextLinkClassName="btn border border-secondary text-muted"
-              activeClassName="active"
-              activeLinkClassName="bg-indigo-500 text-white"
+              nextLinkClassName={`btn border border-secondary text-muted ${
+                loadingPage ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              activeClassName="bg-blue-500 text-white"
               disabledClassName="disabled"
               breakLabel="..."
               breakClassName="me-2"
               breakLinkClassName="btn border border-secondary text-muted"
-              forcePage={currentPage - 1} // react-paginate uses 0-based indexing
+              forcePage={currentPage - 1}
             />
           </div>
         </div>
