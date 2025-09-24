@@ -47,6 +47,8 @@ const StockAudit = () => {
 
   useEffect(() => {
     const storedStoreId = user?.stores?.[0];
+    console.log(storedStoreId, "storeid");
+
     if (storedStoreId && storeData.length > 0) {
       const defaultStore = storeData.find(
         (store) => store._id === storedStoreId
@@ -92,6 +94,12 @@ const StockAudit = () => {
       console.error("Error fetching brands:", error);
     }
   };
+  // ✅ auto fetch when store/category/brand changes
+  useEffect(() => {
+    if (formik.values.store && formik.values.productCategory) {
+      fetchAuditData(formik.values);
+    }
+  }, [formik.values.store, formik.values.productCategory, formik.values.brand]);
 
   const fetchAuditData = async (values) => {
     const storeId = values.store?.value || user?.stores?.[0];
@@ -116,12 +124,13 @@ const StockAudit = () => {
       if (response.success) {
         const newAuditData = response.data.data.docs.map((item) => ({
           sku: item.product.sku,
-          storeQty: item.quantity,
+          storeQty: item?.quantity || 0,
+          product: item?.product?._id,
           countQty: 0,
           status: "Mismatch",
           barcode:
-            item.product.oldBarcode ||
-            item.product.newBarcode ||
+            item.product?.newBarcode ||
+            item.product?.oldBarcode ||
             item.product.sku,
         }));
         setAuditData(newAuditData);
@@ -175,22 +184,38 @@ const StockAudit = () => {
     }
   };
 
-  const handleSave = () => {
-    const payload = {
-      date,
-      storeId: formik.values.store?.value,
-      productCategory: formik.values.productCategory?.value,
-      brand: formik.values.brand?.value,
-      totalCountQty,
-      entries: auditData.map(({ sku, storeQty, countQty, status }) => ({
-        sku,
-        storeQty,
-        countQty,
-        status,
-      })),
-    };
-    console.log("Audit Payload:", payload);
-    toast.success("Audit data prepared (no API call)");
+  const handleSave = async () => {
+    const payload = auditData
+      .filter((item) => item.countQty > 0) // ✅ only include scanned
+      .map(({ sku, storeQty, countQty, status, barcode, product }) => {
+        const entry = {
+          sku,
+          storeQty,
+          countQty,
+          product,
+          status,
+          store: formik.values.store?.value,
+          barcode,
+          productCategory: formik.values.productCategory?.value,
+          auditDate:
+            new Date(date).toISOString().split("T")[0] + "T00:00:00.000Z", // normalized date
+        };
+        if (formik.values.brand?.value) {
+          entry.brand = formik.values.brand.value;
+        }
+
+        return entry;
+      });
+    try {
+      const response = await inventoryService.stockAudit(payload);
+      if (response.success) {
+        toast.success("Stock audit saved successfully!");
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      toast.error("Error while saving stock audit");
+    }
   };
 
   const storeOptions = storeData.map((store) => ({
@@ -242,7 +267,7 @@ const StockAudit = () => {
             />
           </div>
         </div>
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <button
             type="submit"
             className="btn custom-button-bgcolor"
@@ -250,7 +275,7 @@ const StockAudit = () => {
           >
             {loading ? "Loading..." : "Submit"}
           </button>
-        </div>
+        </div> */}
       </form>
 
       <div className="mt-4 d-flex align-items-end gap-3 flex-wrap">

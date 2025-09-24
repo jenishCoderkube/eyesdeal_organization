@@ -403,16 +403,21 @@ function VendorInvoice() {
       {
         id: "lensSku",
         header: "Lens SKU",
-        cell: ({ row }) => row.original.fullJob?.lens?.sku || "N/A",
+        cell: ({ row }) =>
+          row.original.fullJob?.lens?.sku ? (
+            <div style={{ minWidth: "200px" }}>
+              {row.original.fullJob?.lens?.sku}
+            </div>
+          ) : (
+            "N/A"
+          ),
       },
       {
         id: "side",
         header: "Side",
         cell: ({ row }) =>
           row.original.fullJob?.side ? (
-            <div style={{ minWidth: "300px" }}>
-              {row.original.fullJob?.side}
-            </div>
+            <div>{row.original.fullJob?.side}</div>
           ) : (
             "N/A"
           ),
