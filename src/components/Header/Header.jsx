@@ -71,6 +71,10 @@ const menuItems = [
         label: "Stock Audit View",
         link: "/inventory/stock-audit-view",
       },
+      {
+        label: "Universal Stock Request",
+        link: "/inventory/universal-stock-request-view",
+      },
     ],
   },
   {
