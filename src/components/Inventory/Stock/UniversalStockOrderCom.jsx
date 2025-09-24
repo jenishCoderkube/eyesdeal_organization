@@ -7,7 +7,7 @@ import moment from "moment";
 import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
 
-const UniversalStockRequestCom = () => {
+const UniversalStockOrderCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -50,15 +50,6 @@ const UniversalStockRequestCom = () => {
     }
   };
 
-  // useEffect(() => {
-  //   // Mock stores
-  //   const mockStores = [
-  //     { _id: "1", name: "Bhatar" },
-  //     { _id: "2", name: "Navsari" },
-  //   ];
-  //   setStoreData(mockStores);
-  // }, []);
-
   useEffect(() => {
     if (storeData.length > 0) {
       formik.setFieldValue("stores", {
@@ -73,147 +64,57 @@ const UniversalStockRequestCom = () => {
     setLoading(true);
 
     try {
-      // Mock data with dates in September 2025 to match default form values
+      // Mock data matching the image structure
       const mockAuditData = [
         {
           ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
-        },
-        {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
+          date: "5-5-2025",
+          store: "Store No",
+          sku: "SKU",
+          image: "",
+          status: "Approve",
+          upload: "Upload Photo-video",
+          shipping: "View Address",
         },
         {
           ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
+          date: "5-5-2025",
+          store: "Store No",
+          sku: "SKU",
+          image: "",
+          status: "Approve",
+          upload: "Upload Photo-video",
+          shipping: "View Address",
         },
         {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
+          ordNo: 1,
+          date: "5-5-2025",
+          store: "Store No",
+          sku: "SKU",
+          image: "",
+          status: "Approved",
+          upload: "Upload Photo-video",
+          shipping: "View Address",
         },
         {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
+          ordNo: 1,
+          date: "5-5-2025",
+          store: "Store No",
+          sku: "SKU",
+          image: "",
+          status: "Approved",
+          upload: "Upload Photo-video",
+          shipping: "View Address",
         },
         {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
+          ordNo: 1,
+          date: "5-5-2025",
+          store: "Store No",
+          sku: "SKU",
+          image: "",
+          status: "Approved",
+          upload: "Upload Photo-video",
+          shipping: "View Address",
         },
       ];
 
@@ -221,7 +122,7 @@ const UniversalStockRequestCom = () => {
       let filteredData = mockAuditData;
       if (values.stores || values.dateFrom || values.dateTo) {
         filteredData = mockAuditData.filter((item) => {
-          const itemDate = moment(item.date);
+          const itemDate = moment(item.date, "D-M-YYYY");
           const dateFrom = moment(values.dateFrom);
           const dateTo = moment(values.dateTo);
           return (
@@ -245,21 +146,6 @@ const UniversalStockRequestCom = () => {
     }
   };
 
-  const handleDownload = (data) => {
-    const csv = [
-      "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${data.date},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `stock_audit_${data.date}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const storeOptions = storeData.map((store) => ({
     value: store._id,
     label: store.name,
@@ -276,7 +162,7 @@ const UniversalStockRequestCom = () => {
 
   return (
     <div className="card-body p-4">
-      <h4 className="mb-4 font-weight-bold">Universal Stock Request View</h4>
+      <h4 className="mb-4 font-weight-bold">Universal Stock Order View</h4>
       <form
         onSubmit={formik.handleSubmit}
         className="row row-cols-1 row-cols-md-4 g-3 align-items-end"
@@ -325,7 +211,11 @@ const UniversalStockRequestCom = () => {
           </button>
         </div>
       </form>
-
+      <div className="col mt-3">
+        <button type="submit" className="btn btn-primary">
+          Recieved
+        </button>
+      </div>
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
@@ -334,16 +224,14 @@ const UniversalStockRequestCom = () => {
             <table className="table table-striped table-hover">
               <thead className="border-top">
                 <tr>
-                  <th className="py-3">ORDNO</th>
+                  <th className="py-3">ORD NO</th>
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
-                  <th className="py-3">Category</th>
                   <th className="py-3">SKU & Barcode</th>
-                  <th className="py-3">Qty</th>
                   <th className="py-3">Image</th>
-                  <th className="py-3">Payment Status</th>
-                  <th className="py-3">Order Status</th>
-                  <th className="py-3">Actions</th>
+                  <th className="py-3">Status</th>
+                  <th className="py-3">Upload</th>
+                  <th className="py-3">Shipping Address</th>
                 </tr>
               </thead>
               <tbody>
@@ -351,13 +239,9 @@ const UniversalStockRequestCom = () => {
                   paginatedData.map((item, index) => (
                     <tr key={index} className="align-middle">
                       <td className="py-3">{item.ordNo}</td>
-                      <td className="py-3">
-                        {moment(item.date).format("D-M-YYYY")}
-                      </td>
+                      <td className="py-3">{item.date}</td>
                       <td className="py-3">{item.store}</td>
-                      <td className="py-3">{item.category}</td>
                       <td className="py-3">{item.sku}</td>
-                      <td className="py-3">{item.qty}</td>
                       <td className="py-3">
                         <button
                           className="btn btn-outline-info btn-sm"
@@ -371,57 +255,42 @@ const UniversalStockRequestCom = () => {
                         </button>
                       </td>
                       <td className="py-3">
-                        <span
-                          className={`badge ${
-                            item.paymentStatus === "Success"
-                              ? "bg-success"
-                              : "bg-danger"
-                          }`}
-                        >
-                          {item.paymentStatus}
-                        </span>
+                        <span className="badge bg-primary">{item.status}</span>
                       </td>
                       <td className="py-3">
-                        {item.orderStatus === "View photo" ? (
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() =>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
                               alert(
-                                `Viewing photo for ${item.sku} on ${item.date}`
-                              )
+                                `Selected file: ${file.name} for ${item.sku} on ${item.date}`
+                              );
+                              console.log("Uploaded file:", file);
                             }
-                          >
-                            View photo
-                          </button>
-                        ) : (
-                          <span className="badge bg-primary">
-                            {item.orderStatus}
-                          </span>
-                        )}
+                          }}
+                          className="form-control form-control-sm"
+                          style={{ width: "250px", padding: "2px" }}
+                        />
                       </td>
                       <td className="py-3">
                         <button
-                          className="btn btn-outline-primary btn-sm me-2"
+                          className="btn btn-outline-primary btn-sm"
                           onClick={() =>
                             alert(
-                              `Viewing details for ${item.category} on ${item.date}`
+                              `Viewing shipping address for ${item.sku} on ${item.date}`
                             )
                           }
                         >
-                          View
-                        </button>
-                        <button
-                          className="btn btn-outline-success btn-sm"
-                          onClick={() => handleDownload(item)}
-                        >
-                          Download
+                          {item.shipping}
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="text-center py-5">
+                    <td colSpan="8" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -456,4 +325,4 @@ const UniversalStockRequestCom = () => {
   );
 };
 
-export default UniversalStockRequestCom;
+export default UniversalStockOrderCom;

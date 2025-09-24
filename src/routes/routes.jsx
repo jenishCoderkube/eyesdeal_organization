@@ -76,6 +76,7 @@ import AddBulkPurchase from "../pages/Purchase/AddBulkPurchase";
 import StockAudit from "../pages/Inventory/StockAudit";
 import StockAuditView from "../pages/Inventory/StockAuditView";
 import UniversalStockRequestView from "../pages/Inventory/UniversalStockRequestView";
+import UniversalStockOrderView from "../pages/Inventory/UniversalStockOrderView";
 
 const routes = [
   {
@@ -517,6 +518,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <UniversalStockRequestView />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "UniversalStockOrderView",
+    path: "/inventory/universal-stock-order-view",
+    element: (
+      <PrivateRoute>
+        <UniversalStockOrderView />
       </PrivateRoute>
     ),
   },
