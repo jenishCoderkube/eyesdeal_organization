@@ -325,7 +325,11 @@ const UniversalStockRequestCom = () => {
           </button>
         </div>
       </form>
-
+      <div className="col mt-3">
+        <button type="submit" className="btn btn-primary">
+          Submit Order
+        </button>
+      </div>
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
