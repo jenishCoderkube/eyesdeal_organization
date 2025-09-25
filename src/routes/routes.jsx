@@ -76,6 +76,7 @@ import AddBulkPurchase from "../pages/Purchase/AddBulkPurchase";
 import StockAudit from "../pages/Inventory/StockAudit";
 import StockAuditView from "../pages/Inventory/StockAuditView";
 import UniversalStockRequestView from "../pages/Inventory/UniversalStockRequestView";
+import AddProductView from "../pages/Purchase/AddProductView";
 
 const routes = [
   {
@@ -211,6 +212,15 @@ const routes = [
     element: (
       <PrivateRoute>
         <BarcodeGenerate />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "GenerateBarcode",
+    path: "/purchase/addproduct",
+    element: (
+      <PrivateRoute>
+        <AddProductView />
       </PrivateRoute>
     ),
   },

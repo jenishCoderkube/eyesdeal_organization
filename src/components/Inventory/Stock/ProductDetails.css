@@ -1,0 +1,42 @@
+src/ProductDetails.css .cursor-pointer {
+  cursor: pointer;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+img {
+  max-width: 100%;
+}
+
+.badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.list-group-item {
+  padding: 0.5rem 0;
+}
+
+.text-warning {
+  color: #ffc107;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.btn-link {
+  text-decoration: none;
+  color: #007bff;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}

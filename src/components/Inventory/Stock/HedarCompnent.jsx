@@ -22,18 +22,19 @@ const HeaderComponent = ({
     <div className="mb-5">
       {/* Title */}
       <div className="text-center mb-5">
-        <h1 className="fw-bold display-4 text-dark">ED PRODUCT PURCHASE</h1>
+        <h2 className="fw-bold  text-dark">ADD PRODUCT PURCHASE</h2>
       </div>
 
       {/* Tabs */}
-      <ul className="nav nav-pills justify-content-center mb-4 fs-5">
+      {/* Tabs */}
+      {/* Tabs */}
+      <ul className="nav nav-pills justify-content-center flex-nowrap overflow-auto mb-5">
         {tabs.map((tab) => (
-          <li className="nav-item mx-1" key={tab}>
+          <li className="nav-item mx-2" key={tab}>
             <button
-              className={`nav-link px-4 py-2 ${
-                activeTab === tab ? "active" : ""
+              className={`nav-link px-5 py-3 fontSize-16 text-nowrap ${
+                activeTab === tab ? "active fw-bold" : "fw-semibold"
               }`}
-              style={{ fontWeight: activeTab === tab ? "600" : "400" }}
               onClick={() => handleTabChange(tab)}
             >
               {tab}
@@ -43,9 +44,9 @@ const HeaderComponent = ({
       </ul>
 
       {/* Filters */}
-      <div className="d-flex flex-wrap justify-content-center gap-3">
+      <div className="d-flex flex-wrap justify-content-start gap-5 align-items-center">
         <select
-          className="form-select w-auto fs-5"
+          className="form-select form-select-sm w-auto fs-5 py-1 px-2"
           onChange={(e) => handleFilterChange("Frame Type", e.target.value)}
           value={frameType}
         >
@@ -53,8 +54,9 @@ const HeaderComponent = ({
           <option value="870">870</option>
           <option value="900">900</option>
         </select>
+
         <select
-          className="form-select w-auto fs-5"
+          className="form-select form-select-sm w-auto fs-5 py-1 px-2"
           onChange={(e) => handleFilterChange("Material", e.target.value)}
           value={material}
         >
@@ -62,8 +64,9 @@ const HeaderComponent = ({
           <option value="Metal">Metal</option>
           <option value="Plastic">Plastic</option>
         </select>
+
         <select
-          className="form-select w-auto fs-5"
+          className="form-select form-select-sm w-auto fs-5 py-1 px-2"
           onChange={(e) => handleFilterChange("Brand", e.target.value)}
           value={brand}
         >
@@ -71,8 +74,9 @@ const HeaderComponent = ({
           <option value="I-GOG">I-GOG</option>
           <option value="Sun">Sun</option>
         </select>
+
         <select
-          className="form-select w-auto fs-5"
+          className="form-select form-select-sm w-auto fs-5 py-1 px-2"
           onChange={(e) => handleFilterChange("Shape", e.target.value)}
           value={shape}
         >
@@ -80,7 +84,10 @@ const HeaderComponent = ({
           <option value="Square">Square</option>
           <option value="Round">Round</option>
         </select>
-        <button className="btn btn-lg btn-success px-4">Apply</button>
+
+        <button className="btn btn-success btn-sm px-3 py-1 fs-5 fw-bold">
+          Apply
+        </button>
       </div>
     </div>
   );
