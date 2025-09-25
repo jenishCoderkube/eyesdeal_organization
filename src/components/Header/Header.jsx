@@ -85,7 +85,7 @@ const menuItems = [
     label: "Users",
     icon: "bi bi-people", // You can change the icon class if needed
     submenu: [
-      { label: "Add Organization", link: "/users/add-organization" },
+      // { label: "Add Organization", link: "/users/add-organization" },
       { label: "Add Customer", link: "/users/addCustomer" },
       { label: "Add Employee", link: "/users/add-employee" },
       { label: "View Customer", link: "/users/view-customer" },
