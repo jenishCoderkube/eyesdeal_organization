@@ -327,7 +327,7 @@ const UniversalStockRequestCom = () => {
       </form>
       <div className="col mt-3">
         <button type="submit" className="btn btn-primary">
-          Recived
+          Submit Order
         </button>
       </div>
       <div className="table-responsive mt-3">

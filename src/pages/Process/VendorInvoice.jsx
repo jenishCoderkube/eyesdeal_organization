@@ -390,11 +390,11 @@ function VendorInvoice() {
         header: "Store",
         cell: ({ getValue }) => <div>{getValue()}</div>,
       },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ getValue }) => <div>{getValue()}</div>,
-      },
+      // {
+      //   accessorKey: "status",
+      //   header: "Status",
+      //   cell: ({ getValue }) => <div>{getValue()}</div>,
+      // },
       {
         id: "productSku",
         header: "Product SKU",
@@ -440,27 +440,23 @@ function VendorInvoice() {
       {
         id: "powerDetails",
         header: "Power Details",
+        cell: ({ row }) => {
+          const side = row.original.fullJob?.side; // "right" or "left"
+          const specs = row.original.fullJob?.powerAtTime?.specs;
 
-        cell: ({ row }) =>
-          row.original.fullJob?.powerAtTime?.specs ? (
+          if (!specs || !side) return "N/A";
+
+          const sideSpecs = specs[side]?.distance;
+
+          if (!sideSpecs) return "N/A";
+
+          return (
             <div style={{ minWidth: "300px" }}>
-              <strong>Right:</strong> Sph:{" "}
-              {row.original.fullJob.powerAtTime.specs.right?.distance?.sph ||
-                "N/A"}
-              , Add:{" "}
-              {row.original.fullJob.powerAtTime.specs.right?.distance?.add ||
-                "N/A"}
-              <br />
-              <strong>Left:</strong> Sph:{" "}
-              {row.original.fullJob.powerAtTime.specs.left?.distance?.sph ||
-                "N/A"}
-              , Add:{" "}
-              {row.original.fullJob.powerAtTime.specs.left?.distance?.add ||
-                "N/A"}
+              <strong>{side.charAt(0).toUpperCase() + side.slice(1)}:</strong>
+              Sph: {sideSpecs.sph || "N/A"}, Add: {sideSpecs.add || "N/A"}
             </div>
-          ) : (
-            "N/A"
-          ),
+          );
+        },
       },
     ],
     [handleSelect]

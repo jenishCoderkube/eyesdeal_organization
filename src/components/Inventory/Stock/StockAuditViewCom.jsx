@@ -12,7 +12,15 @@ const StockAuditViewCom = () => {
   const [auditData, setAuditData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 5;
+  const itemsPerPage = 2;
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 2,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -75,27 +83,33 @@ const StockAuditViewCom = () => {
   //     console.error("Error fetching stores:", error);
   //   }
   // };
-  const fetchAuditData = async (values, isFirstTime = false) => {
+  const fetchAuditData = async (values, page = 1) => {
     const store = values?.stores?.value || user?.stores?.[0];
     setLoading(true);
 
     try {
-      const startDate = isFirstTime
-        ? moment().format("YYYY-MM-DD")
-        : values.dateFrom;
-
-      const endDate = isFirstTime
-        ? moment().format("YYYY-MM-DD")
-        : values.dateTo;
-
-      const response = await inventoryService.getStockAudit({
+      const params = {
         store,
-        startDate,
-        endDate,
-      });
+        startDate: values.dateFrom,
+        endDate: values.dateTo,
+        page,
+        limit: pagination.limit,
+      };
+
+      const response = await inventoryService.getStockAudit(params);
 
       if (response.success) {
-        setAuditData(response.data.data.docs);
+        const container = response.data.data;
+        setAuditData(container.docs);
+
+        setPagination({
+          page: container.page,
+          limit: container.limit,
+          totalDocs: container.totalDocs,
+          totalPages: container.totalPages,
+          hasPrevPage: container.hasPrevPage,
+          hasNextPage: container.hasNextPage,
+        });
       } else {
         toast.error("Failed to fetch audit data");
       }
@@ -126,13 +140,13 @@ const StockAuditViewCom = () => {
     label: store.name,
   }));
 
-  const paginatedData = auditData.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
+  // const paginatedData = auditData.slice(
+  //   currentPage * itemsPerPage,
+  //   (currentPage + 1) * itemsPerPage
+  // );
 
-  const handlePageClick = (event) => {
-    setCurrentPage(event.selected);
+  const handlePageChange = (newPage) => {
+    fetchAuditData(formik.values, newPage);
   };
 
   return (
@@ -198,8 +212,8 @@ const StockAuditViewCom = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.length > 0 ? (
-                  paginatedData?.map((item, index) => (
+                {auditData.length > 0 ? (
+                  auditData?.map((item, index) => (
                     <tr key={item._id} className="align-middle">
                       <td className="py-3">
                         {index + 1 + currentPage * itemsPerPage}
@@ -252,26 +266,31 @@ const StockAuditViewCom = () => {
                 )}
               </tbody>
             </table>
-            <div className="d-flex justify-content-center mt-4">
-              <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
-                breakLabel={"..."}
-                pageCount={Math.ceil(auditData.length / itemsPerPage)}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={3}
-                onPageChange={handlePageClick}
-                containerClassName={"pagination"}
-                activeClassName={"active"}
-                pageClassName={"page-item"}
-                pageLinkClassName={"page-link"}
-                previousClassName={"page-item"}
-                previousLinkClassName={"page-link"}
-                nextClassName={"page-item"}
-                nextLinkClassName={"page-link"}
-                breakClassName={"page-item"}
-                breakLinkClassName={"page-link"}
-              />
+            <div className="d-flex justify-content-between align-items-center mt-3">
+              <div>
+                Showing{" "}
+                {auditData.length > 0
+                  ? (pagination.page - 1) * pagination.limit + 1
+                  : 0}{" "}
+                to {(pagination.page - 1) * pagination.limit + auditData.length}{" "}
+                of {pagination.totalDocs} results
+              </div>
+              <div className="btn-group">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={!pagination.hasPrevPage || loading}
+                >
+                  Previous
+                </button>
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={!pagination.hasNextPage || loading}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </>
         )}
