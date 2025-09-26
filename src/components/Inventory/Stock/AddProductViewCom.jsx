@@ -1,270 +1,222 @@
-// src/ProductPurchase.js
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { debounce } from "lodash"; // Ensure lodash is installed or use a custom debounce
 import GlassesCard from "./GlassesCard";
-import HeaderComponent from "./HedarCompnent";
 import ProductDetails from "./ProductDetails";
-import img1 from "./eyesdealLogo.jpg";
-const mockData = {
-  Frame: [
-    {
-      _id: "1",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: [img1],
-      displayName: "I-GOG Classic Frames",
-      MRP: "1000",
-      features: ["Lightweight", "Durable", "UV Protection"],
-      colorVariants: [
-        { _id: "1a", frameColor: "Black", photos: ["eyesdealLogo.jpg"] },
-        { _id: "1b", frameColor: "Blue", photos: ["eyesdealLogo.jpg"] },
-      ],
-    },
-    {
-      _id: "2",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "I-GOG Modern Frames",
-      MRP: "1000",
-      features: ["Stylish", "Comfort Fit"],
-      colorVariants: [],
-    },
-    {
-      _id: "3",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "I-GOG Sleek Frames",
-      MRP: "1000",
-      features: ["Anti-Slip", "Lightweight"],
-      colorVariants: [],
-    },
-    {
-      _id: "4",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "I-GOG Trendy Frames",
-      MRP: "1000",
-      features: ["Durable", "Fashionable"],
-      colorVariants: [],
-    },
-    {
-      _id: "5",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "I-GOG Premium Frames",
-      MRP: "1000",
-      features: ["UV Protection", "Comfortable"],
-      colorVariants: [],
-    },
-  ],
-  Sunglasses: [
-    {
-      _id: "6",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Sun Frame Polarized",
-      MRP: "1200",
-      features: ["Polarized Lenses", "Anti-Glare", "Stylish Design"],
-      colorVariants: [
-        { _id: "6a", frameColor: "Brown", photos: ["eyesdealLogo.jpg"] },
-        { _id: "6b", frameColor: "Green", photos: ["eyesdealLogo.jpg"] },
-      ],
-    },
-    {
-      _id: "7",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Sun Frame Classic",
-      MRP: "1200",
-      features: ["UV400 Protection", "Lightweight"],
-      colorVariants: [],
-    },
-    {
-      _id: "8",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Sun Frame Sport",
-      MRP: "1200",
-      features: ["Durable", "Anti-Slip"],
-      colorVariants: [],
-    },
-  ],
-  "Reading Glasses": [
-    {
-      _id: "9",
-      sku: "Read Frame 750/-",
-      sellPrice: "750",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Reading Glasses Comfort",
-      MRP: "900",
-      features: ["Anti-Slip", "Clear Vision"],
-      colorVariants: [],
-    },
-    {
-      _id: "10",
-      sku: "Read Frame 750/-",
-      sellPrice: "750",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Reading Glasses Pro",
-      MRP: "900",
-      features: ["Lightweight", "Comfort Fit"],
-      colorVariants: [],
-    },
-  ],
-  "Contact Lenses": [
-    {
-      _id: "11",
-      sku: "Lens 500/-",
-      sellPrice: "500",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Daily Contact Lenses",
-      MRP: "600",
-      features: ["Comfort Wear", "High Moisture"],
-      colorVariants: [],
-    },
-    {
-      _id: "12",
-      sku: "Lens 500/-",
-      sellPrice: "500",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Monthly Contact Lenses",
-      MRP: "600",
-      features: ["Breathable", "Easy to Wear"],
-      colorVariants: [],
-    },
-  ],
-  Solution: [
-    {
-      _id: "13",
-      sku: "Solution 300/-",
-      sellPrice: "300",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Lens Cleaning Solution",
-      MRP: "350",
-      features: ["Anti-Bacterial", "Safe for All Lenses"],
-      colorVariants: [],
-    },
-  ],
-  Accessories: [
-    {
-      _id: "14",
-      sku: "Case 200/-",
-      sellPrice: "200",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Protective Glasses Case",
-      MRP: "250",
-      features: ["Hard Shell", "Portable"],
-      colorVariants: [],
-    },
-    {
-      _id: "15",
-      sku: "Case 200/-",
-      sellPrice: "200",
-      photos: ["eyesdealLogo.jpg"],
-      displayName: "Stylish Glasses Case",
-      MRP: "250",
-      features: ["Compact", "Durable"],
-      colorVariants: [],
-    },
-  ],
-};
+import PurchaseTabBar from "./PurchaseTabbar"; // Updated to use ProductFilterForm
+import productViewService from "../../../services/Products/productViewService"; // Adjust path
 
 const ProductPurchase = () => {
-  const [activeTab, setActiveTab] = useState("Frame");
-  const [filteredData, setFilteredData] = useState(mockData[activeTab]);
-  const [frameType, setFrameType] = useState("");
-  const [material, setMaterial] = useState("");
-  const [brand, setBrand] = useState("");
-  const [shape, setShape] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filteredData, setFilteredData] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [paginationMeta, setPaginationMeta] = useState({
+    totalDocs: 0,
+    limit: 100,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+    page: 1,
+  });
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setSelectedProduct(null);
-    setShowDetails(false);
-    filterData(tab, frameType, material, brand, shape);
-  };
+  // Debounced fetch function
+  const fetchProducts = useMemo(
+    () =>
+      debounce(async (model, filters, page) => {
+        setLoading(true);
+        try {
+          console.log("Fetching products with payload:", {
+            model,
+            filters,
+            page,
+          });
+          // Assuming getRange is defined elsewhere; remove if not needed
+          // getRange(filters);
+          const response = await productViewService.getProductsPurchase(
+            model,
+            { ...filters, isB2B: true },
+            page
+          );
+          console.log("API response:", response);
+          if (response.success && response.other) {
+            setFilteredData(response.other.docs || []);
+            setPaginationMeta({
+              totalDocs: response.other.totalDocs || 0,
+              limit: response.other.limit || 100,
+              totalPages: response.other.totalPages || 1,
+              hasPrevPage: response.other.hasPrevPage || false,
+              hasNextPage: response.other.hasNextPage || false,
+              page: response.other.page || 1,
+            });
+            setError(null);
+          } else {
+            setError(response.message || "Failed to fetch products");
+            setFilteredData([]);
+            setPaginationMeta({
+              totalDocs: 0,
+              limit: 100,
+              totalPages: 1,
+              hasPrevPage: false,
+              hasNextPage: false,
+              page: 1,
+            });
+          }
+        } catch (err) {
+          console.error("Error fetching products:", err);
+          setError("An error occurred while fetching products");
+          setFilteredData([]);
+          setPaginationMeta({
+            totalDocs: 0,
+            limit: 100,
+            totalPages: 1,
+            hasPrevPage: false,
+            hasNextPage: false,
+            page: 1,
+          });
+        }
+        setLoading(false);
+      }, 200),
+    []
+  );
 
-  const handleFilterChange = (type, value) => {
-    switch (type) {
-      case "Frame Type":
-        setFrameType(value);
-        break;
-      case "Material":
-        setMaterial(value);
-        break;
-      case "Brand":
-        setBrand(value);
-        break;
-      case "Shape":
-        setShape(value);
-        break;
-      default:
-        break;
-    }
-    filterData(activeTab, value, material, brand, shape);
-  };
+  // Handle filter changes and fetch products
+  useEffect(() => {
+    const model = searchParams.get("model") || "eyeGlasses";
+    const page = parseInt(searchParams.get("page")) || 1;
+    const filters = {
+      brand: searchParams.get("brand") || "",
+      frameType: searchParams.get("frameType") || "",
+      frameShape: searchParams.get("frameShape") || "",
+      frameMaterial: searchParams.get("frameMaterial") || "",
+    };
 
-  const filterData = (tab, frameType, material, brand, shape) => {
-    let data = [...mockData[tab]];
-    if (frameType) data = data.filter((item) => item.sku.includes(frameType));
-    if (material) data = data.filter((item) => item.sku.includes(material));
-    if (brand) data = data.filter((item) => item.sku.includes(brand));
-    if (shape) data = data.filter((item) => item.sku.includes(shape));
-    setFilteredData(data);
-  };
+    fetchProducts(model, filters, page);
 
-  const handleCardClick = (id) => {
-    let product = null;
-    for (const category in mockData) {
-      const found = mockData[category].find((item) => item._id === id);
-      if (found) {
-        product = found;
-        break;
+    // Cleanup debounce on unmount
+    return () => {
+      fetchProducts.cancel();
+    };
+  }, [searchParams, fetchProducts]);
+
+  // Handle form submission to update URL params
+  const handleSubmit = (values) => {
+    const newParams = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        newParams.set(key, value);
       }
+    });
+    // Preserve page if it exists
+    if (searchParams.get("page")) {
+      newParams.set("page", searchParams.get("page"));
     }
-    setSelectedProduct(product);
-    setShowDetails(true);
+    setSearchParams(newParams);
   };
 
+  // Handle card click to show product details
+  const handleCardClick = (id) => {
+    const product = filteredData.find((item) => item._id === id);
+    if (product) {
+      setSelectedProduct(product);
+      setShowDetails(true);
+    }
+  };
+
+  // Handle back from product details
   const handleBack = () => {
     setShowDetails(false);
     setSelectedProduct(null);
   };
 
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("page", newPage.toString());
+    setSearchParams(newParams);
+  };
+
   return (
     <div className="container py-5">
-      <HeaderComponent
-        activeTab={activeTab}
-        handleTabChange={handleTabChange}
-        frameType={frameType}
-        material={material}
-        brand={brand}
-        shape={shape}
-        handleFilterChange={handleFilterChange}
-      />
+      <PurchaseTabBar onSubmit={handleSubmit} />
+      {loading && <div className="text-center my-4">Loading products...</div>}
+      {error && <div className="alert alert-danger my-4">{error}</div>}
+      {!loading && !error && filteredData.length === 0 && (
+        <div className="alert alert-info my-4">No products found.</div>
+      )}
       {showDetails && selectedProduct ? (
         <ProductDetails product={selectedProduct} onBack={handleBack} />
       ) : (
-        <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
-          {filteredData.map((frame) => (
-            <div className="col" key={frame._id}>
-              <GlassesCard
-                title={frame.sku}
-                price={`${frame.sellPrice} ₹`}
-                imageUrl={img1}
-                onClick={() => handleCardClick(frame._id)}
-              />
+        <>
+          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+            {filteredData.map((frame) => (
+              <div className="col" key={frame._id}>
+                {console.log("frame", frame)}
+                <GlassesCard
+                  title={frame.sku}
+                  price={`${frame.sellPrice} ₹`}
+                  imageUrl={
+                    frame.photos && frame.photos[0] ? frame.photos[0] : null
+                  }
+                  onClick={() => handleCardClick(frame._id)}
+                  frame={frame}
+                />
+              </div>
+            ))}
+          </div>
+          {/* Pagination Controls */}
+          {paginationMeta.totalPages > 1 && (
+            <div className="d-flex justify-content-center mt-4">
+              <nav aria-label="Page navigation">
+                <ul className="pagination">
+                  <li
+                    className={`page-item ${
+                      !paginationMeta.hasPrevPage ? "disabled" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => handlePageChange(paginationMeta.page - 1)}
+                      disabled={!paginationMeta.hasPrevPage}
+                    >
+                      Previous
+                    </button>
+                  </li>
+                  {[...Array(paginationMeta.totalPages).keys()].map((page) => (
+                    <li
+                      className={`page-item ${
+                        paginationMeta.page === page + 1 ? "active" : ""
+                      }`}
+                      key={page + 1}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() => handlePageChange(page + 1)}
+                      >
+                        {page + 1}
+                      </button>
+                    </li>
+                  ))}
+                  <li
+                    className={`page-item ${
+                      !paginationMeta.hasNextPage ? "disabled" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => handlePageChange(paginationMeta.page + 1)}
+                      disabled={!paginationMeta.hasNextPage}
+                    >
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </nav>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

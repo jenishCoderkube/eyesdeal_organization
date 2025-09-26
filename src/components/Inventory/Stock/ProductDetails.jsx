@@ -143,7 +143,7 @@ const ProductDetails = ({ product, onBack }) => {
           </ul>
 
           <h3 className="fw-bold">Store Colors Available</h3>
-          {product.colorVariants.length > 0 ? (
+          {/* {product.colorVariants.length > 0 ? (
             <div className="d-flex flex-wrap gap-2 mb-3">
               {product.colorVariants.map((variant) => (
                 <div
@@ -173,10 +173,10 @@ const ProductDetails = ({ product, onBack }) => {
             </div>
           ) : (
             <p className="text-muted">No colors available</p>
-          )}
+          )} */}
 
           <h3 className="fw-bold">Universal Colors Available</h3>
-          {product.colorVariants.length > 0 ? (
+          {/* {product.colorVariants.length > 0 ? (
             <div className="d-flex flex-wrap gap-2 mb-3">
               {product.colorVariants.map((variant) => (
                 <div
@@ -206,7 +206,7 @@ const ProductDetails = ({ product, onBack }) => {
             </div>
           ) : (
             <p className="text-muted">No colors available</p>
-          )}
+          )} */}
 
           <div className="d-flex align-items-center gap-2 mb-3">
             <button

@@ -5,6 +5,8 @@ import axios from "axios";
 // export const base_url = 'http://192.168.29.231:8443/api/v1/';
 
 export const base_url = "https://transectra.com:8443/api/v1/";
+export const imageBaseUrl =
+  "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
 
 // export const base_url = 'http://192.168.0.199:8443/api/v1/';
 // export const base_url = 'http://192.168.0.148:8443/api/v1/';

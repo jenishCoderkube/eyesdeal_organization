@@ -1,7 +1,7 @@
-.glass-cursor-pointer {
+/* .glass-cursor-pointer {
   transition: all 0.3s ease-in-out;
   width: 100%;
-}
+} */
 
 .glass-cursor-pointer:hover {
   border: 1px solid #e77817;

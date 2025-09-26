@@ -12,6 +12,8 @@ const AUTH_ENDPOINTS = {
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   ADD_INVENTORY: "/inventory",
+  PRODUCTSPurchase: (search) =>
+    `/products/product?search=${search}&manageStock=true&activeInERP=true`,
 };
 
 const buildPurchaseLogParams = (

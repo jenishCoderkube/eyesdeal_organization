@@ -1,12 +1,16 @@
 import React from "react";
 import "./GlassCard.css";
 import img1 from "./eyesdealLogo.jpg";
+import { imageBaseUrl } from "../../../utils/api";
 const GlassesCard = ({
   title = "I-GOG Frames",
   price = "800 ₹",
   imageUrl = null,
   onClick,
+  frame,
 }) => {
+  console.log("imageUrl", imageUrl);
+
   return (
     <div
       className="glass-card h-100 border-0 shadow-sm rounded-3 glass-cursor-pointer"
@@ -14,11 +18,11 @@ const GlassesCard = ({
     >
       <div
         className="glass-card-img p-2"
-        style={{ height: "200px", overflow: "hidden" }}
+        style={{ height: "160px", overflow: "hidden" }}
       >
         {imageUrl ? (
           <img
-            src={img1}
+            src={imageBaseUrl + imageUrl}
             className="glass-img-fluid rounded"
             style={{ objectFit: "cover", height: "100%", width: "100%" }}
             alt={title}
