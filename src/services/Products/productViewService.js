@@ -14,6 +14,7 @@ const ENDPOINTS = {
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
   GET_PRODUCTS_COLORS: "/website/single-product",
+  ADD_TO_CART_PRODUCT_PURCHASE: "/purchase",
   MEDIA_LIBRARY: "/mediaLibrary",
 };
 
@@ -208,6 +209,29 @@ const productViewService = {
         modelNumber: model,
         __t: __t,
       });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching product",
+      };
+    }
+  },
+  addToCartProductPurchase: async ({ product, quantity, store, user }) => {
+    try {
+      const response = await api.post(
+        `${ENDPOINTS.ADD_TO_CART_PRODUCT_PURCHASE}`,
+        {
+          product,
+          quantity,
+          store,
+          user,
+        }
+      );
       return {
         success: response.data.success,
         data: response.data.data,

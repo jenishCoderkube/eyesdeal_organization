@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaHeart, FaShippingFast, FaPlus, FaMinus } from "react-icons/fa";
 import { AiOutlineSafetyCertificate, AiOutlineUser } from "react-icons/ai";
 import "./ProductDetails.css";
 import { imageBaseUrl } from "../../../utils/api";
 import productViewService from "../../../services/Products/productViewService";
+import { toast } from "react-toastify";
+// Optional: Import toast library for notifications
+// import { toast } from "react-toastify";
 
 const ProductDetails = ({ product, onBack }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(product?.photos?.[0] || null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [colorVariants, setColorVariants] = useState([]);
-
+  const navigate = useNavigate();
   // Set the active image when the product changes
   useEffect(() => {
     if (product && product.photos && product.photos.length > 0) {
@@ -33,7 +35,6 @@ const ProductDetails = ({ product, onBack }) => {
             product.modelNumber,
             product.__t
           );
-
           if (response.success) {
             setColorVariants(response.data.docs);
           } else {
@@ -53,12 +54,43 @@ const ProductDetails = ({ product, onBack }) => {
     fetchColorVariants();
   }, [product]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     setIsAddingToCart(true);
-    setTimeout(() => {
+    try {
+      // Retrieve user data from localStorage
+      const userData = JSON.parse(localStorage.getItem("user"));
+      if (!userData || !userData._id || !userData.stores?.[0]) {
+        throw new Error("User data or store not found in localStorage");
+      }
+
+      // Construct payload
+      const payload = {
+        product: product._id,
+        quantity: Number(quantity),
+        store: userData.stores[0],
+        user: userData._id,
+      };
+
+      // Call addToCartProductPurchase API
+      const response = await productViewService.addToCartProductPurchase(
+        payload
+      );
+
+      if (response.success) {
+        // Replace alert with toast if using react-toastify
+        // toast.success(`Added ${quantity} item(s) to cart successfully!`);
+        toast(`Added ${quantity} item(s) to cart successfully!`);
+        navigate("/purchase/viewPurchaseOrder");
+      } else {
+        throw new Error(response.message || "Failed to add item to cart");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error.message);
+      // toast.error(error.message || "Failed to add item to cart");
+      toast.error(error.message || "Failed to add item to cart");
+    } finally {
       setIsAddingToCart(false);
-      alert(`Added ${quantity} item(s) to cart successfully!`); // Replace with toast if needed
-    }, 1000);
+    }
   };
 
   const handleQuantityChange = (e) => {
@@ -85,7 +117,7 @@ const ProductDetails = ({ product, onBack }) => {
     setSearchParams(
       {
         ...Object.fromEntries(searchParams),
-        model: searchParams.get("model") || "eyeGlasses", // Ensure model=eyeGlasses if not present
+        model: searchParams.get("model") || "eyeGlasses",
         productId: productId,
       },
       { replace: true }

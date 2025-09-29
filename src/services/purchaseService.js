@@ -11,6 +11,7 @@ const AUTH_ENDPOINTS = {
   INVOICELOG: (params) => `/vendors/getinvoice?${params}`,
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
+  GET_PURCHASE_ORDERS: "/purchase",
   ADD_INVENTORY: "/inventory",
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
@@ -203,6 +204,36 @@ export const purchaseService = {
   generateBarcode: async (search) => {
     try {
       const response = await api.get(AUTH_ENDPOINTS.GENERATEBARCODE(search));
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getPurchaseOrders: async (
+    dateFrom,
+    dateTo,
+    storeId = null,
+    page = 1,
+    limit = 10
+  ) => {
+    try {
+      const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
+        params: {
+          // invoiceDateGte: dateFrom,
+          // invoiceDateLte: dateTo,
+          // storeId: storeId || undefined, // only send if available
+
+          page,
+          limit,
+        },
+      });
+
       return {
         success: true,
         data: response.data,
