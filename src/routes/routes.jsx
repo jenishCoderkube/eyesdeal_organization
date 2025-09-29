@@ -216,24 +216,24 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "AddProductPurchase",
-    path: "/purchase/addproduct",
-    element: (
-      <PrivateRoute>
-        <AddProductView />
-      </PrivateRoute>
-    ),
-  },
-  {
-    title: "viewPurchaseOrder",
-    path: "/purchase/viewPurchaseOrder",
-    element: (
-      <PrivateRoute>
-        <PurchaseOrderView />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "AddProductPurchase",
+  //   path: "/purchase/addproduct",
+  //   element: (
+  //     <PrivateRoute>
+  //       <AddProductView />
+  //     </PrivateRoute>
+  //   ),
+  // },
+  // {
+  //   title: "viewPurchaseOrder",
+  //   path: "/purchase/viewPurchaseOrder",
+  //   element: (
+  //     <PrivateRoute>
+  //       <PurchaseOrderView />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "AddStore",
     path: "/stores/add-store",
@@ -513,33 +513,33 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "StockAudit",
-    path: "/inventory/stock-audit",
-    element: (
-      <PrivateRoute>
-        <StockAudit />
-      </PrivateRoute>
-    ),
-  },
-  {
-    title: "StockAuditView",
-    path: "/inventory/stock-audit-view",
-    element: (
-      <PrivateRoute>
-        <StockAuditView />
-      </PrivateRoute>
-    ),
-  },
-  {
-    title: "UniversalStockRequestView",
-    path: "/inventory/universal-stock-request-view",
-    element: (
-      <PrivateRoute>
-        <UniversalStockRequestView />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "StockAudit",
+  //   path: "/inventory/stock-audit",
+  //   element: (
+  //     <PrivateRoute>
+  //       <StockAudit />
+  //     </PrivateRoute>
+  //   ),
+  // },
+  // {
+  //   title: "StockAuditView",
+  //   path: "/inventory/stock-audit-view",
+  //   element: (
+  //     <PrivateRoute>
+  //       <StockAuditView />
+  //     </PrivateRoute>
+  //   ),
+  // },
+  // {
+  //   title: "UniversalStockRequestView",
+  //   path: "/inventory/universal-stock-request-view",
+  //   element: (
+  //     <PrivateRoute>
+  //       <UniversalStockRequestView />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "ViewStockAdjustment",
     path: "/inventory/view-adjustment-stock",
