@@ -2,6 +2,7 @@ import React from "react";
 import "./GlassCard.css";
 import img1 from "./eyesdealLogo.jpg";
 import { imageBaseUrl } from "../../../utils/api";
+
 const GlassesCard = ({
   title = "I-GOG Frames",
   price = "800 ₹",
@@ -13,11 +14,11 @@ const GlassesCard = ({
 
   return (
     <div
-      className="glass-card h-100 border-0 shadow-sm rounded-3 glass-cursor-pointer"
+      className="glass-card h-100 border glass-cursor-pointer rounded"
       onClick={onClick}
     >
       <div
-        className="glass-card-img p-2"
+        className="glass-card-img p-2 bg-white"
         style={{ height: "160px", overflow: "hidden" }}
       >
         {imageUrl ? (
@@ -38,11 +39,9 @@ const GlassesCard = ({
           </div>
         )}
       </div>
-      <div className="glass-card-body p-3">
-        <div className="d-flex flex-column">
-          <h6 className="glass-card-title mb-2">{title}</h6>
-          <span className="glass-text-dark">{price}</span>
-        </div>
+      <div className="glass-card-body p-3 text-center">
+        <h6 className="glass-card-title mb-2 fw-bold text-dark">{title}</h6>
+        <span className="fs-5 fw-semibold text-success">{price}</span>
       </div>
     </div>
   );

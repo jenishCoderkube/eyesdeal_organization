@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Formik, Form } from "formik";
 import Select from "react-select";
 import productViewService from "../../../services/Products/productViewService"; // Adjust path
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 
 const modelOptions = [
   { value: "eyeGlasses", label: "Frame" },
@@ -24,16 +24,27 @@ function PurchaseTabBar({ onSubmit }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Parse query string
-  const queryParams = new URLSearchParams(location.search);
   const filters = {
-    model: queryParams.get("model") || "eyeGlasses",
-    brand: queryParams.get("brand") || "",
-    frameType: queryParams.get("frameType") || "",
-    frameShape: queryParams.get("frameShape") || "",
-    frameMaterial: queryParams.get("frameMaterial") || "",
+    model: searchParams.get("model") || "eyeGlasses",
+    brand: searchParams.get("brand") || "",
+    frameType: searchParams.get("frameType") || "",
+    frameShape: searchParams.get("frameShape") || "",
+    frameMaterial: searchParams.get("frameMaterial") || "",
   };
+
+  // Set default model to eyeGlasses if not present in URL
+  useEffect(() => {
+    if (!searchParams.get("model")) {
+      setSearchParams(
+        { ...Object.fromEntries(searchParams), model: "eyeGlasses" },
+        { replace: true }
+      );
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -114,11 +125,11 @@ function PurchaseTabBar({ onSubmit }) {
       enableReinitialize={true}
     >
       {({ setFieldValue, values, submitForm }) => (
-        <Form className="d-flex flex-column gap-4 mb-4">
-          <h6 className="mt-2 fw-bold">ED PRODUCT PURCHASE</h6>
+        <Form className="d-flex flex-column gap-2 mb-4">
+          <h6 className=" fw-bold">ED PRODUCT PURCHASE</h6>
 
           <div className="d-flex align-items-center justify-content-end">
-            <ul className="nav nav-tabs  border-bottom-0">
+            <ul className="nav nav-tabs border-bottom-0">
               {modelOptions.map((tab) => (
                 <li className="nav-item" key={tab.value}>
                   <button
@@ -137,6 +148,10 @@ function PurchaseTabBar({ onSubmit }) {
                     }}
                     onClick={() => {
                       setFieldValue("model", tab.value);
+                      setFieldValue("brand", "");
+                      setFieldValue("frameType", "");
+                      setFieldValue("frameShape", "");
+                      setFieldValue("frameMaterial", "");
                       submitForm();
                     }}
                   >

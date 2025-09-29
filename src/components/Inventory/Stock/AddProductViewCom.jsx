@@ -10,7 +10,6 @@ const ProductPurchase = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filteredData, setFilteredData] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [paginationMeta, setPaginationMeta] = useState({
@@ -22,7 +21,10 @@ const ProductPurchase = () => {
     page: 1,
   });
 
-  // Debounced fetch function
+  const productId = searchParams.get("productId");
+  const modelType = searchParams.get("model");
+
+  // Debounced fetch function for product list
   const fetchProducts = useMemo(
     () =>
       debounce(async (model, filters, page) => {
@@ -33,8 +35,6 @@ const ProductPurchase = () => {
             filters,
             page,
           });
-          // Assuming getRange is defined elsewhere; remove if not needed
-          // getRange(filters);
           const response = await productViewService.getProductsPurchase(
             model,
             { ...filters, isB2B: true },
@@ -82,7 +82,29 @@ const ProductPurchase = () => {
     []
   );
 
-  // Handle filter changes and fetch products
+  // Fetch single product by ID
+  const fetchSingleProduct = async (id) => {
+    setLoading(true);
+    try {
+      // Assuming a method getProductPurchase(id) exists in the service; adjust as needed
+      const response = await productViewService.getProductById(modelType, id);
+      console.log("Single product API response:", response);
+      if (response.success && response.data) {
+        setSelectedProduct(response?.data[0] || []);
+        setError(null);
+      } else {
+        setError(response.message || "Failed to fetch product details");
+        setSelectedProduct(null);
+      }
+    } catch (err) {
+      console.error("Error fetching single product:", err);
+      setError("An error occurred while fetching product details");
+      setSelectedProduct(null);
+    }
+    setLoading(false);
+  };
+
+  // Handle filter changes and fetch products or single product
   useEffect(() => {
     const model = searchParams.get("model") || "eyeGlasses";
     const page = parseInt(searchParams.get("page")) || 1;
@@ -93,13 +115,18 @@ const ProductPurchase = () => {
       frameMaterial: searchParams.get("frameMaterial") || "",
     };
 
-    fetchProducts(model, filters, page);
+    if (productId) {
+      fetchSingleProduct(productId);
+    } else {
+      setSelectedProduct(null);
+      fetchProducts(model, filters, page);
+    }
 
     // Cleanup debounce on unmount
     return () => {
       fetchProducts.cancel();
     };
-  }, [searchParams, fetchProducts]);
+  }, [searchParams, fetchProducts, productId]);
 
   // Handle form submission to update URL params
   const handleSubmit = (values) => {
@@ -116,19 +143,18 @@ const ProductPurchase = () => {
     setSearchParams(newParams);
   };
 
-  // Handle card click to show product details
+  // Handle card click to add productId to URL
   const handleCardClick = (id) => {
-    const product = filteredData.find((item) => item._id === id);
-    if (product) {
-      setSelectedProduct(product);
-      setShowDetails(true);
-    }
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("productId", id);
+    setSearchParams(newParams);
   };
 
-  // Handle back from product details
+  // Handle back from product details by removing productId
   const handleBack = () => {
-    setShowDetails(false);
-    setSelectedProduct(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("productId");
+    setSearchParams(newParams);
   };
 
   // Handle page change
@@ -139,84 +165,92 @@ const ProductPurchase = () => {
   };
 
   return (
-    <div className="container py-5">
+    <div className="container py-3">
       <PurchaseTabBar onSubmit={handleSubmit} />
-      {loading && <div className="text-center my-4">Loading products...</div>}
+      {loading && <div className="text-center my-4">Loading...</div>}
       {error && <div className="alert alert-danger my-4">{error}</div>}
-      {!loading && !error && filteredData.length === 0 && (
+      {!loading && !error && !productId && filteredData.length === 0 && (
         <div className="alert alert-info my-4">No products found.</div>
       )}
-      {showDetails && selectedProduct ? (
+      {productId && selectedProduct ? (
         <ProductDetails product={selectedProduct} onBack={handleBack} />
       ) : (
-        <>
-          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
-            {filteredData.map((frame) => (
-              <div className="col" key={frame._id}>
-                {console.log("frame", frame)}
-                <GlassesCard
-                  title={frame.sku}
-                  price={`${frame.sellPrice} ₹`}
-                  imageUrl={
-                    frame.photos && frame.photos[0] ? frame.photos[0] : null
-                  }
-                  onClick={() => handleCardClick(frame._id)}
-                  frame={frame}
-                />
-              </div>
-            ))}
-          </div>
-          {/* Pagination Controls */}
-          {paginationMeta.totalPages > 1 && (
-            <div className="d-flex justify-content-center mt-4">
-              <nav aria-label="Page navigation">
-                <ul className="pagination">
-                  <li
-                    className={`page-item ${
-                      !paginationMeta.hasPrevPage ? "disabled" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => handlePageChange(paginationMeta.page - 1)}
-                      disabled={!paginationMeta.hasPrevPage}
-                    >
-                      Previous
-                    </button>
-                  </li>
-                  {[...Array(paginationMeta.totalPages).keys()].map((page) => (
+        !productId && (
+          <>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+              {filteredData.map((frame) => (
+                <div className="col" key={frame._id}>
+                  {console.log("frame", frame)}
+                  <GlassesCard
+                    title={frame.sku}
+                    price={`${frame.sellPrice} ₹`}
+                    imageUrl={
+                      frame.photos && frame.photos[0] ? frame.photos[0] : null
+                    }
+                    onClick={() => handleCardClick(frame._id)}
+                    frame={frame}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Pagination Controls */}
+            {paginationMeta.totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                  <ul className="pagination">
                     <li
                       className={`page-item ${
-                        paginationMeta.page === page + 1 ? "active" : ""
+                        !paginationMeta.hasPrevPage ? "disabled" : ""
                       }`}
-                      key={page + 1}
                     >
                       <button
                         className="page-link"
-                        onClick={() => handlePageChange(page + 1)}
+                        onClick={() =>
+                          handlePageChange(paginationMeta.page - 1)
+                        }
+                        disabled={!paginationMeta.hasPrevPage}
                       >
-                        {page + 1}
+                        Previous
                       </button>
                     </li>
-                  ))}
-                  <li
-                    className={`page-item ${
-                      !paginationMeta.hasNextPage ? "disabled" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => handlePageChange(paginationMeta.page + 1)}
-                      disabled={!paginationMeta.hasNextPage}
+                    {[...Array(paginationMeta.totalPages).keys()].map(
+                      (page) => (
+                        <li
+                          className={`page-item ${
+                            paginationMeta.page === page + 1 ? "active" : ""
+                          }`}
+                          key={page + 1}
+                        >
+                          <button
+                            className="page-link"
+                            onClick={() => handlePageChange(page + 1)}
+                          >
+                            {page + 1}
+                          </button>
+                        </li>
+                      )
+                    )}
+                    <li
+                      className={`page-item ${
+                        !paginationMeta.hasNextPage ? "disabled" : ""
+                      }`}
                     >
-                      Next
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          )}
-        </>
+                      <button
+                        className="page-link"
+                        onClick={() =>
+                          handlePageChange(paginationMeta.page + 1)
+                        }
+                        disabled={!paginationMeta.hasNextPage}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
+          </>
+        )
       )}
     </div>
   );

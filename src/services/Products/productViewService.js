@@ -13,6 +13,7 @@ const ENDPOINTS = {
   PRODUCTBYID: (model, productId) => `/master/${model}?_id=${productId}`,
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
+  GET_PRODUCTS_COLORS: "/website/single-product",
   MEDIA_LIBRARY: "/mediaLibrary",
 };
 
@@ -188,6 +189,25 @@ const productViewService = {
       const response = await api.get(
         `${ENDPOINTS.PRODUCTBYID(model, productId)}`
       );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching product",
+      };
+    }
+  },
+  getProductsColors: async (brand, model, __t) => {
+    try {
+      const response = await api.post(`${ENDPOINTS.GET_PRODUCTS_COLORS}`, {
+        "brand._id": brand,
+        modelNumber: model,
+        __t: __t,
+      });
       return {
         success: response.data.success,
         data: response.data.data,
