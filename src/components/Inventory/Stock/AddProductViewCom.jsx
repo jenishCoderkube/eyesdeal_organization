@@ -1,167 +1,259 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { debounce } from "lodash"; // Ensure lodash is installed or use a custom debounce
 import GlassesCard from "./GlassesCard";
-import Header from "./HedarCompnent";
+import ProductDetails from "./ProductDetails";
+import PurchaseTabBar from "./PurchaseTabbar"; // Updated to use ProductFilterForm
+import productViewService from "../../../services/Products/productViewService"; // Adjust path
 
-const mockData = {
-  Frame: [
-    {
-      _id: "1",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["frame1.jpg"],
-    },
-    {
-      _id: "2",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["frame2.jpg"],
-    },
-    {
-      _id: "3",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["frame3.jpg"],
-    },
-    {
-      _id: "4",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["frame4.jpg"],
-    },
-    {
-      _id: "5",
-      sku: "I-GOG Frames 870/-",
-      sellPrice: "870",
-      photos: ["frame5.jpg"],
-    },
-  ],
-  Sunglasses: [
-    {
-      _id: "6",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["sun1.jpg"],
-    },
-    {
-      _id: "7",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["sun2.jpg"],
-    },
-    {
-      _id: "8",
-      sku: "Sun Frame 900/-",
-      sellPrice: "900",
-      photos: ["sun3.jpg"],
-    },
-  ],
-  "Reading Glasses": [
-    {
-      _id: "9",
-      sku: "Read Frame 750/-",
-      sellPrice: "750",
-      photos: ["read1.jpg"],
-    },
-    {
-      _id: "10",
-      sku: "Read Frame 750/-",
-      sellPrice: "750",
-      photos: ["read2.jpg"],
-    },
-  ],
-  "Contact Lenses": [
-    { _id: "11", sku: "Lens 500/-", sellPrice: "500", photos: ["lens1.jpg"] },
-    { _id: "12", sku: "Lens 500/-", sellPrice: "500", photos: ["lens2.jpg"] },
-  ],
-  Solution: [
-    {
-      _id: "13",
-      sku: "Solution 300/-",
-      sellPrice: "300",
-      photos: ["sol1.jpg"],
-    },
-  ],
-  Accessories: [
-    { _id: "14", sku: "Case 200/-", sellPrice: "200", photos: ["acc1.jpg"] },
-    { _id: "15", sku: "Case 200/-", sellPrice: "200", photos: ["acc2.jpg"] },
-  ],
-};
+const ProductPurchase = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filteredData, setFilteredData] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [paginationMeta, setPaginationMeta] = useState({
+    totalDocs: 0,
+    limit: 100,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+    page: 1,
+  });
 
-const AddProductViewCom = () => {
-  const [activeTab, setActiveTab] = useState("Frame");
-  const [filteredData, setFilteredData] = useState(mockData[activeTab]);
-  const [frameType, setFrameType] = useState("");
-  const [material, setMaterial] = useState("");
-  const [brand, setBrand] = useState("");
-  const [shape, setShape] = useState("");
+  const productId = searchParams.get("productId");
+  const modelType = searchParams.get("model");
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    filterData(tab, frameType, material, brand, shape);
-  };
+  // Debounced fetch function for product list
+  const fetchProducts = useMemo(
+    () =>
+      debounce(async (model, filters, page) => {
+        setLoading(true);
+        try {
+          console.log("Fetching products with payload:", {
+            model,
+            filters,
+            page,
+          });
+          const response = await productViewService.getProductsPurchase(
+            model,
+            { ...filters, isB2B: true },
+            page
+          );
+          console.log("API response:", response);
+          if (response.success && response.other) {
+            setFilteredData(response.other.docs || []);
+            setPaginationMeta({
+              totalDocs: response.other.totalDocs || 0,
+              limit: response.other.limit || 100,
+              totalPages: response.other.totalPages || 1,
+              hasPrevPage: response.other.hasPrevPage || false,
+              hasNextPage: response.other.hasNextPage || false,
+              page: response.other.page || 1,
+            });
+            setError(null);
+          } else {
+            setError(response.message || "Failed to fetch products");
+            setFilteredData([]);
+            setPaginationMeta({
+              totalDocs: 0,
+              limit: 100,
+              totalPages: 1,
+              hasPrevPage: false,
+              hasNextPage: false,
+              page: 1,
+            });
+          }
+        } catch (err) {
+          console.error("Error fetching products:", err);
+          setError("An error occurred while fetching products");
+          setFilteredData([]);
+          setPaginationMeta({
+            totalDocs: 0,
+            limit: 100,
+            totalPages: 1,
+            hasPrevPage: false,
+            hasNextPage: false,
+            page: 1,
+          });
+        }
+        setLoading(false);
+      }, 200),
+    []
+  );
 
-  const handleFilterChange = (type, value) => {
-    switch (type) {
-      case "Frame Type":
-        setFrameType(value);
-        break;
-      case "Material":
-        setMaterial(value);
-        break;
-      case "Brand":
-        setBrand(value);
-        break;
-      case "Shape":
-        setShape(value);
-        break;
-      default:
-        break;
+  // Fetch single product by ID
+  const fetchSingleProduct = async (id) => {
+    setLoading(true);
+    try {
+      // Assuming a method getProductPurchase(id) exists in the service; adjust as needed
+      const response = await productViewService.getProductById(modelType, id);
+      console.log("Single product API response:", response);
+      if (response.success && response.data) {
+        setSelectedProduct(response?.data[0] || []);
+        setError(null);
+      } else {
+        setError(response.message || "Failed to fetch product details");
+        setSelectedProduct(null);
+      }
+    } catch (err) {
+      console.error("Error fetching single product:", err);
+      setError("An error occurred while fetching product details");
+      setSelectedProduct(null);
     }
-    filterData(activeTab, value, material, brand, shape);
+    setLoading(false);
   };
 
-  const filterData = (tab, frameType, material, brand, shape) => {
-    let data = [...mockData[tab]];
-    if (frameType) data = data.filter((item) => item.sku.includes(frameType));
-    if (material) data = data.filter((item) => item.sku.includes(material));
-    if (brand) data = data.filter((item) => item.sku.includes(brand));
-    if (shape) data = data.filter((item) => item.sku.includes(shape));
-    setFilteredData(data);
+  // Handle filter changes and fetch products or single product
+  useEffect(() => {
+    const model = searchParams.get("model") || "eyeGlasses";
+    const page = parseInt(searchParams.get("page")) || 1;
+    const filters = {
+      brand: searchParams.get("brand") || "",
+      frameType: searchParams.get("frameType") || "",
+      frameShape: searchParams.get("frameShape") || "",
+      frameMaterial: searchParams.get("frameMaterial") || "",
+    };
+
+    if (productId) {
+      fetchSingleProduct(productId);
+    } else {
+      setSelectedProduct(null);
+      fetchProducts(model, filters, page);
+    }
+
+    // Cleanup debounce on unmount
+    return () => {
+      fetchProducts.cancel();
+    };
+  }, [searchParams, fetchProducts, productId]);
+
+  // Handle form submission to update URL params
+  const handleSubmit = (values) => {
+    const newParams = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        newParams.set(key, value);
+      }
+    });
+    // Preserve page if it exists
+    if (searchParams.get("page")) {
+      newParams.set("page", searchParams.get("page"));
+    }
+    setSearchParams(newParams);
   };
 
-  const handleCardClick = (id, frame) => {
-    console.log("Selected:", id, frame);
+  // Handle card click to add productId to URL
+  const handleCardClick = (id) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("productId", id);
+    setSearchParams(newParams);
+  };
+
+  // Handle back from product details by removing productId
+  const handleBack = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("productId");
+    setSearchParams(newParams);
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("page", newPage.toString());
+    setSearchParams(newParams);
   };
 
   return (
-    <div className="container py-5">
-      <Header
-        activeTab={activeTab}
-        handleTabChange={handleTabChange}
-        frameType={frameType}
-        material={material}
-        brand={brand}
-        shape={shape}
-        handleFilterChange={handleFilterChange}
-      />
-
-      {/* Product Grid */}
-      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
-        {filteredData.map((frame) => (
-          <div className="col" key={frame._id}>
-            <GlassesCard
-              title={frame.sku}
-              price={`${frame.sellPrice} ₹`}
-              imageUrl={
-                frame.photos && frame.photos.length > 0 ? frame.photos[0] : null
-              }
-              onClick={() => handleCardClick(frame._id, frame)}
-            />
-          </div>
-        ))}
-      </div>
+    <div className="container py-3">
+      <PurchaseTabBar onSubmit={handleSubmit} />
+      {loading && <div className="text-center my-4">Loading...</div>}
+      {error && <div className="alert alert-danger my-4">{error}</div>}
+      {!loading && !error && !productId && filteredData.length === 0 && (
+        <div className="alert alert-info my-4">No products found.</div>
+      )}
+      {productId && selectedProduct ? (
+        <ProductDetails product={selectedProduct} onBack={handleBack} />
+      ) : (
+        !productId && (
+          <>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+              {filteredData.map((frame) => (
+                <div className="col" key={frame._id}>
+                  {console.log("frame", frame)}
+                  <GlassesCard
+                    title={frame.sku}
+                    price={`${frame.sellPrice} ₹`}
+                    imageUrl={
+                      frame.photos && frame.photos[0] ? frame.photos[0] : null
+                    }
+                    onClick={() => handleCardClick(frame._id)}
+                    frame={frame}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Pagination Controls */}
+            {paginationMeta.totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                  <ul className="pagination">
+                    <li
+                      className={`page-item ${
+                        !paginationMeta.hasPrevPage ? "disabled" : ""
+                      }`}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() =>
+                          handlePageChange(paginationMeta.page - 1)
+                        }
+                        disabled={!paginationMeta.hasPrevPage}
+                      >
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(paginationMeta.totalPages).keys()].map(
+                      (page) => (
+                        <li
+                          className={`page-item ${
+                            paginationMeta.page === page + 1 ? "active" : ""
+                          }`}
+                          key={page + 1}
+                        >
+                          <button
+                            className="page-link"
+                            onClick={() => handlePageChange(page + 1)}
+                          >
+                            {page + 1}
+                          </button>
+                        </li>
+                      )
+                    )}
+                    <li
+                      className={`page-item ${
+                        !paginationMeta.hasNextPage ? "disabled" : ""
+                      }`}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() =>
+                          handlePageChange(paginationMeta.page + 1)
+                        }
+                        disabled={!paginationMeta.hasNextPage}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
+          </>
+        )
+      )}
     </div>
   );
 };
 
-export default AddProductViewCom;
+export default ProductPurchase;

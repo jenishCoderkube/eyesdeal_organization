@@ -1,28 +1,32 @@
 import React from "react";
+import "./GlassCard.css";
+import img1 from "./eyesdealLogo.jpg";
+import { imageBaseUrl } from "../../../utils/api";
 
 const GlassesCard = ({
   title = "I-GOG Frames",
   price = "800 ₹",
   imageUrl = null,
   onClick,
+  frame,
 }) => {
+  console.log("imageUrl", imageUrl);
+
   return (
     <div
-      className="card h-100 border-0 shadow-sm rounded-3 cursor-pointer"
-      style={{ transition: "all 0.3s ease-in-out" }}
+      className="glass-card h-100 border glass-cursor-pointer rounded"
       onClick={onClick}
-      onMouseOver={(e) => (e.currentTarget.style.borderColor = "#E77817")}
-      onMouseOut={(e) => (e.currentTarget.style.borderColor = "transparent")}
     >
       <div
-        className="card-img-top p-2"
-        style={{ height: "105px", overflow: "hidden" }}
+        className="glass-card-img p-2 bg-white"
+        style={{ height: "160px", overflow: "hidden" }}
       >
         {imageUrl ? (
           <img
-            src={imageUrl}
-            className="img-fluid rounded"
+            src={imageBaseUrl + imageUrl}
+            className="glass-img-fluid rounded"
             style={{ objectFit: "cover", height: "100%", width: "100%" }}
+            alt={title}
             onError={(e) => {
               e.target.style.display = "none";
               const fallback = e.target.nextSibling;
@@ -30,14 +34,14 @@ const GlassesCard = ({
             }}
           />
         ) : (
-          <div className="d-flex justify-content-center align-items-center h-100 bg-light rounded">
-            <p className="text-muted small">Image not found</p>
+          <div className="glass-img-fallback d-flex justify-content-center align-items-center h-100 bg-light rounded">
+            <p className="glass-text-muted small m-0">Image not found</p>
           </div>
         )}
       </div>
-      <div className="card-body p-2 d-flex justify-content-between align-items-center">
-        <h6 className="card-title mb-0">{title}</h6>
-        <span className="badge bg-light text-dark">{price}</span>
+      <div className="glass-card-body p-3 text-center">
+        <h6 className="glass-card-title mb-2 fw-bold text-dark">{title}</h6>
+        <span className="fs-5 fw-semibold text-success">{price}</span>
       </div>
     </div>
   );

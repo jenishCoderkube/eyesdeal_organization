@@ -37,6 +37,8 @@ const menuItems = [
       { label: "View Purchase", link: "/purchase/list" },
       { label: "Bulk Purchase ", link: "/purchase/bulk-purchase" },
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
+      { label: "ED Product Purchase", link: "/purchase/addproduct" },
+      { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
     ],
   },
   {

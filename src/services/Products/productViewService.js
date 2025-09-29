@@ -13,6 +13,8 @@ const ENDPOINTS = {
   PRODUCTBYID: (model, productId) => `/master/${model}?_id=${productId}`,
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
+  GET_PRODUCTS_COLORS: "/website/single-product",
+  ADD_TO_CART_PRODUCT_PURCHASE: "/purchase",
   MEDIA_LIBRARY: "/mediaLibrary",
 };
 
@@ -197,6 +199,94 @@ const productViewService = {
       return {
         success: false,
         message: error.response?.data?.message || "Error fetching product",
+      };
+    }
+  },
+  getProductsColors: async (brand, model, __t) => {
+    try {
+      const response = await api.post(`${ENDPOINTS.GET_PRODUCTS_COLORS}`, {
+        "brand._id": brand,
+        modelNumber: model,
+        __t: __t,
+      });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching product",
+      };
+    }
+  },
+  addToCartProductPurchase: async ({ product, quantity, store, user }) => {
+    try {
+      const response = await api.post(
+        `${ENDPOINTS.ADD_TO_CART_PRODUCT_PURCHASE}`,
+        {
+          product,
+          quantity,
+          store,
+          user,
+        }
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching product",
+      };
+    }
+  },
+  getProductsPurchase: async (model, filters = {}, page = 1, limit) => {
+    try {
+      const baseUrl = `${ENDPOINTS.PRODUCTS(model)}`;
+      const queryParams = new URLSearchParams();
+      limit && queryParams.append("limit", limit);
+
+      if (page > 1) {
+        queryParams.append("page", page);
+      }
+
+      // Set activeInWebsite=true by default
+      // queryParams.append("optimize[activeInERP]", true);
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value && key !== "model") {
+            if (key === "search") {
+              queryParams.append("search", value);
+            } else if (key === "status") {
+              queryParams.set(
+                "optimize[activeInERP]",
+                value === "active" ? true : false
+              );
+            } else {
+              queryParams.append(`optimize[${key}]`, value);
+            }
+          }
+        });
+      }
+
+      const url = `${baseUrl}${
+        queryParams.toString() ? `?${queryParams.toString()}` : ""
+      }`;
+      const response = await api.get(url);
+      return {
+        success: true,
+        data: response.data.data.docs,
+        other: response.data.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching products",
       };
     }
   },

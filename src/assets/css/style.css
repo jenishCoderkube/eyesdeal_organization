@@ -1581,3 +1581,17 @@ h6 {
 .page-item.disabled a:empty {
   display: none;
 }
+
+.fontSize-16 {
+  font-size: 1.1rem !important;
+}
+/* Make carousel arrows black */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  filter: invert(1) grayscale(100);
+}
+
+/* Make carousel dots black */
+.carousel-indicators [data-bs-target] {
+  background-color: black !important;
+}

@@ -1,0 +1,30 @@
+.glass-cursor-pointer {
+  cursor: pointer;
+}
+
+.glass-card {
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.glass-card:hover {
+  border-color: #0d6efd; /* Bootstrap primary color */
+  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.2);
+  transform: translateY(-6px) scale(1.02);
+}
+
+.glass-card-body {
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+.glass-card-title {
+  font-size: 1rem;
+  color: #333;
+}
+
+.glass-text-dark {
+  color: #198754; /* Bootstrap success green */
+  font-weight: 600;
+}
