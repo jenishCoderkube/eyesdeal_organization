@@ -270,10 +270,14 @@ const ProductDetails = ({ product, onBack }) => {
 
           <h3 className="fw-bold fs-6 mb-2">Features:</h3>
           <ul className="list-group list-group-flush mb-4">
-            {product.features && product.features.length > 0 ? (
-              product.features.map((feature, index) => (
-                <li key={index} className="list-group-item px-0">
-                  {feature}
+            {product?.features && product?.features?.length > 0 ? (
+              product?.features?.map((feature, index) => (
+                <li
+                  key={index}
+                  className="list-group-item"
+                  style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
+                >
+                  {feature?.name}
                 </li>
               ))
             ) : (

@@ -10,7 +10,11 @@ const ENDPOINTS = {
   PRESCRIPTION_TYPES: "/master/prescriptionType",
   FRAME_COLLECTIONS: "/master/collection",
   PRODUCTS: (model) => `/products/${model}`,
-  PRODUCTBYID: (model, productId) => `/master/${model}?_id=${productId}`,
+  PRODUCTBYID: (model, productId, populate = "features") =>
+    `/master/${model}?_id=${productId}${
+      populate ? `&populate=${populate}` : ""
+    }`,
+
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
   GET_PRODUCTS_COLORS: "/website/single-product",

@@ -15,8 +15,8 @@ const AUTH_ENDPOINTS = {
   ADD_INVENTORY: "/inventory",
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
+  PURCHASE: "/purchase",
 };
-
 const buildPurchaseLogParams = (
   invoiceDateGte,
   invoiceDateLte,
@@ -223,15 +223,25 @@ export const purchaseService = {
     limit = 10
   ) => {
     try {
-      const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
-        params: {
-          // invoiceDateGte: dateFrom,
-          // invoiceDateLte: dateTo,
-          // storeId: storeId || undefined, // only send if available
+      // Convert dates to timestamps covering the full day
+      const fromTimestamp = dateFrom
+        ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0)).getTime()
+        : undefined;
+      const toTimestamp = dateTo
+        ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).getTime()
+        : undefined;
 
-          page,
-          limit,
-        },
+      const params = {
+        populate: true,
+        page,
+        limit,
+        ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
+        ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
+        ...(storeId && { "optimize[store][$in][0]": storeId }),
+      };
+
+      const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
+        params,
       });
 
       return {
@@ -245,6 +255,33 @@ export const purchaseService = {
       };
     }
   },
+  updatePurchaseOrder: async (data) => {
+    try {
+      const response = await api.patch(AUTH_ENDPOINTS.PURCHASE, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error updating purchase order",
+      };
+    }
+  },
+  deletePurchaseOrder: async (purchaseId) => {
+    try {
+      const response = await api.delete(
+        `${AUTH_ENDPOINTS.PURCHASE}/${purchaseId}`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error deleting purchase order",
+      };
+    }
+  },
+
   addInventory: async (data) => {
     try {
       const response = await api.post(AUTH_ENDPOINTS.ADD_INVENTORY, data);
