@@ -42,7 +42,7 @@ const PurchaseOrderViewCom = () => {
   const formik = useFormik({
     initialValues: {
       stores: null,
-      dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
+      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
@@ -391,10 +391,10 @@ const PurchaseOrderViewCom = () => {
               {/* Top Row - Image (left) + Product Details (right) */}
               <div className="row mb-4">
                 <div className="col-md-5">
-                  {selectedItem.product.photos &&
-                  selectedItem.product.photos.length > 0 ? (
+                  {selectedItem.product?.photos &&
+                  selectedItem.product?.photos?.length > 0 ? (
                     <Carousel interval={null}>
-                      {selectedItem.product.photos.map((photo, idx) => (
+                      {selectedItem.product?.photos?.map((photo, idx) => (
                         <Carousel.Item key={idx}>
                           <img
                             className="d-block w-100 rounded shadow-sm"
@@ -416,23 +416,23 @@ const PurchaseOrderViewCom = () => {
                   <h5 className="text-primary">Product Details</h5>
                   <p>
                     <strong>Display Name:</strong>{" "}
-                    {selectedItem.product.displayName}
+                    {selectedItem.product?.displayName}
                   </p>
                   <p>
                     <strong>Model Number:</strong>{" "}
-                    {selectedItem.product.modelNumber}
+                    {selectedItem.product?.modelNumber}
                   </p>
                   <p>
                     <strong>Color Number:</strong>{" "}
-                    {selectedItem.product.colorNumber}
+                    {selectedItem.product?.colorNumber}
                   </p>
 
                   <p>
                     <strong>Frame Size:</strong>{" "}
-                    {selectedItem.product.frameSize}
+                    {selectedItem.product?.frameSize}
                   </p>
                   <p>
-                    <strong>MRP:</strong> ₹{selectedItem.product.MRP}
+                    <strong>MRP:</strong> ₹{selectedItem.product?.MRP}
                   </p>
                 </div>
               </div>
@@ -442,36 +442,36 @@ const PurchaseOrderViewCom = () => {
                 <div className="col-md-6">
                   <h5 className="text-success">Store Details</h5>
                   <p>
-                    <strong>Name:</strong> {selectedItem.store.name}
+                    <strong>Name:</strong> {selectedItem.store?.name}
                   </p>
                   <p>
-                    <strong>Company:</strong> {selectedItem.store.companyName}
+                    <strong>Company:</strong> {selectedItem.store?.companyName}
                   </p>
                   <p>
-                    <strong>Address:</strong> {selectedItem.store.address},{" "}
-                    {selectedItem.store.city}, {selectedItem.store.state},{" "}
-                    {selectedItem.store.country} - {selectedItem.store.pincode}
+                    <strong>Address:</strong> {selectedItem.store?.address},{" "}
+                    {selectedItem.store.city}, {selectedItem.store?.state},{" "}
+                    {selectedItem.store.country} - {selectedItem.store?.pincode}
                   </p>
                 </div>
 
                 <div className="col-md-6">
                   <h5 className="text-warning">Order Details</h5>
                   <p>
-                    <strong>Quantity:</strong> {selectedItem.quantity}
+                    <strong>Quantity:</strong> {selectedItem?.quantity}
                   </p>
                   <p>
                     <strong>Payment Status:</strong>{" "}
-                    {selectedItem.paymentStatus}
+                    {selectedItem?.paymentStatus}
                   </p>
                   <p>
                     <strong>Created:</strong>{" "}
-                    {moment(selectedItem.createdAt).format(
+                    {moment(selectedItem?.createdAt).format(
                       "YYYY-MM-DD HH:mm:ss"
                     )}
                   </p>
                   <p>
                     <strong>Updated:</strong>{" "}
-                    {moment(selectedItem.updatedAt).format(
+                    {moment(selectedItem?.updatedAt).format(
                       "YYYY-MM-DD HH:mm:ss"
                     )}
                   </p>
@@ -489,6 +489,7 @@ const PurchaseOrderViewCom = () => {
 
       {/* Edit Modal */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+        {console.log("selectedItem", selectedItem)}
         <Modal.Header closeButton>
           <Modal.Title>Edit Quantity</Modal.Title>
         </Modal.Header>

@@ -33,7 +33,8 @@ const ProductDetails = ({ product, onBack }) => {
           const response = await productViewService.getProductsColors(
             product.brand,
             product.modelNumber,
-            product.__t
+            product.__t,
+            true
           );
           if (response.success) {
             setColorVariants(response.data.docs);
@@ -63,14 +64,16 @@ const ProductDetails = ({ product, onBack }) => {
         throw new Error("User data or store not found in localStorage");
       }
 
-      // Construct payload
       const payload = {
-        product: product._id,
-        quantity: Number(quantity),
         store: userData.stores[0],
         user: userData._id,
+        products: [
+          {
+            product: product._id,
+            quantity: Number(quantity), // e.g., 5
+          },
+        ],
       };
-
       // Call addToCartProductPurchase API
       const response = await productViewService.addToCartProductPurchase(
         payload

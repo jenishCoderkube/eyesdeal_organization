@@ -3,7 +3,7 @@ import { Formik, Form } from "formik";
 import Select from "react-select";
 import productViewService from "../../../services/Products/productViewService"; // Adjust path
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
-
+import { FiCheckSquare, FiSquare } from "react-icons/fi";
 const modelOptions = [
   { value: "eyeGlasses", label: "Frame" },
   { value: "sunGlasses", label: "Sun Glasses" },
@@ -14,7 +14,7 @@ const modelOptions = [
   { value: "spectacleLens", label: "Spectacle Lens" },
 ];
 
-function PurchaseTabBar({ onSubmit }) {
+function PurchaseTabBar({ onSubmit, onSelectChange }) {
   const [options, setOptions] = useState({
     brandOptions: [],
     frameTypeOptions: [],
@@ -40,7 +40,11 @@ function PurchaseTabBar({ onSubmit }) {
   useEffect(() => {
     if (!searchParams.get("model")) {
       setSearchParams(
-        { ...Object.fromEntries(searchParams), model: "eyeGlasses" },
+        {
+          ...Object.fromEntries(searchParams),
+          model: "eyeGlasses",
+          isMultiSelect: searchParams.get("isMultiSelect") || "false",
+        },
         { replace: true }
       );
     }
@@ -120,6 +124,8 @@ function PurchaseTabBar({ onSubmit }) {
         frameType: filters.frameType,
         frameShape: filters.frameShape,
         frameMaterial: filters.frameMaterial,
+        search: "",
+        isMultiSelect: searchParams.get("isMultiSelect") === "true" || false,
       }}
       onSubmit={(values) => onSubmit(values)}
       enableReinitialize={true}
@@ -148,6 +154,8 @@ function PurchaseTabBar({ onSubmit }) {
                     }}
                     onClick={() => {
                       setFieldValue("model", tab.value);
+                      setFieldValue("isMultiSelect", values.isMultiSelect);
+                      onSelectChange([], false);
                       setFieldValue("brand", "");
                       setFieldValue("frameType", "");
                       setFieldValue("frameShape", "");
@@ -162,6 +170,60 @@ function PurchaseTabBar({ onSubmit }) {
             </ul>
           </div>
           <div className="row flex justify-content-end row-cols-1 row-cols-md-6 g-3">
+            {/* MultiSelect Toggle */}
+            <div className="d-flex align-items-center">
+              <label
+                className="me-2"
+                style={{ fontSize: "13px", margin: 0, padding: 0 }}
+              >
+                Multi-Select
+              </label>
+              <div
+                className="fs-5 mt-1"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const newValue = !values.isMultiSelect;
+                  setFieldValue("isMultiSelect", newValue);
+
+                  // Update URL param
+                  const newParams = new URLSearchParams(window.location.search);
+                  newParams.set("isMultiSelect", newValue.toString());
+                  window.history.replaceState(
+                    null,
+                    "",
+                    "?" + newParams.toString()
+                  );
+
+                  submitForm();
+                }}
+              >
+                {values.isMultiSelect ? (
+                  <FiCheckSquare size={30} />
+                ) : (
+                  <FiSquare size={30} />
+                )}
+              </div>
+            </div>
+            <div className="">
+              <label
+                className="form-label"
+                style={{ fontSize: "13px", margin: 0, padding: 0 }}
+              >
+                Search
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="Search products..."
+                value={values.search || ""}
+                onChange={(e) => {
+                  setFieldValue("search", e.target.value);
+                  submitForm();
+                }}
+                style={{ fontSize: "0.85rem" }}
+              />
+            </div>
+
             <div>
               <label
                 className="form-label"

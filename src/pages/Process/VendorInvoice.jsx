@@ -395,11 +395,7 @@ function VendorInvoice() {
       //   header: "Status",
       //   cell: ({ getValue }) => <div>{getValue()}</div>,
       // },
-      {
-        id: "productSku",
-        header: "Product SKU",
-        cell: ({ row }) => row.original.fullJob?.product?.sku || "N/A",
-      },
+
       {
         id: "lensSku",
         header: "Lens SKU",
@@ -426,16 +422,6 @@ function VendorInvoice() {
         id: "vendor",
         header: "Vendor",
         cell: ({ row }) => row.original.fullJob?.vendor?.companyName || "N/A",
-      },
-      {
-        id: "totalAmount",
-        header: "Total Amount",
-        cell: ({ row }) => row.original.fullJob?.sale?.totalAmount || "N/A",
-      },
-      {
-        id: "saleNote",
-        header: "Sale Note",
-        cell: ({ row }) => row.original.fullJob?.sale?.note || "N/A",
       },
       {
         id: "powerDetails",
