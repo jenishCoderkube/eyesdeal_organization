@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { debounce } from "lodash"; // Ensure lodash is installed or use a custom debounce
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { debounce } from "lodash";
 import GlassesCard from "./GlassesCard";
 import ProductDetails from "./ProductDetails";
-import PurchaseTabBar from "./PurchaseTabbar"; // Updated to use ProductFilterForm
-import productViewService from "../../../services/Products/productViewService"; // Adjust path
+import PurchaseTabBar from "./PurchaseTabbar";
+import productViewService from "../../../services/Products/productViewService";
+import ProductTable from "./Product/ProductTable"; // new
+import ProductModal from "./Product/ProductModal"; // new
+import { toast } from "react-toastify";
 
 const ProductPurchase = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,26 +24,23 @@ const ProductPurchase = () => {
     page: 1,
   });
 
+  const [isMultiSelect, setIsMultiSelect] = useState(true); // toggle table/card
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const productId = searchParams.get("productId");
   const modelType = searchParams.get("model");
-
-  // Debounced fetch function for product list
+  const navigate = useNavigate();
   const fetchProducts = useMemo(
     () =>
       debounce(async (model, filters, page) => {
         setLoading(true);
         try {
-          console.log("Fetching products with payload:", {
-            model,
-            filters,
-            page,
-          });
           const response = await productViewService.getProductsPurchase(
             model,
             { ...filters, isB2B: true },
             page
           );
-          console.log("API response:", response);
           if (response.success && response.other) {
             setFilteredData(response.other.docs || []);
             setPaginationMeta({
@@ -55,40 +55,24 @@ const ProductPurchase = () => {
           } else {
             setError(response.message || "Failed to fetch products");
             setFilteredData([]);
-            setPaginationMeta({
-              totalDocs: 0,
-              limit: 100,
-              totalPages: 1,
-              hasPrevPage: false,
-              hasNextPage: false,
-              page: 1,
-            });
           }
         } catch (err) {
-          console.error("Error fetching products:", err);
           setError("An error occurred while fetching products");
           setFilteredData([]);
-          setPaginationMeta({
-            totalDocs: 0,
-            limit: 100,
-            totalPages: 1,
-            hasPrevPage: false,
-            hasNextPage: false,
-            page: 1,
-          });
         }
         setLoading(false);
       }, 200),
     []
   );
 
-  // Fetch single product by ID
-  const fetchSingleProduct = async (id) => {
+  const fetchSingleProduct = async (id, isB2B = true) => {
     setLoading(true);
     try {
-      // Assuming a method getProductPurchase(id) exists in the service; adjust as needed
-      const response = await productViewService.getProductById(modelType, id);
-      console.log("Single product API response:", response);
+      const response = await productViewService.getProductById(
+        modelType,
+        id,
+        isB2B
+      );
       if (response.success && response.data) {
         setSelectedProduct(response?.data[0] || []);
         setError(null);
@@ -97,14 +81,16 @@ const ProductPurchase = () => {
         setSelectedProduct(null);
       }
     } catch (err) {
-      console.error("Error fetching single product:", err);
       setError("An error occurred while fetching product details");
       setSelectedProduct(null);
     }
     setLoading(false);
   };
+  useEffect(() => {
+    const multi = searchParams.get("isMultiSelect");
+    setIsMultiSelect(multi === "true");
+  }, [searchParams]);
 
-  // Handle filter changes and fetch products or single product
   useEffect(() => {
     const model = searchParams.get("model") || "eyeGlasses";
     const page = parseInt(searchParams.get("page")) || 1;
@@ -113,6 +99,7 @@ const ProductPurchase = () => {
       frameType: searchParams.get("frameType") || "",
       frameShape: searchParams.get("frameShape") || "",
       frameMaterial: searchParams.get("frameMaterial") || "",
+      search: searchParams.get("search") || "",
     };
 
     if (productId) {
@@ -122,65 +109,142 @@ const ProductPurchase = () => {
       fetchProducts(model, filters, page);
     }
 
-    // Cleanup debounce on unmount
-    return () => {
-      fetchProducts.cancel();
-    };
+    return () => fetchProducts.cancel();
   }, [searchParams, fetchProducts, productId]);
 
-  // Handle form submission to update URL params
   const handleSubmit = (values) => {
     const newParams = new URLSearchParams();
     Object.entries(values).forEach(([key, value]) => {
-      if (value) {
-        newParams.set(key, value);
-      }
+      if (value) newParams.set(key, value);
     });
-    // Preserve page if it exists
-    if (searchParams.get("page")) {
+    if (searchParams.get("page"))
       newParams.set("page", searchParams.get("page"));
-    }
     setSearchParams(newParams);
   };
 
-  // Handle card click to add productId to URL
   const handleCardClick = (id) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("productId", id);
     setSearchParams(newParams);
   };
 
-  // Handle back from product details by removing productId
   const handleBack = () => {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("productId");
     setSearchParams(newParams);
   };
 
-  // Handle page change
   const handlePageChange = (newPage) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("page", newPage.toString());
     setSearchParams(newParams);
   };
 
+  const handleSelectChange = (ids, checked) => {
+    setSelectedIds((prev) => {
+      if (checked) {
+        return Array.from(new Set([...prev, ...ids]));
+      }
+      if (ids.length === 0) {
+        return []; // Clear all IDs when deselecting all
+      }
+      return prev.filter((id) => !ids.includes(id));
+    });
+  };
+  const selectedProducts = filteredData.filter((p) =>
+    selectedIds.includes(p._id)
+  );
+  // New: Handle delete product
+  const handleDeleteProduct = (id) => {
+    setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
+  };
+  // Updated handleAddToCart to handle multiple products
+  const handleAddToCart = async (productsWithQuantities) => {
+    setIsAddingToCart(true);
+    try {
+      const userData = JSON.parse(localStorage.getItem("user"));
+      if (!userData || !userData._id || !userData.stores?.[0]) {
+        throw new Error("User data or store not found in localStorage");
+      }
+
+      const payload = {
+        store: userData.stores[0],
+        user: userData._id,
+        products: productsWithQuantities, // Array of { product: id, quantity }
+      };
+
+      const response = await productViewService.addToCartProductPurchase(
+        payload
+      );
+      console.log("response", response);
+
+      if (response?.success) {
+        toast.success(
+          `Added ${productsWithQuantities.length} item(s) to cart successfully!`
+        );
+        navigate("/purchase/viewPurchaseOrder");
+      } else {
+        throw new Error(response.message || "Failed to add items to cart");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error.message);
+      toast.error(error.message || "Failed to add items to cart");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
   return (
     <div className="container py-3">
-      <PurchaseTabBar onSubmit={handleSubmit} />
+      <PurchaseTabBar
+        onSubmit={handleSubmit}
+        isMultiSelect={isMultiSelect}
+        setIsMultiSelect={setIsMultiSelect} // toggle table/card from tab bar
+        onSelectChange={handleSelectChange}
+      />
+
       {loading && <div className="text-center my-4">Loading...</div>}
       {error && <div className="alert alert-danger my-4">{error}</div>}
       {!loading && !error && !productId && filteredData.length === 0 && (
-        <div className="alert alert-info my-4">No products found.</div>
+        <div className="alert alert-info my-4">No products found</div>
       )}
+
       {productId && selectedProduct ? (
         <ProductDetails product={selectedProduct} onBack={handleBack} />
       ) : (
-        !productId && (
+        !productId &&
+        !loading &&
+        (isMultiSelect ? (
+          <>
+            {selectedIds.length > 0 && (
+              <div className="mb-3">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowModal(true)}
+                >
+                  Add {selectedIds.length} Product(s)
+                </button>
+              </div>
+            )}
+
+            <ProductTable
+              products={filteredData}
+              selectedIds={selectedIds}
+              onSelectChange={handleSelectChange}
+            />
+
+            <ProductModal
+              show={showModal}
+              onClose={() => setShowModal(false)}
+              products={selectedProducts}
+              onConfirm={handleAddToCart}
+              onDelete={handleDeleteProduct}
+            />
+          </>
+        ) : (
           <>
             <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
               {filteredData.map((frame) => (
                 <div className="col" key={frame._id}>
-                  {console.log("frame", frame)}
                   <GlassesCard
                     title={frame.sku}
                     price={`${frame.sellPrice} ₹`}
@@ -193,7 +257,7 @@ const ProductPurchase = () => {
                 </div>
               ))}
             </div>
-            {/* Pagination Controls */}
+
             {paginationMeta.totalPages > 1 && (
               <div className="d-flex justify-content-center mt-4">
                 <nav aria-label="Page navigation">
@@ -250,7 +314,7 @@ const ProductPurchase = () => {
               </div>
             )}
           </>
-        )
+        ))
       )}
     </div>
   );

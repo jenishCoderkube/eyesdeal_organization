@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
 import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
 import moment from "moment";
+import { useNavigate } from "react-router-dom";
 
 const StockAudit = () => {
   const [storeData, setStoreData] = useState([]);
@@ -17,7 +18,7 @@ const StockAudit = () => {
   const scanInputRef = useRef(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
-
+  const navigate = useNavigate();
   const productOptions = [
     { value: "eyeGlasses", label: "Eye Glasses" },
     { value: "accessories", label: "Accessories" },
@@ -122,17 +123,23 @@ const StockAudit = () => {
         9999 // Fetch all to avoid pagination
       );
       if (response.success) {
-        const newAuditData = response.data.data.docs.map((item) => ({
-          sku: item.product.sku,
-          storeQty: item?.quantity || 0,
-          product: item?.product?._id,
-          countQty: 0,
-          status: "Mismatch",
-          barcode:
-            item.product?.newBarcode ||
-            item.product?.oldBarcode ||
-            item.product.sku,
-        }));
+        const newAuditData = response.data.data.docs.map((item) => {
+          const storeQty = item?.quantity || 0;
+          const countQty = 0;
+
+          return {
+            sku: item.product.sku,
+            storeQty,
+            product: item?.product?._id,
+            countQty,
+            status: storeQty === countQty ? "Match" : "Mismatch",
+            barcode:
+              item.product?.newBarcode ||
+              item.product?.oldBarcode ||
+              item.product.sku,
+          };
+        });
+
         setAuditData(newAuditData);
         setTotalCountQty(0);
       } else {
@@ -155,7 +162,9 @@ const StockAudit = () => {
       const scanned = scanValue.trim();
       if (!scanned) return;
 
+      let updatedItem = null;
       let found = false;
+
       const updatedAuditData = auditData.map((item) => {
         if (
           item.sku?.toString() === scanned.toString() ||
@@ -163,18 +172,24 @@ const StockAudit = () => {
         ) {
           found = true;
           const newCount = item.countQty + 1;
-          return {
+          updatedItem = {
             ...item,
             countQty: newCount,
             status: newCount === item.storeQty ? "Match" : "Mismatch",
           };
+          return updatedItem;
         }
-
         return item;
       });
 
-      if (found) {
-        setAuditData(updatedAuditData);
+      if (found && updatedItem) {
+        // Remove old item and add updated one at the top
+        const reordered = [
+          updatedItem,
+          ...updatedAuditData.filter((i) => i !== updatedItem),
+        ];
+
+        setAuditData(reordered);
         setTotalCountQty((prev) => prev + 1);
       } else {
         toast.error("Scanned item not found in current inventory");
@@ -210,6 +225,16 @@ const StockAudit = () => {
       const response = await inventoryService.stockAudit(payload);
       if (response.success) {
         toast.success("Stock audit saved successfully!");
+        navigate("/inventory/stock-audit-view");
+        setTotalCountQty(0);
+        setScanValue("");
+        setDate(moment().format("YYYY-MM-DD"));
+        formik.resetForm({
+          values: {
+            brand: null,
+          },
+        });
+        fetchAuditData(formik.values);
       } else {
         toast.error(response.message);
       }
@@ -312,11 +337,12 @@ const StockAudit = () => {
           Save
         </button>
       </div>
-
-      <div className="table-responsive mt-3">
-        {loading ? (
-          <div className="text-center">Loading...</div>
-        ) : (
+      {loading ? (
+        <div className="text-center mt-5 pt-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      ) : (
+        <div className="table-responsive mt-3">
           <table className="table table-bordered table-sm">
             <thead className="bg-light">
               <tr>
@@ -353,8 +379,8 @@ const StockAudit = () => {
               )}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

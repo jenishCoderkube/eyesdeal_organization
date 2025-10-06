@@ -33,7 +33,8 @@ const ProductDetails = ({ product, onBack }) => {
           const response = await productViewService.getProductsColors(
             product.brand,
             product.modelNumber,
-            product.__t
+            product.__t,
+            true
           );
           if (response.success) {
             setColorVariants(response.data.docs);
@@ -63,14 +64,16 @@ const ProductDetails = ({ product, onBack }) => {
         throw new Error("User data or store not found in localStorage");
       }
 
-      // Construct payload
       const payload = {
-        product: product._id,
-        quantity: Number(quantity),
         store: userData.stores[0],
         user: userData._id,
+        products: [
+          {
+            product: product._id,
+            quantity: Number(quantity), // e.g., 5
+          },
+        ],
       };
-
       // Call addToCartProductPurchase API
       const response = await productViewService.addToCartProductPurchase(
         payload
@@ -270,10 +273,14 @@ const ProductDetails = ({ product, onBack }) => {
 
           <h3 className="fw-bold fs-6 mb-2">Features:</h3>
           <ul className="list-group list-group-flush mb-4">
-            {product.features && product.features.length > 0 ? (
-              product.features.map((feature, index) => (
-                <li key={index} className="list-group-item px-0">
-                  {feature}
+            {product?.features && product?.features?.length > 0 ? (
+              product?.features?.map((feature, index) => (
+                <li
+                  key={index}
+                  className="list-group-item"
+                  style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
+                >
+                  {feature?.name}
                 </li>
               ))
             ) : (

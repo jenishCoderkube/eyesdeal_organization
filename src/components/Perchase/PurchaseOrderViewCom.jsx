@@ -18,7 +18,7 @@ const PurchaseOrderViewCom = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 25,
     totalDocs: 0,
     totalPages: 0,
     hasPrevPage: false,
@@ -28,6 +28,8 @@ const PurchaseOrderViewCom = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [editedQuantity, setEditedQuantity] = useState(0);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -40,7 +42,7 @@ const PurchaseOrderViewCom = () => {
   const formik = useFormik({
     initialValues: {
       stores: null,
-      dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
+      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
@@ -104,6 +106,7 @@ const PurchaseOrderViewCom = () => {
       if (response.success) {
         const container = response.data.data;
         setPurchaseData(container.docs);
+
         setPagination({
           page: container.page,
           limit: container.limit,
@@ -125,8 +128,8 @@ const PurchaseOrderViewCom = () => {
 
   const handleDownload = (data) => {
     const csv = [
-      "SRNO,Date,Store,Quantity,Payment Status",
-      `${data.srno},${data.date},${data.store},${data.quantity},${data.paymentStatus}`,
+      "SRNO,Model Number,Date,Store,Quantity,Payment Status",
+      `${data.srno},${data?.modelNumber},${data.date},${data.store},${data.quantity},${data.paymentStatus}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -138,16 +141,30 @@ const PurchaseOrderViewCom = () => {
     document.body.removeChild(link);
   };
 
-  const handleEditSubmit = () => {
+  const handleEditSubmit = async () => {
+    if (!selectedItem) return;
+
     const payload = {
-      store: selectedItem.store._id,
-      qty: editedQuantity,
-      user: user._id,
-      product: selectedItem.product._id,
+      _id: selectedItem._id, // purchase order ID
+      quantity: editedQuantity, // new quantity
     };
-    console.log(payload);
-    setShowEditModal(false);
-    toast.success("Quantity updated (payload logged)");
+
+    try {
+      // Call the PATCH API
+      const response = await purchaseService.updatePurchaseOrder(payload); // you need this service function
+
+      if (response.success) {
+        toast.success("Quantity updated successfully");
+        setShowEditModal(false);
+        // Refresh purchase orders
+        fetchPurchaseData(formik.values, false, pagination.page);
+      } else {
+        toast.error(response.message || "Failed to update quantity");
+      }
+    } catch (error) {
+      console.error("Error updating purchase order:", error);
+      toast.error("Error updating quantity");
+    }
   };
 
   const storeOptions = storeData.map((store) => ({
@@ -158,6 +175,26 @@ const PurchaseOrderViewCom = () => {
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
     fetchPurchaseData(formik.values, false, newPage);
+  };
+  const handleDeletePurchaseOrder = async () => {
+    if (!deleteItemId) return;
+
+    try {
+      const response = await purchaseService.deletePurchaseOrder(deleteItemId);
+
+      if (response.success) {
+        toast.success("Purchase order deleted successfully");
+        fetchPurchaseData(formik.values, false, pagination.page);
+      } else {
+        toast.error(response.message || "Failed to delete purchase order");
+      }
+    } catch (error) {
+      console.error("Error deleting purchase order:", error);
+      toast.error("Error deleting purchase order");
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteItemId(null);
+    }
   };
 
   return (
@@ -241,7 +278,13 @@ const PurchaseOrderViewCom = () => {
                       </td>
                       <td className="py-3">{item.store?.name || "N/A"}</td>
                       <td className="py-3">{item.quantity}</td>
-                      <td className="py-3">{item.paymentStatus}</td>
+                      <td className="py-3">
+                        {item.paymentStatus
+                          ? item.paymentStatus.charAt(0).toUpperCase() +
+                            item.paymentStatus.slice(1).toLowerCase()
+                          : ""}
+                      </td>
+
                       <td className="py-3">
                         <button
                           className="btn btn-outline-primary btn-sm me-1"
@@ -263,9 +306,10 @@ const PurchaseOrderViewCom = () => {
                         </button>
                         <button
                           className="btn btn-outline-danger btn-sm"
-                          onClick={() =>
-                            alert(`Deleting purchase order ${item._id}`)
-                          }
+                          onClick={() => {
+                            setDeleteItemId(item._id); // store ID to delete
+                            setShowDeleteModal(true); // open modal
+                          }}
                         >
                           Delete
                         </button>
@@ -279,7 +323,8 @@ const PurchaseOrderViewCom = () => {
                                 index +
                                 1 +
                                 (pagination.page - 1) * pagination.limit,
-                              date: moment(item.createdAt).format("YYYY-MM-DD"),
+                              modelNumber: item?.product?.modelNumber,
+                              date: item.createdAt,
                               store: item.store?.name || "N/A",
                               quantity: item.quantity,
                               paymentStatus: item.paymentStatus,
@@ -346,10 +391,10 @@ const PurchaseOrderViewCom = () => {
               {/* Top Row - Image (left) + Product Details (right) */}
               <div className="row mb-4">
                 <div className="col-md-5">
-                  {selectedItem.product.photos &&
-                  selectedItem.product.photos.length > 0 ? (
+                  {selectedItem.product?.photos &&
+                  selectedItem.product?.photos?.length > 0 ? (
                     <Carousel interval={null}>
-                      {selectedItem.product.photos.map((photo, idx) => (
+                      {selectedItem.product?.photos?.map((photo, idx) => (
                         <Carousel.Item key={idx}>
                           <img
                             className="d-block w-100 rounded shadow-sm"
@@ -371,23 +416,23 @@ const PurchaseOrderViewCom = () => {
                   <h5 className="text-primary">Product Details</h5>
                   <p>
                     <strong>Display Name:</strong>{" "}
-                    {selectedItem.product.displayName}
+                    {selectedItem.product?.displayName}
                   </p>
                   <p>
                     <strong>Model Number:</strong>{" "}
-                    {selectedItem.product.modelNumber}
+                    {selectedItem.product?.modelNumber}
                   </p>
                   <p>
                     <strong>Color Number:</strong>{" "}
-                    {selectedItem.product.colorNumber}
+                    {selectedItem.product?.colorNumber}
                   </p>
 
                   <p>
                     <strong>Frame Size:</strong>{" "}
-                    {selectedItem.product.frameSize}
+                    {selectedItem.product?.frameSize}
                   </p>
                   <p>
-                    <strong>MRP:</strong> ₹{selectedItem.product.MRP}
+                    <strong>MRP:</strong> ₹{selectedItem.product?.MRP}
                   </p>
                 </div>
               </div>
@@ -397,36 +442,36 @@ const PurchaseOrderViewCom = () => {
                 <div className="col-md-6">
                   <h5 className="text-success">Store Details</h5>
                   <p>
-                    <strong>Name:</strong> {selectedItem.store.name}
+                    <strong>Name:</strong> {selectedItem.store?.name}
                   </p>
                   <p>
-                    <strong>Company:</strong> {selectedItem.store.companyName}
+                    <strong>Company:</strong> {selectedItem.store?.companyName}
                   </p>
                   <p>
-                    <strong>Address:</strong> {selectedItem.store.address},{" "}
-                    {selectedItem.store.city}, {selectedItem.store.state},{" "}
-                    {selectedItem.store.country} - {selectedItem.store.pincode}
+                    <strong>Address:</strong> {selectedItem.store?.address},{" "}
+                    {selectedItem.store.city}, {selectedItem.store?.state},{" "}
+                    {selectedItem.store.country} - {selectedItem.store?.pincode}
                   </p>
                 </div>
 
                 <div className="col-md-6">
                   <h5 className="text-warning">Order Details</h5>
                   <p>
-                    <strong>Quantity:</strong> {selectedItem.quantity}
+                    <strong>Quantity:</strong> {selectedItem?.quantity}
                   </p>
                   <p>
                     <strong>Payment Status:</strong>{" "}
-                    {selectedItem.paymentStatus}
+                    {selectedItem?.paymentStatus}
                   </p>
                   <p>
                     <strong>Created:</strong>{" "}
-                    {moment(selectedItem.createdAt).format(
+                    {moment(selectedItem?.createdAt).format(
                       "YYYY-MM-DD HH:mm:ss"
                     )}
                   </p>
                   <p>
                     <strong>Updated:</strong>{" "}
-                    {moment(selectedItem.updatedAt).format(
+                    {moment(selectedItem?.updatedAt).format(
                       "YYYY-MM-DD HH:mm:ss"
                     )}
                   </p>
@@ -444,15 +489,22 @@ const PurchaseOrderViewCom = () => {
 
       {/* Edit Modal */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+        {console.log("selectedItem", selectedItem)}
         <Modal.Header closeButton>
           <Modal.Title>Edit Quantity</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group>
-            <Form.Label>Quantity</Form.Label>
+            <Form.Control
+              type="text"
+              disabled
+              value={selectedItem?.product?._id}
+            />
+            <Form.Label className="mt-3">Quantity</Form.Label>
             <Form.Control
               type="number"
               value={editedQuantity}
+              autoFocus
               onChange={(e) => {
                 const val = e.target.value;
                 // Allow empty while typing, otherwise clamp between 1 and 5000
@@ -492,6 +544,27 @@ const PurchaseOrderViewCom = () => {
             }
           >
             Submit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this purchase order?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeletePurchaseOrder}>
+            Delete
           </Button>
         </Modal.Footer>
       </Modal>

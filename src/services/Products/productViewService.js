@@ -10,7 +10,11 @@ const ENDPOINTS = {
   PRESCRIPTION_TYPES: "/master/prescriptionType",
   FRAME_COLLECTIONS: "/master/collection",
   PRODUCTS: (model) => `/products/${model}`,
-  PRODUCTBYID: (model, productId) => `/master/${model}?_id=${productId}`,
+  PRODUCTBYID: (model, productId, isB2B, populate = "features") =>
+    `/master/${model}?_id=${productId}&isB2B=${isB2B}${
+      populate ? `&populate=${populate}` : ""
+    }`,
+
   DELETEPRODUCTBYID: (model, productId) => `/products/${model}/${productId}`,
   EXPORT_CSV: "/exportCsv",
   GET_PRODUCTS_COLORS: "/website/single-product",
@@ -185,10 +189,10 @@ const productViewService = {
       };
     }
   },
-  getProductById: async (model, productId) => {
+  getProductById: async (model, productId, isB2B = true) => {
     try {
       const response = await api.get(
-        `${ENDPOINTS.PRODUCTBYID(model, productId)}`
+        `${ENDPOINTS.PRODUCTBYID(model, productId, isB2B)}`
       );
       return {
         success: response.data.success,
@@ -202,12 +206,13 @@ const productViewService = {
       };
     }
   },
-  getProductsColors: async (brand, model, __t) => {
+  getProductsColors: async (brand, model, __t, isB2B) => {
     try {
       const response = await api.post(`${ENDPOINTS.GET_PRODUCTS_COLORS}`, {
         "brand._id": brand,
         modelNumber: model,
         __t: __t,
+        isB2B: isB2B,
       });
       return {
         success: response.data.success,
@@ -221,17 +226,15 @@ const productViewService = {
       };
     }
   },
-  addToCartProductPurchase: async ({ product, quantity, store, user }) => {
+  addToCartProductPurchase: async (productsArray) => {
     try {
+      // productsArray should be like:
+      // [{ product: "id1", quantity: 2, store: "storeId", user: "userId" }, {...}]
       const response = await api.post(
         `${ENDPOINTS.ADD_TO_CART_PRODUCT_PURCHASE}`,
-        {
-          product,
-          quantity,
-          store,
-          user,
-        }
+        productsArray
       );
+
       return {
         success: response.data.success,
         data: response.data.data,
@@ -244,6 +247,7 @@ const productViewService = {
       };
     }
   },
+
   getProductsPurchase: async (model, filters = {}, page = 1, limit) => {
     try {
       const baseUrl = `${ENDPOINTS.PRODUCTS(model)}`;
