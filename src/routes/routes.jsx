@@ -540,15 +540,15 @@ const routes = [
   //     </PrivateRoute>
   //   ),
   // },
-  {
-    title: "UniversalStockOrderView",
-    path: "/inventory/universal-stock-order-view",
-    element: (
-      <PrivateRoute>
-        <UniversalStockOrderView />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "UniversalStockOrderView",
+  //   path: "/inventory/universal-stock-order-view",
+  //   element: (
+  //     <PrivateRoute>
+  //       <UniversalStockOrderView />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "ViewStockAdjustment",
     path: "/inventory/view-adjustment-stock",
