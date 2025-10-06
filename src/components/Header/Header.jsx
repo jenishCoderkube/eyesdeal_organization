@@ -37,8 +37,8 @@ const menuItems = [
       { label: "View Purchase", link: "/purchase/list" },
       { label: "Bulk Purchase ", link: "/purchase/bulk-purchase" },
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
-      // { label: "ED Product Purchase", link: "/purchase/addproduct" },
-      // { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
+      { label: "ED Product Purchase", link: "/purchase/addproduct" },
+      { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
     ],
   },
   {
@@ -65,14 +65,14 @@ const menuItems = [
         label: "View Adjustment Stock",
         link: "/inventory/view-adjustment-stock",
       },
-      // {
-      //   label: "Stock Audit",
-      //   link: "/inventory/stock-audit",
-      // },
-      // {
-      //   label: "Stock Audit View",
-      //   link: "/inventory/stock-audit-view",
-      // },
+      {
+        label: "Stock Audit",
+        link: "/inventory/stock-audit",
+      },
+      {
+        label: "Stock Audit View",
+        link: "/inventory/stock-audit-view",
+      },
       // {
       //   label: "Universal Stock Request",
       //   link: "/inventory/universal-stock-request-view",
