@@ -295,7 +295,7 @@ const PurchaseOrderViewCom = () => {
                         >
                           View
                         </button>
-                        <button
+                        {/* <button
                           className="btn btn-outline-warning btn-sm me-1"
                           onClick={() => {
                             setSelectedItem(item);
@@ -303,7 +303,7 @@ const PurchaseOrderViewCom = () => {
                           }}
                         >
                           Edit
-                        </button>
+                        </button> */}
                         <button
                           className="btn btn-outline-danger btn-sm"
                           onClick={() => {
