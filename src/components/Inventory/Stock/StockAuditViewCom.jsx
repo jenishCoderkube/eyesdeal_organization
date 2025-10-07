@@ -18,7 +18,7 @@ const StockAuditViewCom = () => {
   const itemsPerPage = 2;
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 50,
     totalDocs: 0,
     totalPages: 0,
     hasPrevPage: false,
