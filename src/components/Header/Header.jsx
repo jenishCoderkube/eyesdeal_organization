@@ -39,10 +39,14 @@ const menuItems = [
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
       { label: "ED Product Purchase", link: "/purchase/addproduct" },
       { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
-      {
-        label: "Universal Stock Request",
-        link: "/inventory/universal-stock-request-view",
-      },
+      // {
+      //   label: "Universal Stock Request",
+      //   link: "/inventory/universal-stock-request-view",
+      // },
+      // {
+      //   label: "Universal Stock Order",
+      //   link: "/inventory/universal-stock-order-view",
+      // },
     ],
   },
   {
