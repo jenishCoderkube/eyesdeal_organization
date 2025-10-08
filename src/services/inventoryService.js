@@ -11,6 +11,7 @@ const INVENTORY_ENDPOINTS = {
   COLOR: "/master/color",
   PRESCRIPTION: `master/prescriptionType`,
   COLLECTION: `master/collection`,
+  STOCKSTORESDATA:`/stockRequest/check-availability`,
   BRAND: `master/brand`,
   INVENTORY: (params) => `/inventory?populate=true&${params}`,
   INVENTORYSTORE: (params) => `/inventory/store?populate=true&${params}`,
@@ -260,6 +261,21 @@ export const inventoryService = {
       };
     }
   },
+getStoresForUniverlStock: async ({ productId }) => {
+  try {
+    const response = await api.post(INVENTORY_ENDPOINTS.STOCKSTORESDATA, { productId });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(`API error for ${INVENTORY_ENDPOINTS.STOCKSTORESDATA}:`, error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Error fetching stores",
+    };
+  }
+},
 
   getStockAudit: async (params = {}) => {
     try {

@@ -78,6 +78,7 @@ import StockAuditView from "../pages/Inventory/StockAuditView";
 import UniversalStockRequestView from "../pages/Inventory/UniversalStockRequestView";
 import AddProductView from "../pages/Purchase/AddProductView";
 import PurchaseOrderView from "../pages/Purchase/PurchaseOrderView";
+import UniversalStockOrderView from "../pages/Inventory/UniversalStockOrderView";
 
 const routes = [
   {
@@ -531,24 +532,24 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  // {
-  //   title: "UniversalStockRequestView",
-  //   path: "/inventory/universal-stock-request-view",
-  //   element: (
-  //     <PrivateRoute>
-  //       <UniversalStockRequestView />
-  //     </PrivateRoute>
-  //   ),
-  // },
-  // {
-  //   title: "UniversalStockOrderView",
-  //   path: "/inventory/universal-stock-order-view",
-  //   element: (
-  //     <PrivateRoute>
-  //       <UniversalStockOrderView />
-  //     </PrivateRoute>
-  //   ),
-  // },
+  {
+    title: "UniversalStockRequestView",
+    path: "/inventory/universal-stock-request-view",
+    element: (
+      <PrivateRoute>
+        <UniversalStockRequestView />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "UniversalStockOrderView",
+    path: "/inventory/universal-stock-order-view",
+    element: (
+      <PrivateRoute>
+        <UniversalStockOrderView />
+      </PrivateRoute>
+    ),
+  },
   {
     title: "ViewStockAdjustment",
     path: "/inventory/view-adjustment-stock",

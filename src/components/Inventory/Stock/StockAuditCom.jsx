@@ -347,6 +347,7 @@ const StockAudit = () => {
             <thead className="bg-light">
               <tr>
                 <th>#</th>
+                <th>Barcode</th>
                 <th>SKU</th>
                 <th>Store Qty</th>
                 <th>Count Qty</th>
@@ -358,6 +359,8 @@ const StockAudit = () => {
                 auditData.map((item, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
+                    <td>{item.barcode}</td>
+
                     <td>{item.sku}</td>
                     <td>{item.storeQty}</td>
                     <td>{item.countQty}</td>

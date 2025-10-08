@@ -50,6 +50,15 @@ const UniversalStockOrderCom = () => {
     }
   };
 
+  // useEffect(() => {
+  //   // Mock stores
+  //   const mockStores = [
+  //     { _id: "1", name: "Bhatar" },
+  //     { _id: "2", name: "Navsari" },
+  //   ];
+  //   setStoreData(mockStores);
+  // }, []);
+
   useEffect(() => {
     if (storeData.length > 0) {
       formik.setFieldValue("stores", {
@@ -64,57 +73,147 @@ const UniversalStockOrderCom = () => {
     setLoading(true);
 
     try {
-      // Mock data matching the image structure
+      // Mock data with dates in September 2025 to match default form values
       const mockAuditData = [
         {
           ordNo: 1,
-          date: "5-5-2025",
-          store: "Store No",
-          sku: "SKU",
-          image: "",
-          status: "Approve",
-          upload: "Upload Photo-video",
-          shipping: "View Address",
+          date: "2025-09-01",
+          store: "",
+          category: "Electronics",
+          sku: "SKU123",
+          qty: 12,
+          paymentStatus: "Unpaid",
+          orderStatus: "Pending",
+        },
+        {
+          ordNo: 2,
+          date: "2025-09-02",
+          store: "",
+          category: "Groceries",
+          sku: "SKU456",
+          qty: 45,
+          paymentStatus: "Success",
+          orderStatus: "Submitted",
+        },
+        {
+          ordNo: 3,
+          date: "2025-09-03",
+          store: "Navsari",
+          category: "Clothing",
+          sku: "SKU789",
+          qty: 20,
+          paymentStatus: "Success",
+          orderStatus: "Approved",
+        },
+        {
+          ordNo: 4,
+          date: "2025-09-04",
+          store: "",
+          category: "Toys",
+          sku: "SKU012",
+          qty: 8,
+          paymentStatus: "Unpaid",
+          orderStatus: "Pending",
+        },
+        {
+          ordNo: 5,
+          date: "2025-09-05",
+          store: "Navsari",
+          category: "Books",
+          sku: "SKU345",
+          qty: 15,
+          paymentStatus: "Success",
+          orderStatus: "Received",
+        },
+        {
+          ordNo: 6,
+          date: "2025-09-06",
+          store: "",
+          category: "Shoes",
+          sku: "SKU678",
+          qty: 30,
+          paymentStatus: "Success",
+          orderStatus: "Approved",
+        },
+        {
+          ordNo: 7,
+          date: "2025-09-07",
+          store: "Navsari",
+          category: "Bags",
+          sku: "SKU901",
+          qty: 18,
+          paymentStatus: "Unpaid",
+          orderStatus: "View photo",
         },
         {
           ordNo: 1,
-          date: "5-5-2025",
-          store: "Store No",
-          sku: "SKU",
-          image: "",
-          status: "Approve",
-          upload: "Upload Photo-video",
-          shipping: "View Address",
+          date: "2025-09-01",
+          store: "",
+          category: "Electronics",
+          sku: "SKU123",
+          qty: 12,
+          paymentStatus: "Unpaid",
+          orderStatus: "Pending",
         },
         {
-          ordNo: 1,
-          date: "5-5-2025",
-          store: "Store No",
-          sku: "SKU",
-          image: "",
-          status: "Approved",
-          upload: "Upload Photo-video",
-          shipping: "View Address",
+          ordNo: 2,
+          date: "2025-09-02",
+          store: "",
+          category: "Groceries",
+          sku: "SKU456",
+          qty: 45,
+          paymentStatus: "Success",
+          orderStatus: "Submitted",
         },
         {
-          ordNo: 1,
-          date: "5-5-2025",
-          store: "Store No",
-          sku: "SKU",
-          image: "",
-          status: "Approved",
-          upload: "Upload Photo-video",
-          shipping: "View Address",
+          ordNo: 3,
+          date: "2025-09-03",
+          store: "Navsari",
+          category: "Clothing",
+          sku: "SKU789",
+          qty: 20,
+          paymentStatus: "Success",
+          orderStatus: "Approved",
         },
         {
-          ordNo: 1,
-          date: "5-5-2025",
-          store: "Store No",
-          sku: "SKU",
-          image: "",
-          status: "Approved",
-          upload: "Upload Photo-video",
-          shipping: "View Address",
+          ordNo: 4,
+          date: "2025-09-04",
+          store: "",
+          category: "Toys",
+          sku: "SKU012",
+          qty: 8,
+          paymentStatus: "Unpaid",
+          orderStatus: "Pending",
+        },
+        {
+          ordNo: 5,
+          date: "2025-09-05",
+          store: "Navsari",
+          category: "Books",
+          sku: "SKU345",
+          qty: 15,
+          paymentStatus: "Success",
+          orderStatus: "Received",
+        },
+        {
+          ordNo: 6,
+          date: "2025-09-06",
+          store: "",
+          category: "Shoes",
+          sku: "SKU678",
+          qty: 30,
+          paymentStatus: "Success",
+          orderStatus: "Approved",
+        },
+        {
+          ordNo: 7,
+          date: "2025-09-07",
+          store: "Navsari",
+          category: "Bags",
+          sku: "SKU901",
+          qty: 18,
+          paymentStatus: "Unpaid",
+          orderStatus: "View photo",
         },
       ];
 
@@ -122,7 +221,7 @@ const UniversalStockOrderCom = () => {
       let filteredData = mockAuditData;
       if (values.stores || values.dateFrom || values.dateTo) {
         filteredData = mockAuditData.filter((item) => {
-          const itemDate = moment(item.date, "D-M-YYYY");
+          const itemDate = moment(item.date);
           const dateFrom = moment(values.dateFrom);
           const dateTo = moment(values.dateTo);
           return (
@@ -144,6 +243,21 @@ const UniversalStockOrderCom = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = (data) => {
+    const csv = [
+      "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
+      `${data.ordNo},${data.date},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `stock_audit_${data.date}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const storeOptions = storeData.map((store) => ({
@@ -211,11 +325,6 @@ const UniversalStockOrderCom = () => {
           </button>
         </div>
       </form>
-      <div className="col mt-3">
-        <button type="submit" className="btn btn-primary">
-          Recieved
-        </button>
-      </div>
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
@@ -224,7 +333,7 @@ const UniversalStockOrderCom = () => {
             <table className="table table-striped table-hover">
               <thead className="border-top">
                 <tr>
-                  <th className="py-3">ORD NO</th>
+                  <th className="py-3">ORDNO</th>
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
                   <th className="py-3">SKU & Barcode</th>
@@ -232,6 +341,8 @@ const UniversalStockOrderCom = () => {
                   <th className="py-3">Status</th>
                   <th className="py-3">Upload</th>
                   <th className="py-3">Shipping Address</th>
+
+                  <th className="py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,9 +350,12 @@ const UniversalStockOrderCom = () => {
                   paginatedData.map((item, index) => (
                     <tr key={index} className="align-middle">
                       <td className="py-3">{item.ordNo}</td>
-                      <td className="py-3">{item.date}</td>
+                      <td className="py-3">
+                        {moment(item.date).format("D-M-YYYY")}
+                      </td>
                       <td className="py-3">{item.store}</td>
                       <td className="py-3">{item.sku}</td>
+
                       <td className="py-3">
                         <button
                           className="btn btn-outline-info btn-sm"
@@ -255,42 +369,104 @@ const UniversalStockOrderCom = () => {
                         </button>
                       </td>
                       <td className="py-3">
-                        <span className="badge bg-primary">{item.status}</span>
-                      </td>
-                      <td className="py-3">
-                        <input
-                          type="file"
-                          accept="image/*,video/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
+                        {item.orderStatus === "View photo" ? (
+                          <button
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() =>
                               alert(
-                                `Selected file: ${file.name} for ${item.sku} on ${item.date}`
-                              );
-                              console.log("Uploaded file:", file);
+                                `Viewing photo for ${item.sku} on ${item.date}`
+                              )
                             }
-                          }}
-                          className="form-control form-control-sm"
-                          style={{ width: "250px", padding: "2px" }}
-                        />
+                          >
+                            View photo
+                          </button>
+                        ) : (
+                          <span className="badge bg-primary">
+                            {item.orderStatus}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3">
                         <button
-                          className="btn btn-outline-primary btn-sm"
+                          className="btn btn-primary btn-sm text-white"
+                          onClick={() =>
+                            document
+                              .getElementById(`uploadFile-${index}`)
+                              .click()
+                          }
+                        >
+                          Upload Photo-video
+                        </button>
+                        <input
+                          type="file"
+                          id={`uploadFile-${index}`}
+                          accept="image/*,video/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              alert(`Uploaded: ${file.name}`);
+                            }
+                          }}
+                        />
+                      </td>
+
+                      <td className="py-3">
+                        <button
+                          className="btn btn-primary btn-sm text-white"
+                          onClick={() =>
+                            alert(`Viewing address for ${item.address}`)
+                          }
+                        >
+                          View Address
+                        </button>
+                      </td>
+
+                      {/* <td className="py-3">
+                        <span
+                          className={`badge ${
+                            item.paymentStatus === "Success"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
+                        >
+                          {item.paymentStatus}
+                        </span>
+                      </td> */}
+                      {/* <td className="py-3">
+                        <Select
+                          options={storeOptions}
+                          defaultValue={storeOptions.find(
+                            (option) => option.label === item.store
+                          )}
+                          classNamePrefix="react-select"
+                          className="w-100"
+                        />
+                      </td> */}
+
+                      <td className="py-3">
+                        <button
+                          className="btn btn-outline-primary btn-sm me-2"
                           onClick={() =>
                             alert(
-                              `Viewing shipping address for ${item.sku} on ${item.date}`
+                              `Viewing details for ${item.category} on ${item.date}`
                             )
                           }
                         >
-                          {item.shipping}
+                          View
+                        </button>
+                        <button
+                          className="btn btn-outline-success btn-sm"
+                          onClick={() => handleDownload(item)}
+                        >
+                          Download
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center py-5">
+                    <td colSpan="11" className="text-center py-5">
                       No data available
                     </td>
                   </tr>

@@ -1,7 +1,7 @@
 import React from "react";
 import UniversalStockOrderCom from "../../components/Inventory/Stock/UniversalStockOrderCom";
 
-const UniversalStockRequestView = () => {
+const UniversalStockOrderView = () => {
   return (
     <div>
       <UniversalStockOrderCom />
@@ -9,4 +9,4 @@ const UniversalStockRequestView = () => {
   );
 };
 
-export default UniversalStockRequestView;
+export default UniversalStockOrderView;

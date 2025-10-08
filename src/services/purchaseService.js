@@ -12,6 +12,7 @@ const AUTH_ENDPOINTS = {
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   GET_PURCHASE_ORDERS: "/purchase",
+  GET_UNIVERSAL_STOCK:"/stockRequest",
   ADD_INVENTORY: "/inventory",
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
@@ -237,10 +238,62 @@ export const purchaseService = {
         limit,
         ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
         ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
-        ...(storeId && { "optimize[store][$in][0]": storeId }),
       };
 
+      // handle storeId array properly
+      if (Array.isArray(storeId) && storeId.length > 0) {
+        storeId.forEach((id, index) => {
+          params[`optimize[store][$in][${index}]`] = id;
+        });
+      }
+
       const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
+        params,
+      });
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+   getUniversalStock: async (
+    dateFrom,
+    dateTo,
+    storeId = null,
+    page = 1,
+    limit = 10
+  ) => {
+    try {
+      // Convert dates to timestamps covering the full day
+      const fromTimestamp = dateFrom
+        ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0)).getTime()
+        : undefined;
+      const toTimestamp = dateTo
+        ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).getTime()
+        : undefined;
+
+      const params = {
+        populate: true,
+        page,
+        limit,
+        ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
+        ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
+      };
+
+      // handle storeId array properly
+      if (Array.isArray(storeId) && storeId.length > 0) {
+        storeId.forEach((id, index) => {
+          params[`optimize[store][$in][${index}]`] = id;
+        });
+      }
+
+      const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
         params,
       });
 
