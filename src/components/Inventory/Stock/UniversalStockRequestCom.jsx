@@ -103,6 +103,7 @@ const UniversalStockRequestCom = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRowStores, setSelectedRowStores] = useState({});
+  const [rowStoreLoading, setRowStoreLoading] = useState({});
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -179,9 +180,10 @@ const UniversalStockRequestCom = () => {
   };
 
   const fetchAuditData = async (values, isInitial = false, newPage) => {
-    const storeId = values?.stores?.value
-      ? [values.stores.value]
+    const storeId = values?.stores?.length
+      ? values.stores.map((s) => s.value)
       : user?.stores || [];
+
     setLoading(true);
 
     try {
@@ -210,6 +212,7 @@ const UniversalStockRequestCom = () => {
         }));
 
         setAuditData(mappedData);
+        setSelectedRowStores("");
         setPagination({
           page: container.page,
           limit: container.limit,
@@ -230,7 +233,9 @@ const UniversalStockRequestCom = () => {
   };
 
   const fetchStoresForProduct = async (productId, ordNo) => {
-    if (rowStoreOptions[ordNo]) return;
+    if (rowStoreOptions[ordNo]) return; // already loaded
+
+    setRowStoreLoading((prev) => ({ ...prev, [ordNo]: true }));
 
     try {
       const response = await inventoryService.getStoresForUniverlStock({
@@ -257,6 +262,8 @@ const UniversalStockRequestCom = () => {
     } catch (error) {
       console.error(`Error fetching stores for productId ${productId}:`, error);
       toast.error("Failed to fetch stores for product");
+    } finally {
+      setRowStoreLoading((prev) => ({ ...prev, [ordNo]: false }));
     }
   };
 
@@ -313,6 +320,7 @@ const UniversalStockRequestCom = () => {
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
+            isMulti
           />
           {formik.touched.stores && formik.errors.stores && (
             <div className="text-danger">{formik.errors.stores}</div>
@@ -354,7 +362,6 @@ const UniversalStockRequestCom = () => {
           className="btn btn-primary"
           disabled={Object.keys(selectedRowStores).length === 0}
           onClick={() => {
-            // Filter only selected rows
             const selectedRows = auditData
               .filter((item) => selectedRowStores[item.ordNo])
               .map((item) => ({
@@ -370,7 +377,7 @@ const UniversalStockRequestCom = () => {
             if (selectedRows.length === 0) {
               toast.warn("Please select at least one store before submitting.");
             } else {
-              // toast.success("Order submitted! Check console for details.");
+              //  toast.success("Order submitted! Check console for details.");
             }
           }}
         >
@@ -455,11 +462,20 @@ const UniversalStockRequestCom = () => {
                             fetchStoresForProduct(item.productId, item.ordNo)
                           }
                           value={selectedRowStores[item.ordNo] || null}
+                          isLoading={rowStoreLoading[item.ordNo] || false}
+                          isClearable
                           onChange={(selectedOption) => {
-                            setSelectedRowStores((prev) => ({
-                              ...prev,
-                              [item.ordNo]: selectedOption,
-                            }));
+                            setSelectedRowStores((prev) => {
+                              const updated = { ...prev };
+
+                              if (selectedOption) {
+                                updated[item.ordNo] = selectedOption;
+                              } else {
+                                delete updated[item.ordNo];
+                              }
+
+                              return updated;
+                            });
                           }}
                           classNamePrefix="react-select"
                           className="w-100"
@@ -471,6 +487,29 @@ const UniversalStockRequestCom = () => {
                           getOptionLabel={(option) =>
                             `${option.label} (Qty: ${option.availableQuantity})`
                           }
+                          styles={{
+                            container: (provided) => ({
+                              ...provided,
+                              width: "300px", // fixed container width
+                            }),
+                            control: (provided) => ({
+                              ...provided,
+                              minWidth: "300px",
+                              maxWidth: "300px",
+                              overflow: "hidden", // important: prevent control from expanding
+                            }),
+                            singleValue: (provided) => ({
+                              ...provided,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis", // long selected values will be truncated
+                              maxWidth: "100%",
+                            }),
+                            menu: (provided) => ({
+                              ...provided,
+                              width: "300px", // menu width matches control
+                            }),
+                          }}
                         />
                       </td>
                       <td className="py-3">
@@ -497,8 +536,8 @@ const UniversalStockRequestCom = () => {
             </table>
             <div className="d-flex justify-content-center mt-4">
               <ReactPaginate
-                previousLabel={"← Previous"}
-                nextLabel={"Next →"}
+                previousLabel={"Previous"}
+                nextLabel={"Next"}
                 breakLabel={"..."}
                 pageCount={pagination.totalPages}
                 forcePage={pagination.page - 1}
