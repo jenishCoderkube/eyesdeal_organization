@@ -43,6 +43,10 @@ const menuItems = [
         label: "Universal Stock Request",
         link: "/inventory/universal-stock-request-view",
       },
+      {
+        label: "Universal Stock Order",
+        link: "/inventory/universal-stock-order-view",
+      },
     ],
   },
   {
