@@ -103,6 +103,8 @@ const UniversalStockRequestCom = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRowStores, setSelectedRowStores] = useState({});
+  const [rowStoreLoading, setRowStoreLoading] = useState({});
+
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -234,31 +236,36 @@ const UniversalStockRequestCom = () => {
   };
 
   const fetchStoresForProduct = async (productId, ordNo) => {
-    if (rowStoreOptions[ordNo]) return;
+  if (rowStoreOptions[ordNo]) return; // already loaded
 
-    try {
-      const response = await inventoryService.getStoresForUniverlStock({ productId });
-      const storesData = response?.data?.data || [];
+  setRowStoreLoading((prev) => ({ ...prev, [ordNo]: true }));
 
-      if (response?.data?.success && Array.isArray(storesData)) {
-        const storeOptions = storesData.map((item) => ({
-          value: item.store?._id,
-          label: item.store?.name,
-          availableQuantity: item.availableQuantity ?? 0,
-        }));
+  try {
+    const response = await inventoryService.getStoresForUniverlStock({ productId });
+    const storesData = response?.data?.data || [];
 
-        setRowStoreOptions((prev) => ({
-          ...prev,
-          [ordNo]: storeOptions,
-        }));
-      } else {
-        toast.error(response?.data?.message || "Failed to fetch stores for product");
-      }
-    } catch (error) {
-      console.error(`Error fetching stores for productId ${productId}:`, error);
-      toast.error("Failed to fetch stores for product");
+    if (response?.data?.success && Array.isArray(storesData)) {
+      const storeOptions = storesData.map((item) => ({
+        value: item.store?._id,
+        label: item.store?.name,
+        availableQuantity: item.availableQuantity ?? 0,
+      }));
+
+      setRowStoreOptions((prev) => ({
+        ...prev,
+        [ordNo]: storeOptions,
+      }));
+    } else {
+      toast.error(response?.data?.message || "Failed to fetch stores for product");
     }
-  };
+  } catch (error) {
+    console.error(`Error fetching stores for productId ${productId}:`, error);
+    toast.error("Failed to fetch stores for product");
+  } finally {
+    setRowStoreLoading((prev) => ({ ...prev, [ordNo]: false }));
+  }
+};
+
 
   const handleDownload = (data) => {
     const csv = [
@@ -449,6 +456,7 @@ const UniversalStockRequestCom = () => {
                           options={rowStoreOptions[item.ordNo] || []}
                           onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
                           value={selectedRowStores[item.ordNo] || null}
+                          isLoading={rowStoreLoading[item.ordNo] || false}
                           isClearable
                           onChange={(selectedOption) => {
                             setSelectedRowStores((prev) => {
