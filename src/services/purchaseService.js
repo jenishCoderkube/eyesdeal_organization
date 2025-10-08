@@ -262,52 +262,58 @@ export const purchaseService = {
       };
     }
   },
-   getUniversalStock: async (
-    dateFrom,
-    dateTo,
-    storeId = null,
-    page = 1,
-    limit = 10
-  ) => {
-    try {
-      // Convert dates to timestamps covering the full day
-      const fromTimestamp = dateFrom
-        ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0)).getTime()
-        : undefined;
-      const toTimestamp = dateTo
-        ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).getTime()
-        : undefined;
+ getUniversalStock: async (
+  dateFrom,
+  dateTo,
+  storeId = null,
+  page = 1,
+  limit = 10
+) => {
+  try {
+    // Format dates to YYYY-MM-DD
+    const formatDate = (date) => {
+      if (!date) return undefined;
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
 
-      const params = {
-        populate: true,
-        page,
-        limit,
-        ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
-        ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
-      };
+    const fromDate = formatDate(dateFrom);
+    const toDate = formatDate(dateTo);
 
-      // handle storeId array properly
-      if (Array.isArray(storeId) && storeId.length > 0) {
-        storeId.forEach((id, index) => {
-          params[`optimize[store][$in][${index}]`] = id;
-        });
-      }
+    const params = {
+      populate: true,
+      page,
+      limit,
+      ...(fromDate && { startDate: fromDate }),
+      ...(toDate && { endDate: toDate }),
+    };
 
-      const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
-        params,
+    // handle storeId array properly
+    if (Array.isArray(storeId) && storeId.length > 0) {
+      storeId.forEach((id, index) => {
+        params[`optimize[store][$in][${index}]`] = id;
       });
-
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || "Error",
-      };
     }
-  },
+
+    const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
+      params,
+    });
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Error",
+    };
+  }
+},
+
   updatePurchaseOrder: async (data) => {
     try {
       const response = await api.patch(AUTH_ENDPOINTS.PURCHASE, data);
