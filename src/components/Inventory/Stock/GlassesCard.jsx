@@ -94,7 +94,7 @@ const GlassesCard = ({
           <Button
             variant="primary"
             size="sm"
-            className="fw-semibold px-3 py-1"
+            className="fw-semibold px-2 py-1"
             onClick={onClick}
           >
             View

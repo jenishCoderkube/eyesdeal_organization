@@ -219,7 +219,7 @@ export const purchaseService = {
   getPurchaseOrders: async (
     dateFrom,
     dateTo,
-    storeId = null,
+    orgIds = null,
     page = 1,
     limit = 10
   ) => {
@@ -240,10 +240,10 @@ export const purchaseService = {
         ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
       };
 
-      // handle storeId array properly
-      if (Array.isArray(storeId) && storeId.length > 0) {
-        storeId.forEach((id, index) => {
-          params[`optimize[store][$in][${index}]`] = id;
+      // handle orgIds array properly
+      if (Array.isArray(orgIds) && orgIds.length > 0) {
+        orgIds.forEach((id, index) => {
+          params[`optimize[organization][$in][${index}]`] = id;
         });
       }
 
