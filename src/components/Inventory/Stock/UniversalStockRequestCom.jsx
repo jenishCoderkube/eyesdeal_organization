@@ -124,19 +124,19 @@ const UniversalStockRequestCom = () => {
       dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
-   validationSchema: Yup.object({
-       stores: Yup.array()
-         .of(
-           Yup.object().shape({
-             value: Yup.string().required(),
-             label: Yup.string().required(),
-           })
-         )
-         .nullable(),
- 
-       dateFrom: Yup.date().required("Start date is required"),
-       dateTo: Yup.date().required("End date is required"),
-     }),
+    validationSchema: Yup.object({
+      stores: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required(),
+            label: Yup.string().required(),
+          })
+        )
+        .nullable(),
+
+      dateFrom: Yup.date().required("Start date is required"),
+      dateTo: Yup.date().required("End date is required"),
+    }),
     onSubmit: (values) => {
       fetchAuditData(values);
     },
@@ -147,23 +147,23 @@ const UniversalStockRequestCom = () => {
   }, []);
 
 
-    useEffect(() => {
-      const storedStoreId = user?.stores?.[0];
-      if (storedStoreId && storeData.length > 0) {
-        const defaultStore = storeData.find(
-          (store) => store._id === storedStoreId
-        );
-        if (defaultStore) {
-          formik.setFieldValue("stores", [
-            {
-              value: defaultStore._id,
-              label: defaultStore.name,
-            },
-          ]);
-          fetchAuditData(formik.values, true);
-        }
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+        fetchAuditData(formik.values, true);
       }
-    }, [storeData]);
+    }
+  }, [storeData]);
   const fetchStores = async () => {
     try {
       const response = await inventoryService.getStores();
@@ -181,7 +181,10 @@ const UniversalStockRequestCom = () => {
 
 
   const fetchAuditData = async (values, isInitial = false, newPage) => {
-    const storeId = values?.stores?.value ? [values.stores.value] : user?.stores || [];
+    const storeId = values?.stores?.length
+      ? values.stores.map((s) => s.value)
+      : user?.stores || [];
+
     setLoading(true);
 
     try {
@@ -210,6 +213,7 @@ const UniversalStockRequestCom = () => {
         }));
 
         setAuditData(mappedData);
+        setSelectedRowStores("")
         setPagination({
           page: container.page,
           limit: container.limit,
@@ -304,6 +308,7 @@ const UniversalStockRequestCom = () => {
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
+            isMulti
           />
           {formik.touched.stores && formik.errors.stores && (
             <div className="text-danger">{formik.errors.stores}</div>
@@ -339,35 +344,35 @@ const UniversalStockRequestCom = () => {
           </button>
         </div>
       </form>
-    <div className="col mt-3">
-  <button
-    type="button"
-    className="btn btn-primary"
-    disabled={Object.keys(selectedRowStores).length === 0}
-    onClick={() => {
-      // Filter only selected rows
-      const selectedRows = auditData
-        .filter((item) => selectedRowStores[item.ordNo])
-        .map((item) => ({
-          ordNo: item.ordNo,
-          store: item.store,
-          sku: item.sku,
-          qty: item.qty,
-          selectedStore: selectedRowStores[item.ordNo],
-        }));
+      <div className="col mt-3">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={Object.keys(selectedRowStores).length === 0}
+          onClick={() => {
+            const selectedRows = auditData
+              .filter((item) => selectedRowStores[item.ordNo])
+              .map((item) => ({
+                ordNo: item.ordNo,
+                store: item.store,
+                sku: item.sku,
+                qty: item.qty,
+                selectedStore: selectedRowStores[item.ordNo],
+              }));
 
-      console.log("🧾 Selected Rows:", selectedRows);
+            console.log("🧾 Selected Rows:", selectedRows);
 
-      if (selectedRows.length === 0) {
-        toast.warn("Please select at least one store before submitting.");
-      } else {
-        // toast.success("Order submitted! Check console for details.");
-      }
-    }}
-  >
-    Submit Order
-  </button>
-</div>
+            if (selectedRows.length === 0) {
+              toast.warn("Please select at least one store before submitting.");
+            } else {
+              //  toast.success("Order submitted! Check console for details.");
+            }
+          }}
+        >
+          Submit Order
+        </button>
+      </div>
+
 
       <div className="table-responsive mt-3">
         {loading ? (
@@ -393,7 +398,7 @@ const UniversalStockRequestCom = () => {
                 {auditData.length > 0 ? (
                   auditData.map((item, index) => (
                     <tr key={index} className="align-middle">
-                   <td className="py-3">
+                      <td className="py-3">
                         {index + 1 + (pagination.page - 1) * pagination.limit}
                       </td>
                       <td className="py-3">
@@ -434,48 +439,82 @@ const UniversalStockRequestCom = () => {
                           className={`badge ${item.paymentStatus === "Success"
                             ? "bg-success"
                             : "bg-danger"
-                          }`}
+                            }`}
                         >
                           {item.paymentStatus}
                         </span>
                       </td>
                       <td className="py-3">
-                    <Select
-  options={rowStoreOptions[item.ordNo] || []}
-  onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
-  value={selectedRowStores[item.ordNo] || null}
-  onChange={(selectedOption) => {
-    setSelectedRowStores((prev) => ({
-      ...prev,
-      [item.ordNo]: selectedOption
-    }));
-  }}
-  classNamePrefix="react-select"
-  className="w-100"
-  placeholder={
-    rowStoreOptions[item.ordNo]
-      ? "Select store..."
-      : "Show available stores..."
-  }
-  getOptionLabel={(option) =>
-    `${option.label} (Qty: ${option.availableQuantity})`
-  }
-/>
+                        <Select
+                          options={rowStoreOptions[item.ordNo] || []}
+                          onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
+                          value={selectedRowStores[item.ordNo] || null}
+                          isClearable
+                          onChange={(selectedOption) => {
+                            setSelectedRowStores((prev) => {
+                              const updated = { ...prev };
+
+                              if (selectedOption) {
+                                // ✅ If store selected → store it
+                                updated[item.ordNo] = selectedOption;
+                              } else {
+                                // ❌ If cleared → remove from state
+                                delete updated[item.ordNo];
+                              }
+
+                              return updated;
+                            });
+                          }}
+                          classNamePrefix="react-select"
+                          className="w-100"
+                          placeholder={
+                            rowStoreOptions[item.ordNo]
+                              ? "Select store..."
+                              : "Show available stores..."
+                          }
+                          getOptionLabel={(option) =>
+                            `${option.label} (Qty: ${option.availableQuantity})`
+                          }
+                          styles={{
+                            container: (provided) => ({
+                              ...provided,
+                              width: "300px", // fixed container width
+                            }),
+                            control: (provided) => ({
+                              ...provided,
+                              minWidth: "300px",
+                              maxWidth: "300px",
+                              overflow: "hidden", // important: prevent control from expanding
+                            }),
+                            singleValue: (provided) => ({
+                              ...provided,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis", // long selected values will be truncated
+                              maxWidth: "100%",
+                            }),
+                            menu: (provided) => ({
+                              ...provided,
+                              width: "300px", // menu width matches control
+                            }),
+                          }}
+                        />
+
 
                       </td>
                       <td className="py-3">
-                       
-                         <span
+
+                        <span
                           className={`badge ${item.paymentStatus === "Success"
                             ? "bg-success"
                             : "bg-danger"
-                          }`}
+                            }`}
                         >
                           {item.orderStatus}
                         </span>
-           
+
                       </td>
-                    
+
                     </tr>
                   ))
                 ) : (
