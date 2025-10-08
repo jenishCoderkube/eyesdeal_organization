@@ -13,6 +13,7 @@ const TAX_OPTIONS = [
 
 function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
   const [rows, setRows] = useState([]);
+  const [commonDiscount, setCommonDiscount] = useState(0);
 
   // Initialize rows from selectedJobs
   useEffect(() => {
@@ -101,25 +102,25 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
     );
   };
 
-  // Calculate totals
   const calculateTotals = () => {
     const totals = {
       totalQuantity: rows.length,
-      flatDiscount: 0,
+      flatDiscount: parseFloat(commonDiscount) || 0, // use common discount
       otherCharges: 0,
       taxAmount: 0,
       totalAmount: 0,
     };
 
     rows.forEach((row) => {
-      totals.flatDiscount += parseFloat(row.flatDiscount) || 0;
       totals.otherCharges += parseFloat(row.otherCharges) || 0;
       totals.taxAmount += parseFloat(row.taxAmount) || 0;
       totals.totalAmount += parseFloat(row.total) || 0;
     });
 
-    // Round to 2 decimal places where applicable
-    totals.flatDiscount = parseFloat(totals.flatDiscount.toFixed(2));
+    // Subtract the common flat discount from total
+    totals.totalAmount = totals.totalAmount - totals.flatDiscount;
+
+    // Round to 2 decimal places
     totals.otherCharges = parseFloat(totals.otherCharges.toFixed(2));
     totals.taxAmount = parseFloat(totals.taxAmount.toFixed(2));
     totals.totalAmount = parseFloat(totals.totalAmount.toFixed(2));
@@ -241,7 +242,7 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
                   <th>Product SKU</th>
                   <th>Price</th>
                   <th>Side</th>
-                  <th>Flat Discount</th>
+
                   <th>Other Charges</th>
                   <th>Tax Rate</th>
                   <th>Tax Type</th>
@@ -265,16 +266,7 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
                       />
                     </td>
                     <td>{row.side}</td>
-                    <td>
-                      <Form.Control
-                        type="number"
-                        value={row.flatDiscount}
-                        onChange={(e) =>
-                          updateRow(row._id, "flatDiscount", e.target.value)
-                        }
-                        disabled={loading}
-                      />
-                    </td>
+
                     <td>
                       <Form.Control
                         type="number"
@@ -319,8 +311,16 @@ function VendorInvoiceModal({ onSubmit, show, onHide, loading, selectedJobs }) {
                   <td>
                     <strong>Total Flat Discount</strong>
                   </td>
-                  <td>{totals.flatDiscount.toFixed(2)}</td>
+                  <td>
+                    <Form.Control
+                      type="number"
+                      value={commonDiscount}
+                      onChange={(e) => setCommonDiscount(e.target.value)}
+                      disabled={loading}
+                    />
+                  </td>
                 </tr>
+
                 <tr>
                   <td>
                     <strong>Total Other Charges</strong>
