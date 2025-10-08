@@ -125,8 +125,8 @@ const StockAuditViewCom = () => {
 
   const handleDownload = (data) => {
     const csv = [
-      "SRNO,Date,Store,Category,Store Qty,Count Qty",
-      `${data?.srno},${data?.date},${data?.store},${data?.category},${data?.qtyStore},${data?.qty}`,
+      "Date,Store,Category,Brand,Barcode,SKU,Store Qty,Count Qty,Status",
+      `${data?.date},${data?.store},${data?.category},${data?.brand?.name},${data?.product?.newBarcode},${data?.product?.sku},${data?.qtyStore},${data?.qty},${data?.status}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -250,6 +250,7 @@ const StockAuditViewCom = () => {
                             className="btn btn-outline-primary btn-sm"
                             onClick={() =>
                               handleDownload({
+                                ...item,
                                 srno: index + 1,
                                 date: item.auditDate,
                                 store: item.store?.name,

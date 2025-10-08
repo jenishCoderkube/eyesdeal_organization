@@ -39,6 +39,10 @@ const menuItems = [
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
       { label: "ED Product Purchase", link: "/purchase/addproduct" },
       { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
+      // {
+      //   label: "Universal Stock Request",
+      //   link: "/inventory/universal-stock-request-view",
+      // },
     ],
   },
   {
@@ -73,10 +77,6 @@ const menuItems = [
         label: "Stock Audit View",
         link: "/inventory/stock-audit-view",
       },
-      // {
-      //   label: "Universal Stock Request",
-      //   link: "/inventory/universal-stock-request-view",
-      // },
     ],
   },
   {

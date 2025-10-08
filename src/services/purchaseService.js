@@ -237,8 +237,14 @@ export const purchaseService = {
         limit,
         ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
         ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
-        ...(storeId && { "optimize[store][$in][0]": storeId }),
       };
+
+      // handle storeId array properly
+      if (Array.isArray(storeId) && storeId.length > 0) {
+        storeId.forEach((id, index) => {
+          params[`optimize[store][$in][${index}]`] = id;
+        });
+      }
 
       const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
         params,

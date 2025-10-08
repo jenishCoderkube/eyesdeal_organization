@@ -531,15 +531,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  // {
-  //   title: "UniversalStockRequestView",
-  //   path: "/inventory/universal-stock-request-view",
-  //   element: (
-  //     <PrivateRoute>
-  //       <UniversalStockRequestView />
-  //     </PrivateRoute>
-  //   ),
-  // },
+  {
+    title: "UniversalStockRequestView",
+    path: "/inventory/universal-stock-request-view",
+    element: (
+      <PrivateRoute>
+        <UniversalStockRequestView />
+      </PrivateRoute>
+    ),
+  },
   {
     title: "ViewStockAdjustment",
     path: "/inventory/view-adjustment-stock",

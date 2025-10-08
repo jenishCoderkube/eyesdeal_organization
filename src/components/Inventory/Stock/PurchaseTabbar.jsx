@@ -4,6 +4,8 @@ import Select from "react-select";
 import productViewService from "../../../services/Products/productViewService"; // Adjust path
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { FiCheckSquare, FiSquare } from "react-icons/fi";
+import { storeService } from "../../../services/storeService";
+import { inventoryService } from "../../../services/inventoryService";
 const modelOptions = [
   { value: "eyeGlasses", label: "Frame" },
   { value: "sunGlasses", label: "Sun Glasses" },
@@ -14,12 +16,18 @@ const modelOptions = [
   { value: "spectacleLens", label: "Spectacle Lens" },
 ];
 
-function PurchaseTabBar({ onSubmit, onSelectChange }) {
+function PurchaseTabBar({
+  onSubmit,
+  onSelectChange,
+  onSubmitCart,
+  totalCount,
+}) {
   const [options, setOptions] = useState({
     brandOptions: [],
     frameTypeOptions: [],
     frameShapeOptions: [],
     frameMaterialOptions: [],
+    storeData: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,18 +57,24 @@ function PurchaseTabBar({ onSubmit, onSelectChange }) {
       );
     }
   }, [searchParams, setSearchParams]);
-
+  let storeId = JSON.parse(localStorage.getItem("user"))?.stores[0];
   useEffect(() => {
     const fetchOptions = async () => {
       setLoading(true);
       try {
-        const [brandsRes, frameTypesRes, frameShapesRes, frameMaterialsRes] =
-          await Promise.all([
-            productViewService.getBrands(),
-            productViewService.getFrameTypes(),
-            productViewService.getFrameShapes(),
-            productViewService.getFrameMaterials(),
-          ]);
+        const [
+          brandsRes,
+          frameTypesRes,
+          frameShapesRes,
+          frameMaterialsRes,
+          storeData,
+        ] = await Promise.all([
+          productViewService.getBrands(),
+          productViewService.getFrameTypes(),
+          productViewService.getFrameShapes(),
+          productViewService.getFrameMaterials(),
+          inventoryService.getStores(),
+        ]);
 
         setOptions((prev) => ({
           ...prev,
@@ -87,6 +101,9 @@ function PurchaseTabBar({ onSubmit, onSelectChange }) {
                 value: item._id,
                 label: item.name,
               }))
+            : [],
+          storeData: storeData.success
+            ? storeData.data?.data?.filter((data) => data?._id === storeId)
             : [],
         }));
 
@@ -132,9 +149,13 @@ function PurchaseTabBar({ onSubmit, onSelectChange }) {
     >
       {({ setFieldValue, values, submitForm }) => (
         <Form className="d-flex flex-column gap-2 mb-4">
-          <h6 className=" fw-bold">ED PRODUCT PURCHASE</h6>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <h6 className=" fw-bold">ED PRODUCT PURCHASE</h6>
+            <h6 className=" fw-bold">Store: {options.storeData[0]?.name}</h6>
+          </div>
 
-          <div className="d-flex align-items-center justify-content-end">
+          <div className="d-flex align-items-center justify-content-between">
+            <h5>Total Qty: {totalCount}</h5>
             <ul className="nav nav-tabs border-bottom-0">
               {modelOptions.map((tab) => (
                 <li className="nav-item" key={tab.value}>
@@ -169,41 +190,20 @@ function PurchaseTabBar({ onSubmit, onSelectChange }) {
               ))}
             </ul>
           </div>
-          <div className="row flex justify-content-end row-cols-1 row-cols-md-6 g-3">
+          <div className="row flex justify-content-end  align-items-end row-cols-1 row-cols-md-6 g-3">
             {/* MultiSelect Toggle */}
-            <div className="d-flex align-items-center">
-              <label
-                className="me-2"
-                style={{ fontSize: "13px", margin: 0, padding: 0 }}
-              >
-                Multi-Select
-              </label>
-              <div
-                className="fs-5 mt-1"
-                style={{ cursor: "pointer" }}
+            <div>
+              <button
+                type="button"
+                className="btn btn-success ms-4"
                 onClick={() => {
-                  const newValue = !values.isMultiSelect;
-                  setFieldValue("isMultiSelect", newValue);
-
-                  // Update URL param
-                  const newParams = new URLSearchParams(window.location.search);
-                  newParams.set("isMultiSelect", newValue.toString());
-                  window.history.replaceState(
-                    null,
-                    "",
-                    "?" + newParams.toString()
-                  );
-
-                  submitForm();
+                  onSubmitCart?.(); // trigger add-to-cart from parent
                 }}
               >
-                {values.isMultiSelect ? (
-                  <FiCheckSquare size={30} />
-                ) : (
-                  <FiSquare size={30} />
-                )}
-              </div>
+                Submit
+              </button>
             </div>
+
             <div className="">
               <label
                 className="form-label"

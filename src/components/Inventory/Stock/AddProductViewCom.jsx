@@ -111,6 +111,7 @@ const ProductPurchase = () => {
 
     return () => fetchProducts.cancel();
   }, [searchParams, fetchProducts, productId]);
+  console.log("selectedIds", selectedIds);
 
   const handleSubmit = (values) => {
     const newParams = new URLSearchParams();
@@ -193,13 +194,32 @@ const ProductPurchase = () => {
       setIsAddingToCart(false);
     }
   };
+  const handleCartSubmit = () => {
+    const validItems = selectedIds.filter((item) => item.quantity > 0);
+    if (validItems.length === 0) {
+      toast.warning("Please select quantity greater than 0 before proceeding.");
+      return;
+    }
+
+    const productsWithQuantities = validItems.map((item) => ({
+      product: item._id,
+      quantity: item.quantity,
+    }));
+
+    handleAddToCart(productsWithQuantities);
+  };
+
   return (
     <div className="container py-3">
       <PurchaseTabBar
         onSubmit={handleSubmit}
         isMultiSelect={isMultiSelect}
-        setIsMultiSelect={setIsMultiSelect} // toggle table/card from tab bar
+        setIsMultiSelect={setIsMultiSelect}
         onSelectChange={handleSelectChange}
+        onSubmitCart={handleCartSubmit}
+        totalCount={
+          selectedIds?.reduce((acc, item) => acc + (item.quantity || 0), 0) || 0
+        }
       />
 
       {loading && <div className="text-center my-4">Loading...</div>}
@@ -253,6 +273,14 @@ const ProductPurchase = () => {
                     }
                     onClick={() => handleCardClick(frame._id)}
                     frame={frame}
+                    onQuantityChange={(id, qty) => {
+                      setSelectedIds((prev) => {
+                        const updated = prev.filter((p) => p._id !== id);
+                        if (qty > 0)
+                          return [...updated, { _id: id, quantity: qty }];
+                        return updated;
+                      });
+                    }}
                   />
                 </div>
               ))}

@@ -11,6 +11,7 @@ import Button from "react-bootstrap/Button";
 import Carousel from "react-bootstrap/Carousel";
 import Form from "react-bootstrap/Form";
 import { defalutImageBasePath } from "../../utils/constants";
+import EditPaymentStatusModal from "./EditPaymentStatusModal";
 
 const PurchaseOrderViewCom = () => {
   const [storeData, setStoreData] = useState([]);
@@ -30,6 +31,8 @@ const PurchaseOrderViewCom = () => {
   const [editedQuantity, setEditedQuantity] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentItem, setSelectedPaymentItem] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -41,12 +44,20 @@ const PurchaseOrderViewCom = () => {
 
   const formik = useFormik({
     initialValues: {
-      stores: null,
+      stores: [],
       dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
-      stores: Yup.object().nullable(),
+      stores: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required(),
+            label: Yup.string().required(),
+          })
+        )
+        .nullable(),
+
       dateFrom: Yup.date().required("Start date is required"),
       dateTo: Yup.date().required("End date is required"),
     }),
@@ -66,10 +77,12 @@ const PurchaseOrderViewCom = () => {
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("stores", {
-          value: defaultStore._id,
-          label: defaultStore.name,
-        });
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
         fetchPurchaseData(formik.values, true);
       }
     }
@@ -90,14 +103,15 @@ const PurchaseOrderViewCom = () => {
   };
 
   const fetchPurchaseData = async (values, isInitial = false, newPage) => {
-    const storeId = values?.stores?.value || user?.stores?.[0];
+    const storeId = values?.stores?.map((s) => s.value) || user?.stores || [];
+
     setLoading(true);
 
     try {
       const response = await purchaseService.getPurchaseOrders(
         values.dateFrom, // invoiceDateGte
         values.dateTo, // invoiceDateLte
-        storeId ? storeId : undefined, // storeIds as array
+        storeId ? storeId : [], // storeIds as array
 
         isInitial ? 1 : newPage, // page
         pagination.limit // rowsPerPage
@@ -196,6 +210,18 @@ const PurchaseOrderViewCom = () => {
       setDeleteItemId(null);
     }
   };
+  const getStatusBadge = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return "badge bg-warning text-dark"; // yellow
+      case "success":
+        return "badge bg-success"; // green
+      case "rejected":
+        return "badge bg-danger"; // red
+      default:
+        return "badge bg-secondary"; // grey for unknown
+    }
+  };
 
   return (
     <div className="card-body p-4">
@@ -207,13 +233,15 @@ const PurchaseOrderViewCom = () => {
         <div className="col">
           <label className="form-label fw-medium">Stores</label>
           <Select
+            isMulti={true} // <-- multi-select enabled
             options={storeOptions}
-            value={formik.values.stores}
-            onChange={(option) => formik.setFieldValue("stores", option)}
+            value={formik.values.stores} // array of selected options
+            onChange={(selected) => formik.setFieldValue("stores", selected)}
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
           />
+
           {formik.touched.stores && formik.errors.stores && (
             <div className="text-danger">{formik.errors.stores}</div>
           )}
@@ -279,10 +307,19 @@ const PurchaseOrderViewCom = () => {
                       <td className="py-3">{item.store?.name || "N/A"}</td>
                       <td className="py-3">{item.quantity}</td>
                       <td className="py-3">
-                        {item.paymentStatus
-                          ? item.paymentStatus.charAt(0).toUpperCase() +
-                            item.paymentStatus.slice(1).toLowerCase()
-                          : ""}
+                        <span
+                          className={getStatusBadge(item.paymentStatus)}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => {
+                            setSelectedPaymentItem(item); // store selected item
+                            setShowPaymentModal(true); // open modal
+                          }}
+                        >
+                          {item.paymentStatus
+                            ? item.paymentStatus.charAt(0).toUpperCase() +
+                              item.paymentStatus.slice(1).toLowerCase()
+                            : "Pending"}
+                        </span>
                       </td>
 
                       <td className="py-3">
@@ -304,6 +341,7 @@ const PurchaseOrderViewCom = () => {
                         >
                           Edit
                         </button>
+
                         <button
                           className="btn btn-outline-danger btn-sm"
                           onClick={() => {
@@ -375,6 +413,32 @@ const PurchaseOrderViewCom = () => {
           </>
         )}
       </div>
+      <EditPaymentStatusModal
+        show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        purchaseItem={selectedPaymentItem}
+        // onUpdate={async (newStatus) => {
+        //   try {
+        //     const payload = {
+        //       _id: selectedPaymentItem._id,
+        //       paymentStatus: newStatus,
+        //     };
+        //     const response = await purchaseService.updatePurchaseOrder(payload);
+        //     if (response.success) {
+        //       toast.success("Payment status updated successfully");
+        //       fetchPurchaseData(formik.values, false, pagination.page);
+        //     } else {
+        //       toast.error(response.message || "Failed to update status");
+        //     }
+        //   } catch (error) {
+        //     console.error("Error updating status:", error);
+        //     toast.error("Error updating status");
+        //   } finally {
+        //     setShowPaymentModal(false);
+        //     setSelectedPaymentItem(null);
+        //   }
+        // }}
+      />
 
       <Modal
         show={showViewModal}
