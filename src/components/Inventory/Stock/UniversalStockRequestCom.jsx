@@ -102,6 +102,8 @@ const UniversalStockRequestCom = () => {
   const [rowStoreOptions, setRowStoreOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedRowStores, setSelectedRowStores] = useState({});
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -119,14 +121,22 @@ const UniversalStockRequestCom = () => {
 
   const formik = useFormik({
     initialValues: {
-      stores: null,
+      stores: [],
       dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
-      stores: Yup.object().nullable().required("Store is required"),
-      dateFrom: Yup.date().required("Date From is required"),
-      dateTo: Yup.date().required("Date To is required"),
+      stores: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required(),
+            label: Yup.string().required(),
+          })
+        )
+        .nullable(),
+
+      dateFrom: Yup.date().required("Start date is required"),
+      dateTo: Yup.date().required("End date is required"),
     }),
     onSubmit: (values) => {
       fetchAuditData(values);
@@ -137,6 +147,23 @@ const UniversalStockRequestCom = () => {
     fetchStores();
   }, []);
 
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+        fetchAuditData(formik.values, true);
+      }
+    }
+  }, [storeData]);
   const fetchStores = async () => {
     try {
       const response = await inventoryService.getStores();
@@ -150,16 +177,6 @@ const UniversalStockRequestCom = () => {
       toast.error("Failed to fetch stores");
     }
   };
-
-  useEffect(() => {
-    if (storeData.length > 0) {
-      formik.setFieldValue("stores", {
-        value: storeData[0]._id,
-        label: storeData[0].name,
-      });
-      fetchAuditData(formik.values, true);
-    }
-  }, [storeData]);
 
   const fetchAuditData = async (values, isInitial = false, newPage) => {
     const storeId = values?.stores?.value
@@ -332,10 +349,35 @@ const UniversalStockRequestCom = () => {
         </div>
       </form>
       <div className="col mt-3">
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={Object.keys(selectedRowStores).length === 0}
+          onClick={() => {
+            // Filter only selected rows
+            const selectedRows = auditData
+              .filter((item) => selectedRowStores[item.ordNo])
+              .map((item) => ({
+                ordNo: item.ordNo,
+                store: item.store,
+                sku: item.sku,
+                qty: item.qty,
+                selectedStore: selectedRowStores[item.ordNo],
+              }));
+
+            console.log("🧾 Selected Rows:", selectedRows);
+
+            if (selectedRows.length === 0) {
+              toast.warn("Please select at least one store before submitting.");
+            } else {
+              // toast.success("Order submitted! Check console for details.");
+            }
+          }}
+        >
           Submit Order
         </button>
       </div>
+
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
@@ -353,7 +395,6 @@ const UniversalStockRequestCom = () => {
                   <th className="py-3">Image</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Order Status</th>
-                  <th className="py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -413,6 +454,13 @@ const UniversalStockRequestCom = () => {
                           onMenuOpen={() =>
                             fetchStoresForProduct(item.productId, item.ordNo)
                           }
+                          value={selectedRowStores[item.ordNo] || null}
+                          onChange={(selectedOption) => {
+                            setSelectedRowStores((prev) => ({
+                              ...prev,
+                              [item.ordNo]: selectedOption,
+                            }));
+                          }}
                           classNamePrefix="react-select"
                           className="w-100"
                           placeholder={
@@ -426,38 +474,15 @@ const UniversalStockRequestCom = () => {
                         />
                       </td>
                       <td className="py-3">
-                        {item.orderStatus === "View photo" ? (
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => handleViewMoreImages(item.photos)}
-                          >
-                            View photo
-                          </button>
-                        ) : (
-                          <span className="badge bg-primary">
-                            {item.orderStatus}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <button
-                          className="btn btn-outline-primary btn-sm me-2"
-                          onClick={() =>
-                            alert(
-                              `Viewing details for ${item.category} on ${moment(
-                                item.date
-                              ).format("D-M-YYYY")}`
-                            )
-                          }
+                        <span
+                          className={`badge ${
+                            item.paymentStatus === "Success"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
                         >
-                          View
-                        </button>
-                        <button
-                          className="btn btn-outline-success btn-sm"
-                          onClick={() => handleDownload(item)}
-                        >
-                          Download
-                        </button>
+                          {item.orderStatus}
+                        </span>
                       </td>
                     </tr>
                   ))

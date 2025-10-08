@@ -11,7 +11,7 @@ const INVENTORY_ENDPOINTS = {
   COLOR: "/master/color",
   PRESCRIPTION: `master/prescriptionType`,
   COLLECTION: `master/collection`,
-  STOCKSTORESDATA:`/stockRequest/check-availability`,
+  STOCKSTORESDATA: `/stockRequest/check-availability`,
   BRAND: `master/brand`,
   INVENTORY: (params) => `/inventory?populate=true&${params}`,
   INVENTORYSTORE: (params) => `/inventory/store?populate=true&${params}`,
@@ -44,6 +44,7 @@ const INVENTORY_ENDPOINTS = {
   STOCKTRANSFER_BULK_UPLOAD: "/stockTransfer/upload/bulk-upload",
   BULK_INVENTORY_UPLOAD: "/inventory/bulk-upload",
   ADD_STOCK_AUDIT: "/stockAudit",
+  ORGANIZATION: "/organization",
 };
 
 const buildInventoryParams = (
@@ -261,22 +262,41 @@ export const inventoryService = {
       };
     }
   },
-getStoresForUniverlStock: async ({ productId }) => {
-  try {
-    const response = await api.post(INVENTORY_ENDPOINTS.STOCKSTORESDATA, { productId });
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error(`API error for ${INVENTORY_ENDPOINTS.STOCKSTORESDATA}:`, error);
-    return {
-      success: false,
-      message: error.response?.data?.message || "Error fetching stores",
-    };
-  }
-},
+  getStoresForUniverlStock: async ({ productId }) => {
+    try {
+      const response = await api.post(INVENTORY_ENDPOINTS.STOCKSTORESDATA, {
+        productId,
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error(
+        `API error for ${INVENTORY_ENDPOINTS.STOCKSTORESDATA}:`,
+        error
+      );
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error fetching stores",
+      };
+    }
+  },
 
+  getOrganization: async () => {
+    try {
+      const response = await api.get(INVENTORY_ENDPOINTS.ORGANIZATION);
+      return {
+        success: true,
+        data: response.data?.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
   getStockAudit: async (params = {}) => {
     try {
       const query = new URLSearchParams(params).toString();

@@ -148,35 +148,38 @@ const PurchaseModal = ({
     );
   }, []);
 
-  // Export to Excel
   const exportToExcel = () => {
     if (!purchase) return;
-    const data = tableData.map((item) => {
+
+    const data = tableData.map((item, index) => {
       if (item.product) {
         return {
+          SRNO: index + 1,
+          Date: moment(item.createdAt).format("YYYY-MM-DD"),
+          Store: item.store?.name || purchase.store.name,
+          Category: item.product.__t || "N/A",
           Barcode: item.product.newBarcode,
           SKU: item.product.sku,
           Quantity: item.quantity,
-          "Purchase Rate": item.purchaseRate,
-          Tax: item.tax,
-          "Tax Amount": (item.purchaseRate * item.tax) / 100,
-          Discount: item.totalDiscount,
-          Total: item.totalAmount,
+          Price: item.purchaseRate,
+          Amount: item.totalAmount,
         };
       } else if (item.lens) {
         return {
+          SRNO: index + 1,
+          Date: moment(item.createdAt).format("YYYY-MM-DD"),
+          Store: item.store?.name || purchase.store.name,
+          Category: item.lens.__t || "Lens",
           Barcode: item.lens.barcode,
           SKU: item.lens.sku,
           Quantity: item.sale?.totalQuantity,
-          "Purchase Rate": item.lens.mrp,
-          Tax: item.sale?.totalTax,
-          "Tax Amount": item.sale?.totalTax,
-          Discount: item.sale?.totalDiscount,
-          Total: item.sale?.netAmount,
+          Price: item.lens.mrp,
+          Amount: item.sale?.netAmount,
         };
       }
       return {};
     });
+
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Products");
