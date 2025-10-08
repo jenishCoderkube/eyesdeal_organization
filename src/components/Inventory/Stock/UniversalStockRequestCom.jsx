@@ -463,10 +463,8 @@ const UniversalStockRequestCom = () => {
                               const updated = { ...prev };
 
                               if (selectedOption) {
-                                // ✅ If store selected → store it
                                 updated[item.ordNo] = selectedOption;
                               } else {
-                                // ❌ If cleared → remove from state
                                 delete updated[item.ordNo];
                               }
 
@@ -536,8 +534,8 @@ const UniversalStockRequestCom = () => {
             </table>
             <div className="d-flex justify-content-center mt-4">
               <ReactPaginate
-                previousLabel={"← Previous"}
-                nextLabel={"Next →"}
+                previousLabel={"Previous"}
+                nextLabel={"Next"}
                 breakLabel={"..."}
                 pageCount={pagination.totalPages}
                 forcePage={pagination.page - 1}
