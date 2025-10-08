@@ -7,11 +7,99 @@ import moment from "moment";
 import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
 import { purchaseService } from "../../../services/purchaseService";
+import { Modal, Carousel, Button } from "react-bootstrap";
+
+const ImageSliderModal = ({ show, onHide, images }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleSelect = (selectedIndex) => {
+    setActiveIndex(selectedIndex);
+  };
+
+  const handleDotClick = (index) => {
+    setActiveIndex(index);
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} centered size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Product Images</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {images.length > 0 ? (
+          <>
+            <Carousel
+              activeIndex={activeIndex}
+              onSelect={handleSelect}
+              prevIcon={
+                <span
+                  className="carousel-control-prev-icon"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                  }}
+                />
+              }
+              nextIcon={
+                <span
+                  className="carousel-control-next-icon"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                  }}
+                />
+              }
+            >
+              {images.map((image, index) => (
+                <Carousel.Item key={index}>
+                  <img
+                    src={image}
+                    alt={`Product ${index + 1}`}
+                    className="d-block w-100"
+                    style={{ maxHeight: "500px", objectFit: "contain" }}
+                  />
+                </Carousel.Item>
+              ))}
+            </Carousel>
+            <div className="d-flex justify-content-center mt-3">
+              {images.map((_, index) => (
+                <span
+                  key={index}
+                  onClick={() => handleDotClick(index)}
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    backgroundColor: index === activeIndex ? "#007bff" : "#ccc",
+                    margin: "0 5px",
+                    cursor: "pointer",
+                    display: "inline-block",
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p>No images available.</p>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
 
 const UniversalStockRequestCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
-  const [rowStoreOptions, setRowStoreOptions] = useState({}); // Store options per row
+  const [rowStoreOptions, setRowStoreOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [pagination, setPagination] = useState({
@@ -22,9 +110,11 @@ const UniversalStockRequestCom = () => {
     hasPrevPage: false,
     hasNextPage: false,
   });
-  const itemsPerPage = 5;
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
+  const baseImageUrl = "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
 
   const formik = useFormik({
     initialValues: {
@@ -39,7 +129,6 @@ const UniversalStockRequestCom = () => {
     }),
     onSubmit: (values) => {
       fetchAuditData(values);
-      
     },
   });
 
@@ -71,103 +160,86 @@ const UniversalStockRequestCom = () => {
     }
   }, [storeData]);
 
+  const fetchAuditData = async (values, isInitial = false, newPage) => {
+    const storeId = values?.stores?.value ? [values.stores.value] : user?.stores || [];
+    setLoading(true);
 
- 
-const fetchAuditData = async (values, isInitial = false, newPage) => {
-  const storeId = values?.stores?.value ? [values.stores.value] : user?.stores || [];
-  setLoading(true);
+    try {
+      const response = await purchaseService.getUniversalStock(
+        values.dateFrom,
+        values.dateTo,
+        storeId,
+        newPage || pagination.page,
+        pagination.limit
+      );
 
-  try {
-    const response = await purchaseService.getUniversalStock(
-      values.dateFrom,
-      values.dateTo,
-      storeId,
-      isInitial ? 1 : newPage || 1,
-      pagination.limit
-    );
+      if (response.success) {
+        const container = response.data.data;
+        const mappedData = container.docs.map((item) => ({
+          ordNo: item._id,
+          date: item.createdAt,
+          store: item.store.name,
+          category: item.product.__t,
+          sku: item.product.sku,
+          qty: item.qty || 1,
+          paymentStatus: item.paymentStatus,
+          orderStatus: item.orderStatus,
+          image: item.product.photos[0],
+          photos: item.product.photos, // Store all photos
+          productId: item.product._id,
+        }));
 
-    if (response.success) {
-      const container = response.data.data;
-      const mappedData = container.docs.map((item) => ({
-        ordNo: item._id,
-        date: item.createdAt,
-        store: item.store.name,
-        category: item.product.__t,
-        sku: item.product.sku,
-        qty: item.qty || 1,
-        paymentStatus: item.paymentStatus,
-        orderStatus: item.orderStatus,
-        image: item.product.photos[0],
-        productId: item.product._id,
-      }));
-
-      setAuditData(mappedData);
-
-      // ✅ Removed the API call for each product here
-
-      setPagination({
-        page: container.page,
-        limit: container.limit,
-        totalDocs: container.totalDocs,
-        totalPages: container.totalPages,
-        hasPrevPage: container.hasPrevPage,
-        hasNextPage: container.hasNextPage,
-      });
-    } else {
-      toast.error(response.message || "Failed to fetch purchase data");
+        setAuditData(mappedData);
+        setPagination({
+          page: container.page,
+          limit: container.limit,
+          totalDocs: container.totalDocs,
+          totalPages: container.totalPages,
+          hasPrevPage: container.hasPrevPage,
+          hasNextPage: container.hasNextPage,
+        });
+      } else {
+        toast.error(response.message || "Failed to fetch purchase data");
+      }
+    } catch (error) {
+      console.error("Error fetching purchase data:", error);
+      toast.error("Failed to fetch purchase data");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching purchase data:", error);
-    toast.error("Failed to fetch purchase data");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  const fetchStoresForProduct = async (productId, ordNo) => {
+    if (rowStoreOptions[ordNo]) return;
 
-const fetchStoresForProduct = async (productId, ordNo) => {
+    try {
+      const response = await inventoryService.getStoresForUniverlStock({ productId });
+      const storesData = response?.data?.data || [];
 
-  // Prevent refetching if already loaded
-  if (rowStoreOptions[ordNo]) return;
+      if (response?.data?.success && Array.isArray(storesData)) {
+        const storeOptions = storesData.map((item) => ({
+          value: item.store?._id,
+          label: item.store?.name,
+          availableQuantity: item.availableQuantity ?? 0,
+        }));
 
-  try {
-    const response = await inventoryService.getStoresForUniverlStock({ productId });
-
-    // ✅ Correct nested data extraction
-    const storesData = response?.data?.data || [];
-
-    if (response?.data?.success && Array.isArray(storesData)) {
-      // ✅ Convert store data to react-select format
-      const storeOptions = storesData.map((item) => ({
-        value: item.store?._id,
-        label: item.store?.name,
-        availableQuantity: item.availableQuantity ?? 0,
-      }));
-
-      // ✅ Update only that row’s dropdown options
-   setRowStoreOptions((prev) => ({
-        ...prev,
-        [ordNo]: storeOptions,
-      }));
-console.log(storeOptions,"this is all row");
-
-    } else {
-      toast.error(response?.data?.message || "Failed to fetch stores for product");
+        setRowStoreOptions((prev) => ({
+          ...prev,
+          [ordNo]: storeOptions,
+        }));
+      } else {
+        toast.error(response?.data?.message || "Failed to fetch stores for product");
+      }
+    } catch (error) {
+      console.error(`Error fetching stores for productId ${productId}:`, error);
+      toast.error("Failed to fetch stores for product");
     }
-  } catch (error) {
-    console.error(`❌ Error fetching stores for productId ${productId}:`, error);
-    toast.error("Failed to fetch stores for product");
-  }
-};
-
-
+  };
 
   const handleDownload = (data) => {
     const csv = [
       "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${
-        data.category
-      },${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
+      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -179,23 +251,23 @@ console.log(storeOptions,"this is all row");
     document.body.removeChild(link);
   };
 
+  const handleViewMoreImages = (photos) => {
+    const fullImageUrls = photos.map((photo) => `${baseImageUrl}${photo}`);
+    setSelectedImages(fullImageUrls);
+    setShowImageModal(true);
+  };
+
   const storeOptions = storeData.map((store) => ({
     value: store._id,
     label: store.name,
   }));
 
-  const paginatedData = auditData.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
-
   const handlePageClick = (event) => {
+    const newPage = event.selected + 1;
     setCurrentPage(event.selected);
-    fetchAuditData(formik.values, false, event.selected + 1);
+    fetchAuditData(formik.values, false, newPage);
   };
 
-//    console.log(`Fetching stores for productId: ${productId}, ordNo: ${ordNo}`);
-// console.log("API response:", response);
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">Universal Stock Request View</h4>
@@ -274,10 +346,12 @@ console.log(storeOptions,"this is all row");
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((item, index) => (
+                {auditData.length > 0 ? (
+                  auditData.map((item, index) => (
                     <tr key={index} className="align-middle">
-                      <td className="py-3">{item.ordNo}</td>
+                   <td className="py-3">
+                        {index + 1 + (pagination.page - 1) * pagination.limit}
+                      </td>
                       <td className="py-3">
                         {moment(item.date).format("D-M-YYYY")}
                       </td>
@@ -286,47 +360,61 @@ console.log(storeOptions,"this is all row");
                       <td className="py-3">{item.sku}</td>
                       <td className="py-3">{item.qty}</td>
                       <td className="py-3">
-                        <button
-                          className="btn btn-outline-info btn-sm"
-                          onClick={() => alert(`Viewing image: ${item.image}`)}
-                        >
-                          📷
-                        </button>
+                        {item.image ? (
+                          <>
+                            <img
+                              src={`${baseImageUrl}${item.image}`}
+                              alt="Product"
+                              className="img-fluid rounded"
+                              style={{ width: "50px", height: "50px" }}
+                            />
+                            <div>
+                              <a
+                                href="#"
+                                className="text-primary text-decoration-underline"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleViewMoreImages(item.photos);
+                                }}
+                              >
+                                View More
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <span>-</span>
+                        )}
                       </td>
                       <td className="py-3">
                         <span
-                          className={`badge ${
-                            item.paymentStatus === "Success"
-                              ? "bg-success"
-                              : "bg-danger"
+                          className={`badge ${item.paymentStatus === "Success"
+                            ? "bg-success"
+                            : "bg-danger"
                           }`}
                         >
                           {item.paymentStatus}
                         </span>
                       </td>
-<td className="py-3">
-  <Select
-    options={rowStoreOptions[item.ordNo] || []}
-    onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
-    classNamePrefix="react-select"
-    className="w-100"
-    // isLoading={!rowStoreOptions[item.ordNo]} 
-    placeholder={
-      rowStoreOptions[item.ordNo]
-        ? "Select store..."
-        : "show available stores..."
-    }
-    getOptionLabel={(option) => `${option.label} (Qty: ${option.availableQuantity})`}
-  />
-</td>
-
-
+                      <td className="py-3">
+                        <Select
+                          options={rowStoreOptions[item.ordNo] || []}
+                          onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
+                          classNamePrefix="react-select"
+                          className="w-100"
+                          placeholder={
+                            rowStoreOptions[item.ordNo]
+                              ? "Select store..."
+                              : "Show available stores..."
+                          }
+                          getOptionLabel={(option) => `${option.label} (Qty: ${option.availableQuantity})`}
+                        />
+                      </td>
                       <td className="py-3">
                         {item.orderStatus === "View photo" ? (
                           <button
                             className="btn btn-outline-primary btn-sm"
                             onClick={() =>
-                              alert(`Viewing photo for ${item.sku} on ${item.date}`)
+                              handleViewMoreImages(item.photos)
                             }
                           >
                             View photo
@@ -370,20 +458,21 @@ console.log(storeOptions,"this is all row");
             </table>
             <div className="d-flex justify-content-center mt-4">
               <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
+                previousLabel={"← Previous"}
+                nextLabel={"Next →"}
                 breakLabel={"..."}
                 pageCount={pagination.totalPages}
+                forcePage={pagination.page - 1}
                 marginPagesDisplayed={2}
                 pageRangeDisplayed={3}
                 onPageChange={handlePageClick}
-                containerClassName={"pagination"}
+                containerClassName={"pagination mb-2"}
                 activeClassName={"active"}
                 pageClassName={"page-item"}
                 pageLinkClassName={"page-link"}
-                previousClassName={"page-item"}
+                previousClassName={`page-item ${!pagination.hasPrevPage ? "disabled" : ""}`}
                 previousLinkClassName={"page-link"}
-                nextClassName={"page-item"}
+                nextClassName={`page-item ${!pagination.hasNextPage ? "disabled" : ""}`}
                 nextLinkClassName={"page-link"}
                 breakClassName={"page-item"}
                 breakLinkClassName={"page-link"}
@@ -392,6 +481,11 @@ console.log(storeOptions,"this is all row");
           </>
         )}
       </div>
+      <ImageSliderModal
+        show={showImageModal}
+        onHide={() => setShowImageModal(false)}
+        images={selectedImages}
+      />
     </div>
   );
 };
