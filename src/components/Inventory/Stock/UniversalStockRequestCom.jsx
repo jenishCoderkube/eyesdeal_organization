@@ -6,12 +6,22 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
+import { purchaseService } from "../../../services/purchaseService";
 
 const UniversalStockRequestCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
+  const [rowStoreOptions, setRowStoreOptions] = useState({}); // Store options per row
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
   const itemsPerPage = 5;
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
@@ -29,7 +39,7 @@ const UniversalStockRequestCom = () => {
     }),
     onSubmit: (values) => {
       fetchAuditData(values);
-      setCurrentPage(0);
+      
     },
   });
 
@@ -47,17 +57,9 @@ const UniversalStockRequestCom = () => {
       }
     } catch (error) {
       console.error("Error fetching stores:", error);
+      toast.error("Failed to fetch stores");
     }
   };
-
-  // useEffect(() => {
-  //   // Mock stores
-  //   const mockStores = [
-  //     { _id: "1", name: "Bhatar" },
-  //     { _id: "2", name: "Navsari" },
-  //   ];
-  //   setStoreData(mockStores);
-  // }, []);
 
   useEffect(() => {
     if (storeData.length > 0) {
@@ -69,192 +71,109 @@ const UniversalStockRequestCom = () => {
     }
   }, [storeData]);
 
-  const fetchAuditData = async (values, isFirstTime = false) => {
-    setLoading(true);
 
-    try {
-      // Mock data with dates in September 2025 to match default form values
-      const mockAuditData = [
-        {
-          ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
-        },
-        {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
-        },
-        {
-          ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
-        },
-        {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
-        },
-      ];
+ 
+const fetchAuditData = async (values, isInitial = false, newPage) => {
+  const storeId = values?.stores?.value ? [values.stores.value] : user?.stores || [];
+  setLoading(true);
 
-      // Filter data based on form values
-      let filteredData = mockAuditData;
-      if (values.stores || values.dateFrom || values.dateTo) {
-        filteredData = mockAuditData.filter((item) => {
-          const itemDate = moment(item.date);
-          const dateFrom = moment(values.dateFrom);
-          const dateTo = moment(values.dateTo);
-          return (
-            (!values.stores || item.store === values.stores.label) &&
-            itemDate.isBetween(dateFrom, dateTo, undefined, "[]")
-          );
-        });
-      }
+  try {
+    const response = await purchaseService.getUniversalStock(
+      values.dateFrom,
+      values.dateTo,
+      storeId,
+      isInitial ? 1 : newPage || 1,
+      pagination.limit
+    );
 
-      // If no data after filtering, fallback to all mock data on first load
-      if (filteredData.length === 0 && isFirstTime) {
-        filteredData = mockAuditData;
-      }
+    if (response.success) {
+      const container = response.data.data;
+      const mappedData = container.docs.map((item) => ({
+        ordNo: item._id,
+        date: item.createdAt,
+        store: item.store.name,
+        category: item.product.__t,
+        sku: item.product.sku,
+        qty: item.qty || 1,
+        paymentStatus: item.paymentStatus,
+        orderStatus: item.orderStatus,
+        image: item.product.photos[0],
+        productId: item.product._id,
+      }));
 
-      setAuditData(filteredData);
-    } catch (error) {
-      console.error("Error fetching audit data:", error);
-      toast.error("Failed to fetch data");
-    } finally {
-      setLoading(false);
+      setAuditData(mappedData);
+
+      // ✅ Removed the API call for each product here
+
+      setPagination({
+        page: container.page,
+        limit: container.limit,
+        totalDocs: container.totalDocs,
+        totalPages: container.totalPages,
+        hasPrevPage: container.hasPrevPage,
+        hasNextPage: container.hasNextPage,
+      });
+    } else {
+      toast.error(response.message || "Failed to fetch purchase data");
     }
-  };
+  } catch (error) {
+    console.error("Error fetching purchase data:", error);
+    toast.error("Failed to fetch purchase data");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const fetchStoresForProduct = async (productId, ordNo) => {
+
+  // Prevent refetching if already loaded
+  if (rowStoreOptions[ordNo]) return;
+
+  try {
+    const response = await inventoryService.getStoresForUniverlStock({ productId });
+
+    // ✅ Correct nested data extraction
+    const storesData = response?.data?.data || [];
+
+    if (response?.data?.success && Array.isArray(storesData)) {
+      // ✅ Convert store data to react-select format
+      const storeOptions = storesData.map((item) => ({
+        value: item.store?._id,
+        label: item.store?.name,
+        availableQuantity: item.availableQuantity ?? 0,
+      }));
+
+      // ✅ Update only that row’s dropdown options
+   setRowStoreOptions((prev) => ({
+        ...prev,
+        [ordNo]: storeOptions,
+      }));
+console.log(storeOptions,"this is all row");
+
+    } else {
+      toast.error(response?.data?.message || "Failed to fetch stores for product");
+    }
+  } catch (error) {
+    console.error(`❌ Error fetching stores for productId ${productId}:`, error);
+    toast.error("Failed to fetch stores for product");
+  }
+};
+
+
 
   const handleDownload = (data) => {
     const csv = [
       "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${data.date},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
+      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${
+        data.category
+      },${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `stock_audit_${data.date}.csv`);
+    link.setAttribute("download", `stock_audit_${moment(data.date).format("D-M-YYYY")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -272,8 +191,11 @@ const UniversalStockRequestCom = () => {
 
   const handlePageClick = (event) => {
     setCurrentPage(event.selected);
+    fetchAuditData(formik.values, false, event.selected + 1);
   };
 
+//    console.log(`Fetching stores for productId: ${productId}, ordNo: ${ordNo}`);
+// console.log("API response:", response);
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">Universal Stock Request View</h4>
@@ -366,11 +288,7 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">
                         <button
                           className="btn btn-outline-info btn-sm"
-                          onClick={() =>
-                            alert(
-                              `Viewing image for ${item.sku} on ${item.date}`
-                            )
-                          }
+                          onClick={() => alert(`Viewing image: ${item.image}`)}
                         >
                           📷
                         </button>
@@ -386,24 +304,29 @@ const UniversalStockRequestCom = () => {
                           {item.paymentStatus}
                         </span>
                       </td>
-                      <td className="py-3">
-                        <Select
-                          options={storeOptions}
-                          defaultValue={storeOptions.find(
-                            (option) => option.label === item.store
-                          )}
-                          classNamePrefix="react-select"
-                          className="w-100"
-                        />
-                      </td>
+<td className="py-3">
+  <Select
+    options={rowStoreOptions[item.ordNo] || []}
+    onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
+    classNamePrefix="react-select"
+    className="w-100"
+    // isLoading={!rowStoreOptions[item.ordNo]} 
+    placeholder={
+      rowStoreOptions[item.ordNo]
+        ? "Select store..."
+        : "show available stores..."
+    }
+    getOptionLabel={(option) => `${option.label} (Qty: ${option.availableQuantity})`}
+  />
+</td>
+
+
                       <td className="py-3">
                         {item.orderStatus === "View photo" ? (
                           <button
                             className="btn btn-outline-primary btn-sm"
                             onClick={() =>
-                              alert(
-                                `Viewing photo for ${item.sku} on ${item.date}`
-                              )
+                              alert(`Viewing photo for ${item.sku} on ${item.date}`)
                             }
                           >
                             View photo
@@ -419,7 +342,9 @@ const UniversalStockRequestCom = () => {
                           className="btn btn-outline-primary btn-sm me-2"
                           onClick={() =>
                             alert(
-                              `Viewing details for ${item.category} on ${item.date}`
+                              `Viewing details for ${item.category} on ${moment(
+                                item.date
+                              ).format("D-M-YYYY")}`
                             )
                           }
                         >
@@ -448,7 +373,7 @@ const UniversalStockRequestCom = () => {
                 previousLabel={"Previous"}
                 nextLabel={"Next"}
                 breakLabel={"..."}
-                pageCount={Math.ceil(auditData.length / itemsPerPage)}
+                pageCount={pagination.totalPages}
                 marginPagesDisplayed={2}
                 pageRangeDisplayed={3}
                 onPageChange={handlePageClick}
