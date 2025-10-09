@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import Select from "react-select";
 import { toast } from "react-toastify";
 import moment from "moment";
-import { purchaseService } from "../../services/purchaseService"; // Adjust the path to your service file
+import { purchaseService } from "../../services/purchaseService";
 import { inventoryService } from "../../services/inventoryService";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
@@ -12,16 +12,17 @@ import Carousel from "react-bootstrap/Carousel";
 import Form from "react-bootstrap/Form";
 import { defalutImageBasePath } from "../../utils/constants";
 import EditPaymentStatusModal from "./EditPaymentStatusModal";
+import PurchaseEdModal from "./PurchaseEdModal";
 
 const PurchaseOrderViewCom = () => {
-  const [storeData, setStoreData] = useState([]);
+  const [organizationData, setOrganizationData] = useState([]);
   const [purchaseData, setPurchaseData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,
     totalDocs: 0,
-    totalPages: 0,
+    totalPages: 1,
     hasPrevPage: false,
     hasNextPage: false,
   });
@@ -33,7 +34,6 @@ const PurchaseOrderViewCom = () => {
   const [deleteItemId, setDeleteItemId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentItem, setSelectedPaymentItem] = useState(null);
-  const [organizationData, setOrganizationData] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -44,21 +44,25 @@ const PurchaseOrderViewCom = () => {
 
   const formik = useFormik({
     initialValues: {
-      organizations: [], // <-- add this
+      organizations: [],
       dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
       organizations: Yup.array().nullable(),
       dateFrom: Yup.date().required("Start date is required"),
-      dateTo: Yup.date().required("End date is required"),
+      dateTo: Yup.date()
+        .required("End date is required")
+        .min(
+          Yup.ref("dateFrom"),
+          "End date must be later than or equal to start date"
+        ),
     }),
     onSubmit: (values) => {
       fetchPurchaseData(values);
     },
   });
 
-  // fetch organizations instead of stores
   const fetchOrganizations = async () => {
     try {
       const response = await inventoryService.getOrganization(1, 20);
@@ -77,32 +81,31 @@ const PurchaseOrderViewCom = () => {
     value: org._id,
     label: org.companyName,
   }));
+
   useEffect(() => {
     const init = async () => {
-      fetchOrganizations(); // fetch orgs first
-      fetchPurchaseData(formik.values, true); // initial fetch
+      await fetchOrganizations();
+      fetchPurchaseData(formik.values, true);
     };
     init();
   }, []);
-  const fetchPurchaseData = async (values, isInitial = false, newPage) => {
-    const orgIds = values?.organizations?.map((o) => o.value) || [];
-    console.log("orgIds", orgIds);
 
+  const fetchPurchaseData = async (values, isInitial = false, newPage = 1) => {
+    const orgIds = values?.organizations?.map((o) => o.value) || [];
     setLoading(true);
 
     try {
       const response = await purchaseService.getPurchaseOrders(
-        values.dateFrom, // invoiceDateGte
-        values.dateTo, // invoiceDateLte
-        orgIds ? orgIds : [], // storeIds as array
-
-        isInitial ? 1 : newPage, // page
-        pagination.limit // rowsPerPage
+        values.dateFrom,
+        values.dateTo,
+        orgIds,
+        isInitial ? 1 : newPage,
+        pagination.limit
       );
 
       if (response.success) {
-        const container = response.data.data;
-        setPurchaseData(container.docs);
+        const container = response.data?.data;
+        setPurchaseData(container.docs || []);
 
         setPagination({
           page: container.page,
@@ -124,15 +127,28 @@ const PurchaseOrderViewCom = () => {
   };
 
   const handleDownload = (data) => {
-    const csv = [
-      "SRNO,Model Number,Date,Store,Quantity,Payment Status",
-      `${data.srno},${data?.modelNumber},${data.date},${data.store},${data.quantity},${data.paymentStatus}`,
-    ].join("\n");
+    const csvRows = [
+      "SRNO,Purchase Order ID,Date,Store,Products,Total Quantity,Payment Status",
+      ...data.items.map((item, index) => {
+        const totalQuantity = data.items.reduce(
+          (sum, i) => sum + i.quantity,
+          0
+        );
+        return `${index + 1 + (pagination.page - 1) * pagination.limit},${
+          data._id
+        },${moment(data.createdAt).format("YYYY-MM-DD")},${
+          data.store?.name || "N/A"
+        },"${item.product?.displayName || "N/A"} (${
+          item.quantity
+        })",${totalQuantity},${data.paymentStatus}`;
+      }),
+    ];
+    const csv = csvRows.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `purchase_order_${data.date}.csv`);
+    link.setAttribute("download", `purchase_order_${data._id}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -142,18 +158,15 @@ const PurchaseOrderViewCom = () => {
     if (!selectedItem) return;
 
     const payload = {
-      _id: selectedItem._id, // purchase order ID
-      quantity: editedQuantity, // new quantity
+      _id: selectedItem._id,
+      quantity: Number(editedQuantity),
     };
 
     try {
-      // Call the PATCH API
-      const response = await purchaseService.updatePurchaseOrder(payload); // you need this service function
-
+      const response = await purchaseService.updatePurchaseOrder(payload);
       if (response.success) {
         toast.success("Quantity updated successfully");
         setShowEditModal(false);
-        // Refresh purchase orders
         fetchPurchaseData(formik.values, false, pagination.page);
       } else {
         toast.error(response.message || "Failed to update quantity");
@@ -165,15 +178,16 @@ const PurchaseOrderViewCom = () => {
   };
 
   const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > pagination.totalPages) return;
     setPagination((prev) => ({ ...prev, page: newPage }));
     fetchPurchaseData(formik.values, false, newPage);
   };
+
   const handleDeletePurchaseOrder = async () => {
     if (!deleteItemId) return;
 
     try {
       const response = await purchaseService.deletePurchaseOrder(deleteItemId);
-
       if (response.success) {
         toast.success("Purchase order deleted successfully");
         fetchPurchaseData(formik.values, false, pagination.page);
@@ -188,50 +202,48 @@ const PurchaseOrderViewCom = () => {
       setDeleteItemId(null);
     }
   };
+
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
       case "pending":
-        return "badge bg-warning text-dark"; // yellow
+        return "badge bg-warning text-dark";
       case "success":
-        return "badge bg-success"; // green
+        return "badge bg-success";
       case "rejected":
-        return "badge bg-danger"; // red
+        return "badge bg-danger";
       default:
-        return "badge bg-secondary"; // grey for unknown
+        return "badge bg-secondary";
     }
   };
 
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">View Purchase Orders</h4>
-      <form
+      <Form
         onSubmit={formik.handleSubmit}
         className="row row-cols-1 row-cols-md-4 g-3 align-items-end"
       >
         <div className="col">
-          <label className="form-label fw-medium">Organization</label>
+          <Form.Label className="form-label fw-medium">Organization</Form.Label>
           <Select
-            isMulti={true}
+            isMulti
             options={organizationOptions}
-            value={formik.values.organizations} // <-- use organizations
+            value={formik.values.organizations}
             onChange={(selected) =>
               formik.setFieldValue("organizations", selected)
-            } // <-- update organizations
+            }
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
           />
-
-          {formik.touched.stores && formik.errors.stores && (
-            <div className="text-danger">{formik.errors.stores}</div>
+          {formik.touched.organizations && formik.errors.organizations && (
+            <div className="text-danger">{formik.errors.organizations}</div>
           )}
         </div>
-
         <div className="col">
-          <label className="form-label fw-medium">Date From</label>
-          <input
+          <Form.Label className="form-label fw-medium">Date From</Form.Label>
+          <Form.Control
             type="date"
-            className="form-control"
             value={formik.values.dateFrom}
             onChange={(e) => formik.setFieldValue("dateFrom", e.target.value)}
           />
@@ -240,10 +252,9 @@ const PurchaseOrderViewCom = () => {
           )}
         </div>
         <div className="col">
-          <label className="form-label fw-medium">Date To</label>
-          <input
+          <Form.Label className="form-label fw-medium">Date To</Form.Label>
+          <Form.Control
             type="date"
-            className="form-control"
             value={formik.values.dateTo}
             onChange={(e) => formik.setFieldValue("dateTo", e.target.value)}
           />
@@ -252,11 +263,11 @@ const PurchaseOrderViewCom = () => {
           )}
         </div>
         <div className="col">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+          <Button type="submit" variant="primary" disabled={loading}>
             {loading ? "Submitting..." : "Submit"}
-          </button>
+          </Button>
         </div>
-      </form>
+      </Form>
 
       <div className="table-responsive mt-3">
         {loading ? (
@@ -269,7 +280,7 @@ const PurchaseOrderViewCom = () => {
                   <th className="py-3">SRNO</th>
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
-                  <th className="py-3">Qty</th>
+                  <th className="py-3">Total Qty</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Actions</th>
                   <th className="py-3">Download</th>
@@ -277,84 +288,82 @@ const PurchaseOrderViewCom = () => {
               </thead>
               <tbody>
                 {purchaseData.length > 0 ? (
-                  purchaseData.map((item, index) => (
-                    <tr key={item._id} className="align-middle">
-                      <td className="py-3">
-                        {index + 1 + (pagination.page - 1) * pagination.limit}
-                      </td>
-                      <td className="py-3">
-                        {moment(item.createdAt).format("YYYY-MM-DD")}
-                      </td>
-                      <td className="py-3">{item.store?.name || "N/A"}</td>
-                      <td className="py-3">{item.quantity}</td>
-                      <td className="py-3">
-                        <span
-                          className={getStatusBadge(item.paymentStatus)}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            setSelectedPaymentItem(item); // store selected item
-                            setShowPaymentModal(true); // open modal
-                          }}
-                        >
-                          {item.paymentStatus
-                            ? item.paymentStatus.charAt(0).toUpperCase() +
-                              item.paymentStatus.slice(1).toLowerCase()
-                            : "Pending"}
-                        </span>
-                      </td>
-
-                      <td className="py-3">
-                        <button
-                          className="btn btn-outline-primary btn-sm me-1"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setShowViewModal(true);
-                          }}
-                        >
-                          View
-                        </button>
-                        <button
-                          className="btn btn-outline-warning btn-sm me-1"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setShowEditModal(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => {
-                            setDeleteItemId(item._id); // store ID to delete
-                            setShowDeleteModal(true); // open modal
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                      <td className="py-3">
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() =>
-                            handleDownload({
-                              srno:
-                                index +
-                                1 +
-                                (pagination.page - 1) * pagination.limit,
-                              modelNumber: item?.product?.modelNumber,
-                              date: item.createdAt,
-                              store: item.store?.name || "N/A",
-                              quantity: item.quantity,
-                              paymentStatus: item.paymentStatus,
-                            })
-                          }
-                        >
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  purchaseData.map((item, index) => {
+                    const totalQuantity = item.items.reduce(
+                      (sum, i) => sum + i.quantity,
+                      0
+                    );
+                    return (
+                      <tr key={item._id} className="align-middle">
+                        <td className="py-3">
+                          {index + 1 + (pagination.page - 1) * pagination.limit}
+                        </td>
+                        <td className="py-3">
+                          {moment(item.createdAt).format("YYYY-MM-DD")}
+                        </td>
+                        <td className="py-3">{item.store?.name || "N/A"}</td>
+                        <td className="py-3">{totalQuantity}</td>
+                        <td className="py-3">
+                          <span
+                            className={getStatusBadge(item.paymentStatus)}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => {
+                              setSelectedPaymentItem(item);
+                              setShowPaymentModal(true);
+                            }}
+                          >
+                            {item.paymentStatus
+                              ? item.paymentStatus.charAt(0).toUpperCase() +
+                                item.paymentStatus.slice(1).toLowerCase()
+                              : "Pending"}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="me-1"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setShowViewModal(true);
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            className="me-1"
+                            onClick={() => {
+                              setSelectedItem(item.items[0]);
+                              setShowEditModal(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => {
+                              setDeleteItemId(item._id);
+                              setShowDeleteModal(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                        <td className="py-3">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleDownload(item)}
+                          >
+                            Download
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="7" className="text-center py-5">
@@ -375,166 +384,37 @@ const PurchaseOrderViewCom = () => {
                 of {pagination.totalDocs} results
               </div>
               <div className="btn-group">
-                <button
-                  className="btn btn-outline-primary"
+                <Button
+                  variant="outline-primary"
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={!pagination.hasPrevPage || loading}
                 >
                   Previous
-                </button>
-                <button
-                  className="btn btn-outline-primary"
+                </Button>
+                <Button
+                  variant="outline-primary"
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={!pagination.hasNextPage || loading}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </>
         )}
       </div>
+
       <EditPaymentStatusModal
         show={showPaymentModal}
         onHide={() => setShowPaymentModal(false)}
         purchaseItem={selectedPaymentItem}
-        // onUpdate={async (newStatus) => {
-        //   try {
-        //     const payload = {
-        //       _id: selectedPaymentItem._id,
-        //       paymentStatus: newStatus,
-        //     };
-        //     const response = await purchaseService.updatePurchaseOrder(payload);
-        //     if (response.success) {
-        //       toast.success("Payment status updated successfully");
-        //       fetchPurchaseData(formik.values, false, pagination.page);
-        //     } else {
-        //       toast.error(response.message || "Failed to update status");
-        //     }
-        //   } catch (error) {
-        //     console.error("Error updating status:", error);
-        //     toast.error("Error updating status");
-        //   } finally {
-        //     setShowPaymentModal(false);
-        //     setSelectedPaymentItem(null);
-        //   }
-        // }}
       />
-
-      <Modal
+      <PurchaseEdModal
         show={showViewModal}
         onHide={() => setShowViewModal(false)}
-        size="xl"
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Purchase Order Details</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedItem && (
-            <div className="container">
-              {/* Top Row - Image (left) + Product Details (right) */}
-              <div className="row mb-4">
-                <div className="col-md-5">
-                  {selectedItem.product?.photos &&
-                  selectedItem.product?.photos?.length > 0 ? (
-                    <Carousel interval={null}>
-                      {selectedItem.product?.photos?.map((photo, idx) => (
-                        <Carousel.Item key={idx}>
-                          <img
-                            className="d-block w-100 rounded shadow-sm"
-                            src={defalutImageBasePath + photo}
-                            alt={`Product ${idx + 1}`}
-                            style={{ maxHeight: "300px", objectFit: "contain" }}
-                          />
-                        </Carousel.Item>
-                      ))}
-                    </Carousel>
-                  ) : (
-                    <div className="d-flex  justify-content-center align-items-center h-100 ">
-                      No Image Found
-                    </div>
-                  )}
-                </div>
-
-                <div className="col-md-7">
-                  <h5 className="text-primary">Product Details</h5>
-                  <p>
-                    <strong>Display Name:</strong>{" "}
-                    {selectedItem.product?.displayName}
-                  </p>
-                  <p>
-                    <strong>Model Number:</strong>{" "}
-                    {selectedItem.product?.modelNumber}
-                  </p>
-                  <p>
-                    <strong>Color Number:</strong>{" "}
-                    {selectedItem.product?.colorNumber}
-                  </p>
-
-                  <p>
-                    <strong>Frame Size:</strong>{" "}
-                    {selectedItem.product?.frameSize}
-                  </p>
-                  <p>
-                    <strong>MRP:</strong> ₹{selectedItem.product?.MRP}
-                  </p>
-                </div>
-              </div>
-
-              {/* Bottom Row - Store + Order Details */}
-              <div className="row">
-                <div className="col-md-6">
-                  <h5 className="text-success">Store Details</h5>
-                  <p>
-                    <strong>Name:</strong> {selectedItem.store?.name}
-                  </p>
-                  <p>
-                    <strong>Company:</strong> {selectedItem.store?.companyName}
-                  </p>
-                  <p>
-                    <strong>Address:</strong> {selectedItem.store?.address},{" "}
-                    {selectedItem.store.city}, {selectedItem.store?.state},{" "}
-                    {selectedItem.store.country} - {selectedItem.store?.pincode}
-                  </p>
-                </div>
-
-                <div className="col-md-6">
-                  <h5 className="text-warning">Order Details</h5>
-                  <p>
-                    <strong>Quantity:</strong> {selectedItem?.quantity}
-                  </p>
-                  <p>
-                    <strong>Payment Status:</strong>{" "}
-                    {selectedItem?.paymentStatus}
-                  </p>
-                  <p>
-                    <strong>Created:</strong>{" "}
-                    {moment(selectedItem?.createdAt).format(
-                      "YYYY-MM-DD HH:mm:ss"
-                    )}
-                  </p>
-                  <p>
-                    <strong>Updated:</strong>{" "}
-                    {moment(selectedItem?.updatedAt).format(
-                      "YYYY-MM-DD HH:mm:ss"
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowViewModal(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Edit Modal */}
+        purchase={selectedItem}
+      />
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-        {console.log("selectedItem", selectedItem)}
         <Modal.Header closeButton>
           <Modal.Title>Edit Quantity</Modal.Title>
         </Modal.Header>
@@ -543,7 +423,7 @@ const PurchaseOrderViewCom = () => {
             <Form.Control
               type="text"
               disabled
-              value={selectedItem?.product?._id}
+              value={selectedItem?.product?._id || ""}
             />
             <Form.Label className="mt-3">Quantity</Form.Label>
             <Form.Control
@@ -552,23 +432,20 @@ const PurchaseOrderViewCom = () => {
               autoFocus
               onChange={(e) => {
                 const val = e.target.value;
-                // Allow empty while typing, otherwise clamp between 1 and 5000
                 if (val === "") {
                   setEditedQuantity("");
                 } else {
                   let num = Number(val);
-                  if (num > 5000) num = 5000; // enforce max
+                  if (num > 5000) num = 5000;
                   setEditedQuantity(num);
                 }
               }}
               onBlur={() => {
-                // If empty or <1, reset to 1
                 if (!editedQuantity || editedQuantity < 1) {
                   setEditedQuantity(1);
                 }
               }}
             />
-            {/* Optional inline error */}
             {editedQuantity !== "" &&
               (editedQuantity < 1 || editedQuantity > 5000) && (
                 <small className="text-danger">

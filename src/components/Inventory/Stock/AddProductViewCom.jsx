@@ -222,7 +222,7 @@ const ProductPurchase = () => {
       const payload = {
         store: userData.stores[0],
         user: userData._id,
-        products: productsWithQuantities, // Array of { product: id, quantity }
+        items: productsWithQuantities, // Array of { product: id, quantity }
       };
 
       const response = await productViewService.addToCartProductPurchase(

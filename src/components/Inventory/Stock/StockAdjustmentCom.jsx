@@ -391,7 +391,7 @@ const StockAdjustmentCom = () => {
                   </table>
                 </div>
 
-                <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
+                {/* <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
                   <div className="text-sm text-muted mb-3 mb-sm-0">
                     Showing{" "}
                     <span className="fw-medium">{products?.length}</span> to{" "}
@@ -407,7 +407,7 @@ const StockAdjustmentCom = () => {
                       Next
                     </button>
                   </div>
-                </div>
+                </div> */}
               </div>
               <div className="col-12">
                 <button type="submit" className="btn custom-button-bgcolor ">
