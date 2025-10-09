@@ -1,16 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { imageBaseUrl } from "../../../utils/api";
 
 const GlassesCard = ({
-  title = "I-GOG Frames",
-  price = "800 ₹",
+  title = "",
+  price = "",
   imageUrl = null,
   onClick,
   frame,
+  quantity: propQuantity = 0, // ✅ receive quantity as prop
   onQuantityChange,
 }) => {
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState(propQuantity);
+
+  // Sync local quantity state with prop when prop changes
+  useEffect(() => {
+    setQuantity(propQuantity || 0);
+  }, [propQuantity]);
 
   const handleQuantityChange = (newQty) => {
     if (newQty === "") {
@@ -37,11 +43,6 @@ const GlassesCard = ({
             alt={title}
             className="img-fluid rounded"
             style={{ maxHeight: "100%", objectFit: "contain" }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              const fallback = e.target.nextSibling;
-              if (fallback) fallback.style.display = "flex";
-            }}
           />
         ) : (
           <div className="d-flex justify-content-center align-items-center h-100 w-100 bg-light rounded">
@@ -72,16 +73,11 @@ const GlassesCard = ({
               max="5000"
               onChange={(e) => handleQuantityChange(e.target.value)}
               onBlur={() => {
-                // if left empty, reset to 0 when user leaves the field
-                if (quantity === "") {
-                  setQuantity(0);
-                  onQuantityChange?.(frame._id, 0);
-                }
+                if (quantity === "") handleQuantityChange(0);
               }}
               className="form-control form-control-sm text-center mx-1"
               style={{ width: "60px" }}
             />
-
             <button
               className="btn btn-outline-secondary btn-sm px-2 py-1"
               onClick={() => handleQuantityChange(quantity + 1)}

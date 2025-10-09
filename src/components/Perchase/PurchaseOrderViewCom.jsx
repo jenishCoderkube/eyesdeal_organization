@@ -33,7 +33,7 @@ const PurchaseOrderViewCom = () => {
   const [deleteItemId, setDeleteItemId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentItem, setSelectedPaymentItem] = useState(null);
-
+  const [organizationData, setOrganizationData] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -44,20 +44,12 @@ const PurchaseOrderViewCom = () => {
 
   const formik = useFormik({
     initialValues: {
-      stores: [],
+      organizations: [], // <-- add this
       dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
-      stores: Yup.array()
-        .of(
-          Yup.object().shape({
-            value: Yup.string().required(),
-            label: Yup.string().required(),
-          })
-        )
-        .nullable(),
-
+      organizations: Yup.array().nullable(),
       dateFrom: Yup.date().required("Start date is required"),
       dateTo: Yup.date().required("End date is required"),
     }),
@@ -66,44 +58,35 @@ const PurchaseOrderViewCom = () => {
     },
   });
 
-  useEffect(() => {
-    fetchStores();
-  }, []);
-
-  useEffect(() => {
-    const storedStoreId = user?.stores?.[0];
-    if (storedStoreId && storeData.length > 0) {
-      const defaultStore = storeData.find(
-        (store) => store._id === storedStoreId
-      );
-      if (defaultStore) {
-        formik.setFieldValue("stores", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
-        fetchPurchaseData(formik.values, true);
-      }
-    }
-  }, [storeData]);
-
-  const fetchStores = async () => {
+  // fetch organizations instead of stores
+  const fetchOrganizations = async () => {
     try {
-      const response = await inventoryService.getStores();
+      const response = await inventoryService.getOrganization(1, 20);
       if (response.success) {
-        setStoreData(response.data.data);
+        setOrganizationData(response.data.docs || []);
       } else {
-        toast.error(response.message || "Failed to fetch stores");
+        toast.error(response.message || "Failed to fetch organizations");
       }
     } catch (error) {
-      console.error("Error fetching stores:", error);
-      toast.error("Failed to fetch stores");
+      console.error("Error fetching organizations:", error);
+      toast.error("Failed to fetch organizations");
     }
   };
 
+  const organizationOptions = organizationData.map((org) => ({
+    value: org._id,
+    label: org.companyName,
+  }));
+  useEffect(() => {
+    const init = async () => {
+      fetchOrganizations(); // fetch orgs first
+      fetchPurchaseData(formik.values, true); // initial fetch
+    };
+    init();
+  }, []);
   const fetchPurchaseData = async (values, isInitial = false, newPage) => {
-    const storeId = values?.stores?.map((s) => s.value) || user?.stores || [];
+    const orgIds = values?.organizations?.map((o) => o.value) || [];
+    console.log("orgIds", orgIds);
 
     setLoading(true);
 
@@ -111,7 +94,7 @@ const PurchaseOrderViewCom = () => {
       const response = await purchaseService.getPurchaseOrders(
         values.dateFrom, // invoiceDateGte
         values.dateTo, // invoiceDateLte
-        storeId ? storeId : [], // storeIds as array
+        orgIds ? orgIds : [], // storeIds as array
 
         isInitial ? 1 : newPage, // page
         pagination.limit // rowsPerPage
@@ -181,11 +164,6 @@ const PurchaseOrderViewCom = () => {
     }
   };
 
-  const storeOptions = storeData.map((store) => ({
-    value: store._id,
-    label: store.name,
-  }));
-
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
     fetchPurchaseData(formik.values, false, newPage);
@@ -231,12 +209,14 @@ const PurchaseOrderViewCom = () => {
         className="row row-cols-1 row-cols-md-4 g-3 align-items-end"
       >
         <div className="col">
-          <label className="form-label fw-medium">Stores</label>
+          <label className="form-label fw-medium">Organization</label>
           <Select
-            isMulti={true} // <-- multi-select enabled
-            options={storeOptions}
-            value={formik.values.stores} // array of selected options
-            onChange={(selected) => formik.setFieldValue("stores", selected)}
+            isMulti={true}
+            options={organizationOptions}
+            value={formik.values.organizations} // <-- use organizations
+            onChange={(selected) =>
+              formik.setFieldValue("organizations", selected)
+            } // <-- update organizations
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
@@ -246,6 +226,7 @@ const PurchaseOrderViewCom = () => {
             <div className="text-danger">{formik.errors.stores}</div>
           )}
         </div>
+
         <div className="col">
           <label className="form-label fw-medium">Date From</label>
           <input

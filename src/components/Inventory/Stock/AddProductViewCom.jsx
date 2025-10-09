@@ -31,6 +31,16 @@ const ProductPurchase = () => {
   const productId = searchParams.get("productId");
   const modelType = searchParams.get("model");
   const navigate = useNavigate();
+
+  // store all selections model-wise
+  const [allSelected, setAllSelected] = useState(() => {
+    const saved = localStorage.getItem("purchaseSelections");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const saveSelections = (updated) => {
+    setAllSelected(updated);
+    localStorage.setItem("purchaseSelections", JSON.stringify(updated));
+  };
   const fetchProducts = useMemo(
     () =>
       debounce(async (model, filters, page) => {
@@ -101,6 +111,11 @@ const ProductPurchase = () => {
       frameMaterial: searchParams.get("frameMaterial") || "",
       search: searchParams.get("search") || "",
     };
+    if (allSelected[model]) {
+      console.log("allSelected[model]", allSelected[model]);
+
+      setSelectedIds(allSelected[model]);
+    }
 
     if (productId) {
       fetchSingleProduct(productId);
@@ -141,24 +156,60 @@ const ProductPurchase = () => {
     setSearchParams(newParams);
   };
 
-  const handleSelectChange = (ids, checked) => {
-    setSelectedIds((prev) => {
-      if (checked) {
-        return Array.from(new Set([...prev, ...ids]));
-      }
-      if (ids.length === 0) {
-        return []; // Clear all IDs when deselecting all
-      }
-      return prev.filter((id) => !ids.includes(id));
+  const handleSelectChange = (
+    ids,
+    checked,
+    model = modelType || "eyeGlasses"
+  ) => {
+    const currentModelSelections = allSelected[model] || [];
+    let updatedModelSelections;
+
+    if (checked) {
+      // Add as objects with quantity 1 if not already in
+      const newSelections = ids
+        .filter((id) => !currentModelSelections.some((p) => p._id === id))
+        .map((id) => ({ _id: id, quantity: 1 }));
+
+      updatedModelSelections = [...currentModelSelections, ...newSelections];
+    } else if (ids.length === 0) {
+      updatedModelSelections = []; // clear all
+    } else {
+      updatedModelSelections = currentModelSelections.filter(
+        (p) => !ids.includes(p._id)
+      );
+    }
+
+    setAllSelected((prev) => {
+      const updated = { ...prev, [model]: updatedModelSelections };
+      localStorage.setItem("purchaseSelections", JSON.stringify(updated));
+      return updated;
     });
+    setSelectedIds(updatedModelSelections);
   };
+
   const selectedProducts = filteredData.filter((p) =>
-    selectedIds.includes(p._id)
+    selectedIds.some((sel) => sel._id === p._id)
   );
   // New: Handle delete product
   const handleDeleteProduct = (id) => {
     setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
   };
+
+  const handleQuantityChange = (id, qty) => {
+    const model = modelType || "eyeGlasses";
+    const currentModelSelections = allSelected[model] || [];
+    let updated = currentModelSelections.filter((item) => item._id !== id);
+
+    if (qty > 0) updated.push({ _id: id, quantity: qty });
+
+    setAllSelected((prev) => {
+      const newAll = { ...prev, [model]: updated };
+      localStorage.setItem("purchaseSelections", JSON.stringify(newAll));
+      return newAll;
+    });
+    setSelectedIds(updated);
+  };
+
   // Updated handleAddToCart to handle multiple products
   const handleAddToCart = async (productsWithQuantities) => {
     setIsAddingToCart(true);
@@ -177,12 +228,14 @@ const ProductPurchase = () => {
       const response = await productViewService.addToCartProductPurchase(
         payload
       );
-      console.log("response", response);
 
       if (response?.success) {
         toast.success(
           `Added ${productsWithQuantities.length} item(s) to cart successfully!`
         );
+        localStorage.removeItem("purchaseSelections");
+        setAllSelected({});
+        setSelectedIds([]);
         navigate("/purchase/viewPurchaseOrder");
       } else {
         throw new Error(response.message || "Failed to add items to cart");
@@ -195,7 +248,9 @@ const ProductPurchase = () => {
     }
   };
   const handleCartSubmit = () => {
-    const validItems = selectedIds.filter((item) => item.quantity > 0);
+    const allProducts = Object.values(allSelected).flat();
+    const validItems = allProducts.filter((item) => item.quantity > 0);
+
     if (validItems.length === 0) {
       toast.warning("Please select quantity greater than 0 before proceeding.");
       return;
@@ -218,7 +273,9 @@ const ProductPurchase = () => {
         onSelectChange={handleSelectChange}
         onSubmitCart={handleCartSubmit}
         totalCount={
-          selectedIds?.reduce((acc, item) => acc + (item.quantity || 0), 0) || 0
+          Object.values(allSelected)
+            .flat()
+            .reduce((acc, item) => acc + (item.quantity || 0), 0) || 0
         }
       />
 
@@ -263,27 +320,26 @@ const ProductPurchase = () => {
         ) : (
           <>
             <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
-              {filteredData.map((frame) => (
-                <div className="col" key={frame._id}>
-                  <GlassesCard
-                    title={frame.sku}
-                    price={`${frame.sellPrice} ₹`}
-                    imageUrl={
-                      frame.photos && frame.photos[0] ? frame.photos[0] : null
-                    }
-                    onClick={() => handleCardClick(frame._id)}
-                    frame={frame}
-                    onQuantityChange={(id, qty) => {
-                      setSelectedIds((prev) => {
-                        const updated = prev.filter((p) => p._id !== id);
-                        if (qty > 0)
-                          return [...updated, { _id: id, quantity: qty }];
-                        return updated;
-                      });
-                    }}
-                  />
-                </div>
-              ))}
+              {filteredData.map((frame) => {
+                const selectedItem = selectedIds.find(
+                  (item) => item._id === frame._id
+                );
+                const quantity = selectedItem ? selectedItem.quantity : 0;
+
+                return (
+                  <div className="col" key={frame._id}>
+                    <GlassesCard
+                      title={frame.sku}
+                      price={`${frame.sellPrice} ₹`}
+                      imageUrl={frame.photos?.[0] || null}
+                      onClick={() => handleCardClick(frame._id)}
+                      frame={frame}
+                      quantity={quantity} // ✅ pass quantity to card
+                      onQuantityChange={handleQuantityChange}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {paginationMeta.totalPages > 1 && (

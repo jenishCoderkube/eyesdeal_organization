@@ -176,7 +176,6 @@ function PurchaseTabBar({
                     onClick={() => {
                       setFieldValue("model", tab.value);
                       setFieldValue("isMultiSelect", values.isMultiSelect);
-                      onSelectChange([], false);
                       setFieldValue("brand", "");
                       setFieldValue("frameType", "");
                       setFieldValue("frameShape", "");
