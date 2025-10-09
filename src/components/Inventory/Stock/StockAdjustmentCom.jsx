@@ -19,6 +19,8 @@ const StockAdjustmentCom = () => {
 
   const [productData, setProductData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingFetch, setLoadingFetch] = useState(false);
+
   const [inventory, setInventory] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
   console.log("storeData", storeData);
@@ -86,12 +88,13 @@ const StockAdjustmentCom = () => {
     [] // empty dependency to persist across re-renders
   );
 
-  const productOptions = productData?.docs?.map((vendor) => ({
-    value: vendor._id,
-    label: `${vendor.oldBarcode} ${vendor.sku}`,
-  }));
-
-  console.log("productOptions", product);
+  const productOptions = (productData?.docs || productData || []).map(
+    (vendor) => ({
+      value: vendor._id,
+      label: `${vendor.newBarcode || ""} ${vendor.sku || ""}`.trim(),
+    })
+  );
+  console.log("productOptions", productOptions);
 
   const storeOptions = storeData?.map((vendor) => ({
     value: vendor._id,
@@ -105,7 +108,7 @@ const StockAdjustmentCom = () => {
   }, [product]);
 
   const getInventoryData = async () => {
-    setLoading(true);
+    setLoadingFetch(true);
 
     try {
       const response = await inventoryService.getStockAdjustment(
@@ -120,7 +123,7 @@ const StockAdjustmentCom = () => {
     } catch (error) {
       console.error("error:", error);
     } finally {
-      setLoading(false);
+      setLoadingFetch(false);
     }
   };
 
@@ -277,8 +280,10 @@ const StockAdjustmentCom = () => {
                     options={productOptions}
                     placeholder="Select..."
                     className="w-100"
-                    onInputChange={(value) => {
-                      debouncedGetProduct(value);
+                    onInputChange={(inputValue, { action }) => {
+                      if (action === "input-change" && inputValue.trim()) {
+                        debouncedGetProduct(inputValue);
+                      }
                     }}
                     isLoading={loading}
                     loadingMessage={() => "Loading..."}
@@ -294,79 +299,98 @@ const StockAdjustmentCom = () => {
                     <thead className="text-xs text-uppercase text-muted bg-light border">
                       <tr>
                         <th className="custom-perchase-th">barcode</th>
-
                         <th className="custom-perchase-th">quantity</th>
                         <th className="custom-perchase-th">reason</th>
                         <th className="custom-perchase-th">sksu</th>
                         <th className="custom-perchase-th">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="text-sm">
-                      {products?.length > 0 ? (
-                        products.map((item, index) => (
-                          <tr key={item.product?._id || index}>
-                            <td className="">
-                              {item.product?.oldBarcode || "-"}
-                            </td>
 
-                            <td className="">
-                              <input
-                                type="number"
-                                value={item.quantityToUpdate}
-                                onChange={(e) =>
-                                  handleQuantityChange(index, e.target.value)
-                                }
-                                className="form-control"
-                              />
-                            </td>
-                            <td style={{ position: "relative", zIndex: 1000 }}>
-                              <Select
-                                options={reasonOptions}
-                                value={item.reason}
-                                onChange={(selected) =>
-                                  handleReasonChange(index, selected)
-                                }
-                                placeholder="Select..."
-                                className="w-100"
-                                styles={{
-                                  menu: (provided) => ({
-                                    ...provided,
-                                    zIndex: 9999, // Higher z-index for the dropdown menu
-                                  }),
-                                  menuPortal: (provided) => ({
-                                    ...provided,
-                                    zIndex: 9999, // Ensure portal rendering uses high z-index
-                                  }),
-                                }}
-                                menuPortalTarget={document.body} // Render dropdown in body to avoid clipping
-                                menuPosition="fixed" // Use fixed positioning to avoid stacking issues
-                              />
-                            </td>
-                            <td className="">{item.product?.sku || "-"}</td>
-                            <td className=" align-middle text-center">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-danger"
-                                onClick={() => handleRemoveProduct(index)}
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
+                    {loadingFetch ? (
+                      <tbody>
                         <tr>
-                          <td
-                            colSpan="6"
-                            className="text-center add_power_title p-4 text-gray-500"
-                          >
-                            No Data Found
+                          <td colSpan="5" className="text-center py-5">
+                            <div className="d-flex justify-content-center align-items-center">
+                              <div
+                                className="spinner-border text-primary"
+                                role="status"
+                              >
+                                <span className="visually-hidden">
+                                  Loading...
+                                </span>
+                              </div>
+                            </div>
                           </td>
                         </tr>
-                      )}
-                    </tbody>
+                      </tbody>
+                    ) : (
+                      <tbody className="text-sm">
+                        {products?.length > 0 ? (
+                          products.map((item, index) => (
+                            <tr key={item.product?._id || index}>
+                              <td>{item.product?.newBarcode || "-"}</td>
+                              <td>
+                                <input
+                                  type="number"
+                                  value={item.quantityToUpdate}
+                                  onChange={(e) =>
+                                    handleQuantityChange(index, e.target.value)
+                                  }
+                                  className="form-control"
+                                />
+                              </td>
+                              <td
+                                style={{ position: "relative", zIndex: 1000 }}
+                              >
+                                <Select
+                                  options={reasonOptions}
+                                  value={item.reason}
+                                  onChange={(selected) =>
+                                    handleReasonChange(index, selected)
+                                  }
+                                  placeholder="Select..."
+                                  className="w-100"
+                                  styles={{
+                                    menu: (provided) => ({
+                                      ...provided,
+                                      zIndex: 9999,
+                                    }),
+                                    menuPortal: (provided) => ({
+                                      ...provided,
+                                      zIndex: 9999,
+                                    }),
+                                  }}
+                                  menuPortalTarget={document.body}
+                                  menuPosition="fixed"
+                                />
+                              </td>
+                              <td>{item.product?.sku || "-"}</td>
+                              <td className="align-middle text-center">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleRemoveProduct(index)}
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="5"
+                              className="text-center add_power_title p-4 text-gray-500"
+                            >
+                              No Data Found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    )}
                   </table>
                 </div>
+
                 <div className="d-flex px-3 pb-3 flex-column flex-sm-row justify-content-between align-items-center mt-3">
                   <div className="text-sm text-muted mb-3 mb-sm-0">
                     Showing{" "}
