@@ -124,16 +124,51 @@ const StockAuditViewCom = () => {
     }
   };
 
-  const handleDownload = (data) => {
-    const csv = [
-      "Date,Store,Category,Brand,Barcode,SKU,Store Qty,Count Qty,Status",
-      `${data?.date},${data?.store},${data?.category},${data?.brand?.name},${data?.product?.newBarcode},${data?.product?.sku},${data?.qtyStore},${data?.qty},${data?.status}`,
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const handleDownload = (auditData) => {
+    if (!auditData || !auditData.items) return;
+
+    // CSV header
+    const headers = [
+      "Date",
+      "Store",
+      "Category",
+      "Brand",
+      "Barcode",
+      "SKU",
+      "Store Qty",
+      "Count Qty",
+      "Status",
+    ];
+
+    // CSV rows for each item
+    const rows = auditData.items.map((item) => [
+      auditData.auditDate ? auditData.auditDate : "",
+      auditData.store || "",
+      auditData.productCategory || "",
+      auditData.brand?.name || "",
+      item.product?.newBarcode || "",
+      item.product?.sku || "",
+      item.storeQuantity ?? 0,
+      item.countQuantity ?? 0,
+      item.status || "",
+    ]);
+
+    // Combine header + rows
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `stock_audit_${data.date}.csv`);
+    link.setAttribute(
+      "download",
+      `stock_audit_${
+        auditData.auditDate ? auditData.auditDate.split("T")[0] : "audit"
+      }.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
