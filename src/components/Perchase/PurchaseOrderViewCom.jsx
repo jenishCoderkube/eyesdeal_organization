@@ -226,6 +226,29 @@ const PurchaseOrderViewCom = () => {
     }
   };
 
+  const handleEditPaymentPurchaseOrder = async (newStatus) => {
+    if (!selectedPaymentItem) return;
+    const payload = {
+      paymentStatus: newStatus,
+    };
+    try {
+      const response = await purchaseService.UpdatePaymentStatus(
+        selectedPaymentItem._id,
+        payload
+      );
+      if (response.success) {
+        toast.success("Payment status updated successfully");
+        setShowPaymentModal(false);
+        fetchPurchaseData(formik.values, false, pagination.page);
+      } else {
+        toast.error(response.message || "Failed to update payment status");
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Error updating payment status");
+    }
+  };
+
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">View Purchase Orders</h4>
@@ -412,6 +435,7 @@ const PurchaseOrderViewCom = () => {
         show={showPaymentModal}
         onHide={() => setShowPaymentModal(false)}
         purchaseItem={selectedPaymentItem}
+        onUpdate={handleEditPaymentPurchaseOrder}
       />
       {showViewModal && (
         <PurchaseEdModal

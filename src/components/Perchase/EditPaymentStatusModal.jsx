@@ -6,6 +6,8 @@ const statusOptions = [
   { value: "Pending", label: "Pending" },
   { value: "Rejected", label: "Rejected" },
   { value: "Success", label: "Success" },
+
+  { value: "Cancelled", label: "Cancelled" },
 ];
 
 const EditPaymentStatusModal = ({ show, onHide, purchaseItem, onUpdate }) => {
