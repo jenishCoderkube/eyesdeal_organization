@@ -1,5 +1,5 @@
 import { City, Country, State } from "country-state-city";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import PhoneInput from "react-phone-input-2";
@@ -7,7 +7,7 @@ import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
 import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import CommonButton from "../../../components/CommonButton/CommonButton";
 
 // Validation schema using Yup
@@ -27,39 +27,55 @@ const validationSchema = Yup.object({
   address: Yup.string().trim().optional(),
 });
 
-const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
+const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const { id } = useParams();
+
+  const capitalize = (str) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
   // Formik setup
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
-      name: "",
-      phone: "+91",
-      gender: null,
-      country: null,
-      state: null,
-      city: null,
-      role: "",
-      password: "",
-      companyName: "",
-      gstNumber: "",
-      pincode: "395007",
-      address: "",
+      name: user?.user?.name || "",
+      phone: user?.user?.phone ? `+${user.user.phone}` : "+91",
+      gender: user?.user
+        ? { value: user.user.gender, label: capitalize(user.user.gender) }
+        : null,
+      role: user?.user?.role || "",
+      companyName: user?.companyName || "",
+      gstNumber: user?.gstNumber || "",
+      country: user ? { value: user.country, label: user.country } : null,
+      state: user ? { value: user.state, label: user.state } : null,
+      city: user ? { value: user.city, label: user.city } : null,
+      pincode: user?.pincode || "",
+      address: user?.address || "",
     },
+
     validationSchema,
     onSubmit: async (values, { resetForm }) => {
       // Log form values to console
       setLoading(true);
       const data = {
-        ...values,
+        name: values.name,
+        phone: values.phone.replace("+", ""), // remove '+' if your backend expects plain number
         gender: values.gender?.value,
-        country: values.country?.label,
-        state: values.state?.label,
-        city: values.city?.label,
+        role: values.role,
+        companyName: values.companyName,
+        gstNumber: values.gstNumber,
+        country: values.country?.label || values.country,
+        state: values.state?.label || values.state,
+        city: values.city?.label || values.city,
         pincode: Number(values.pincode),
+        address: values.address,
       };
       try {
-        const response = await userService.addOrganization(data);
+        const response = await userService.updateOrganization(id, data);
         if (response.success) {
           toast.success(response.message);
           resetForm();
@@ -68,12 +84,35 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           toast.error(response.message);
         }
       } catch (error) {
-        // toast.error("Failed to add organization!");
+        toast.error("Failed to add organization!");
       } finally {
         setLoading(false);
       }
     },
   });
+
+  useEffect(() => {
+    if (id) fetchUserData(id);
+  }, [id]);
+
+  const fetchUserData = async (userId) => {
+    try {
+      const response = await userService.getOrganizationById(userId);
+      console.log("API response:", response);
+      if (response.success) {
+        const orgData =
+          response.data?.data?.docs?.[0] ||
+          response.data?.data ||
+          response.data;
+        console.log("Organization Data:", orgData);
+        setUser(orgData);
+      } else {
+        console.error("Failed to fetch user:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+    }
+  };
 
   // Fetch countries from country-state-city
   const countryOptions = Country.getAllCountries().map((country) => ({
@@ -122,7 +161,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
   return (
     <>
       <div className="container">
-        <h3 className="mb-4 user_main_title mt-4">Add Organization</h3>
+        <h3 className="mb-4 user_main_title mt-4">Edit Organization</h3>
         <form onSubmit={formik.handleSubmit}>
           <div className="row g-3">
             <div className="col-12 col-md-6 col-lg-4">
@@ -350,4 +389,4 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
   );
 };
 
-export default AddOrganization;
+export default EditOrganization;
