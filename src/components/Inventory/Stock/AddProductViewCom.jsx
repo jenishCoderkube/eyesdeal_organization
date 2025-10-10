@@ -195,12 +195,12 @@ const ProductPurchase = () => {
     setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
   };
 
-  const handleQuantityChange = (id, qty) => {
+  const handleQuantityChange = (id, qty, sellPrice) => {
     const model = modelType || "eyeGlasses";
     const currentModelSelections = allSelected[model] || [];
     let updated = currentModelSelections.filter((item) => item._id !== id);
 
-    if (qty > 0) updated.push({ _id: id, quantity: qty });
+    if (qty > 0) updated.push({ _id: id, quantity: qty, sellPrice });
 
     setAllSelected((prev) => {
       const newAll = { ...prev, [model]: updated };
@@ -259,6 +259,8 @@ const ProductPurchase = () => {
     const productsWithQuantities = validItems.map((item) => ({
       product: item._id,
       quantity: item.quantity,
+      purchaseRate: item.sellPrice || 0,
+      totalAmount: (item.sellPrice || 0) * item.quantity,
     }));
 
     handleAddToCart(productsWithQuantities);

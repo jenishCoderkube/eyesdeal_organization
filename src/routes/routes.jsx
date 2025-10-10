@@ -79,6 +79,8 @@ import UniversalStockRequestView from "../pages/Inventory/UniversalStockRequestV
 import AddProductView from "../pages/Purchase/AddProductView";
 import PurchaseOrderView from "../pages/Purchase/PurchaseOrderView";
 import UniversalStockOrderView from "../pages/Inventory/UniversalStockOrderView";
+import ViewOrganization from "../pages/Users/Organization/ViewOrganization";
+import EditOrganization from "../pages/Users/Organization/EditOrganization";
 
 const routes = [
   {
@@ -313,6 +315,24 @@ const routes = [
     element: (
       <PrivateRoute>
         <AddEmployee />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "ViewOrganization",
+    path: "/users/view-organization",
+    element: (
+      <PrivateRoute>
+        <ViewOrganization />
+      </PrivateRoute>
+    ),
+  },
+  {
+    title: "EditOrganization",
+    path: "/organization/:id",
+    element: (
+      <PrivateRoute>
+        <EditOrganization />
       </PrivateRoute>
     ),
   },

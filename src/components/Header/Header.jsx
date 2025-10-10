@@ -39,10 +39,10 @@ const menuItems = [
       { label: "Generate Barcode", link: "/purchase/generateBarcode" },
       { label: "ED Product Purchase", link: "/purchase/addproduct" },
       { label: "View Purchase Orders", link: "/purchase/viewPurchaseOrder" },
-      // {
-      //   label: "Universal Stock Request",
-      //   link: "/inventory/universal-stock-request-view",
-      // },
+      {
+        label: "Universal Stock Request",
+        link: "/inventory/universal-stock-request-view",
+      },
       // {
       //   label: "Universal Stock Order",
       //   link: "/inventory/universal-stock-order-view",
@@ -90,6 +90,7 @@ const menuItems = [
       // { label: "Add Organization", link: "/users/add-organization" },
       { label: "Add Customer", link: "/users/addCustomer" },
       { label: "Add Employee", link: "/users/add-employee" },
+      { label: "View Organization", link: "/users/view-organization" },
       { label: "View Customer", link: "/users/view-customer" },
       { label: "View Employee", link: "/users/view-employee" },
       // { label: "View OTP", link: "/users/view-otp" },

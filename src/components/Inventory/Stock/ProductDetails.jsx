@@ -71,6 +71,8 @@ const ProductDetails = ({ product, onBack }) => {
           {
             product: product._id,
             quantity: Number(quantity), // e.g., 5
+            purchaseRate: product.sellPrice || 0,
+            totalAmount: (product.sellPrice || product?.MRP) * Number(quantity),
           },
         ],
       };

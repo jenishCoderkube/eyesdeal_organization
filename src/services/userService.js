@@ -3,6 +3,11 @@ import api from "./api";
 // Sale endpoints
 const USER_ENDPOINTS = {
   ADD_ORGANIZATION: "/organization",
+  ORGANIZATION: "/organization",
+  GET_ORGANIZATION_BY_ID: "/organization",
+  UPDATE_ORGANIZATION: "/organization",
+  DELETE_ORGANIZATION: "/organization",
+  GET_ORGANIZATION_BY_ID: "/organization",
   ADD_CUSTOMER: "/user/register",
   ADD_EMPLOYEE: "/user/register",
   GET_STORES: "/stores",
@@ -44,6 +49,73 @@ export const userService = {
       };
     }
   },
+
+  updateOrganization: async (id, data) => {
+    try {
+      const response = await api.patch(`${USER_ENDPOINTS.UPDATE_ORGANIZATION}/${id}`, data);
+      return {
+        success: true,
+        data: response.data,
+        message: "Organization details updated successfully!",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error updating organization!",
+      };
+    }
+  },
+
+  deleteOrganization: async (id) => {
+    try {
+      const response = await api.delete(`${USER_ENDPOINTS.DELETE_ORGANIZATION}/${id}`);
+      return {
+        success: true,
+        data: response.data,
+        message: "Organization deleted successfully!",
+      };
+    } catch (error) {
+      console.error("Delete error:", error.response?.data || error.message);
+      return {
+        success: false,
+        message: error?.response?.data?.message || "Error deleting Organization!",
+      };
+    }
+  },
+  getOrganization: async () => {
+    try {
+      const response = await api.get(USER_ENDPOINTS.ORGANIZATION);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getOrganizationById: async (id) => {
+    try {
+      const response = await api.get(USER_ENDPOINTS.GET_ORGANIZATION_BY_ID, {
+        params: {
+          _id: id,
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message || "Error fetching employee detail!",
+      };
+    }
+  },
+
 
   addCustomer: async (data) => {
     try {

@@ -129,36 +129,20 @@ const StockAudit = () => {
     }
   };
 
-  // returns existing audit entries array for editId
+  // returns existing audit object for editId
   const getExistingAuditById = async (id) => {
     try {
-      // Replace this with real API call: inventoryService.getStockAuditById(id)
-      // const res = await inventoryService.getStockAuditById(id);
-      // if (res.success) return res.data.data;
+      const res = await inventoryService.getStockAuditById(id);
 
-      // dummy data (keep for local testing) - replace in prod
-      const resMock = [
-        {
-          _id: "68e3c32d800269af312b4e61",
-          store: { _id: "64709e8b518c8594f121857b", name: "TESTING" },
-          product: {
-            _id: "6443f64c121900f79603862a",
-            sku: "CA-FR-226-VZH-5617",
-            newBarcode: "600218",
-          },
-          auditDate: "2025-10-06T00:00:00.000Z",
-          brand: { _id: "6388875fe890e301c3b98579", name: "Carrera" },
-          countQuantity: 3,
-          storeQuantity: 1,
-          productCategory: "eyeGlasses",
-          status: "Mismatch",
-        },
-      ];
-
-      return resMock; // return array
+      if (res.success) {
+        return res.data.data;
+      } else {
+        toast.error(res.message);
+        return null;
+      }
     } catch (error) {
       console.error("Error fetching existing audit:", error);
-      return [];
+      return null;
     }
   };
 
@@ -182,7 +166,6 @@ const StockAudit = () => {
       const key = keysToTry.find((k) => k && baseMap.has(k));
 
       if (key && baseMap.has(key)) {
-        // ✅ existing product found in base → update + move to top
         const baseItem = baseMap.get(key);
         const updated = {
           ...baseItem,
@@ -192,9 +175,8 @@ const StockAudit = () => {
         };
         topItems.push(updated);
         seenKeys.add(key);
-        baseMap.delete(key); // remove from base so not duplicated
+        baseMap.delete(key);
       } else if (!key) {
-        // ✅ new product that doesn’t exist in base → create fresh
         topItems.push({
           sku: r.product?.sku || r.sku,
           storeQty: r.storeQuantity || 0,
@@ -207,80 +189,109 @@ const StockAudit = () => {
       }
     });
 
-    // remaining base items (not part of existing)
     const remaining = Array.from(baseMap.values());
-
-    // ✅ final order: existing on top, rest below
     const merged = [...topItems, ...remaining];
     const total = merged.reduce((sum, i) => sum + (i.countQty || 0), 0);
 
     return { merged, total };
   };
 
-  // fetch inventory and optionally overlay existing audit (used on initial load and when filters change)
-  const fetchAndMaybeMerge = useCallback(
-    async (values) => {
-      setLoading(true);
-      try {
-        const base = await getInventoryBase(values);
-        if (editId) {
-          const existing = await getExistingAuditById(editId);
-          if (existing && existing.length > 0) {
-            const { merged, total } = mergeBaseWithExisting(base, existing);
-            setAuditData(merged);
-            setTotalCountQty(total);
-            setDate(moment(existing[0].auditDate).format("YYYY-MM-DD"));
-            setIsEditMode(true);
-            return;
-          }
-        }
+  // fetch inventory base (used when filters change)
+  const fetchAndMaybeMerge = useCallback(async (values) => {
+    setLoading(true);
+    try {
+      const base = await getInventoryBase(values);
+      setAuditData(base);
+      setTotalCountQty(0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        // no edit or no existing data -> show base
-        setAuditData(base);
-        setTotalCountQty(0);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [editId]
-  );
-
-  // initial load: stores, brands, then inventory (+ merge if editing)
+  // initial load: fetch audit by id first (if edit), then stores, brands, then inventory
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const stores = await fetchStores();
-        await fetchBrands();
-
-        // auto-select default store using fetched stores (avoid reading stale state)
-        const storedStoreId = user?.stores?.[0];
-        if (storedStoreId && stores.length > 0) {
-          const defaultStore = stores.find((s) => s._id === storedStoreId);
-          if (defaultStore) {
-            formik.setFieldValue("store", {
-              value: defaultStore._id,
-              label: defaultStore.name,
-            });
-          }
+        let audit = null;
+        if (editId) {
+          audit = await getExistingAuditById(editId);
         }
 
-        // fetch inventory and overlay existing audit (if any)
-        await fetchAndMaybeMerge(formik.values);
+        const stores = await fetchStores();
+        const brands = await fetchBrands();
+
+        if (audit) {
+          // Set formik values based on audit
+          const storeOption = stores.find((s) => s._id === audit.store._id);
+          if (storeOption) {
+            formik.setFieldValue("store", {
+              value: storeOption._id,
+              label: storeOption.name,
+            });
+          }
+
+          const catOption = productOptions.find(
+            (o) => o.value === audit.productCategory
+          );
+          if (catOption) {
+            formik.setFieldValue("productCategory", catOption);
+          }
+
+          if (audit.brand) {
+            const brandOption = brands.find((b) => b._id === audit.brand._id);
+            if (brandOption) {
+              formik.setFieldValue("brand", {
+                value: brandOption._id,
+                label: brandOption.name,
+              });
+            }
+          }
+
+          setDate(moment(audit.auditDate).format("YYYY-MM-DD"));
+          setIsEditMode(true);
+
+          // Fetch base with audit-based values and merge
+          const base = await getInventoryBase({
+            store: { value: audit.store._id },
+            productCategory: { value: audit.productCategory },
+            brand: audit.brand ? { value: audit.brand._id } : null,
+          });
+          const { merged, total } = mergeBaseWithExisting(base, audit.items);
+          setAuditData(merged);
+          setTotalCountQty(total);
+        } else {
+          // Auto-select default store for create mode
+          const storedStoreId = user?.stores?.[0];
+          if (storedStoreId && stores.length > 0) {
+            const defaultStore = stores.find((s) => s._id === storedStoreId);
+            if (defaultStore) {
+              formik.setFieldValue("store", {
+                value: defaultStore._id,
+                label: defaultStore.name,
+              });
+            }
+          }
+
+          // Fetch base for create mode
+          const base = await getInventoryBase(formik.values);
+          setAuditData(base);
+          setTotalCountQty(0);
+        }
       } finally {
         setLoading(false);
-        isInitialLoadRef.current = false; // allow subsequent filter changes to trigger fetch
+        isInitialLoadRef.current = false;
       }
     };
 
     load();
-  }, [fetchAndMaybeMerge]);
+  }, [editId]);
 
-  // when user changes filters after initial load
+  // when user changes filters after initial load (only in create mode)
   useEffect(() => {
-    if (isInitialLoadRef.current) return; // skip initial change triggered by load
+    if (isInitialLoadRef.current || isEditMode) return;
     if (formik.values.store && formik.values.productCategory) {
       fetchAndMaybeMerge(formik.values);
     }
@@ -289,6 +300,7 @@ const StockAudit = () => {
     formik.values.productCategory,
     formik.values.brand,
     fetchAndMaybeMerge,
+    isEditMode,
   ]);
 
   useEffect(() => {
@@ -338,32 +350,33 @@ const StockAudit = () => {
   };
 
   const handleSave = async () => {
-    const payload = auditData
-      .filter((item) => item.countQty > 0)
-      .map(({ sku, storeQty, countQty, status, barcode, product }) => {
-        const entry = {
-          sku,
-          storeQty,
-          countQty,
-          product,
-          status,
-          store: formik.values.store?.value,
-          barcode,
-          productCategory: formik.values.productCategory?.value,
-          auditDate: new Date(date).toISOString(),
-        };
-        if (formik.values.brand?.value) entry.brand = formik.values.brand.value;
-        return entry;
-      });
+    const payload = {
+      store: formik.values.store?.value,
+      productCategory: formik.values.productCategory?.value,
+      auditDate: new Date(date).toISOString(),
+      items: auditData
+        .filter((item) => item.countQty > 0)
+        .map((item) => ({
+          product: item.product,
+          storeQuantity: item.storeQty,
+          countQuantity: item.countQty,
+          status: item.status,
+        })),
+    };
+
+    if (formik.values.brand?.value) {
+      payload.brand = formik.values.brand.value;
+    }
 
     try {
       setLoading(true);
       let response;
+
       if (isEditMode) {
         console.log("Editing existing audit:", editId, payload);
-
         response = await inventoryService.updateStockAudit(editId, payload);
       } else {
+        console.log("Creating new audit:", payload);
         response = await inventoryService.stockAudit(payload);
       }
 
@@ -375,10 +388,10 @@ const StockAudit = () => {
         );
         navigate("/inventory/stock-audit-view");
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Failed to save audit");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error while saving stock audit:", error);
       toast.error("Error while saving stock audit");
     } finally {
       setLoading(false);
@@ -406,6 +419,7 @@ const StockAudit = () => {
               onChange={(option) => formik.setFieldValue("store", option)}
               placeholder="Select..."
               classNamePrefix="react-select"
+              isDisabled={isEditMode}
             />
           </div>
           <div className="col">
@@ -420,6 +434,7 @@ const StockAudit = () => {
               }
               placeholder="Select..."
               classNamePrefix="react-select"
+              isDisabled={isEditMode}
             />
           </div>
           <div className="col">
@@ -431,6 +446,7 @@ const StockAudit = () => {
               onChange={(option) => formik.setFieldValue("brand", option)}
               placeholder="Select..."
               classNamePrefix="react-select"
+              isDisabled={isEditMode}
             />
           </div>
         </div>
@@ -490,35 +506,36 @@ const StockAudit = () => {
             </thead>
             <tbody>
               {auditData.length > 0 ? (
-                auditData.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>{item.barcode}</td>
-                    <td>{item.sku}</td>
-                    <td>{item.storeQty}</td>
-                    <td
-                      style={
-                        item.countQty > 0
-                          ? {
-                              backgroundColor: "#e6f7e6", // light green background
-                              color: "#0f5132", // dark green text
-                              fontWeight: 600,
-                            }
-                          : {}
-                      }
-                    >
-                      {item.countQty}
-                    </td>
-
-                    <td
-                      style={{
-                        color: item.status === "Mismatch" ? "red" : "green",
-                      }}
-                    >
-                      {item.status}
-                    </td>
-                  </tr>
-                ))
+                auditData.map((item, index) => {
+                  return (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{item.barcode}</td>
+                      <td>{item.sku}</td>
+                      <td>{item.storeQty}</td>
+                      <td
+                        style={
+                          item.countQty > 0
+                            ? {
+                                backgroundColor: "#e6f7e6",
+                                color: "#0f5132",
+                                fontWeight: 600,
+                              }
+                            : {}
+                        }
+                      >
+                        {item.countQty}
+                      </td>
+                      <td
+                        style={{
+                          color: item.status === "Mismatch" ? "red" : "green",
+                        }}
+                      >
+                        {item.status}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center">

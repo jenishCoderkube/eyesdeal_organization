@@ -124,16 +124,51 @@ const StockAuditViewCom = () => {
     }
   };
 
-  const handleDownload = (data) => {
-    const csv = [
-      "Date,Store,Category,Brand,Barcode,SKU,Store Qty,Count Qty,Status",
-      `${data?.date},${data?.store},${data?.category},${data?.brand?.name},${data?.product?.newBarcode},${data?.product?.sku},${data?.qtyStore},${data?.qty},${data?.status}`,
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const handleDownload = (auditData) => {
+    if (!auditData || !auditData.items) return;
+
+    // CSV header
+    const headers = [
+      "Date",
+      "Store",
+      "Category",
+      "Brand",
+      "Barcode",
+      "SKU",
+      "Store Qty",
+      "Count Qty",
+      "Status",
+    ];
+
+    // CSV rows for each item
+    const rows = auditData.items.map((item) => [
+      auditData.auditDate ? auditData.auditDate : "",
+      auditData.store || "",
+      auditData.productCategory || "",
+      auditData.brand?.name || "",
+      item.product?.newBarcode || "",
+      item.product?.sku || "",
+      item.storeQuantity ?? 0,
+      item.countQuantity ?? 0,
+      item.status || "",
+    ]);
+
+    // Combine header + rows
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `stock_audit_${data.date}.csv`);
+    link.setAttribute(
+      "download",
+      `stock_audit_${
+        auditData.auditDate ? auditData.auditDate.split("T")[0] : "audit"
+      }.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -222,61 +257,71 @@ const StockAuditViewCom = () => {
                 </thead>
                 <tbody>
                   {auditData.length > 0 ? (
-                    auditData?.map((item, index) => (
-                      <tr key={item._id} className="align-middle">
-                        <td className="py-3">
-                          {index + 1 + currentPage * itemsPerPage}
-                        </td>
-                        <td className="py-3">
-                          {moment(item.auditDate).format("YYYY-MM-DD")}
-                        </td>
-                        <td className="py-3">{item.store?.name}</td>
-                        <td className="py-3">{item.productCategory}</td>
-                        <td className="py-3">{item?.storeQuantity || 0}</td>
+                    auditData.map((item, index) => {
+                      // Calculate per-row totals
+                      const totalStoreQty = item.items.reduce(
+                        (acc, curr) => acc + (curr.storeQuantity || 0),
+                        0
+                      );
+                      const totalCountQty = item.items.reduce(
+                        (acc, curr) => acc + (curr.countQuantity || 0),
+                        0
+                      );
 
-                        <td className="py-3">{item.countQuantity}</td>
-                        <td className="py-3 d-flex gap-2">
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => {
-                              setSelectedAudit(item);
-                              setShowDetails(true);
-                            }}
-                          >
-                            View
-                          </button>
-
-                          <button
-                            className="btn btn-outline-warning btn-sm"
-                            onClick={() =>
-                              navigate(
-                                `/inventory/stock-audit?editId=${item._id}`
-                              )
-                            }
-                          >
-                            Edit
-                          </button>
-                        </td>
-                        <td className="py-3">
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() =>
-                              handleDownload({
-                                ...item,
-                                srno: index + 1,
-                                date: item.auditDate,
-                                store: item.store?.name,
-                                category: item.productCategory,
-                                qty: item.countQuantity,
-                                qtyStore: item?.storeQuantity,
-                              })
-                            }
-                          >
-                            Download
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                      return (
+                        <tr key={item._id} className="align-middle">
+                          <td className="py-3">
+                            {index + 1 + currentPage * itemsPerPage}
+                          </td>
+                          <td className="py-3">
+                            {moment(item.auditDate).format("YYYY-MM-DD")}
+                          </td>
+                          <td className="py-3">{item.store?.name}</td>
+                          <td className="py-3">{item.productCategory}</td>
+                          <td className="py-3">{totalStoreQty}</td>
+                          <td className="py-3">{totalCountQty}</td>
+                          <td className="py-3 d-flex gap-2">
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => {
+                                setSelectedAudit(item);
+                                setShowDetails(true);
+                              }}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="btn btn-outline-warning btn-sm"
+                              onClick={() =>
+                                navigate(
+                                  `/inventory/stock-audit?editId=${item._id}`
+                                )
+                              }
+                            >
+                              Edit
+                            </button>
+                          </td>
+                          <td className="py-3">
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() =>
+                                handleDownload({
+                                  ...item,
+                                  srno: index + 1,
+                                  date: item.auditDate,
+                                  store: item.store?.name,
+                                  category: item.productCategory,
+                                  qtyStore: totalStoreQty,
+                                  qty: totalCountQty,
+                                })
+                              }
+                            >
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="8" className="text-center py-5">

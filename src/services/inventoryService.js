@@ -45,6 +45,7 @@ const INVENTORY_ENDPOINTS = {
   BULK_INVENTORY_UPLOAD: "/inventory/bulk-upload",
   ADD_STOCK_AUDIT: "/stockAudit",
   ORGANIZATION: "/organization",
+  STOCKAUDIT_BY_ID: (id) => `/stockAudit/${id}`,
 };
 
 const buildInventoryParams = (
@@ -116,7 +117,7 @@ const buildInventoryStoreParams = (
 
   // Invoice date filters
   if (_t) params.append("product.__t", _t);
-  if (brand) params.append("product.brand", brand);
+  if (brand) params.append("product.brand._id", brand);
   if (gender) params.append("product.gender", gender);
   if (frameSize) params.append("product.frameSize", frameSize);
   if (frameType_id) params.append("product.frameType._id", frameType_id);
@@ -251,6 +252,39 @@ export const inventoryService = {
   getStores: async () => {
     try {
       const response = await api.get(INVENTORY_ENDPOINTS.STORES);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getStockAuditById: async (id) => {
+    try {
+      const response = await api.get(
+        `${INVENTORY_ENDPOINTS.STOCKAUDIT_BY_ID(id)}`
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  updateStockAudit: async (id, data) => {
+    try {
+      const response = await api.patch(
+        `${INVENTORY_ENDPOINTS.STOCKAUDIT_BY_ID(id)}`,
+        data
+      );
       return {
         success: true,
         data: response.data,
