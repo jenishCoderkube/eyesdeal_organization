@@ -162,8 +162,9 @@ const PurchaseEdModal = ({ show, onHide, purchase }) => {
     const data = tableData.map((item, index) => ({
       SRNO: index + 1,
       Date: moment(item.createdAt || purchase.createdAt).format("YYYY-MM-DD"),
-      Store: purchase.user?.name || "N/A",
       Barcode: item.product?.newBarcode || "N/A",
+      Store: purchase?.store?.name || "N/A",
+      Category: item.product?.__t || "N/A",
       SKU: item.product?.sku || "N/A",
       Quantity: item.quantity || 0,
       Price: item.purchaseRate || item.product?.costPrice || 0,

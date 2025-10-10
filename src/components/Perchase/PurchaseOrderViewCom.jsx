@@ -127,23 +127,33 @@ const PurchaseOrderViewCom = () => {
   };
 
   const handleDownload = (data) => {
+    // Prepare CSV header
     const csvRows = [
-      "SRNO,Purchase Order ID,Date,Store,Products,Total Quantity,Payment Status",
+      "SRNO,Date,Store,Category,Barcode,SKU,Quantity,Price,Amount",
       ...data.items.map((item, index) => {
-        const totalQuantity = data.items.reduce(
-          (sum, i) => sum + i.quantity,
-          0
-        );
-        return `${index + 1 + (pagination.page - 1) * pagination.limit},${
-          data._id
-        },${moment(data.createdAt).format("YYYY-MM-DD")},${
-          data.store?.name || "N/A"
-        },"${item.product?.displayName || "N/A"} (${
-          item.quantity
-        })",${totalQuantity},${data.paymentStatus}`;
+        const quantity = item.quantity || 0;
+        const price = item.purchaseRate || item.product?.costPrice || 0;
+        const amount = item.totalAmount || (quantity * price).toFixed(2);
+
+        return [
+          index + 1, // SRNO
+          data.createdAt, // Date
+          data.store?.name || "N/A", // Store
+          item?.product?.__t || "N/A", // Store
+
+          item.product?.newBarcode || item.product?.oldBarcode || "N/A", // Barcode
+          item.product?.sku || "N/A", // SKU
+          quantity, // Quantity
+          price, // Price
+          amount, // Amount
+        ].join(",");
       }),
     ];
+
+    // Convert array to CSV string
     const csv = csvRows.join("\n");
+
+    // Create a downloadable blob
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -279,7 +289,7 @@ const PurchaseOrderViewCom = () => {
                 <tr>
                   <th className="py-3">SRNO</th>
                   <th className="py-3">Date</th>
-                  <th className="py-3">Store</th>
+                  <th className="py-3">Organization</th>
                   <th className="py-3">Total Qty</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Actions</th>
@@ -301,7 +311,7 @@ const PurchaseOrderViewCom = () => {
                         <td className="py-3">
                           {moment(item.createdAt).format("YYYY-MM-DD")}
                         </td>
-                        <td className="py-3">{item.store?.name || "N/A"}</td>
+                        <td className="py-3">{item?.user?.name || "N/A"}</td>
                         <td className="py-3">{totalQuantity}</td>
                         <td className="py-3">
                           <span
@@ -330,17 +340,7 @@ const PurchaseOrderViewCom = () => {
                           >
                             View
                           </Button>
-                          <Button
-                            variant="outline-warning"
-                            size="sm"
-                            className="me-1"
-                            onClick={() => {
-                              setSelectedItem(item.items[0]);
-                              setShowEditModal(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
+
                           <Button
                             variant="outline-danger"
                             size="sm"
