@@ -116,7 +116,7 @@ const buildInventoryStoreParams = (
 
   // Invoice date filters
   if (_t) params.append("product.__t", _t);
-  if (brand) params.append("product.brand", brand);
+  if (brand) params.append("product.brand._id", brand);
   if (gender) params.append("product.gender", gender);
   if (frameSize) params.append("product.frameSize", frameSize);
   if (frameType_id) params.append("product.frameType._id", frameType_id);

@@ -338,32 +338,35 @@ const StockAudit = () => {
   };
 
   const handleSave = async () => {
-    const payload = auditData
-      .filter((item) => item.countQty > 0)
-      .map(({ sku, storeQty, countQty, status, barcode, product }) => {
-        const entry = {
-          sku,
-          storeQty,
-          countQty,
-          product,
-          status,
-          store: formik.values.store?.value,
-          barcode,
-          productCategory: formik.values.productCategory?.value,
-          auditDate: new Date(date).toISOString(),
-        };
-        if (formik.values.brand?.value) entry.brand = formik.values.brand.value;
-        return entry;
-      });
+    // Build base payload
+    const payload = {
+      store: formik.values.store?.value,
+      productCategory: formik.values.productCategory?.value,
+      auditDate: new Date(date).toISOString(),
+      items: auditData
+        .filter((item) => item.countQty > 0) // include only counted items
+        .map((item) => ({
+          product: item.product,
+          storeQuantity: item.storeQty,
+          countQuantity: item.countQty,
+          status: item.status,
+        })),
+    };
+
+    // ✅ Add brand only if selected
+    if (formik.values.brand?.value) {
+      payload.brand = formik.values.brand.value;
+    }
 
     try {
       setLoading(true);
       let response;
+
       if (isEditMode) {
         console.log("Editing existing audit:", editId, payload);
-
         response = await inventoryService.updateStockAudit(editId, payload);
       } else {
+        console.log("Creating new audit:", payload);
         response = await inventoryService.stockAudit(payload);
       }
 
@@ -375,10 +378,10 @@ const StockAudit = () => {
         );
         navigate("/inventory/stock-audit-view");
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Failed to save audit");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error while saving stock audit:", error);
       toast.error("Error while saving stock audit");
     } finally {
       setLoading(false);
@@ -490,35 +493,37 @@ const StockAudit = () => {
             </thead>
             <tbody>
               {auditData.length > 0 ? (
-                auditData.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>{item.barcode}</td>
-                    <td>{item.sku}</td>
-                    <td>{item.storeQty}</td>
-                    <td
-                      style={
-                        item.countQty > 0
-                          ? {
-                              backgroundColor: "#e6f7e6", // light green background
-                              color: "#0f5132", // dark green text
-                              fontWeight: 600,
-                            }
-                          : {}
-                      }
-                    >
-                      {item.countQty}
-                    </td>
+                auditData.map((item, index) => {
+                  return (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{item.barcode}</td>
+                      <td>{item.sku}</td>
+                      <td>{item.storeQty}</td>
+                      <td
+                        style={
+                          item.countQty > 0
+                            ? {
+                                backgroundColor: "#e6f7e6", // light green background
+                                color: "#0f5132", // dark green text
+                                fontWeight: 600,
+                              }
+                            : {}
+                        }
+                      >
+                        {item.countQty}
+                      </td>
 
-                    <td
-                      style={{
-                        color: item.status === "Mismatch" ? "red" : "green",
-                      }}
-                    >
-                      {item.status}
-                    </td>
-                  </tr>
-                ))
+                      <td
+                        style={{
+                          color: item.status === "Mismatch" ? "red" : "green",
+                        }}
+                      >
+                        {item.status}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center">

@@ -140,7 +140,7 @@ const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
 
   // Submit: convert empty inputs to defaults (1 or 0)
   const handleSubmitAll = async () => {
-    if (!purchaseId || !editableData.length) return;
+    if (!purchaseId) return;
 
     setSaving(true);
     const items = editableData.map((item) => {
@@ -210,6 +210,10 @@ const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
       `Purchase_${purchase.invoiceNumber || "data"}.xlsx`
     );
   };
+  // Remove a product row by index
+  const handleDeleteItem = (index) => {
+    setEditableData((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -268,6 +272,7 @@ const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
                     <th>QTY</th>
                     <th>PURCHASE RATE</th>
                     <th>TOTAL</th>
+                    <th>ACTION</th>
                   </tr>
                 </thead>
                 {loading ? (
@@ -330,6 +335,14 @@ const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
                             />
                           </td>
                           <td>{displayTotal}</td>
+                          <td className="text-center">
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDeleteItem(index)}
+                            >
+                              &times;
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
