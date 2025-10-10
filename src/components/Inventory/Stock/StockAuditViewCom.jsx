@@ -7,6 +7,7 @@ import { inventoryService } from "../../../services/inventoryService";
 import moment from "moment";
 import ReactPaginate from "react-paginate";
 import StockAuditDetailsModal from "./StockAuditDetailsModal";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const StockAuditViewCom = () => {
   const [storeData, setStoreData] = useState([]);
@@ -24,7 +25,7 @@ const StockAuditViewCom = () => {
     hasPrevPage: false,
     hasNextPage: false,
   });
-
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const formik = useFormik({
@@ -215,7 +216,7 @@ const StockAuditViewCom = () => {
                     <th className="py-3">Store Qty</th>
 
                     <th className="py-3">Count Qty</th>
-                    <th className="py-3">View</th>
+                    <th className="py-3">Action</th>
                     <th className="py-3">Download</th>
                   </tr>
                 </thead>
@@ -234,7 +235,7 @@ const StockAuditViewCom = () => {
                         <td className="py-3">{item?.storeQuantity || 0}</td>
 
                         <td className="py-3">{item.countQuantity}</td>
-                        <td className="py-3">
+                        <td className="py-3 d-flex gap-2">
                           <button
                             className="btn btn-outline-primary btn-sm"
                             onClick={() => {
@@ -243,6 +244,17 @@ const StockAuditViewCom = () => {
                             }}
                           >
                             View
+                          </button>
+
+                          <button
+                            className="btn btn-outline-warning btn-sm"
+                            onClick={() =>
+                              navigate(
+                                `/inventory/stock-audit?editId=${item._id}`
+                              )
+                            }
+                          >
+                            Edit
                           </button>
                         </td>
                         <td className="py-3">

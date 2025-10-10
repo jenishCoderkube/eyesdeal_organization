@@ -67,7 +67,7 @@ const ProductDetails = ({ product, onBack }) => {
       const payload = {
         store: userData.stores[0],
         user: userData._id,
-        products: [
+        items: [
           {
             product: product._id,
             quantity: Number(quantity), // e.g., 5
