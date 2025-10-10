@@ -239,7 +239,7 @@ const StockAuditViewCom = () => {
                           <button
                             className="btn btn-outline-primary btn-sm"
                             onClick={() => {
-                              setSelectedAudit(item);
+                              setSelectedAudit([item]);
                               setShowDetails(true);
                             }}
                           >

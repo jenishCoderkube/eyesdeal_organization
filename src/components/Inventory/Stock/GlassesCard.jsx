@@ -21,13 +21,13 @@ const GlassesCard = ({
   const handleQuantityChange = (newQty) => {
     if (newQty === "") {
       setQuantity("");
-      onQuantityChange?.(frame._id, 0);
+      onQuantityChange?.(frame._id, 0, frame?.sellPrice);
       return;
     }
 
     const validQty = Math.max(0, Math.min(5000, Number(newQty)));
     setQuantity(validQty);
-    onQuantityChange?.(frame._id, validQty);
+    onQuantityChange?.(frame._id, validQty, frame?.sellPrice);
   };
 
   return (

@@ -311,7 +311,11 @@ const PurchaseOrderViewCom = () => {
                         <td className="py-3">
                           {moment(item.createdAt).format("YYYY-MM-DD")}
                         </td>
-                        <td className="py-3">{item?.user?.name || "N/A"}</td>
+                        <td className="py-3">
+                          {item?.user?.organizationId?.companyName ||
+                            item?.user?.name ||
+                            "N/A"}
+                        </td>
                         <td className="py-3">{totalQuantity}</td>
                         <td className="py-3">
                           <span
@@ -409,11 +413,13 @@ const PurchaseOrderViewCom = () => {
         onHide={() => setShowPaymentModal(false)}
         purchaseItem={selectedPaymentItem}
       />
-      <PurchaseEdModal
-        show={showViewModal}
-        onHide={() => setShowViewModal(false)}
-        purchase={selectedItem}
-      />
+      {showViewModal && (
+        <PurchaseEdModal
+          show={showViewModal}
+          onHide={() => setShowViewModal(false)}
+          purchaseId={selectedItem}
+        />
+      )}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Edit Quantity</Modal.Title>

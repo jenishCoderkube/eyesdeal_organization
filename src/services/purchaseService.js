@@ -12,7 +12,7 @@ const AUTH_ENDPOINTS = {
   EXPORT: "/exportCsv",
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   GET_PURCHASE_ORDERS: "/purchase",
-  GET_UNIVERSAL_STOCK:"/stockRequest",
+  GET_UNIVERSAL_STOCK: "/stockRequest",
   ADD_INVENTORY: "/inventory",
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
@@ -224,27 +224,30 @@ export const purchaseService = {
     limit = 10
   ) => {
     try {
-      // Convert dates to timestamps covering the full day
-      const fromTimestamp = dateFrom
-        ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0)).getTime()
+      // Convert to "YYYY-MM-DD" format
+      const fromDate = dateFrom
+        ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0))
+            .toISOString()
+            .slice(0, 10)
         : undefined;
-      const toTimestamp = dateTo
-        ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).getTime()
+
+      const toDate = dateTo
+        ? new Date(new Date(dateTo).setHours(23, 59, 59, 999))
+            .toISOString()
+            .slice(0, 10)
         : undefined;
 
       const params = {
         populate: true,
         page,
         limit,
-        ...(fromTimestamp && { "createdAt[$gte]": fromTimestamp }),
-        ...(toTimestamp && { "createdAt[$lte]": toTimestamp }),
+        ...(fromDate && { startDate: fromDate }),
+        ...(toDate && { endDate: toDate }),
       };
 
       // handle orgIds array properly
       if (Array.isArray(orgIds) && orgIds.length > 0) {
-        orgIds.forEach((id, index) => {
-          params[`optimize[organization][$in][${index}]`] = id;
-        });
+        params["organization"] = orgIds.join(",");
       }
 
       const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {
@@ -262,57 +265,57 @@ export const purchaseService = {
       };
     }
   },
- getUniversalStock: async (
-  dateFrom,
-  dateTo,
-  storeId = null,
-  page = 1,
-  limit = 10
-) => {
-  try {
-    // Format dates to YYYY-MM-DD
-    const formatDate = (date) => {
-      if (!date) return undefined;
-      const d = new Date(date);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
+  getUniversalStock: async (
+    dateFrom,
+    dateTo,
+    storeId = null,
+    page = 1,
+    limit = 10
+  ) => {
+    try {
+      // Format dates to YYYY-MM-DD
+      const formatDate = (date) => {
+        if (!date) return undefined;
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
 
-    const fromDate = formatDate(dateFrom);
-    const toDate = formatDate(dateTo);
+      const fromDate = formatDate(dateFrom);
+      const toDate = formatDate(dateTo);
 
-    const params = {
-      populate: true,
-      page,
-      limit,
-      ...(fromDate && { startDate: fromDate }),
-      ...(toDate && { endDate: toDate }),
-    };
+      const params = {
+        populate: true,
+        page,
+        limit,
+        ...(fromDate && { startDate: fromDate }),
+        ...(toDate && { endDate: toDate }),
+      };
 
-    // handle storeId array properly
-    if (Array.isArray(storeId) && storeId.length > 0) {
-      storeId.forEach((id, index) => {
-        params[`optimize[store][$in][${index}]`] = id;
+      // handle storeId array properly
+      if (Array.isArray(storeId) && storeId.length > 0) {
+        storeId.forEach((id, index) => {
+          params[`optimize[store][$in][${index}]`] = id;
+        });
+      }
+
+      const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
+        params,
       });
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
     }
-
-    const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
-      params,
-    });
-
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Error",
-    };
-  }
-},
+  },
 
   updatePurchaseOrder: async (data) => {
     try {
@@ -340,7 +343,20 @@ export const purchaseService = {
       };
     }
   },
-
+  getPurchaseOrderById: async (purchaseId) => {
+    try {
+      const response = await api.get(
+        `${AUTH_ENDPOINTS.PURCHASE}/${purchaseId}`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Error deleting purchase order",
+      };
+    }
+  },
   addInventory: async (data) => {
     try {
       const response = await api.post(AUTH_ENDPOINTS.ADD_INVENTORY, data);
