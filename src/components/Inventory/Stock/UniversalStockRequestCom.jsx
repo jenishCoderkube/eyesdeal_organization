@@ -8,88 +8,64 @@ import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
 import { purchaseService } from "../../../services/purchaseService";
 import { Modal, Carousel, Button } from "react-bootstrap";
+import { defalutImageBasePath } from "../../../utils/constants";
+import ImageSliderModal from "../ImageSliderModal";
 
-const ImageSliderModal = ({ show, onHide, images }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+const PaymentModal = ({
+  show,
+  onHide,
+  productId,
+  orderId,
+  currentPaymentStatus,
+  onUpdate,
+}) => {
+  const [paymentStatus, setPaymentStatus] = useState(
+    currentPaymentStatus || "Pending"
+  );
 
-  const handleSelect = (selectedIndex) => {
-    setActiveIndex(selectedIndex);
-  };
+  const paymentOptions = [
+    { value: "Pending", label: "Pending" },
+    { value: "Success", label: "Success" },
+    { value: "Rejected", label: "Rejected" },
+  ];
 
-  const handleDotClick = (index) => {
-    setActiveIndex(index);
+  const handleSubmit = () => {
+    onUpdate(orderId, paymentStatus);
+    onHide();
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Product Images</Modal.Title>
+        <Modal.Title>Update Payment Status</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {images.length > 0 ? (
-          <>
-            <Carousel
-              activeIndex={activeIndex}
-              onSelect={handleSelect}
-              prevIcon={
-                <span
-                  className="carousel-control-prev-icon"
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                  }}
-                />
-              }
-              nextIcon={
-                <span
-                  className="carousel-control-next-icon"
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                  }}
-                />
-              }
-            >
-              {images.map((image, index) => (
-                <Carousel.Item key={index}>
-                  <img
-                    src={image}
-                    alt={`Product ${index + 1}`}
-                    className="d-block w-100"
-                    style={{ maxHeight: "500px", objectFit: "contain" }}
-                  />
-                </Carousel.Item>
-              ))}
-            </Carousel>
-            <div className="d-flex justify-content-center mt-3">
-              {images.map((_, index) => (
-                <span
-                  key={index}
-                  onClick={() => handleDotClick(index)}
-                  style={{
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    backgroundColor: index === activeIndex ? "#007bff" : "#ccc",
-                    margin: "0 5px",
-                    cursor: "pointer",
-                    display: "inline-block",
-                  }}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <p>No images available.</p>
-        )}
+        <div className="mb-3">
+          <label className="form-label fw-medium">Product ID</label>
+          <input
+            type="text"
+            className="form-control"
+            value={productId}
+            disabled
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label fw-medium">Payment Status</label>
+          <Select
+            options={paymentOptions}
+            value={paymentOptions.find((opt) => opt.value === paymentStatus)}
+            onChange={(option) => setPaymentStatus(option.value)}
+            placeholder="Select..."
+            classNamePrefix="react-select"
+          />
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
           Close
+        </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          Submit
         </Button>
       </Modal.Footer>
     </Modal>
@@ -99,11 +75,10 @@ const ImageSliderModal = ({ show, onHide, images }) => {
 const UniversalStockRequestCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
-  const [rowStoreOptions, setRowStoreOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRowStores, setSelectedRowStores] = useState({});
-  const [rowStoreLoading, setRowStoreLoading] = useState({});
+  const [selectedOrders, setSelectedOrders] = useState([]);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -115,10 +90,12 @@ const UniversalStockRequestCom = () => {
   });
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState("Pending");
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
-  const baseImageUrl =
-    "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
 
   const formik = useFormik({
     initialValues: {
@@ -165,6 +142,7 @@ const UniversalStockRequestCom = () => {
       }
     }
   }, [storeData]);
+
   const fetchStores = async () => {
     try {
       const response = await inventoryService.getStores();
@@ -232,63 +210,58 @@ const UniversalStockRequestCom = () => {
     }
   };
 
-  const fetchStoresForProduct = async (productId, ordNo) => {
-    if (rowStoreOptions[ordNo]) return; // already loaded
-
-    setRowStoreLoading((prev) => ({ ...prev, [ordNo]: true }));
-
+  const handleUpdatePayment = async (orderId, newStatus) => {
     try {
-      const response = await inventoryService.getStoresForUniverlStock({
-        productId,
-      });
-      const storesData = response?.data?.data || [];
-
-      if (response?.data?.success && Array.isArray(storesData)) {
-        const storeOptions = storesData.map((item) => ({
-          value: item.store?._id,
-          label: item.store?.name,
-          availableQuantity: item.availableQuantity ?? 0,
-        }));
-
-        setRowStoreOptions((prev) => ({
-          ...prev,
-          [ordNo]: storeOptions,
-        }));
-      } else {
-        toast.error(
-          response?.data?.message || "Failed to fetch stores for product"
-        );
-      }
+      // Assuming purchaseService has an updatePaymentStatus method
+      // e.g., await purchaseService.updatePaymentStatus(orderId, newStatus);
+      toast.success("Payment status updated successfully");
+      fetchAuditData(formik.values);
     } catch (error) {
-      console.error(`Error fetching stores for productId ${productId}:`, error);
-      toast.error("Failed to fetch stores for product");
-    } finally {
-      setRowStoreLoading((prev) => ({ ...prev, [ordNo]: false }));
+      console.error("Error updating payment status:", error);
+      toast.error("Failed to update payment status");
     }
   };
 
-  const handleDownload = (data) => {
-    const csv = [
-      "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${
-        data.category
-      },${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute(
-      "download",
-      `stock_audit_${moment(data.date).format("D-M-YYYY")}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleReceived = async () => {
+    try {
+      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
+      // e.g., await purchaseService.markAsReceived(selectedOrders);
+      toast.success("Selected orders marked as received");
+      setSelectedOrders([]);
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error marking as received:", error);
+      toast.error("Failed to mark as received");
+    }
+  };
+
+  const handleSelect = (ordNo) => {
+    if (selectedOrders.includes(ordNo)) {
+      setSelectedOrders(selectedOrders.filter((id) => id !== ordNo));
+    } else {
+      setSelectedOrders([...selectedOrders, ordNo]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.length === auditData.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(auditData.map((item) => item.ordNo));
+    }
+  };
+
+  const handleOpenPaymentModal = (orderId, productId, paymentStatus) => {
+    setSelectedOrderId(orderId);
+    setSelectedProductId(productId);
+    setCurrentPaymentStatus(paymentStatus || "Pending");
+    setShowPaymentModal(true);
   };
 
   const handleViewMoreImages = (photos) => {
-    const fullImageUrls = photos.map((photo) => `${baseImageUrl}${photo}`);
+    const fullImageUrls = photos.map(
+      (photo) => `${defalutImageBasePath}${photo}`
+    );
     setSelectedImages(fullImageUrls);
     setShowImageModal(true);
   };
@@ -360,28 +333,10 @@ const UniversalStockRequestCom = () => {
         <button
           type="button"
           className="btn btn-primary"
-          disabled={Object.keys(selectedRowStores).length === 0}
-          onClick={() => {
-            const selectedRows = auditData
-              .filter((item) => selectedRowStores[item.ordNo])
-              .map((item) => ({
-                ordNo: item.ordNo,
-                store: item.store,
-                sku: item.sku,
-                qty: item.qty,
-                selectedStore: selectedRowStores[item.ordNo],
-              }));
-
-            console.log("🧾 Selected Rows:", selectedRows);
-
-            if (selectedRows.length === 0) {
-              toast.warn("Please select at least one store before submitting.");
-            } else {
-              //  toast.success("Order submitted! Check console for details.");
-            }
-          }}
+          disabled={selectedOrders.length === 0}
+          onClick={handleReceived}
         >
-          Submit Order
+          Received
         </button>
       </div>
 
@@ -393,6 +348,16 @@ const UniversalStockRequestCom = () => {
             <table className="table table-striped table-hover">
               <thead className="border-top">
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedOrders.length === auditData.length &&
+                        auditData.length > 0
+                      }
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="py-3">ORDNO</th>
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
@@ -408,6 +373,13 @@ const UniversalStockRequestCom = () => {
                 {auditData.length > 0 ? (
                   auditData.map((item, index) => (
                     <tr key={index} className="align-middle">
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.includes(item.ordNo)}
+                          onChange={() => handleSelect(item.ordNo)}
+                        />
+                      </td>
                       <td className="py-3">
                         {index + 1 + (pagination.page - 1) * pagination.limit}
                       </td>
@@ -422,7 +394,7 @@ const UniversalStockRequestCom = () => {
                         {item.image ? (
                           <>
                             <img
-                              src={`${baseImageUrl}${item.image}`}
+                              src={`${defalutImageBasePath}${item.image}`}
                               alt="Product"
                               className="img-fluid rounded"
                               style={{ width: "50px", height: "50px" }}
@@ -445,73 +417,27 @@ const UniversalStockRequestCom = () => {
                         )}
                       </td>
                       <td className="py-3">
-                        <span
-                          className={`badge ${
-                            item.paymentStatus === "Success"
-                              ? "bg-success"
-                              : "bg-danger"
-                          }`}
-                        >
-                          {item.paymentStatus}
-                        </span>
+                        {item.paymentStatus === "Success" ? (
+                          <span className="badge bg-success">
+                            {item.paymentStatus}
+                          </span>
+                        ) : (
+                          <button
+                            className="btn btn-sm text-white"
+                            style={{ backgroundColor: "#0cacb8ff" }}
+                            onClick={() =>
+                              handleOpenPaymentModal(
+                                item.ordNo,
+                                item.productId,
+                                item.paymentStatus
+                              )
+                            }
+                          >
+                            Pay Now
+                          </button>
+                        )}
                       </td>
-                      <td className="py-3">
-                        <Select
-                          options={rowStoreOptions[item.ordNo] || []}
-                          onMenuOpen={() =>
-                            fetchStoresForProduct(item.productId, item.ordNo)
-                          }
-                          value={selectedRowStores[item.ordNo] || null}
-                          isLoading={rowStoreLoading[item.ordNo] || false}
-                          isClearable
-                          onChange={(selectedOption) => {
-                            setSelectedRowStores((prev) => {
-                              const updated = { ...prev };
 
-                              if (selectedOption) {
-                                updated[item.ordNo] = selectedOption;
-                              } else {
-                                delete updated[item.ordNo];
-                              }
-
-                              return updated;
-                            });
-                          }}
-                          classNamePrefix="react-select"
-                          className="w-100"
-                          placeholder={
-                            rowStoreOptions[item.ordNo]
-                              ? "Select store..."
-                              : "Show available stores..."
-                          }
-                          getOptionLabel={(option) =>
-                            `${option.label} (Qty: ${option.availableQuantity})`
-                          }
-                          styles={{
-                            container: (provided) => ({
-                              ...provided,
-                              width: "300px", // fixed container width
-                            }),
-                            control: (provided) => ({
-                              ...provided,
-                              minWidth: "300px",
-                              maxWidth: "300px",
-                              overflow: "hidden", // important: prevent control from expanding
-                            }),
-                            singleValue: (provided) => ({
-                              ...provided,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis", // long selected values will be truncated
-                              maxWidth: "100%",
-                            }),
-                            menu: (provided) => ({
-                              ...provided,
-                              width: "300px", // menu width matches control
-                            }),
-                          }}
-                        />
-                      </td>
                       <td className="py-3">
                         <span
                           className={`badge ${
@@ -527,7 +453,7 @@ const UniversalStockRequestCom = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="text-center py-5">
+                    <td colSpan="10" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -567,6 +493,14 @@ const UniversalStockRequestCom = () => {
         show={showImageModal}
         onHide={() => setShowImageModal(false)}
         images={selectedImages}
+      />
+      <PaymentModal
+        show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        productId={selectedProductId}
+        orderId={selectedOrderId}
+        currentPaymentStatus={currentPaymentStatus}
+        onUpdate={handleUpdatePayment}
       />
     </div>
   );
