@@ -318,15 +318,15 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    title: "ViewOrganization",
-    path: "/users/view-organization",
-    element: (
-      <PrivateRoute>
-        <ViewOrganization />
-      </PrivateRoute>
-    ),
-  },
+  // {
+  //   title: "ViewOrganization",
+  //   path: "/users/view-organization",
+  //   element: (
+  //     <PrivateRoute>
+  //       <ViewOrganization />
+  //     </PrivateRoute>
+  //   ),
+  // },
   {
     title: "EditOrganization",
     path: "/organization/:id",
