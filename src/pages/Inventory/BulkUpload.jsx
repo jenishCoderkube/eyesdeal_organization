@@ -158,7 +158,7 @@ const BulkUploadInventory = () => {
     <div className="container-fluid px-4 py-8">
       <div className="row justify-content-center">
         <div className="col-12 col-lg-10">
-          <h1 className="h2 text-dark fw-bold my-4">Bulk Upload Customers</h1>
+          <h1 className="h2 text-dark fw-bold my-4">Bulk Upload Inventory</h1>
           <div className="card shadow-sm mb-4 border-0">
             <div className="card-body p-4">
               {showLoader ? (
