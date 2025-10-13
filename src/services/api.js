@@ -26,17 +26,15 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log("errorerrorerror<<<", error);
+    // Skip interceptor for requests with this header
+    if (error.config?.headers?.skipAuthInterceptor) {
+      return Promise.reject(error);
+    }
 
-    if (
-      error.response?.status === 401 &&
-      error.response?.data?.success === false &&
-      error.response?.statusText === "Unauthorized"
-    ) {
+    if (error.response?.status === 401) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
       window.location.href = "/login";
