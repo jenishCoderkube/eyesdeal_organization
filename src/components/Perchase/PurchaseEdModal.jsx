@@ -273,7 +273,6 @@ const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
                     <th>QTY</th>
                     <th>PURCHASE RATE</th>
                     <th>TOTAL</th>
-                    <th>ACTION</th>
                   </tr>
                 </thead>
                 {loading ? (
@@ -307,6 +306,7 @@ const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
                               type="number"
                               className="form-control form-control-sm"
                               value={item.quantity}
+                              disabled
                               onChange={(e) =>
                                 handleInlineChange(
                                   index,
@@ -324,6 +324,7 @@ const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
                               type="number"
                               className="form-control form-control-sm"
                               value={item.purchaseRate}
+                              disabled
                               onChange={(e) =>
                                 handleInlineChange(
                                   index,
@@ -336,14 +337,6 @@ const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
                             />
                           </td>
                           <td>{displayTotal}</td>
-                          <td className="text-center">
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteItem(index)}
-                            >
-                              &times;
-                            </button>
-                          </td>
                         </tr>
                       );
                     })}
@@ -351,18 +344,6 @@ const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
                 )}
               </table>
             </div>
-
-            {!loading && (
-              <div className="text-end mt-3">
-                <Button
-                  variant="success"
-                  onClick={handleSubmitAll}
-                  disabled={saving}
-                >
-                  {saving ? "Saving..." : "Submit All Changes"}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </Modal.Body>
