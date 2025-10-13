@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { FaHeart, FaShippingFast, FaPlus, FaMinus } from "react-icons/fa";
-import { AiOutlineSafetyCertificate, AiOutlineUser } from "react-icons/ai";
+import { useSearchParams } from "react-router-dom";
+import { FaPlus, FaMinus } from "react-icons/fa";
 import "./ProductDetails.css";
 import { imageBaseUrl } from "../../../utils/api";
 import productViewService from "../../../services/Products/productViewService";
-import { toast } from "react-toastify";
-// Optional: Import toast library for notifications
-// import { toast } from "react-toastify";
 
-const ProductDetails = ({ product, onBack }) => {
+const ProductDetails = ({
+  product,
+  onBack,
+  onQuantityChange,
+  existingQuantity,
+}) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeImage, setActiveImage] = useState(product?.photos?.[0] || null);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(existingQuantity || 0);
   const [colorVariants, setColorVariants] = useState([]);
-  const navigate = useNavigate();
-  // Set the active image when the product changes
+
+  // Sync product image
   useEffect(() => {
-    if (product && product.photos && product.photos.length > 0) {
+    if (product?.photos?.length) {
       setActiveImage(product.photos[0]);
     } else {
       setActiveImage(null);
     }
   }, [product]);
 
-  // Fetch color variants when the product changes
+  // Fetch color variants
   useEffect(() => {
     const fetchColorVariants = async () => {
-      if (product && product.brand && product.modelNumber && product.__t) {
+      if (product?.brand && product?.modelNumber && product?.__t) {
         try {
           const response = await productViewService.getProductsColors(
             product.brand,
@@ -39,10 +39,6 @@ const ProductDetails = ({ product, onBack }) => {
           if (response.success) {
             setColorVariants(response.data.docs);
           } else {
-            console.error(
-              "Failed to fetch color variants:",
-              response.data.message
-            );
             setColorVariants([]);
           }
         } catch (error) {
@@ -51,56 +47,19 @@ const ProductDetails = ({ product, onBack }) => {
         }
       }
     };
-
     fetchColorVariants();
   }, [product]);
 
-  const handleAddToCart = async () => {
-    setIsAddingToCart(true);
-    try {
-      // Retrieve user data from localStorage
-      const userData = JSON.parse(localStorage.getItem("user"));
-      if (!userData || !userData._id || !userData.stores?.[0]) {
-        throw new Error("User data or store not found in localStorage");
-      }
-
-      const payload = {
-        store: userData.stores[0],
-        user: userData._id,
-        items: [
-          {
-            product: product._id,
-            quantity: Number(quantity), // e.g., 5
-            purchaseRate: product.sellPrice || 0,
-            totalAmount: (product.sellPrice || product?.MRP) * Number(quantity),
-          },
-        ],
-      };
-      // Call addToCartProductPurchase API
-      const response = await productViewService.addToCartProductPurchase(
-        payload
-      );
-
-      if (response.success) {
-        // Replace alert with toast if using react-toastify
-        // toast.success(`Added ${quantity} item(s) to cart successfully!`);
-        toast(`Added ${quantity} item(s) to cart successfully!`);
-        navigate("/purchase/viewPurchaseOrder");
-      } else {
-        throw new Error(response.message || "Failed to add item to cart");
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error.message);
-      // toast.error(error.message || "Failed to add item to cart");
-      toast.error(error.message || "Failed to add item to cart");
-    } finally {
-      setIsAddingToCart(false);
+  // 🔹 Notify parent when quantity changes
+  useEffect(() => {
+    if (onQuantityChange && product?._id) {
+      onQuantityChange(product._id, Number(quantity) || 0, product.sellPrice);
     }
-  };
+  }, [quantity, product?._id]);
 
   const handleQuantityChange = (e) => {
     const value = e.target.value;
-    if (value === "" || (/^\d+$/.test(value) && value >= 1 && value <= 5000)) {
+    if (value === "" || (/^\d+$/.test(value) && value >= 0 && value <= 5000)) {
       setQuantity(value === "" ? "" : Number(value));
     }
   };
@@ -112,13 +71,12 @@ const ProductDetails = ({ product, onBack }) => {
   };
 
   const handleDecrement = () => {
-    if (quantity > 1) {
+    if (quantity > 0) {
       setQuantity(Number(quantity) - 1);
     }
   };
 
   const handleColorSelect = (productId) => {
-    // Update URL with the selected product's _id, preserving other query parameters
     setSearchParams(
       {
         ...Object.fromEntries(searchParams),
@@ -129,7 +87,6 @@ const ProductDetails = ({ product, onBack }) => {
     );
   };
 
-  // If no product data is provided, show a fallback
   if (!product) {
     return (
       <div className="container py-5">
@@ -150,7 +107,6 @@ const ProductDetails = ({ product, onBack }) => {
         {/* Left Panel: Images */}
         <div className="col-lg-6">
           <div className="d-flex flex-column flex-md-row">
-            {/* Thumbnails (Desktop: Vertical) */}
             <div
               className="d-none d-md-flex flex-column me-3 gap-2"
               style={{ maxHeight: "500px", overflowY: "auto" }}
@@ -159,8 +115,8 @@ const ProductDetails = ({ product, onBack }) => {
                 <img
                   key={index}
                   src={imageBaseUrl + img}
-                  alt={`Thumbnail ${index + 1} for ${product.sku}`}
-                  className={`img-thumbnail rounded cursor-pointer ${
+                  alt={`Thumbnail ${index + 1}`}
+                  className={`img-thumbnail rounded ${
                     activeImage === img ? "border border-primary" : ""
                   }`}
                   style={{
@@ -170,25 +126,23 @@ const ProductDetails = ({ product, onBack }) => {
                     cursor: "pointer",
                   }}
                   onClick={() => setActiveImage(img)}
-                  onError={(e) => (e.target.style.display = "none")}
                 />
               ))}
             </div>
-            {/* Main Image and Mobile Thumbnails */}
+
             <div className="flex-grow-1">
               {/* Main Image */}
               <div className="mb-3">
                 {activeImage ? (
                   <img
                     src={imageBaseUrl + activeImage}
-                    alt={`${product.displayName} - Main Image`}
+                    alt="Main"
                     className="img-fluid rounded shadow-sm"
                     style={{
                       maxHeight: "400px",
-                      minWidth: "100%",
+                      width: "100%",
                       objectFit: "contain",
                     }}
-                    onError={(e) => (e.target.style.display = "none")}
                   />
                 ) : (
                   <div
@@ -199,29 +153,7 @@ const ProductDetails = ({ product, onBack }) => {
                   </div>
                 )}
               </div>
-              {/* Thumbnails (Mobile: Horizontal Scrollable) */}
-              <div
-                className="d-flex d-md-none overflow-auto gap-2 mb-3"
-                style={{ maxWidth: "100%" }}
-              >
-                {product?.photos?.map((img, index) => (
-                  <img
-                    key={index}
-                    src={imageBaseUrl + img}
-                    alt={`Thumbnail ${index + 1} for ${product.sku}`}
-                    className={`img-thumbnail rounded cursor-pointer flex-shrink-0 ${
-                      activeImage === img ? "border border-primary" : ""
-                    }`}
-                    style={{
-                      width: "100px",
-                      height: "80px",
-                      objectFit: "contain",
-                    }}
-                    onClick={() => setActiveImage(img)}
-                    onError={(e) => (e.target.style.display = "none")}
-                  />
-                ))}
-              </div>
+
               {/* Quantity Input */}
               <div className="d-flex justify-content-center align-items-center mb-3">
                 <div className="input-group" style={{ maxWidth: "200px" }}>
@@ -229,7 +161,7 @@ const ProductDetails = ({ product, onBack }) => {
                     className="btn btn-outline-secondary"
                     type="button"
                     onClick={handleDecrement}
-                    disabled={quantity <= 1}
+                    disabled={quantity <= 0}
                   >
                     <FaMinus />
                   </button>
@@ -250,16 +182,6 @@ const ProductDetails = ({ product, onBack }) => {
                   </button>
                 </div>
               </div>
-              {/* Add to Cart Button */}
-              <div className="d-grid">
-                <button
-                  className="btn btn-success"
-                  onClick={handleAddToCart}
-                  disabled={isAddingToCart || quantity === ""}
-                >
-                  {isAddingToCart ? "Adding to Cart..." : "Add To Cart"}
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -275,8 +197,8 @@ const ProductDetails = ({ product, onBack }) => {
 
           <h3 className="fw-bold fs-6 mb-2">Features:</h3>
           <ul className="list-group list-group-flush mb-4">
-            {product?.features && product?.features?.length > 0 ? (
-              product?.features?.map((feature, index) => (
+            {product?.features?.length ? (
+              product.features.map((feature, index) => (
                 <li
                   key={index}
                   className="list-group-item"
@@ -328,11 +250,7 @@ const ProductDetails = ({ product, onBack }) => {
                       height: "60px",
                       objectFit: "contain",
                     }}
-                    onError={(e) => (e.target.style.display = "none")}
                   />
-                  {/* <p className="mt-1 mb-0 small">
-                    {variant.frameColor?.[0]?.name || variant.colorNumber}
-                  </p> */}
                 </div>
               ))}
             </div>

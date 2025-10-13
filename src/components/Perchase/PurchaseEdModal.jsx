@@ -14,7 +14,7 @@ const debounce = (func, wait) => {
   };
 };
 
-const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
+const PurchaseEdModal = ({ show, onHide, purchaseId, onUpdateSuccess }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(null);
   const [editableData, setEditableData] = useState([]);
@@ -168,6 +168,7 @@ const PurchaseEdModal = ({ show, onHide, purchaseId }) => {
       if (response.success) {
         toast.success("Purchase items updated successfully");
         await getPurchaseDetails();
+        onUpdateSuccess();
       } else {
         toast.error(response.message || "Failed to update data");
       }

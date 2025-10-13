@@ -288,7 +288,15 @@ const ProductPurchase = () => {
       )}
 
       {productId && selectedProduct ? (
-        <ProductDetails product={selectedProduct} onBack={handleBack} />
+        <ProductDetails
+          product={selectedProduct}
+          onBack={handleBack}
+          onQuantityChange={handleQuantityChange}
+          existingQuantity={
+            selectedIds.find((item) => item._id === selectedProduct?._id)
+              ?.quantity || 0
+          }
+        />
       ) : (
         !productId &&
         !loading &&
