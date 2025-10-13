@@ -106,6 +106,31 @@ export const purchaseService = {
       };
     }
   },
+  UpdatePaymentStatus: async (id, data) => {
+    try {
+      const response = await api.patch(
+        `${AUTH_ENDPOINTS.PURCHASE}/${id}`,
+        data
+      );
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+      }
+      return {
+        success: false,
+        message: response.data.message || "Error",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
   searchProduct: async (search) => {
     try {
       const response = await api.get(AUTH_ENDPOINTS.PRODUCTS(search));

@@ -90,6 +90,10 @@ const PurchaseOrderViewCom = () => {
     init();
   }, []);
 
+  const onUpdateSuccess = () => {
+    fetchPurchaseData(formik.values, false, pagination.page);
+  };
+
   const fetchPurchaseData = async (values, isInitial = false, newPage = 1) => {
     const orgIds = values?.organizations?.map((o) => o.value) || [];
     setLoading(true);
@@ -226,6 +230,29 @@ const PurchaseOrderViewCom = () => {
     }
   };
 
+  const handleEditPaymentPurchaseOrder = async (newStatus) => {
+    if (!selectedPaymentItem) return;
+    const payload = {
+      paymentStatus: newStatus,
+    };
+    try {
+      const response = await purchaseService.UpdatePaymentStatus(
+        selectedPaymentItem._id,
+        payload
+      );
+      if (response.success) {
+        toast.success("Payment status updated successfully");
+        setShowPaymentModal(false);
+        fetchPurchaseData(formik.values, false, pagination.page);
+      } else {
+        toast.error(response.message || "Failed to update payment status");
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Error updating payment status");
+    }
+  };
+
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">View Purchase Orders</h4>
@@ -291,6 +318,7 @@ const PurchaseOrderViewCom = () => {
                   <th className="py-3">Date</th>
                   <th className="py-3">Organization</th>
                   <th className="py-3">Total Qty</th>
+                  <th className="py-3">Total Amount</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Actions</th>
                   <th className="py-3">Download</th>
@@ -301,6 +329,10 @@ const PurchaseOrderViewCom = () => {
                   purchaseData.map((item, index) => {
                     const totalQuantity = item.items.reduce(
                       (sum, i) => sum + i.quantity,
+                      0
+                    );
+                    const totalAmount = item.items.reduce(
+                      (sum, i) => sum + i?.totalAmount,
                       0
                     );
                     return (
@@ -317,6 +349,8 @@ const PurchaseOrderViewCom = () => {
                             "N/A"}
                         </td>
                         <td className="py-3">{totalQuantity}</td>
+                        <td className="py-3">{totalAmount}</td>
+
                         <td className="py-3">
                           <span
                             className={getStatusBadge(item.paymentStatus)}
@@ -370,7 +404,7 @@ const PurchaseOrderViewCom = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center py-5">
+                    <td colSpan="8" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -412,12 +446,14 @@ const PurchaseOrderViewCom = () => {
         show={showPaymentModal}
         onHide={() => setShowPaymentModal(false)}
         purchaseItem={selectedPaymentItem}
+        onUpdate={handleEditPaymentPurchaseOrder}
       />
       {showViewModal && (
         <PurchaseEdModal
           show={showViewModal}
           onHide={() => setShowViewModal(false)}
           purchaseId={selectedItem}
+          onUpdateSuccess={onUpdateSuccess}
         />
       )}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
