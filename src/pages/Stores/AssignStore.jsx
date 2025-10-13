@@ -23,7 +23,9 @@ const AssignStore = () => {
         setStoreOptions(options);
 
         // Check for storeInfoId in localStorage and set default selection
-        const storeInfoId = localStorage.getItem("storeInfoId");
+        let user = JSON.parse(localStorage.getItem("user"));
+        const storeInfoId =
+          user?.stores?.[0] || localStorage.getItem("storeInfoId");
         if (storeInfoId) {
           const defaultStore = options.find(
             (option) => option.value === storeInfoId

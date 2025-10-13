@@ -12,15 +12,39 @@ const isTokenValid = (token) => {
   }
 };
 
-const PrivateRoute = ({ children }) => {
+/**
+ * PrivateRoute with optional store check
+ * @param {ReactNode} children
+ * @param {boolean} requireStore - check if user has at least one store
+ */
+const PrivateRoute = ({ children, requireStore = false }) => {
   const token = localStorage.getItem("accessToken");
+  const userData = localStorage.getItem("user");
 
-  if (token && isTokenValid(token)) {
-    return children;
+  // 🔒 Token check
+  if (!token || !isTokenValid(token)) {
+    localStorage.removeItem("accessToken");
+    return <Navigate to="/login" />;
   }
 
-  localStorage.removeItem("accessToken");
-  return <Navigate to="/login" />;
+  // 🏬 Store check (only if required)
+  if (requireStore) {
+    try {
+      const user = JSON.parse(userData);
+      const hasStore =
+        user && Array.isArray(user.stores) && user.stores.length > 0;
+
+      if (!hasStore) {
+        return <Navigate to="/stores/assign-store" />;
+      }
+    } catch (err) {
+      console.error("Error parsing user data:", err);
+      return <Navigate to="/stores/assign-store" />;
+    }
+  }
+
+  // ✅ Passed all checks
+  return children;
 };
 
 export default PrivateRoute;

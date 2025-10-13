@@ -87,7 +87,7 @@ const routes = [
     title: "Dashboard",
     path: "/dashboard",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <Dashboard />
       </PrivateRoute>
     ),
@@ -96,7 +96,7 @@ const routes = [
     title: "Sale",
     path: "/sale/new",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddSale />
       </PrivateRoute>
     ),
@@ -105,7 +105,7 @@ const routes = [
     title: "AddUsers",
     path: "/addCustomer",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddCustomer />
       </PrivateRoute>
     ),
@@ -123,7 +123,7 @@ const routes = [
     title: "SaleList",
     path: "/sale/list",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <SaleReturn />
       </PrivateRoute>
     ),
@@ -187,7 +187,7 @@ const routes = [
     title: "AddPerchase",
     path: "/purchase/new",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddPerchase />
       </PrivateRoute>
     ),
@@ -223,7 +223,7 @@ const routes = [
     title: "AddProductPurchase",
     path: "/purchase/addproduct",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddProductView />
       </PrivateRoute>
     ),
@@ -286,7 +286,7 @@ const routes = [
     title: "ViewCashbook",
     path: "/cashbook/view",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <ViewCashbook />
       </PrivateRoute>
     ),
@@ -304,7 +304,7 @@ const routes = [
     title: "AddCustomer",
     path: "/users/addCustomer",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddCustomer />
       </PrivateRoute>
     ),
@@ -511,7 +511,7 @@ const routes = [
     title: "AddStockTransfer",
     path: "/inventory/transfer-stock",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddStockTransfer />
       </PrivateRoute>
     ),
@@ -583,7 +583,7 @@ const routes = [
     title: "AddProduct",
     path: "/products/add",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddProduct mode="add" />
       </PrivateRoute>
     ),
@@ -592,7 +592,7 @@ const routes = [
     title: "EditProduct",
     path: "/products/edit/:productId/:model",
     element: (
-      <PrivateRoute>
+      <PrivateRoute requireStore={true}>
         <AddProduct mode="edit" />
       </PrivateRoute>
     ),

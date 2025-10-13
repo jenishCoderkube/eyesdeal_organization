@@ -56,6 +56,7 @@ export const authService = {
   logout: () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+    localStorage.removeItem("storeInfoId");
     window.location.href = "/login";
   },
 };
