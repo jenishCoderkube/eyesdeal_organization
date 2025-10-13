@@ -10,8 +10,8 @@ const ENDPOINTS = {
   PRESCRIPTION_TYPES: "/master/prescriptionType",
   FRAME_COLLECTIONS: "/master/collection",
   PRODUCTS: (model) => `/products/${model}`,
-  PRODUCTBYID: (model, productId, isB2B, populate = "features") =>
-    `/master/${model}?_id=${productId}&isB2B=${isB2B}${
+  PRODUCTBYID: (model, productId, populate = "features") =>
+    `/master/${model}?_id=${productId}&${
       populate ? `&populate=${populate}` : ""
     }`,
 
@@ -189,10 +189,10 @@ const productViewService = {
       };
     }
   },
-  getProductById: async (model, productId, isB2B = true) => {
+  getProductById: async (model, productId) => {
     try {
       const response = await api.get(
-        `${ENDPOINTS.PRODUCTBYID(model, productId, isB2B)}`
+        `${ENDPOINTS.PRODUCTBYID(model, productId)}`
       );
       return {
         success: response.data.success,
