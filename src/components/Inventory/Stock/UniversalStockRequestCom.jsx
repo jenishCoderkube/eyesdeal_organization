@@ -105,10 +105,12 @@ const UniversalStockRequestCom = () => {
   const [selectedRowStores, setSelectedRowStores] = useState({});
   const [rowStoreLoading, setRowStoreLoading] = useState({});
 
+  const [selectedRows, setSelectedRows] = useState({});
+  const [selectAll, setSelectAll] = useState(false);
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 50,
     totalDocs: 0,
     totalPages: 0,
     hasPrevPage: false,
@@ -118,7 +120,8 @@ const UniversalStockRequestCom = () => {
   const [selectedImages, setSelectedImages] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
-  const baseImageUrl = "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
+  const baseImageUrl =
+    "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
 
   const formik = useFormik({
     initialValues: {
@@ -148,7 +151,6 @@ const UniversalStockRequestCom = () => {
     fetchStores();
   }, []);
 
-
   useEffect(() => {
     const storedStoreId = user?.stores?.[0];
     if (storedStoreId && storeData.length > 0) {
@@ -156,16 +158,21 @@ const UniversalStockRequestCom = () => {
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("stores", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
-        fetchAuditData(formik.values, true);
+        const defaultValues = {
+          ...formik.values,
+          stores: [
+            {
+              value: defaultStore._id,
+              label: defaultStore.name,
+            },
+          ],
+        };
+        formik.setValues(defaultValues);
+        fetchAuditData(defaultValues, true); // ✅ use updated values directly
       }
     }
   }, [storeData]);
+
   const fetchStores = async () => {
     try {
       const response = await inventoryService.getStores();
@@ -180,12 +187,10 @@ const UniversalStockRequestCom = () => {
     }
   };
 
-
-
   const fetchAuditData = async (values, isInitial = false, newPage) => {
     const storeId = values?.stores?.length
       ? values.stores.map((s) => s.value)
-      : user?.stores || [];
+      : [];
 
     setLoading(true);
 
@@ -212,10 +217,13 @@ const UniversalStockRequestCom = () => {
           image: item.product.photos[0],
           photos: item.product.photos, // Store all photos
           productId: item.product._id,
+          orderMedia:
+            item?.product?.orderMedia ||
+            "https://www.w3schools.com/html/mov_bbb.mp4",
         }));
 
         setAuditData(mappedData);
-        setSelectedRowStores("")
+        setSelectedRowStores("");
         setPagination({
           page: container.page,
           limit: container.limit,
@@ -236,47 +244,55 @@ const UniversalStockRequestCom = () => {
   };
 
   const fetchStoresForProduct = async (productId, ordNo) => {
-  if (rowStoreOptions[ordNo]) return; // already loaded
+    if (rowStoreOptions[ordNo]) return; // already loaded
 
-  setRowStoreLoading((prev) => ({ ...prev, [ordNo]: true }));
+    setRowStoreLoading((prev) => ({ ...prev, [ordNo]: true }));
 
-  try {
-    const response = await inventoryService.getStoresForUniverlStock({ productId });
-    const storesData = response?.data?.data || [];
+    try {
+      const response = await inventoryService.getStoresForUniverlStock({
+        productId,
+      });
+      const storesData = response?.data?.data || [];
 
-    if (response?.data?.success && Array.isArray(storesData)) {
-      const storeOptions = storesData.map((item) => ({
-        value: item.store?._id,
-        label: item.store?.name,
-        availableQuantity: item.availableQuantity ?? 0,
-      }));
+      if (response?.data?.success && Array.isArray(storesData)) {
+        const storeOptions = storesData.map((item) => ({
+          value: item.store?._id,
+          label: item.store?.name,
+          availableQuantity: item.availableQuantity ?? 0,
+        }));
 
-      setRowStoreOptions((prev) => ({
-        ...prev,
-        [ordNo]: storeOptions,
-      }));
-    } else {
-      toast.error(response?.data?.message || "Failed to fetch stores for product");
+        setRowStoreOptions((prev) => ({
+          ...prev,
+          [ordNo]: storeOptions,
+        }));
+      } else {
+        toast.error(
+          response?.data?.message || "Failed to fetch stores for product"
+        );
+      }
+    } catch (error) {
+      console.error(`Error fetching stores for productId ${productId}:`, error);
+      toast.error("Failed to fetch stores for product");
+    } finally {
+      setRowStoreLoading((prev) => ({ ...prev, [ordNo]: false }));
     }
-  } catch (error) {
-    console.error(`Error fetching stores for productId ${productId}:`, error);
-    toast.error("Failed to fetch stores for product");
-  } finally {
-    setRowStoreLoading((prev) => ({ ...prev, [ordNo]: false }));
-  }
-};
-
+  };
 
   const handleDownload = (data) => {
     const csv = [
       "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
+      `${data.ordNo},${moment(data.date).format("D-M-YYYY")},${data.store},${
+        data.category
+      },${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `stock_audit_${moment(data.date).format("D-M-YYYY")}.csv`);
+    link.setAttribute(
+      "download",
+      `stock_audit_${moment(data.date).format("D-M-YYYY")}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -355,40 +371,72 @@ const UniversalStockRequestCom = () => {
         <button
           type="button"
           className="btn btn-primary"
-          disabled={Object.keys(selectedRowStores).length === 0}
+          disabled={Object.keys(selectedRows).length === 0}
           onClick={() => {
-            const selectedRows = auditData
-              .filter((item) => selectedRowStores[item.ordNo])
+            const selectedData = auditData
+              .filter((item) => selectedRows[item.ordNo])
               .map((item) => ({
                 ordNo: item.ordNo,
                 store: item.store,
                 sku: item.sku,
                 qty: item.qty,
-                selectedStore: selectedRowStores[item.ordNo],
+                selectedStore: selectedRowStores[item.ordNo], // the store selected for this row
               }));
 
-            console.log("🧾 Selected Rows:", selectedRows);
-
-            if (selectedRows.length === 0) {
-              toast.warn("Please select at least one store before submitting.");
-            } else {
-              //  toast.success("Order submitted! Check console for details.");
+            if (
+              selectedData.some(
+                (row) => !row.selectedStore || !row.selectedStore.value
+              )
+            ) {
+              // If any selected row doesn't have a store selected
+              toast.warn("Please select a store for all selected rows!");
+              return;
             }
+
+            // If all selected rows have stores, proceed
+            console.log("📝 Selected Rows with Stores:", selectedData);
+            alert("currently in development");
+            // toast.success(`${selectedData.length} orders ready to submit`);
+            // Continue your submit logic here...
           }}
         >
           Submit Order
         </button>
       </div>
 
-
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
         ) : (
           <>
-            <table className="table table-striped table-hover">
+            <table className="table  table-striped table-hover">
               <thead className="border-top">
                 <tr>
+                  {/* <th className="py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectAll(checked);
+                        if (checked) {
+                          const allRows = {};
+                          auditData.forEach((item) => {
+                            allRows[item.ordNo] = true;
+                          });
+                          setSelectedRows(allRows);
+                        } else {
+                          setSelectedRows({});
+                        }
+                      }}
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        cursor: "pointer",
+                      }}
+                    />
+                  </th> */}
+
                   <th className="py-3">ORDNO</th>
                   <th className="py-3">Date</th>
                   <th className="py-3">Store</th>
@@ -399,6 +447,7 @@ const UniversalStockRequestCom = () => {
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Store Select</th>
                   <th className="py-3">Order Status</th>
+                  <th className="py-3">Order Image/Video</th>
                 </tr>
               </thead>
               <tbody>
@@ -406,7 +455,33 @@ const UniversalStockRequestCom = () => {
                   auditData.map((item, index) => (
                     <tr key={index} className="align-middle">
                       <td className="py-3">
-                        {index + 1 + (pagination.page - 1) * pagination.limit}
+                        <div className=" d-flex align-items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedRows[item.ordNo]}
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              cursor: "pointer",
+                            }}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedRows((prev) => {
+                                const updated = { ...prev };
+                                if (checked) updated[item.ordNo] = true;
+                                else delete updated[item.ordNo];
+
+                                // update selectAll if all rows are checked
+                                setSelectAll(
+                                  Object.keys(updated).length ===
+                                    auditData.length
+                                );
+                                return updated;
+                              });
+                            }}
+                          />
+                          {index + 1 + (pagination.page - 1) * pagination.limit}
+                        </div>
                       </td>
                       <td className="py-3">
                         {moment(item.date).format("D-M-YYYY")}
@@ -443,10 +518,11 @@ const UniversalStockRequestCom = () => {
                       </td>
                       <td className="py-3">
                         <span
-                          className={`badge ${item.paymentStatus === "Success"
-                            ? "bg-success"
-                            : "bg-danger"
-                            }`}
+                          className={`badge ${
+                            item.paymentStatus === "Success"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
                         >
                           {item.paymentStatus}
                         </span>
@@ -454,7 +530,9 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">
                         <Select
                           options={rowStoreOptions[item.ordNo] || []}
-                          onMenuOpen={() => fetchStoresForProduct(item.productId, item.ordNo)}
+                          onMenuOpen={() =>
+                            fetchStoresForProduct(item.productId, item.ordNo)
+                          }
                           value={selectedRowStores[item.ordNo] || null}
                           isLoading={rowStoreLoading[item.ordNo] || false}
                           isClearable
@@ -505,22 +583,56 @@ const UniversalStockRequestCom = () => {
                             }),
                           }}
                         />
-
-
                       </td>
                       <td className="py-3">
-
                         <span
-                          className={`badge ${item.paymentStatus === "Success"
-                            ? "bg-success"
-                            : "bg-danger"
-                            }`}
+                          className={`badge ${
+                            item.paymentStatus === "Success"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
                         >
                           {item.orderStatus}
                         </span>
-
                       </td>
-
+                      <td className="py-3 text-center">
+                        {item.orderMedia ? (
+                          item.orderMedia.endsWith(".mp4") ||
+                          item.orderMedia.endsWith(".mov") ? (
+                            <video
+                              src={item?.orderMedia}
+                              width="60"
+                              height="60"
+                              style={{
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                objectFit: "cover",
+                              }}
+                              onClick={() =>
+                                window.open(item.orderMedia, "_blank")
+                              }
+                              muted
+                            />
+                          ) : (
+                            <img
+                              src={item?.orderMedia}
+                              alt="Order Media"
+                              width="60"
+                              height="60"
+                              style={{
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                objectFit: "cover",
+                              }}
+                              onClick={() =>
+                                window.open(item.orderMedia, "_blank")
+                              }
+                            />
+                          )
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -546,9 +658,13 @@ const UniversalStockRequestCom = () => {
                 activeClassName={"active"}
                 pageClassName={"page-item"}
                 pageLinkClassName={"page-link"}
-                previousClassName={`page-item ${!pagination.hasPrevPage ? "disabled" : ""}`}
+                previousClassName={`page-item ${
+                  !pagination.hasPrevPage ? "disabled" : ""
+                }`}
                 previousLinkClassName={"page-link"}
-                nextClassName={`page-item ${!pagination.hasNextPage ? "disabled" : ""}`}
+                nextClassName={`page-item ${
+                  !pagination.hasNextPage ? "disabled" : ""
+                }`}
                 nextLinkClassName={"page-link"}
                 breakClassName={"page-item"}
                 breakLinkClassName={"page-link"}

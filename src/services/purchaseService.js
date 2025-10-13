@@ -321,9 +321,7 @@ export const purchaseService = {
 
       // handle storeId array properly
       if (Array.isArray(storeId) && storeId.length > 0) {
-        storeId.forEach((id, index) => {
-          params[`optimize[store][$in][${index}]`] = id;
-        });
+        params["store"] = storeId.join(",");
       }
 
       const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
