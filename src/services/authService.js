@@ -10,26 +10,39 @@ const AUTH_ENDPOINTS = {
 export const authService = {
   checkUser: async (phone) => {
     try {
-      const response = await api.get(AUTH_ENDPOINTS.CHECK_USER(phone));
+      const response = await api.get(AUTH_ENDPOINTS.CHECK_USER(phone), {
+        headers: { skipAuthInterceptor: true },
+      });
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
+      if (error.response?.status === 401) {
+        // Instead of refreshing, just return false
+        return {
+          success: false,
+          message:
+            "The phone number you entered is not registered or invalid. Please check and try again.",
+        };
+      }
       return {
         success: false,
         message: error.response?.data?.message || "Error checking user",
       };
     }
   },
-
   login: async (phone, password) => {
     try {
-      const response = await api.post(AUTH_ENDPOINTS.LOGIN, {
-        phone,
-        password,
-        validationMethod: "password",
-      });
+      const response = await api.post(
+        AUTH_ENDPOINTS.LOGIN,
+        {
+          phone,
+          password,
+          validationMethod: "password",
+        },
+        { headers: { skipAuthInterceptor: true } }
+      );
 
       if (response.data.success) {
         localStorage.setItem("accessToken", response.data.data.accessToken);
