@@ -82,7 +82,7 @@ const UniversalStockRequestCom = () => {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 50,
     totalDocs: 0,
     totalPages: 0,
     hasPrevPage: false,
@@ -132,13 +132,17 @@ const UniversalStockRequestCom = () => {
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("stores", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
-        fetchAuditData(formik.values, true);
+        const defaultValues = {
+          ...formik.values,
+          stores: [
+            {
+              value: defaultStore._id,
+              label: defaultStore.name,
+            },
+          ],
+        };
+        formik.setValues(defaultValues);
+        fetchAuditData(defaultValues, true); // ✅ use updated values directly
       }
     }
   }, [storeData]);
@@ -160,7 +164,7 @@ const UniversalStockRequestCom = () => {
   const fetchAuditData = async (values, isInitial = false, newPage) => {
     const storeId = values?.stores?.length
       ? values.stores.map((s) => s.value)
-      : user?.stores || [];
+      : [];
 
     setLoading(true);
 
@@ -187,6 +191,9 @@ const UniversalStockRequestCom = () => {
           image: item.product.photos[0],
           photos: item.product.photos, // Store all photos
           productId: item.product._id,
+          orderMedia:
+            item?.product?.orderMedia ||
+            "https://www.w3schools.com/html/mov_bbb.mp4",
         }));
 
         setAuditData(mappedData);
@@ -234,7 +241,18 @@ const UniversalStockRequestCom = () => {
       toast.error("Failed to mark as received");
     }
   };
-
+  const handleCancelled = async () => {
+    try {
+      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
+      // e.g., await purchaseService.markAsReceived(selectedOrders);
+      toast.success("Selected orders marked as Cancelled");
+      setSelectedOrders([]);
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error marking as Cancelled:", error);
+      toast.error("Failed to mark as Cancelled");
+    }
+  };
   const handleSelect = (ordNo) => {
     if (selectedOrders.includes(ordNo)) {
       setSelectedOrders(selectedOrders.filter((id) => id !== ordNo));
@@ -329,7 +347,7 @@ const UniversalStockRequestCom = () => {
           </button>
         </div>
       </form>
-      <div className="col mt-3">
+      <div className="col mt-3 gap-3 d-flex align-items-center">
         <button
           type="button"
           className="btn btn-primary"
@@ -338,6 +356,14 @@ const UniversalStockRequestCom = () => {
         >
           Received
         </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={selectedOrders.length === 0}
+          onClick={handleCancelled}
+        >
+          Cancelled
+        </button>
       </div>
 
       <div className="table-responsive mt-3">
@@ -345,7 +371,7 @@ const UniversalStockRequestCom = () => {
           <div className="text-center py-5">Loading...</div>
         ) : (
           <>
-            <table className="table table-striped table-hover">
+            <table className="table  table-striped table-hover">
               <thead className="border-top">
                 <tr>
                   <th>
@@ -355,6 +381,11 @@ const UniversalStockRequestCom = () => {
                         selectedOrders.length === auditData.length &&
                         auditData.length > 0
                       }
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        cursor: "pointer",
+                      }}
                       onChange={handleSelectAll}
                     />
                   </th>
@@ -367,6 +398,7 @@ const UniversalStockRequestCom = () => {
                   <th className="py-3">Image</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Order Status</th>
+                  <th className="py-3">Order Image/Video</th>
                 </tr>
               </thead>
               <tbody>
@@ -378,6 +410,11 @@ const UniversalStockRequestCom = () => {
                           type="checkbox"
                           checked={selectedOrders.includes(item.ordNo)}
                           onChange={() => handleSelect(item.ordNo)}
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                          }}
                         />
                       </td>
                       <td className="py-3">
@@ -449,11 +486,49 @@ const UniversalStockRequestCom = () => {
                           {item.orderStatus}
                         </span>
                       </td>
+                      <td className="py-3 text-center">
+                        {item.orderMedia ? (
+                          item.orderMedia.endsWith(".mp4") ||
+                          item.orderMedia.endsWith(".mov") ? (
+                            <video
+                              src={item.orderMedia}
+                              width="60"
+                              height="60"
+                              style={{
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                objectFit: "cover",
+                              }}
+                              onClick={() =>
+                                window.open(item.orderMedia, "_blank")
+                              }
+                              muted
+                            />
+                          ) : (
+                            <img
+                              src={item.orderMedia}
+                              alt="Order Media"
+                              width="60"
+                              height="60"
+                              style={{
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                objectFit: "cover",
+                              }}
+                              onClick={() =>
+                                window.open(item.orderMedia, "_blank")
+                              }
+                            />
+                          )
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center py-5">
+                    <td colSpan="11" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
