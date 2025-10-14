@@ -12,8 +12,17 @@ import Pagination from "../../Common/Pagination";
 import ImageSliderModal from "../ImageSliderModal";
 import { defalutImageBasePath } from "../../../utils/constants";
 const OrderMediaCell = lazy(() => import("./Lazy/OrderMediaCell"));
-const ImageSliderModal = ({ show, onHide, images }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+const PaymentModal = ({
+  show,
+  onHide,
+  productId,
+  orderId,
+  currentPaymentStatus,
+  onUpdate,
+}) => {
+  const [paymentStatus, setPaymentStatus] = useState(
+    currentPaymentStatus || "Pending"
+  );
 
   const paymentOptions = [
     { value: "Pending", label: "Pending" },

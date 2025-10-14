@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
@@ -6,36 +6,148 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
+import { purchaseService } from "../../../services/purchaseService";
+import { Modal, Carousel, Button } from "react-bootstrap";
+import Pagination from "../../Common/Pagination";
+import ImageSliderModal from "../ImageSliderModal";
+import { defalutImageBasePath } from "../../../utils/constants";
+const OrderMediaCell = lazy(() => import("./Lazy/OrderMediaCell"));
+const PaymentModal = ({
+  show,
+  onHide,
+  productId,
+  orderId,
+  currentPaymentStatus,
+  onUpdate,
+}) => {
+  const [paymentStatus, setPaymentStatus] = useState(
+    currentPaymentStatus || "Pending"
+  );
+
+  const paymentOptions = [
+    { value: "Pending", label: "Pending" },
+    { value: "Success", label: "Success" },
+    { value: "Rejected", label: "Rejected" },
+  ];
+
+  const handleSubmit = () => {
+    onUpdate(orderId, paymentStatus);
+    onHide();
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Update Payment Status</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <div className="mb-3">
+          <label className="form-label fw-medium">Product ID</label>
+          <input
+            type="text"
+            className="form-control"
+            value={productId}
+            disabled
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label fw-medium">Payment Status</label>
+          <Select
+            options={paymentOptions}
+            value={paymentOptions.find((opt) => opt.value === paymentStatus)}
+            onChange={(option) => setPaymentStatus(option.value)}
+            placeholder="Select..."
+            classNamePrefix="react-select"
+          />
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          Submit
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
 
 const UniversalStockOrderCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 5;
+  const [selectedRowStores, setSelectedRowStores] = useState({});
+  const [selectedOrders, setSelectedOrders] = useState([]);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    totalDocs: 0,
+    totalPages: 0,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState("Pending");
+  const [uploadedFiles, setUploadedFiles] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
 
   const formik = useFormik({
     initialValues: {
-      stores: null,
-      dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
-      dateTo: moment().format("YYYY-MM-DD"),
+      stores: [],
+      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"), // 1 month back
+      dateTo: moment().format("YYYY-MM-DD"), // today
     },
     validationSchema: Yup.object({
-      stores: Yup.object().nullable().required("Store is required"),
-      dateFrom: Yup.date().required("Date From is required"),
-      dateTo: Yup.date().required("Date To is required"),
+      stores: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required(),
+            label: Yup.string().required(),
+          })
+        )
+        .nullable(),
+
+      dateFrom: Yup.date().required("Start date is required"),
+      dateTo: Yup.date().required("End date is required"),
     }),
     onSubmit: (values) => {
       fetchAuditData(values);
-      setCurrentPage(0);
     },
   });
 
   useEffect(() => {
     fetchStores();
   }, []);
+
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        const defaultValues = {
+          ...formik.values,
+          stores: [
+            {
+              value: defaultStore._id,
+              label: defaultStore.name,
+            },
+          ],
+        };
+        formik.setValues(defaultValues);
+        fetchAuditData(defaultValues, true); // ✅ use updated values directly
+      }
+    }
+  }, [storeData]);
 
   const fetchStores = async () => {
     try {
@@ -47,217 +159,175 @@ const UniversalStockOrderCom = () => {
       }
     } catch (error) {
       console.error("Error fetching stores:", error);
+      toast.error("Failed to fetch stores");
     }
   };
 
-  // useEffect(() => {
-  //   // Mock stores
-  //   const mockStores = [
-  //     { _id: "1", name: "Bhatar" },
-  //     { _id: "2", name: "Navsari" },
-  //   ];
-  //   setStoreData(mockStores);
-  // }, []);
+  const fetchAuditData = async (values, isInitial = false, newPage) => {
+    const storeId = values?.stores?.length
+      ? values.stores.map((s) => s.value)
+      : [];
 
-  useEffect(() => {
-    if (storeData.length > 0) {
-      formik.setFieldValue("stores", {
-        value: storeData[0]._id,
-        label: storeData[0].name,
-      });
-      fetchAuditData(formik.values, true);
-    }
-  }, [storeData]);
-
-  const fetchAuditData = async (values, isFirstTime = false) => {
     setLoading(true);
 
     try {
-      // Mock data with dates in September 2025 to match default form values
-      const mockAuditData = [
-        {
-          ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
-        },
-        {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
-        },
-        {
-          ordNo: 1,
-          date: "2025-09-01",
-          store: "",
-          category: "Electronics",
-          sku: "SKU123",
-          qty: 12,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 2,
-          date: "2025-09-02",
-          store: "",
-          category: "Groceries",
-          sku: "SKU456",
-          qty: 45,
-          paymentStatus: "Success",
-          orderStatus: "Submitted",
-        },
-        {
-          ordNo: 3,
-          date: "2025-09-03",
-          store: "Navsari",
-          category: "Clothing",
-          sku: "SKU789",
-          qty: 20,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 4,
-          date: "2025-09-04",
-          store: "",
-          category: "Toys",
-          sku: "SKU012",
-          qty: 8,
-          paymentStatus: "Unpaid",
-          orderStatus: "Pending",
-        },
-        {
-          ordNo: 5,
-          date: "2025-09-05",
-          store: "Navsari",
-          category: "Books",
-          sku: "SKU345",
-          qty: 15,
-          paymentStatus: "Success",
-          orderStatus: "Received",
-        },
-        {
-          ordNo: 6,
-          date: "2025-09-06",
-          store: "",
-          category: "Shoes",
-          sku: "SKU678",
-          qty: 30,
-          paymentStatus: "Success",
-          orderStatus: "Approved",
-        },
-        {
-          ordNo: 7,
-          date: "2025-09-07",
-          store: "Navsari",
-          category: "Bags",
-          sku: "SKU901",
-          qty: 18,
-          paymentStatus: "Unpaid",
-          orderStatus: "View photo",
-        },
-      ];
+      const response = await purchaseService.getUniversalStock(
+        values.dateFrom,
+        values.dateTo,
+        storeId,
+        newPage || pagination.page,
+        pagination.limit
+      );
 
-      // Filter data based on form values
-      let filteredData = mockAuditData;
-      if (values.stores || values.dateFrom || values.dateTo) {
-        filteredData = mockAuditData.filter((item) => {
-          const itemDate = moment(item.date);
-          const dateFrom = moment(values.dateFrom);
-          const dateTo = moment(values.dateTo);
-          return (
-            (!values.stores || item.store === values.stores.label) &&
-            itemDate.isBetween(dateFrom, dateTo, undefined, "[]")
-          );
+      if (response.success) {
+        const container = response.data.data;
+        const mappedData = container.docs.map((item) => ({
+          ordNo: item._id,
+          date: item.createdAt,
+          store: item.store.name,
+          category: item.product.__t,
+          sku: item.product.sku,
+          qty: item.qty || 1,
+          paymentStatus: item.paymentStatus,
+          orderStatus: item.orderStatus,
+          image: item.product.photos[0],
+          photos: item.product.photos, // Store all photos
+          productId: item.product._id,
+          orderMedia:
+            item?.product?.orderMedia ||
+            "https://www.w3schools.com/html/mov_bbb.mp4",
+        }));
+
+        setAuditData(mappedData);
+        setSelectedRowStores("");
+        setPagination({
+          page: container.page,
+          limit: container.limit,
+          totalDocs: container.totalDocs,
+          totalPages: container.totalPages,
+          hasPrevPage: container.hasPrevPage,
+          hasNextPage: container.hasNextPage,
         });
+      } else {
+        toast.error(response.message || "Failed to fetch purchase data");
       }
-
-      // If no data after filtering, fallback to all mock data on first load
-      if (filteredData.length === 0 && isFirstTime) {
-        filteredData = mockAuditData;
-      }
-
-      setAuditData(filteredData);
     } catch (error) {
-      console.error("Error fetching audit data:", error);
-      toast.error("Failed to fetch data");
+      console.error("Error fetching purchase data:", error);
+      toast.error("Failed to fetch purchase data");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = (data) => {
-    const csv = [
-      "ORDNO,Date,Store,Category,SKU,Qty,Payment Status,Order Status",
-      `${data.ordNo},${data.date},${data.store},${data.category},${data.sku},${data.qty},${data.paymentStatus},${data.orderStatus}`,
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `stock_audit_${data.date}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleUpdatePayment = async (orderId, newStatus) => {
+    try {
+      // Assuming purchaseService has an updatePaymentStatus method
+      // e.g., await purchaseService.updatePaymentStatus(orderId, newStatus);
+      toast.success("Payment status updated successfully");
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Failed to update payment status");
+    }
+  };
+
+  const handleReceived = async () => {
+    try {
+      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
+      // e.g., await purchaseService.markAsReceived(selectedOrders);
+      toast.success("Selected orders marked as received");
+      setSelectedOrders([]);
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error marking as received:", error);
+      toast.error("Failed to mark as received");
+    }
+  };
+  const handleCancelled = async () => {
+    try {
+      toast.success("Selected orders marked as Cancelled");
+      setSelectedOrders([]);
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error marking as Cancelled:", error);
+      toast.error("Failed to mark as Cancelled");
+    }
+  };
+  const handleTransit = async () => {
+    if (selectedOrders.length === 0) return;
+
+    // ✅ Check that all selected orders have uploaded files
+    const invalidOrders = selectedOrders.filter(
+      (ordNo) => !uploadedFiles[ordNo]
+    );
+
+    if (invalidOrders.length > 0) {
+      toast.error(
+        `Please upload at least one image/video for all selected orders before marking as Transit.`
+      );
+      return;
+    }
+
+    try {
+      const formDataArray = selectedOrders.map((ordNo) => {
+        const file = uploadedFiles[ordNo];
+        const orderInfo = auditData.find((item) => item.ordNo === ordNo);
+
+        const formData = new FormData();
+        formData.append("orderId", ordNo);
+        formData.append("productId", orderInfo?.productId || "");
+        formData.append("sku", orderInfo?.sku || "");
+        formData.append("category", orderInfo?.category || "");
+        formData.append("qty", orderInfo?.qty || 0);
+        formData.append("date", orderInfo?.date || "");
+        formData.append("file", file); // <-- binary file
+        // formData.append("fileType", file.type);
+        // formData.append("fileSize", file.size);
+
+        return formData;
+      });
+
+      toast.success("Selected orders marked as Transit");
+
+      // Reset selections
+      setSelectedOrders([]);
+      setUploadedFiles({});
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error marking as Transit:", error);
+      toast.error("Failed to mark as Transit");
+    }
+  };
+
+  const handleSelect = (ordNo) => {
+    if (selectedOrders.includes(ordNo)) {
+      setSelectedOrders(selectedOrders.filter((id) => id !== ordNo));
+    } else {
+      setSelectedOrders([...selectedOrders, ordNo]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.length === auditData.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(auditData.map((item) => item.ordNo));
+    }
+  };
+
+  const handleOpenPaymentModal = (orderId, productId, paymentStatus) => {
+    setSelectedOrderId(orderId);
+    setSelectedProductId(productId);
+    setCurrentPaymentStatus(paymentStatus || "Pending");
+    setShowPaymentModal(true);
+  };
+
+  const handleViewMoreImages = (photos) => {
+    const fullImageUrls = photos.map(
+      (photo) => `${defalutImageBasePath}${photo}`
+    );
+    setSelectedImages(fullImageUrls);
+    setShowImageModal(true);
   };
 
   const storeOptions = storeData.map((store) => ({
@@ -265,13 +335,10 @@ const UniversalStockOrderCom = () => {
     label: store.name,
   }));
 
-  const paginatedData = auditData.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
-
   const handlePageClick = (event) => {
+    const newPage = event.selected + 1;
     setCurrentPage(event.selected);
+    fetchAuditData(formik.values, false, newPage);
   };
 
   return (
@@ -290,6 +357,7 @@ const UniversalStockOrderCom = () => {
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
+            isMulti
           />
           {formik.touched.stores && formik.errors.stores && (
             <div className="text-danger">{formik.errors.stores}</div>
@@ -325,104 +393,165 @@ const UniversalStockOrderCom = () => {
           </button>
         </div>
       </form>
+      <div className="col mt-3 gap-3 d-flex align-items-center">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={selectedOrders.length === 0}
+          onClick={handleReceived}
+        >
+          Accept
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={selectedOrders.length === 0}
+          onClick={handleCancelled}
+        >
+          Cancelled
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={selectedOrders.length === 0}
+          onClick={handleTransit}
+        >
+          Transit
+        </button>
+      </div>
+
       <div className="table-responsive mt-3">
         {loading ? (
           <div className="text-center py-5">Loading...</div>
         ) : (
           <>
-            <table className="table table-striped table-hover">
+            <table className="table  table-striped table-hover">
               <thead className="border-top">
                 <tr>
-                  <th className="py-3">ORDNO</th>
-                  <th className="py-3">Date</th>
-                  <th className="py-3">Store</th>
-                  <th className="py-3">SKU & Barcode</th>
-                  <th className="py-3">Image</th>
-                  <th className="py-3">Status</th>
-                  <th className="py-3">Upload</th>
-                  <th className="py-3">Shipping Address</th>
-
-                  <th className="py-3">Actions</th>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedOrders.length === auditData.length &&
+                        auditData.length > 0
+                      }
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        cursor: "pointer",
+                      }}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
+                  <th className="py-3" style={{ minWidth: "80px" }}>
+                    ORDNO
+                  </th>
+                  <th className="py-3" style={{ minWidth: "120px" }}>
+                    Date
+                  </th>
+                  <th className="py-3" style={{ minWidth: "120px" }}>
+                    Category
+                  </th>
+                  <th className="py-3" style={{ minWidth: "150px" }}>
+                    SKU & Barcode
+                  </th>
+                  <th className="py-3" style={{ minWidth: "50px" }}>
+                    Qty
+                  </th>
+                  <th className="py-3" style={{ minWidth: "100px" }}>
+                    Image
+                  </th>
+                  <th className="py-3" style={{ minWidth: "100px" }}>
+                    Order
+                  </th>
+                  <th className="py-3" style={{ minWidth: "100px" }}>
+                    Order Status
+                  </th>
+                  <th
+                    className="py-3"
+                    style={{ minWidth: "100px", maxWidth: "200px" }}
+                  >
+                    Upload Image/Video
+                  </th>
+                  <th
+                    className="py-3"
+                    style={{ minWidth: "150px", maxWidth: "150px" }}
+                  >
+                    Order Image/Video
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((item, index) => (
+                {auditData.length > 0 ? (
+                  auditData.map((item, index) => (
                     <tr key={index} className="align-middle">
-                      <td className="py-3">{item.ordNo}</td>
-                      <td className="py-3">
-                        {moment(item.date).format("D-M-YYYY")}
-                      </td>
-                      <td className="py-3">{item.store}</td>
-                      <td className="py-3">{item.sku}</td>
-
-                      <td className="py-3">
-                        <button
-                          className="btn btn-outline-info btn-sm"
-                          onClick={() =>
-                            alert(
-                              `Viewing image for ${item.sku} on ${item.date}`
-                            )
-                          }
-                        >
-                          📷
-                        </button>
-                      </td>
-                      <td className="py-3">
-                        {item.orderStatus === "View photo" ? (
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() =>
-                              alert(
-                                `Viewing photo for ${item.sku} on ${item.date}`
-                              )
-                            }
-                          >
-                            View photo
-                          </button>
-                        ) : (
-                          <span className="badge bg-primary">
-                            {item.orderStatus}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <button
-                          className="btn btn-primary btn-sm text-white"
-                          onClick={() =>
-                            document
-                              .getElementById(`uploadFile-${index}`)
-                              .click()
-                          }
-                        >
-                          Upload Photo-video
-                        </button>
+                      <td>
                         <input
-                          type="file"
-                          id={`uploadFile-${index}`}
-                          accept="image/*,video/*"
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              alert(`Uploaded: ${file.name}`);
-                            }
+                          type="checkbox"
+                          checked={selectedOrders.includes(item.ordNo)}
+                          onChange={() => handleSelect(item.ordNo)}
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
                           }}
                         />
                       </td>
-
                       <td className="py-3">
-                        <button
-                          className="btn btn-primary btn-sm text-white"
-                          onClick={() =>
-                            alert(`Viewing address for ${item.address}`)
-                          }
-                        >
-                          View Address
-                        </button>
+                        {index + 1 + (pagination.page - 1) * pagination.limit}
+                      </td>
+                      <td className="py-3">
+                        {moment(item.date).format("D-M-YYYY")}
                       </td>
 
-                      {/* <td className="py-3">
+                      <td className="py-3">{item.category}</td>
+                      <td className="py-3">{item.sku}</td>
+                      <td className="py-3">{item.qty}</td>
+
+                      <td className="py-3">
+                        {item.image ? (
+                          <>
+                            <img
+                              src={`${defalutImageBasePath}${item.image}`}
+                              alt="Product"
+                              className="img-fluid rounded"
+                              style={{ width: "50px", height: "50px" }}
+                            />
+                            <div>
+                              <a
+                                href="#"
+                                className="text-primary text-decoration-underline"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleViewMoreImages(item.photos);
+                                }}
+                              >
+                                View More
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </td>
+
+                      <td className="py-3">
+                        <span
+                          className={`badge ${
+                            item.paymentStatus === "Pending"
+                              ? "bg-warning text-dark"
+                              : item.paymentStatus === "Accept"
+                              ? "bg-success"
+                              : item.paymentStatus === "Cancelled"
+                              ? "bg-danger"
+                              : "bg-secondary" // fallback for unknown status
+                          }`}
+                        >
+                          {item.orderStatus}
+                        </span>
+                      </td>
+
+                      <td className="py-3">
                         <span
                           className={`badge ${
                             item.paymentStatus === "Success"
@@ -430,43 +559,117 @@ const UniversalStockOrderCom = () => {
                               : "bg-danger"
                           }`}
                         >
-                          {item.paymentStatus}
+                          {item.orderStatus}
                         </span>
-                      </td> */}
-                      {/* <td className="py-3">
-                        <Select
-                          options={storeOptions}
-                          defaultValue={storeOptions.find(
-                            (option) => option.label === item.store
-                          )}
-                          classNamePrefix="react-select"
-                          className="w-100"
-                        />
-                      </td> */}
-
-                      <td className="py-3">
-                        <button
-                          className="btn btn-outline-primary btn-sm me-2"
-                          onClick={() =>
-                            alert(
-                              `Viewing details for ${item.category} on ${item.date}`
-                            )
-                          }
-                        >
-                          View
-                        </button>
-                        <button
-                          className="btn btn-outline-success btn-sm"
-                          onClick={() => handleDownload(item)}
-                        >
-                          Download
-                        </button>
                       </td>
+                      <td
+                        className="py-3 text-center"
+                        style={{ minWidth: "150px", maxWidth: "200px" }}
+                      >
+                        {/* If file already uploaded for this order, show preview */}
+                        {uploadedFiles[item.ordNo] ? (
+                          <div className="d-flex flex-column align-items-center justify-content-center gap-2">
+                            {uploadedFiles[item.ordNo].type.startsWith(
+                              "image/"
+                            ) ? (
+                              <img
+                                src={URL.createObjectURL(
+                                  uploadedFiles[item.ordNo]
+                                )}
+                                alt="Preview"
+                                className="img-thumbnail"
+                                style={{
+                                  width: "80px",
+                                  height: "80px",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            ) : (
+                              <video
+                                src={URL.createObjectURL(
+                                  uploadedFiles[item.ordNo]
+                                )}
+                                controls
+                                style={{
+                                  width: "120px",
+                                  height: "80px",
+                                  borderRadius: "8px",
+                                  background: "#000",
+                                }}
+                              />
+                            )}
+
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-danger"
+                              onClick={() => {
+                                setUploadedFiles((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[item.ordNo];
+                                  return updated;
+                                });
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          // If no file uploaded yet, show input
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            className="form-control"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+
+                              const fileType = file.type;
+                              const isImage = fileType.startsWith("image/");
+                              const isVideo = fileType.startsWith("video/");
+
+                              // ✅ Validate file type
+                              if (!isImage && !isVideo) {
+                                toast.error(
+                                  "Only image or video files are allowed"
+                                );
+                                e.target.value = "";
+                                return;
+                              }
+
+                              // ✅ Validate file size
+                              const maxSize = isImage
+                                ? 20 * 1024 * 1024
+                                : 50 * 1024 * 1024;
+                              if (file.size > maxSize) {
+                                toast.error(
+                                  `File too large. Max size is ${
+                                    isImage ? "20MB" : "50MB"
+                                  }`
+                                );
+                                e.target.value = "";
+                                return;
+                              }
+
+                              // ✅ Store valid file
+                              setUploadedFiles((prev) => ({
+                                ...prev,
+                                [item.ordNo]: file,
+                              }));
+                            }}
+                          />
+                        )}
+                      </td>
+
+                      <Suspense
+                        fallback={<td className="text-center">Loading...</td>}
+                      >
+                        <OrderMediaCell orderMedia={item?.orderMedia} />
+                      </Suspense>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="text-center py-5">
+                    <td colSpan="12" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -474,29 +677,28 @@ const UniversalStockOrderCom = () => {
               </tbody>
             </table>
             <div className="d-flex justify-content-center mt-4">
-              <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
-                breakLabel={"..."}
-                pageCount={Math.ceil(auditData.length / itemsPerPage)}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={3}
+              <Pagination
+                pageCount={pagination?.totalPages || 1}
+                currentPage={pagination.page || 1} // 1-based
                 onPageChange={handlePageClick}
-                containerClassName={"pagination"}
-                activeClassName={"active"}
-                pageClassName={"page-item"}
-                pageLinkClassName={"page-link"}
-                previousClassName={"page-item"}
-                previousLinkClassName={"page-link"}
-                nextClassName={"page-item"}
-                nextLinkClassName={"page-link"}
-                breakClassName={"page-item"}
-                breakLinkClassName={"page-link"}
               />
             </div>
           </>
         )}
       </div>
+      <ImageSliderModal
+        show={showImageModal}
+        onHide={() => setShowImageModal(false)}
+        images={selectedImages}
+      />
+      <PaymentModal
+        show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        productId={selectedProductId}
+        orderId={selectedOrderId}
+        currentPaymentStatus={currentPaymentStatus}
+        onUpdate={handleUpdatePayment}
+      />
     </div>
   );
 };
