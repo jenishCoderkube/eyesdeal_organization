@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Select from "react-select";
@@ -11,18 +11,9 @@ import { Modal, Carousel, Button } from "react-bootstrap";
 import Pagination from "../../Common/Pagination";
 import ImageSliderModal from "../ImageSliderModal";
 import { defalutImageBasePath } from "../../../utils/constants";
-
-const PaymentModal = ({
-  show,
-  onHide,
-  productId,
-  orderId,
-  currentPaymentStatus,
-  onUpdate,
-}) => {
-  const [paymentStatus, setPaymentStatus] = useState(
-    currentPaymentStatus || "Pending"
-  );
+const OrderMediaCell = lazy(() => import("./Lazy/OrderMediaCell"));
+const ImageSliderModal = ({ show, onHide, images }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const paymentOptions = [
     { value: "Pending", label: "Pending" },
@@ -101,8 +92,8 @@ const UniversalStockRequestCom = () => {
   const formik = useFormik({
     initialValues: {
       stores: [],
-      dateFrom: moment().startOf("month").format("YYYY-MM-DD"),
-      dateTo: moment().format("YYYY-MM-DD"),
+      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"), // 1 month back
+      dateTo: moment().format("YYYY-MM-DD"), // today
     },
     validationSchema: Yup.object({
       stores: Yup.array()
@@ -428,6 +419,7 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">{item.category}</td>
                       <td className="py-3">{item.sku}</td>
                       <td className="py-3">{item.qty}</td>
+
                       <td className="py-3">
                         {item.image ? (
                           <>
@@ -487,44 +479,11 @@ const UniversalStockRequestCom = () => {
                           {item.orderStatus}
                         </span>
                       </td>
-                      <td className="py-3 text-center">
-                        {item.orderMedia ? (
-                          item.orderMedia.endsWith(".mp4") ||
-                          item.orderMedia.endsWith(".mov") ? (
-                            <video
-                              src={item.orderMedia}
-                              width="60"
-                              height="60"
-                              style={{
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                objectFit: "cover",
-                              }}
-                              onClick={() =>
-                                window.open(item.orderMedia, "_blank")
-                              }
-                              muted
-                            />
-                          ) : (
-                            <img
-                              src={item.orderMedia}
-                              alt="Order Media"
-                              width="60"
-                              height="60"
-                              style={{
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                objectFit: "cover",
-                              }}
-                              onClick={() =>
-                                window.open(item.orderMedia, "_blank")
-                              }
-                            />
-                          )
-                        ) : (
-                          <span>-</span>
-                        )}
-                      </td>
+                      <Suspense
+                        fallback={<td className="text-center">Loading...</td>}
+                      >
+                        <OrderMediaCell orderMedia={item?.orderMedia} />
+                      </Suspense>
                     </tr>
                   ))
                 ) : (
