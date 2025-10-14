@@ -13,6 +13,7 @@ import Form from "react-bootstrap/Form";
 import { defalutImageBasePath } from "../../utils/constants";
 import EditPaymentStatusModal from "./EditPaymentStatusModal";
 import PurchaseEdModal from "./PurchaseEdModal";
+import Pagination from "../Common/Pagination";
 
 const PurchaseOrderViewCom = () => {
   const [organizationData, setOrganizationData] = useState([]);
@@ -20,7 +21,7 @@ const PurchaseOrderViewCom = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 25,
+    limit: 50,
     totalDocs: 0,
     totalPages: 1,
     hasPrevPage: false,
@@ -253,6 +254,11 @@ const PurchaseOrderViewCom = () => {
     }
   };
 
+  const handlePageClick = (event) => {
+    const selectedPage = event.selected + 1;
+    setPagination((prev) => ({ ...prev, page: selectedPage }));
+    fetchPurchaseData(formik.values, false, selectedPage);
+  };
   return (
     <div className="card-body p-4">
       <h4 className="mb-4 font-weight-bold">View Purchase Orders</h4>
@@ -422,20 +428,11 @@ const PurchaseOrderViewCom = () => {
                 of {pagination.totalDocs} results
               </div>
               <div className="btn-group">
-                <Button
-                  variant="outline-primary"
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={!pagination.hasPrevPage || loading}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline-primary"
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={!pagination.hasNextPage || loading}
-                >
-                  Next
-                </Button>
+                <Pagination
+                  pageCount={pagination?.totalPages || 1}
+                  currentPage={pagination.page || 1} // 1-based
+                  onPageChange={handlePageClick}
+                />
               </div>
             </div>
           </>

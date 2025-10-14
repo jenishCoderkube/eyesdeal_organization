@@ -9,6 +9,7 @@ import moment from "moment";
 import { defalutImageBasePath } from "../../../utils/constants";
 import ImageSliderModalProduct from "../../../components/Products/ViewProducts/ImageSliderModalProduct";
 import ReactPaginate from "react-paginate";
+import Pagination from "../../Common/Pagination";
 const StoreInventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -783,7 +784,8 @@ const StoreInventoryForm = () => {
               <table className="table table-sm">
                 <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <th className="custom-perchase-th">Barcode</th>
+                    <th className="custom-perchase-th">NewBarcode</th>
+                    <th className="custom-perchase-th">OldBarcode</th>
                     <th className="custom-perchase-th">Date</th>
                     <th className="custom-perchase-th">Photo</th>
                     <th className="custom-perchase-th">Store</th>
@@ -802,6 +804,7 @@ const StoreInventoryForm = () => {
                         <td style={{ minWidth: "80px" }}>
                           {item.product?.newBarcode || "-"}
                         </td>
+                        <td>{item.product?.oldBarcode}</td>
                         <td style={{ minWidth: "100px" }}>
                           {item.product?.createdAt
                             ? moment(item.product.createdAt).format(
@@ -903,21 +906,10 @@ const StoreInventoryForm = () => {
               of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <ReactPaginate
-              previousLabel={"Previous"}
-              nextLabel={"Next"}
-              breakLabel={"..."}
+
+            <Pagination
               pageCount={inventory?.totalPages || 1}
-              marginPagesDisplayed={2}
-              pageRangeDisplayed={3}
               onPageChange={handlePageClick}
-              containerClassName={"btn-group"}
-              pageClassName={"btn btn-outline-primary"}
-              previousClassName={"btn btn-outline-primary"}
-              nextClassName={"btn btn-outline-primary"}
-              breakClassName={"btn btn-outline-primary"}
-              activeClassName={"active"}
-              disabledClassName={"disabled"}
             />
           </div>
         </div>

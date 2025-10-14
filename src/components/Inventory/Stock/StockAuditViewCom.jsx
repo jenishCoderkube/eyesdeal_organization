@@ -8,6 +8,7 @@ import moment from "moment";
 import ReactPaginate from "react-paginate";
 import StockAuditDetailsModal from "./StockAuditDetailsModal";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import Pagination from "../../Common/Pagination";
 
 const StockAuditViewCom = () => {
   const [storeData, setStoreData] = useState([]);
@@ -15,7 +16,7 @@ const StockAuditViewCom = () => {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0);
+
   const itemsPerPage = 2;
   const [pagination, setPagination] = useState({
     page: 1,
@@ -36,8 +37,7 @@ const StockAuditViewCom = () => {
     },
     validationSchema: Yup.object({}),
     onSubmit: (values) => {
-      fetchAuditData(values);
-      setCurrentPage(0); // Reset to first page on new submit
+      fetchAuditData(values, 1);
     },
   });
 
@@ -57,7 +57,7 @@ const StockAuditViewCom = () => {
           label: defaultStore.name,
         });
         // formik.handleSubmit();
-        fetchAuditData(formik.values, true);
+        fetchAuditData(formik.values, 1);
       }
     }
   }, [storeData]);
@@ -87,7 +87,7 @@ const StockAuditViewCom = () => {
   //     console.error("Error fetching stores:", error);
   //   }
   // };
-  const fetchAuditData = async (values, page = 1) => {
+  const fetchAuditData = async (values, page) => {
     const store = values?.stores?.value || user?.stores?.[0];
     setLoading(true);
 
@@ -96,7 +96,7 @@ const StockAuditViewCom = () => {
         store,
         startDate: values.dateFrom,
         endDate: values.dateTo,
-        page,
+        page: page || 1,
         limit: pagination.limit,
       };
 
@@ -105,6 +105,7 @@ const StockAuditViewCom = () => {
       if (response.success) {
         const container = response.data.data;
         setAuditData(container.docs);
+        console.log("container", container);
 
         setPagination({
           page: container.page,
@@ -184,8 +185,9 @@ const StockAuditViewCom = () => {
   //   (currentPage + 1) * itemsPerPage
   // );
 
-  const handlePageChange = (newPage) => {
-    fetchAuditData(formik.values, newPage);
+  const handlePageClick = (newPage) => {
+    const selectedPage = newPage.selected + 1; // ReactPaginate is 0-based
+    fetchAuditData(formik.values, selectedPage);
   };
 
   return (
@@ -271,7 +273,7 @@ const StockAuditViewCom = () => {
                       return (
                         <tr key={item._id} className="align-middle">
                           <td className="py-3">
-                            {index + 1 + currentPage * itemsPerPage}
+                            {index + 1 + pagination?.page * itemsPerPage}
                           </td>
                           <td className="py-3">
                             {moment(item.auditDate).format("YYYY-MM-DD")}
@@ -342,20 +344,11 @@ const StockAuditViewCom = () => {
                   of {pagination.totalDocs} results
                 </div>
                 <div className="btn-group">
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={!pagination.hasPrevPage || loading}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={!pagination.hasNextPage || loading}
-                  >
-                    Next
-                  </button>
+                  <Pagination
+                    pageCount={pagination?.totalPages || 1}
+                    currentPage={pagination.page || 1} // 1-based
+                    onPageChange={handlePageClick}
+                  />
                 </div>
               </div>
             </>

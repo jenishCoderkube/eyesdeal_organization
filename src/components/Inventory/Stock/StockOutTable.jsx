@@ -6,6 +6,7 @@ import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
 import ProductModal from "./ProductModal";
+import Pagination from "../../Common/Pagination";
 
 const StockOutTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -255,22 +256,10 @@ const StockOutTable = () => {
                 </span>{" "}
                 results
               </div>
-              <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
-                breakLabel={"..."}
-                pageCount={stockData.totalPages}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={5}
+
+              <Pagination
+                pageCount={stockData?.totalPages || 1}
                 onPageChange={handlePageClick}
-                containerClassName={"pagination btn-group"}
-                pageClassName={"btn btn-outline-primary"}
-                previousClassName={"btn btn-outline-primary"}
-                nextClassName={"btn btn-outline-primary"}
-                breakClassName={"btn btn-outline-primary"}
-                activeClassName={"active"}
-                disabledClassName={"disabled"}
-                forcePage={currentPage}
               />
             </div>
           </div>

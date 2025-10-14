@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { debounce } from "lodash";
 import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
+import AsyncSelect from "react-select/async";
 
 const AddStockTransferCom = () => {
   const [from, setFrom] = useState(null);
@@ -56,7 +57,7 @@ const AddStockTransferCom = () => {
       );
       const inventoryItem = response?.data?.data?.docs?.[0];
 
-      if (response.success && inventoryItem && inventoryItem.quantity > 0) {
+      if (response.success && inventoryItem) {
         setProducts((prev) => {
           const existingProductIndex = prev.findIndex(
             (p) => p.productId === selectedOption.value
@@ -225,19 +226,15 @@ const AddStockTransferCom = () => {
                       : ""
                   }`,
                 }
-              : { value: "27", label: "ELITE HOSPITAL / 27" }
+              : null
           );
-        } else {
-          setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
         }
       } else {
         toast.error(response.message);
-        setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
       }
     } catch (error) {
       console.error("Error fetching stores:", error);
       toast.error("Failed to load stores");
-      setFrom({ value: "27", label: "ELITE HOSPITAL / 27" });
     } finally {
       setLoading(false);
     }
@@ -253,12 +250,10 @@ const AddStockTransferCom = () => {
 
   // Filter out already selected products from options
   const productOptions =
-    productData?.docs
-      ?.filter((vendor) => !products.some((p) => p.productId === vendor._id))
-      .map((vendor) => ({
-        value: vendor._id,
-        label: `${vendor.oldBarcode} ${vendor.sku}`,
-      })) || [];
+    productData?.docs?.map((vendor) => ({
+      value: vendor._id,
+      label: `${vendor.newBarcode} ${vendor.sku}`,
+    })) || [];
 
   return (
     <div className="container-fluid px-md-5 px-2 py-5">
@@ -302,14 +297,33 @@ const AddStockTransferCom = () => {
                 <label htmlFor="product" className="form-label font-weight-500">
                   Products
                 </label>
-                <Select
-                  options={productOptions}
-                  value={null} // Clear selection after each pick
+                <AsyncSelect
+                  cacheOptions
+                  defaultOptions={false}
+                  loadOptions={async (inputValue) => {
+                    if (!inputValue.trim()) return [];
+                    try {
+                      const response = await inventoryService.universalSearch(
+                        inputValue
+                      );
+                      const data =
+                        response?.data?.data?.docs ||
+                        response?.data?.data ||
+                        [];
+                      return data.map((vendor) => ({
+                        value: vendor._id,
+                        label: `${vendor.newBarcode || ""} ${vendor.sku || ""}`,
+                      }));
+                    } catch (error) {
+                      console.error("Error loading products:", error);
+                      toast.error("Failed to load products");
+                      return [];
+                    }
+                  }}
                   onChange={handleProductChange}
-                  placeholder="Select products..."
+                  placeholder="Search products..."
                   className="basic-select"
                   classNamePrefix="select"
-                  onInputChange={debouncedGetProduct}
                   isLoading={loading}
                   loadingMessage={() => "Loading..."}
                   noOptionsMessage={({ inputValue }) =>

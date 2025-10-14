@@ -8,6 +8,7 @@ import ReactPaginate from "react-paginate";
 import { inventoryService } from "../../../services/inventoryService";
 import { purchaseService } from "../../../services/purchaseService";
 import { Modal, Carousel, Button } from "react-bootstrap";
+import Pagination from "../../Common/Pagination";
 
 const ImageSliderModal = ({ show, onHide, images }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -645,29 +646,10 @@ const UniversalStockRequestCom = () => {
               </tbody>
             </table>
             <div className="d-flex justify-content-center mt-4">
-              <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
-                breakLabel={"..."}
-                pageCount={pagination.totalPages}
-                forcePage={pagination.page - 1}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={3}
+              <Pagination
+                pageCount={pagination?.totalPages || 1}
+                currentPage={pagination.page || 1} // 1-based
                 onPageChange={handlePageClick}
-                containerClassName={"pagination mb-2"}
-                activeClassName={"active"}
-                pageClassName={"page-item"}
-                pageLinkClassName={"page-link"}
-                previousClassName={`page-item ${
-                  !pagination.hasPrevPage ? "disabled" : ""
-                }`}
-                previousLinkClassName={"page-link"}
-                nextClassName={`page-item ${
-                  !pagination.hasNextPage ? "disabled" : ""
-                }`}
-                nextLinkClassName={"page-link"}
-                breakClassName={"page-item"}
-                breakLinkClassName={"page-link"}
               />
             </div>
           </>

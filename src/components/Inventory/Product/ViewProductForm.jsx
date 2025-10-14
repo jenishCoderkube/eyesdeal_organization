@@ -8,6 +8,7 @@ import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
 import moment from "moment";
+import Pagination from "../../Common/Pagination";
 
 const ViewProductForm = () => {
   const [inventory, setInventory] = useState({
@@ -266,22 +267,10 @@ const ViewProductForm = () => {
               of <span className="fw-medium">{inventory.totalDocs}</span>{" "}
               results
             </div>
-            <ReactPaginate
-              previousLabel={"Previous"}
-              nextLabel={"Next"}
-              breakLabel={"..."}
-              pageCount={inventory.totalPages}
-              marginPagesDisplayed={2}
-              pageRangeDisplayed={5}
+
+            <Pagination
+              pageCount={inventory?.totalPages || 1}
               onPageChange={handlePageClick}
-              containerClassName={"pagination btn-group"}
-              pageClassName={"btn btn-outline-primary"}
-              previousClassName={"btn btn-outline-primary"}
-              nextClassName={"btn btn-outline-primary"}
-              breakClassName={"btn btn-outline-primary"}
-              activeClassName={"active"}
-              disabledClassName={"disabled"}
-              forcePage={currentPage}
             />
           </div>
         </div>

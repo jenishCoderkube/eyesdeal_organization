@@ -8,6 +8,7 @@ import ImageSliderModalProduct from "../../../components/Products/ViewProducts/I
 import { FaSearch } from "react-icons/fa";
 import { defalutImageBasePath } from "../../../utils/constants";
 import ReactPaginate from "react-paginate";
+import Pagination from "../../Common/Pagination";
 const InventoryForm = () => {
   const [storeData, setStoreData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -704,7 +705,8 @@ const InventoryForm = () => {
               <table className="table table-sm">
                 <thead className="text-xs text-uppercase text-muted bg-light border">
                   <tr>
-                    <th className="custom-perchase-th">Barcode</th>
+                    <th className="custom-perchase-th">NewBarcode</th>
+                    <th className="custom-perchase-th">OldBarcode</th>
                     <th className="custom-perchase-th">Photo</th>
                     <th className="custom-perchase-th">SKU</th>
                     <th className="custom-perchase-th">MRP</th>
@@ -717,6 +719,7 @@ const InventoryForm = () => {
                     inventory.docs.map((item, index) => (
                       <tr key={item.id || index}>
                         <td>{item.product?.newBarcode}</td>
+                        <td>{item.product?.oldBarcode}</td>
                         <td>
                           <div>
                             {item?.product?.photos?.length > 0 ? (
@@ -783,21 +786,10 @@ const InventoryForm = () => {
               of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <ReactPaginate
-              previousLabel={"Previous"}
-              nextLabel={"Next"}
-              breakLabel={"..."}
+
+            <Pagination
               pageCount={inventory?.totalPages || 1}
-              marginPagesDisplayed={2}
-              pageRangeDisplayed={3}
               onPageChange={handlePageClick}
-              containerClassName={"btn-group"}
-              pageClassName={"btn btn-outline-primary"}
-              previousClassName={"btn btn-outline-primary"}
-              nextClassName={"btn btn-outline-primary"}
-              breakClassName={"btn btn-outline-primary"}
-              activeClassName={"active"}
-              disabledClassName={"disabled"}
             />
           </div>
         </div>

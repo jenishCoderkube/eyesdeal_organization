@@ -5,6 +5,7 @@ import { inventoryService } from "../../../services/inventoryService";
 import { toast } from "react-toastify";
 import moment from "moment/moment";
 import ProductModal from "./ProductModal";
+import Pagination from "../../Common/Pagination";
 
 const StockInTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,12 +49,12 @@ const StockInTable = () => {
     getCollectionData();
   }, []);
 
-  const getCollectionData = async () => {
+  const getCollectionData = async (currentPage = 1) => {
     setLoading(true);
 
     const params = {
       "optimize[to]": user?.stores?.[0],
-      page: 1,
+      page: currentPage,
       limit: 20,
     };
     const queryString = new URLSearchParams(params).toString();
@@ -144,6 +145,11 @@ const StockInTable = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setShowData([]);
+  };
+
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1; // React Paginate is 0-based, API is 1-based
+    getCollectionData(selectedPage);
   };
 
   return (
@@ -254,12 +260,10 @@ const StockInTable = () => {
                 <span className="fw-medium">{filteredData.length}</span> results
               </div>
               <div className="btn-group">
-                <button type="button" className="btn btn-outline-primary">
-                  Previous
-                </button>
-                <button type="button" className="btn btn-outline-primary">
-                  Next
-                </button>
+                <Pagination
+                  pageCount={stockData?.totalPages || 1}
+                  onPageChange={handlePageClick}
+                />
               </div>
             </div>
           </div>
