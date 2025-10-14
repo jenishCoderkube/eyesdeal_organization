@@ -9,6 +9,8 @@ import { inventoryService } from "../../../services/inventoryService";
 import { purchaseService } from "../../../services/purchaseService";
 import { Modal, Carousel, Button } from "react-bootstrap";
 import Pagination from "../../Common/Pagination";
+import ImageSliderModal from "../ImageSliderModal";
+import { defalutImageBasePath } from "../../../utils/constants";
 
 const PaymentModal = ({
   show,
