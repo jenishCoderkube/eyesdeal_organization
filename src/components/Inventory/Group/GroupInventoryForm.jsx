@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { inventoryService } from "../../../services/inventoryService";
 import { FaSearch } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
+import Pagination from "../../Common/Pagination";
 
 const GroupInventoryForm = () => {
   // Options for select fields
@@ -380,21 +381,10 @@ const GroupInventoryForm = () => {
               of <span className="fw-medium">{inventory?.totalDocs || 0}</span>{" "}
               results
             </div>
-            <ReactPaginate
-              previousLabel={"Previous"}
-              nextLabel={"Next"}
-              breakLabel={"..."}
+
+            <Pagination
               pageCount={inventory?.totalPages || 1}
-              marginPagesDisplayed={2}
-              pageRangeDisplayed={3}
               onPageChange={handlePageClick}
-              containerClassName={"btn-group ms-sm-auto"}
-              pageClassName={"btn btn-outline-primary"}
-              previousClassName={"btn btn-outline-primary"}
-              nextClassName={"btn btn-outline-primary"}
-              breakClassName={"btn btn-outline-primary"}
-              activeClassName={"active"}
-              disabledClassName={"disabled"}
             />
           </div>
         </div>

@@ -5,6 +5,7 @@ import Select from "react-select";
 import debounce from "lodash/debounce";
 import { inventoryService } from "../../../../services/inventoryService";
 import { toast } from "react-toastify";
+import Pagination from "../../../Common/Pagination";
 
 const ViewAdjustmentForm = () => {
   const [productData, setProductData] = useState([]);
@@ -44,8 +45,6 @@ const ViewAdjustmentForm = () => {
 
   useEffect(() => {
     getStores();
-    getInventoryData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getProduct = async (search) => {
@@ -102,7 +101,7 @@ const ViewAdjustmentForm = () => {
 
   const getInventoryData = async (
     values = formik.values,
-    page = pagination.page,
+    page = 1,
     limit = pagination.limit
   ) => {
     const storeId = values?.stores?.map((option) => option.value);
@@ -157,23 +156,35 @@ const ViewAdjustmentForm = () => {
     }
   };
 
+  // After storeData is loaded, set default store and fetch inventory
   useEffect(() => {
-    const storedStoreId = user?.stores?.[0];
+    const storedStoreId = user?.stores?.[0]; // default store from user
     if (storedStoreId && storeData.length > 0) {
       const defaultStore = storeData.find(
         (store) => store._id === storedStoreId
       );
       if (defaultStore) {
-        formik.setFieldValue("stores", [
-          {
-            value: defaultStore._id,
-            label: defaultStore.name,
-          },
-        ]);
+        const defaultStoreOption = {
+          value: defaultStore._id,
+          label: defaultStore.name,
+        };
+        formik.setFieldValue("stores", [defaultStoreOption]);
+
+        // Fetch inventory for default store
+        getInventoryData(
+          { ...formik.values, stores: [defaultStoreOption] },
+          1,
+          pagination.limit
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeData]);
+
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1;
+    getInventoryData(formik.values, selectedPage);
+  };
 
   return (
     <>
@@ -311,34 +322,10 @@ const ViewAdjustmentForm = () => {
           })()}
         </div>
         <div className="btn-group">
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={() =>
-              getInventoryData(
-                formik.values,
-                pagination.page - 1,
-                pagination.limit
-              )
-            }
-            disabled={!pagination.hasPrevPage || loadingInventory}
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={() =>
-              getInventoryData(
-                formik.values,
-                pagination.page + 1,
-                pagination.limit
-              )
-            }
-            disabled={!pagination.hasNextPage || loadingInventory}
-          >
-            Next
-          </button>
+          <Pagination
+            pageCount={pagination?.totalPages || 1}
+            onPageChange={handlePageClick}
+          />
         </div>
       </div>
     </>

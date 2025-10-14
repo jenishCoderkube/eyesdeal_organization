@@ -188,7 +188,7 @@ function EyeGlasses({ initialData = {}, mode = "add" }) {
           collections: attributeData.collection || [],
           features: attributeData.feature || [],
           frameColors: attributeData.frameColor || [],
-          frameCollections: attributeData.frameCollection || [],
+          frameCollections: attributeData?.frameCollection || [],
         });
       } catch (error) {
         console.error("Error fetching attributes:", error);
