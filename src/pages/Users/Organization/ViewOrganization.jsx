@@ -14,6 +14,8 @@ import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
 import { Modal, Button, Tab, Nav } from "react-bootstrap";
 import ReactPaginate from "react-paginate";
+import { defalutImageBasePath } from "../../../utils/constants";
+import Pagination from "../../../components/Common/Pagination";
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -37,7 +39,7 @@ const ViewOrganization = () => {
   const navigate = useNavigate();
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 100,
+    limit: 50,
     totalDocs: 0,
     totalPages: 0,
     hasNextPage: false,
@@ -55,7 +57,7 @@ const ViewOrganization = () => {
   const fetchCustomers = async (page, search) => {
     setLoading(true);
     try {
-      const response = await userService.getOrganization({
+      const response = await userService.getOrganizationByLimit({
         page,
         limit: pagination.limit,
         search,
@@ -126,529 +128,144 @@ const ViewOrganization = () => {
 
   const tableData = filteredData || customers;
 
-  const handleViewPrescriptions = (customerId) => {
-    const customer = customers.find((c) => c._id === customerId);
-    if (!customer) {
-      toast.error("Customer not found");
-      return;
-    }
-    const prescriptions = customer.prescriptions || [];
-    if (prescriptions.length === 0) {
-      toast.info("No prescriptions available for this customer");
-      return;
-    }
-
-    const specsPrescription = prescriptions.find((p) => p.__t === "specs");
-    const contactsPrescription = prescriptions.find(
-      (p) => p.__t === "contacts"
-    );
-
-    setModalData({
-      specs: specsPrescription || null,
-      contacts: contactsPrescription || null,
-    });
-
-    setActiveTab(specsPrescription ? "specs" : "contacts");
-    setShowModal(true);
-  };
-
   const handleView = (data) => {
     setViewData(data);
     setShowViewModal(true);
   };
 
-  // Modal content for both Specs and Contacts
-  const PrescriptionModalContent = ({ specsData, contactsData }) => (
-    <>
-      {specsData || contactsData ? (
-        <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
-          <Nav
-            variant="tabs"
-            className="relative mb-4 mt-2 border-top-0 border-start-0 border-end-0 border-bottom border-slate-200"
-          >
-            {specsData && (
-              <Nav.Item className="me-4">
-                <Nav.Link
-                  eventKey="specs"
-                  className={`pb-3 text-sm font-medium ${
-                    activeTab === "specs"
-                      ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
-                      : "text-slate-500 hover:text-slate-600"
-                  }`}
-                  style={{
-                    color: activeTab === "specs" ? "#6366f1" : "black",
-                  }}
-                >
-                  Specs
-                </Nav.Link>
-              </Nav.Item>
-            )}
-            {contactsData && (
-              <Nav.Item className="me-4">
-                <Nav.Link
-                  eventKey="contact"
-                  className={`pb-3 text-sm font-medium ${
-                    activeTab === "contact"
-                      ? "text-indigo-500 border-top-0 border-start-0 border-end-0 border-bottom border-primary border-3"
-                      : "text-slate-500 hover:text-slate-600"
-                  }`}
-                  style={{
-                    color: activeTab === "contact" ? "#6366f1" : "black",
-                  }}
-                >
-                  Contact
-                </Nav.Link>
-              </Nav.Item>
-            )}
-            <div
-              className="absolute bottom-0 w-100 h-px bg-slate-200"
-              aria-hidden="true"
-            />
-          </Nav>
-          <Tab.Content>
-            {specsData && (
-              <Tab.Pane eventKey="specs" className="overflow-auto">
-                <div className="p-4">
-                  <div className="d-flex flex-column flex-md-row gap-4 mb-3">
-                    <div className="flex-grow-1">
-                      <label className="d-block text-sm font-medium mb-1">
-                        Date
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={
-                          specsData.createdAt?.split("T")[0] || "02/05/2025"
-                        }
-                        readOnly
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <label className="d-block text-sm font-medium mb-1">
-                        Doctor Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={specsData.doctorName || "ABD"}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                  <h4
-                    className="mt-2 mb-3 fw-normal"
-                    style={{ fontSize: "17px" }}
-                  >
-                    Specs Power
-                  </h4>
-                  <table className="table table-bordered table-sm w-100">
-                    <thead className="text-xs text-uppercase text-slate-500 bg-light">
-                      <tr>
-                        <th className="border border-slate-300 px-2 py-3"></th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RESPH
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RECYL
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RAXIS
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RVISION
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          ADD
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3"></th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LESPH
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LECYL
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LAXIS
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LVISION
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          ADD
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-slate-300 text-center max-w-20px">
-                          D
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.distance.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.distance.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.distance.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.distance.vs}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.distance.add}
-                        </td>
-                        <td className="border border-slate-300"></td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.distance.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.distance.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.distance.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.distance.vs}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.distance.add}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-slate-300 text-center max-w-20px">
-                          N
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.near.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.near.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.near.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.right.near.vs}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px"></td>
-                        <td className="border border-slate-300"></td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.near.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.near.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.near.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {specsData.left.near.vs}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px"></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div className="mt-2 border p-2">
-                    <div className="d-flex justify-content-around flex-wrap gap-3">
-                      {[
-                        { label: "Psm(R)", value: specsData.right.psm },
-                        { label: "Pd(R)", value: specsData.right.pd },
-                        { label: "Fh(R)", value: specsData.right.fh },
-                        { label: "IPD", value: specsData.ipd },
-                        { label: "Psm(L)", value: specsData.left.psm },
-                        { label: "Pd(L)", value: specsData.left.pd },
-                        { label: "Fh(L)", value: specsData.left.fh },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="text-sm text-slate-600">
-                          {label}: {value || "-"}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-2 border p-2">
-                    <div className="d-flex justify-content-around flex-wrap gap-3">
-                      {[
-                        { label: "Asize", value: specsData.aSize },
-                        { label: "Bsize", value: specsData.bSize },
-                        { label: "DBL", value: specsData.dbl },
-                        { label: "Fth", value: specsData.fth },
-                        { label: "Pdesign", value: specsData.pDesign },
-                        { label: "Ftype", value: specsData.ft },
-                        { label: "DE", value: specsData.de },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="text-sm text-slate-600">
-                          {label}: {value || "-"}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Tab.Pane>
-            )}
-            {contactsData && (
-              <Tab.Pane eventKey="contact" className="overflow-auto">
-                <div className="p-4">
-                  <div className="d-flex flex-column flex-md-row gap-4 mb-3">
-                    <div className="flex-grow-1">
-                      <label className="d-block text-sm font-medium mb-1">
-                        Date
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={
-                          contactsData.createdAt?.split("T")[0] || "02/05/2025"
-                        }
-                        readOnly
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <label className="d-block text-sm font-medium mb-1">
-                        Doctor Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={contactsData.doctorName || "ABD"}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                  <h4
-                    className="mt-2 mb-3 fw-normal"
-                    style={{ fontSize: "17px" }}
-                  >
-                    Contact Power
-                  </h4>
-                  <table className="table table-bordered table-sm w-100">
-                    <thead className="text-xs text-uppercase text-slate-500 bg-light">
-                      <tr>
-                        <th className="border border-slate-300 px-2 py-3"></th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RESPH
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RECYL
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RAXIS
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          RVISION
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          ADD
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3"></th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LESPH
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LECYL
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LAXIS
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          LVISION
-                        </th>
-                        <th className="border custom-perchase-th px-2 py-3">
-                          ADD
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-slate-300 text-center max-w-20px">
-                          D
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.distance.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.distance.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.distance.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.distance.add}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.distance.add}
-                        </td>
-                        <td className="border border-slate-300"></td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.distance.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.distance.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.distance.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.distance.add}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.distance.add}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-slate-300 text-center max-w-20px">
-                          N
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.near.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.near.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.right.near.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px"></td>
-                        <td className="border border-slate-300 p-2 max-w-70px"></td>
-                        <td className="border border-slate-300"></td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.near.sph}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.near.cyl}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px">
-                          {contactsData.left.near.axis}
-                        </td>
-                        <td className="border border-slate-300 p-2 max-w-70px"></td>
-                        <td className="border border-slate-300 p-2 max-70px"></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div className="mt-2 border p-2">
-                    <div className="d-flex justify-content-around flex-wrap gap-3">
-                      {[
-                        { label: "K(R)", value: contactsData.right.k },
-                        { label: "Dia(R)", value: contactsData.right.dia },
-                        { label: "Bc(R)", value: contactsData.right.bc },
-                        { label: "K(L)", value: contactsData.left.k },
-                        { label: "Dia(L)", value: contactsData.left.dia },
-                        { label: "Bc(L)", value: contactsData.left.bc },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="text-sm text-slate-600">
-                          {label}: {value || "-"}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Tab.Pane>
-            )}
-          </Tab.Content>
-        </Tab.Container>
-      ) : (
-        <p className="p-4">No prescriptions available.</p>
-      )}
-    </>
-  );
+  // Organization View Modal Content (Improved)
+  const OrganizationViewModalContent = ({ data }) => {
+    const user = data.user || {};
 
-  // Organization View Modal Content
-  const OrganizationViewModalContent = ({ data }) => (
-    <div className="p-4">
-      <div className="row g-3">
-        <div className="col-12">
-          <strong>Owner Name:-</strong> {data.name || "N/A"}
+    // Handle image URLs (prepend your CDN/base URL if needed)
+    const getImageUrl = (path) => {
+      if (!path) return null;
+      // Example: prepend API base if only relative path is stored
+      if (path.startsWith("http")) return path;
+      return `${defalutImageBasePath}${path}`;
+    };
+
+    return (
+      <div className="p-4">
+        <h5 className="mb-3 fw-bold border-bottom pb-2 text-primary">
+          Organization Details
+        </h5>
+        <div className="row g-3">
+          <div className="col-md-6">
+            <strong>Organization Name:</strong> {data.companyName || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Partner Type:</strong> {data.partnerType || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Status:</strong> {data.status || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Max Store:</strong> {data.maxStore ?? "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Company Number:</strong> {data.companyNumber || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>GST Number:</strong> {data.gstNumber || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Country:</strong> {data.country || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>State:</strong> {data.state || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>City:</strong> {data.city || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Pincode:</strong> {data.pincode || "N/A"}
+          </div>
+          <div className="col-12">
+            <strong>Address:</strong> {data.address || "N/A"}
+          </div>
         </div>
-        <div className="col-12">
-          <strong>Phone:-</strong> {data.phone || "N/A  "}
+
+        <h5 className="mt-4 mb-3 fw-bold border-bottom pb-2 text-success">
+          Owner Details
+        </h5>
+        <div className="row g-3">
+          <div className="col-md-6">
+            <strong>Name:</strong> {user.name || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Phone:</strong> {user.phone || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Gender:</strong> {user.gender || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Role:</strong> {user.role || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Country:</strong> {user.country || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>State:</strong> {user.state || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>City:</strong> {user.city || "N/A"}
+          </div>
+          <div className="col-md-6">
+            <strong>Pincode:</strong> {user.pincode || "N/A"}
+          </div>
+          <div className="col-12">
+            <strong>Address:</strong> {user.address || "N/A"}
+          </div>
         </div>
-        <div className="col-12">
-          <strong>Gender:-</strong> {data.gender?.label || data.gender || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Role:-</strong> {data.role || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Partner Type:-</strong>{" "}
-          {data.partnerType?.label || data.partnerType || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Max Store:-</strong> {data.maxStore || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Org Status:-</strong>{" "}
-          {data.orgStatus?.label || data.orgStatus || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Company Name:-</strong> {data.companyName || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Company Phone:-</strong> {data.companyPhone || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>GST Number:-</strong> {data.gstNumber || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Country:-</strong>{" "}
-          {data.country?.label || data.country || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>State:-</strong> {data.state?.label || data.state || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>City:-</strong> {data.city?.label || data.city || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Pincode:-</strong> {data.pincode || "N/A"}
-        </div>
-        <div className="col-12">
-          <strong>Address:-</strong> {data.address || "N/A"}
-        </div>
-        <div className="col-12 ">
-          <strong>Company Logo:-</strong>
-          {data.companyLogo ? (
-            <img
-              src={data.companyLogo}
-              alt="Company Logo"
-              className="img-fluid rounded mt-2"
-              style={{ maxHeight: "100px", objectFit: "cover" }}
-            />
-          ) : (
-            <span className="text-muted ms-2">No image</span>
-          )}
-        </div>
-        <div className="col-12 ">
-          <strong>ERP Banner:-</strong>
-          {data.erpBanner ? (
-            <img
-              src={data.erpBanner}
-              alt="ERP Banner"
-              className="img-fluid rounded mt-2"
-              style={{ maxHeight: "100px", objectFit: "cover" }}
-            />
-          ) : (
-            <span className="text-muted ms-2">No image</span>
-          )}
-        </div>
-        <div className="col-12 ">
-          <strong>Sales App Banner:-</strong>
-          {data.salesAppBanner ? (
-            <img
-              src={data.salesAppBanner}
-              alt="Sales App Banner"
-              className="img-fluid rounded mt-2"
-              style={{ maxHeight: "100px", objectFit: "cover" }}
-            />
-          ) : (
-            <span className="text-muted ms-2">No image</span>
-          )}
+
+        <h5 className="mt-4 mb-3 fw-bold border-bottom pb-2 text-info">
+          Uploaded Images
+        </h5>
+        <div className="row g-3">
+          <div className="col-md-6 d-flex flex-column">
+            <strong>Company Logo:</strong>
+            {data.companyLogo ? (
+              <img
+                src={getImageUrl(data.companyLogo)}
+                alt="Company Logo"
+                className="img-fluid rounded mt-2"
+                style={{ maxHeight: "120px", objectFit: "cover" }}
+              />
+            ) : (
+              <span className="text-muted ms-2">No image</span>
+            )}
+          </div>
+          <div className="col-md-6  d-flex flex-column">
+            <strong>ERP Banner:</strong>
+            {data.erpBanner ? (
+              <img
+                src={getImageUrl(data.erpBanner)}
+                alt="ERP Banner"
+                className="img-fluid rounded mt-2"
+                style={{ maxHeight: "120px", objectFit: "cover" }}
+              />
+            ) : (
+              <span className="text-muted ms-2">No image</span>
+            )}
+          </div>
+          <div className="col-md-6  d-flex flex-column">
+            <strong>Sales App Banner:</strong>
+            {data.salesBanner ? (
+              <img
+                src={getImageUrl(data.salesBanner)}
+                alt="Sales App Banner"
+                className="img-fluid rounded mt-2"
+                style={{ maxHeight: "120px", objectFit: "cover" }}
+              />
+            ) : (
+              <span className="text-muted ms-2">No image</span>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* <div className="row g-3 mt-3"> */}
-    </div>
-    // </div>
-  );
+    );
+  };
 
   const columns = useMemo(
     () => [
@@ -666,82 +283,65 @@ const ViewOrganization = () => {
       {
         accessorKey: "org_code",
         header: "Organization Code",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue() || "—"}</div>
+        ),
       },
       {
-        accessorKey: "organization_name",
+        accessorKey: "companyName",
         header: "Organization Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue() || "—"}</div>
+        ),
       },
       {
-        accessorKey: "ownerName",
+        id: "ownerName",
         header: "Owner Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">{row.original?.user?.name || "—"}</div>
+        ),
       },
-      //   {
-      //     accessorKey: "gender",
-      //     header: "Gender",
-      //     cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      //   },
-      //   {
-      //     accessorKey: "role",
-      //     header: "Role",
-      //     cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      //   },
-      // {
-      //   accessorKey: "gstNumber",
-      //   header: "GST Number",
-      //   cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      // },
-      // {
-      //   accessorKey: "country",
-      //   header: "Country",
-      //   cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      // },
       {
-        accessorKey: "state",
+        id: "state",
         header: "State",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">{row.original?.user?.state || "—"}</div>
+        ),
       },
       {
-        accessorKey: "city",
+        id: "city",
         header: "City",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ row }) => (
+          <div className="text-left">{row.original?.user?.city || "—"}</div>
+        ),
       },
       {
-        accessorKey: "partner_type",
+        accessorKey: "partnerType",
         header: "Partner Type",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue() || "—"}</div>
+        ),
       },
       {
-        accessorKey: "store",
-        header: "Store",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        accessorKey: "maxStore",
+        header: "Max Store",
+        cell: ({ getValue }) => (
+          <div className="text-left">{getValue() ?? 0}</div>
+        ),
       },
       {
         accessorKey: "status",
         header: "Org Status",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+        cell: ({ getValue }) => (
+          <span
+            className={`badge ${
+              getValue() === "Active" ? "bg-success" : "bg-danger"
+            }`}
+          >
+            {getValue() || "—"}
+          </span>
+        ),
       },
-      //   {
-      //     accessorKey: "prescriptions",
-      //     header: "Prescriptions",
-      //     cell: ({ getValue, row }) => (
-      //       <div className="text-left d-flex align-items-center gap-2">
-      //         {getValue()?.length > 0 && (
-      //           <button
-      //             className="btn btn-sm btn-outline-primary d-flex align-items-center"
-      //             onClick={() => handleViewPrescriptions(row.original._id)}
-      //             title="View Prescriptions"
-      //             disabled={loading}
-      //           >
-      //             <FaEye size={16} />
-      //             <span className="ms-2">View</span>
-      //           </button>
-      //         )}
-      //       </div>
-      //     ),
-      //   },
       {
         id: "action",
         header: "Action",
@@ -768,7 +368,7 @@ const ViewOrganization = () => {
         ),
       },
     ],
-    [loading, pagination.page, pagination.limit]
+    [pagination.page, pagination.limit]
   );
 
   const table = useReactTable({
@@ -893,60 +493,17 @@ const ViewOrganization = () => {
                       )}{" "}
                       of {pagination.totalDocs} entries
                     </div>
-                    <ReactPaginate
-                      previousLabel={pagination.hasPrevPage ? "Previous" : ""}
-                      nextLabel={pagination.hasNextPage ? "Next" : ""}
-                      breakLabel="..."
-                      pageCount={pagination.totalPages}
+
+                    <Pagination
+                      pageCount={pagination?.totalPages || 1}
+                      currentPage={pagination.page || 1} // 1-based
                       onPageChange={handlePageClick}
-                      containerClassName="pagination mb-0"
-                      pageClassName="page-item"
-                      pageLinkClassName="page-link"
-                      previousClassName="page-item"
-                      previousLinkClassName="page-link"
-                      nextClassName="page-item"
-                      nextLinkClassName="page-link"
-                      breakClassName="page-item"
-                      breakLinkClassName="page-link"
-                      activeClassName="active"
-                      disabledClassName="disabled"
-                      forcePage={pagination.page - 1} // react-paginate is 0-based
                     />
                   </div>
                 </>
               )}
             </div>
           </div>
-
-          <Modal
-            show={showModal}
-            onHide={() => setShowModal(false)}
-            centered
-            size="xl"
-          >
-            <Modal.Header className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
-              <Modal.Title className="font-semibold text-slate-800">
-                View Prescriptions
-              </Modal.Title>
-              <Button
-                variant="link"
-                onClick={() => setShowModal(false)}
-                className="p-0"
-                style={{ lineHeight: 0 }}
-              >
-                <FaTimes
-                  className="text-secondary"
-                  style={{ width: "24px", height: "24px" }}
-                />
-              </Button>
-            </Modal.Header>
-            <Modal.Body className="p-4" style={{ overflow: "hidden" }}>
-              <PrescriptionModalContent
-                specsData={modalData.specs}
-                contactsData={modalData.contacts}
-              />
-            </Modal.Body>
-          </Modal>
 
           {/* Organization View Modal */}
           <Modal

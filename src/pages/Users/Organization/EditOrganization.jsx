@@ -9,6 +9,9 @@ import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import CommonButton from "../../../components/CommonButton/CommonButton";
+import AssetSelector from "../../../components/Products/AddProducts/EyeGlasses/AssetSelector";
+import { IoClose } from "react-icons/io5";
+import { defalutImageBasePath } from "../../../utils/constants";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -17,7 +20,6 @@ const validationSchema = Yup.object({
     .min(4, "Phone number is required")
     .required("Phone number is required"),
   gender: Yup.object().nullable().required("Gender is required"),
-  password: Yup.string().trim().required("Password is required"),
   partnerType: Yup.object().nullable().required("Partner type is required"),
   maxStore: Yup.number()
     .min(1, "Max store must be at least 1")
@@ -31,12 +33,8 @@ const validationSchema = Yup.object({
   country: Yup.object().nullable().required("Country is required"),
   state: Yup.object().nullable().required("State is required"),
   city: Yup.object().nullable().required("City is required"),
-  role: Yup.string().trim().required("Role is required"),
   pincode: Yup.string().trim().required("Pincode is required"),
   address: Yup.string().trim().required("Address is required"),
-  companyLogo: Yup.mixed().optional(),
-  erpBanner: Yup.mixed().optional(),
-  salesAppBanner: Yup.mixed().optional(),
 });
 
 const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
@@ -45,7 +43,12 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
   const [user, setUser] = useState(null);
   const { id } = useParams();
   const [previews, setPreviews] = useState({});
-
+  const [showLogoModal, setShowLogoModal] = useState(false);
+  const [showErpBannerModal, setShowErpBannerModal] = useState(false);
+  const [showSalesBannerModal, setShowSalesBannerModal] = useState(false);
+  const [selectedLogo, setSelectedLogo] = useState("");
+  const [selectedErpBanner, setSelectedErpBanner] = useState("");
+  const [selectedSalesBanner, setSelectedSalesBanner] = useState("");
   const companyLogoRef = useRef(null);
   const erpBannerRef = useRef(null);
   const salesAppBannerRef = useRef(null);
@@ -59,52 +62,55 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
-      name: user?.user?.name || "",
-      phone: user?.user?.phone ? `+${user.user.phone}` : "+91",
-      companyNumber: user?.companyNumber ? `+${user.companyNumber}` : "+91",
-      gender: user?.user
-        ? { value: user.user.gender, label: capitalize(user.user.gender) }
-        : null,
-      role: user?.user?.role || "",
-      companyName: user?.companyName || "",
-      gstNumber: user?.gstNumber || "",
-      partnerType: user
-        ? { value: user.partnerType, label: capitalize(user.partnerType) }
-        : null,
-      maxStore: user?.maxStore || "",
-      status: user
-        ? { value: user.status, label: capitalize(user.status) }
-        : null,
-      country: user ? { value: user.country, label: user.country } : null,
-      state: user ? { value: user.state, label: user.state } : null,
-      city: user ? { value: user.city, label: user.city } : null,
-      pincode: user?.pincode || "",
-      address: user?.address || "",
+      name: "",
+      phone: "+91",
+      companyNumber: "+91",
+      gender: null,
+      role: "",
+      companyName: "",
+      gstNumber: "",
+      partnerType: null,
+      maxStore: "",
+      status: null,
+      country: null,
+      state: null,
+      city: null,
+      pincode: "",
+      address: "",
+      companyLogo: null,
+      erpBanner: null,
+      salesBanner: null,
     },
-
     validationSchema,
     onSubmit: async (values, { resetForm }) => {
-      // Log form values to console
       setLoading(true);
-      const data = {
-        name: values.name,
-        phone: values.phone.replace("+", ""), // remove '+' if your backend expects plain number
-        gender: values.gender?.value,
-        role: values.role,
-        partnerType: values.partnerType?.label || values.partnerType,
-        maxStore: values.maxStore,
-        status: values.status?.label || values.status,
-        companyName: values.companyName,
-        companyNumber: values.companyNumber.replace("+", ""),
-        gstNumber: values.gstNumber,
-        country: values.country?.label || values.country,
-        state: values.state?.label || values.state,
-        city: values.city?.label || values.city,
-        pincode: Number(values.pincode),
-        address: values.address,
-      };
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("phone", values.phone.replace("+", ""));
+      formData.append("gender", values.gender?.value);
+      formData.append("role", values.role);
+      formData.append(
+        "partnerType",
+        values.partnerType?.label || values.partnerType
+      );
+      formData.append("maxStore", values.maxStore);
+      formData.append("status", values.status?.label || values.status);
+      formData.append("companyName", values.companyName);
+      formData.append("companyNumber", values.companyNumber.replace("+", ""));
+      formData.append("gstNumber", values.gstNumber || "");
+      formData.append("country", values.country?.label || values.country);
+      formData.append("state", values.state?.label || values.state);
+      formData.append("city", values.city?.label || values.city);
+      formData.append("pincode", values.pincode);
+      formData.append("address", values.address);
+      formData.append("companyLogo", values.companyLogo ?? "");
+      formData.append("erpBanner", values.erpBanner ?? "");
+      formData.append("salesBanner", values.salesBanner ?? "");
+
       try {
-        const response = await userService.updateOrganization(id, data);
+        const response = await userService.updateOrganization(id, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         if (response.success) {
           toast.success(response.message);
           resetForm();
@@ -113,13 +119,14 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
           toast.error(response.message);
         }
       } catch (error) {
-        toast.error("Failed to add organization!");
+        toast.error("Failed to update organization!");
       } finally {
         setLoading(false);
       }
     },
   });
 
+  // Fetch user data
   useEffect(() => {
     if (id) fetchUserData(id);
   }, [id]);
@@ -135,6 +142,85 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
           response.data;
         console.log("Organization Data:", orgData);
         setUser(orgData);
+        setSelectedLogo(orgData.companyLogo || "");
+        setSelectedErpBanner(orgData.erpBanner || "");
+        setSelectedSalesBanner(orgData.salesBanner || "");
+        setPreviews({
+          companyLogo: orgData.companyLogo || null,
+          erpBanner: orgData.erpBanner || null,
+          salesAppBanner: orgData.salesAppBanner || null,
+        });
+
+        // Initialize country, state, and city
+        const countryOptions = Country.getAllCountries().map((country) => ({
+          value: country.isoCode,
+          label: country.name,
+        }));
+        const country =
+          countryOptions.find(
+            (con) => con.label.toLowerCase() === orgData?.country?.toLowerCase()
+          ) || null;
+        const stateOptions = country
+          ? State.getStatesOfCountry(country.value).map((state) => ({
+              value: state.isoCode,
+              label: state.name,
+            }))
+          : [];
+        const state =
+          stateOptions.find(
+            (state) =>
+              state.label.toLowerCase() === orgData?.state?.toLowerCase()
+          ) || null;
+        const cityOptions =
+          country && state
+            ? City.getCitiesOfState(country.value, state.value).map((city) => ({
+                value: city.name,
+                label: city.name,
+              }))
+            : orgData?.city
+            ? [{ value: orgData.city, label: orgData.city }]
+            : [];
+        const city =
+          cityOptions.find(
+            (city) => city.label.toLowerCase() === orgData?.city?.toLowerCase()
+          ) ||
+          (orgData?.city ? { value: orgData.city, label: orgData.city } : null);
+
+        // Set form values
+        formik.setValues({
+          name: orgData?.user?.name || "",
+          phone: orgData?.user?.phone ? `+${orgData.user.phone}` : "+91",
+          companyNumber: orgData?.companyNumber
+            ? `+${orgData.companyNumber}`
+            : "+91",
+          gender: orgData?.user?.gender
+            ? {
+                value: orgData.user.gender,
+                label: capitalize(orgData.user.gender),
+              }
+            : null,
+          role: orgData?.user?.role || "",
+          companyName: orgData?.companyName || "",
+          gstNumber: orgData?.gstNumber || "",
+          partnerType: orgData?.partnerType
+            ? {
+                value: orgData.partnerType,
+                label: capitalize(orgData.partnerType),
+              }
+            : null,
+          maxStore: orgData?.maxStore || "",
+          status: orgData?.status
+            ? { value: orgData.status, label: capitalize(orgData.status) }
+            : null,
+          country: country,
+          state: state,
+          city: city,
+          pincode: orgData?.pincode || "",
+          address: orgData?.address || "",
+          companyLogo: orgData?.companyLogo || null,
+          erpBanner: orgData?.erpBanner || null,
+          salesBanner: orgData?.salesBanner || null,
+        });
       } else {
         console.error("Failed to fetch user:", response.message);
       }
@@ -143,13 +229,12 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
     }
   };
 
-  // Fetch countries from country-state-city
+  // Country, State, and City options
   const countryOptions = Country.getAllCountries().map((country) => ({
     value: country.isoCode,
     label: country.name,
   }));
 
-  // Fetch states based on selected country
   const stateOptions = formik.values.country
     ? State.getStatesOfCountry(formik.values.country.value).map((state) => ({
         value: state.isoCode,
@@ -157,7 +242,6 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
       }))
     : [];
 
-  // Fetch cities based on selected country and state
   const cityOptions =
     formik.values.country && formik.values.state
       ? City.getCitiesOfState(
@@ -167,6 +251,8 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
           value: city.name,
           label: city.name,
         }))
+      : formik.values.city
+      ? [{ value: formik.values.city.value, label: formik.values.city.label }]
       : [];
 
   const genderOptions = [
@@ -184,112 +270,20 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
     { value: "inactive", label: "Inactive" },
   ];
 
-  // Handle country change to reset state and city
+  // Handlers for country, state, and city changes
   const handleCountryChange = (option) => {
     formik.setFieldValue("country", option);
     formik.setFieldValue("state", null);
     formik.setFieldValue("city", null);
   };
 
-  // Handle state change to reset city
   const handleStateChange = (option) => {
     formik.setFieldValue("state", option);
     formik.setFieldValue("city", null);
   };
 
-  // Handle file change for previews
-  const handleFileChange = (fieldName) => (e) => {
-    const file = e.target.files[0];
-    formik.setFieldValue(fieldName, file);
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviews((prev) => ({ ...prev, [fieldName]: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setPreviews((prev) => ({ ...prev, [fieldName]: null }));
-    }
-  };
-
-  // Handle clear preview
-  const handleClearPreview = (fieldName) => {
-    formik.setFieldValue(fieldName, null);
-    setPreviews((prev) => ({ ...prev, [fieldName]: null }));
-    // Clear the file input
-    if (fieldName === "companyLogo" && companyLogoRef.current) {
-      companyLogoRef.current.value = "";
-    } else if (fieldName === "erpBanner" && erpBannerRef.current) {
-      erpBannerRef.current.value = "";
-    } else if (fieldName === "salesAppBanner" && salesAppBannerRef.current) {
-      salesAppBannerRef.current.value = "";
-    }
-  };
-
-  // Preview component with hover close icon
-  const PreviewImage = ({ src, alt, fieldName, onClear, fileName }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
-    return (
-      <div
-        className="position-relative mt-3 d-flex justify-content-center flex-column align-items-center"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{ cursor: "pointer" }}
-      >
-        <div className="position-relative">
-          <img
-            src={src}
-            alt={alt}
-            className="rounded"
-            style={{
-              maxWidth: "100px",
-              maxHeight: "100px",
-              objectFit: "cover",
-              transition: "transform 0.3s ease, opacity 0.3s ease",
-              transform: isHovered ? "scale(1.05)" : "scale(1)",
-              opacity: isHovered ? 0.8 : 1,
-            }}
-          />
-          <button
-            type="button"
-            className="position-absolute top-50 start-50 translate-middle btn-close btn-sm"
-            style={{
-              opacity: isHovered ? 1 : 0,
-              transition: "opacity 0.3s ease",
-              backgroundColor: "rgba(0,0,0,0.6)",
-              borderRadius: "50%",
-              width: "24px",
-              height: "24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1,
-            }}
-            onClick={onClear}
-            onMouseEnter={(e) => e.stopPropagation()}
-            onMouseLeave={(e) => e.stopPropagation()}
-            aria-label="Remove image"
-          >
-            <span
-              style={{
-                fontSize: "14px",
-                color: "white",
-                lineHeight: "1",
-                fontWeight: "bold",
-              }}
-            >
-              ×
-            </span>
-          </button>
-        </div>
-        {fileName && (
-          <small className="text-center d-block text-muted mt-1">
-            {fileName}
-          </small>
-        )}
-      </div>
-    );
+  const handleCityChange = (option) => {
+    formik.setFieldValue("city", option);
   };
 
   return (
@@ -362,36 +356,10 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
               </div>
+
               <div className="row g-3 mt-1">
-                <div className="col-12 ">
-                  <label className="form-label font-weight-500">
-                    Password <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    className={`form-control ${
-                      formik.touched.password && formik.errors.password
-                        ? "is-invalid"
-                        : ""
-                    }`}
-                    placeholder="Password"
-                    name="password"
-                    value={formik.values.password}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  />
-                  {formik.touched.password && formik.errors.password && (
-                    <div className="text-danger mt-1">
-                      {formik.errors.password}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="row g-3 mt-1">
-                <div className="col-12 ">
-                  <label className="form-label font-weight-500">
-                    Role <span className="text-danger">*</span>
-                  </label>
+                <div className="col-12">
+                  <label className="form-label font-weight-500">Role</label>
                   <input
                     type="text"
                     className={`form-control ${
@@ -401,6 +369,7 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
                     }`}
                     placeholder="Role"
                     name="role"
+                    disabled
                     value={formik.values.role}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
@@ -475,7 +444,7 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
               </div>
             </div>
             <div className="col-12 col-md-6">
-              <div className="row g-3 ">
+              <div className="row g-3">
                 <div className="col-12">
                   <label className="form-label font-weight-500">
                     Company Name <span className="text-danger">*</span>
@@ -537,63 +506,58 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                   />
-                  {/* {formik.touched.gstNumber && formik.errors.gstNumber && (
-                    <div className="text-danger mt-1">
-                      {formik.errors.gstNumber}
-                    </div>
-                  )} */}
                 </div>
               </div>
               <div className="row g-3">
-                {/* Row for Country and State */}
-                <div className="row g-3">
-                  <div className="col-12 col-md-6">
-                    <label className="form-label font-weight-500">
-                      Country <span className="text-danger">*</span>
-                    </label>
-                    <Select
-                      options={countryOptions}
-                      value={formik.values.country}
-                      onChange={handleCountryChange}
-                      onBlur={() => formik.setFieldTouched("country", true)}
-                      placeholder="Select Country..."
-                    />
-                    {formik.touched.country && formik.errors.country && (
-                      <div className="text-danger mt-1">
-                        {formik.errors.country}
-                      </div>
-                    )}
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label font-weight-500">
-                      State <span className="text-danger">*</span>
-                    </label>
-                    <Select
-                      options={stateOptions}
-                      value={formik.values.state}
-                      onChange={handleStateChange}
-                      onBlur={() => formik.setFieldTouched("state", true)}
-                      placeholder="Select State..."
-                      isDisabled={!formik.values.country}
-                    />
-                    {formik.touched.state && formik.errors.state && (
-                      <div className="text-danger mt-1">
-                        {formik.errors.state}
-                      </div>
-                    )}
-                  </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label font-weight-500">
+                    Country <span className="text-danger">*</span>
+                  </label>
+                  <Select
+                    options={countryOptions}
+                    value={formik.values.country}
+                    onChange={handleCountryChange}
+                    onBlur={() => formik.setFieldTouched("country", true)}
+                    placeholder="Select Country..."
+                  />
+                  {formik.touched.country && formik.errors.country && (
+                    <div className="text-danger mt-1">
+                      {formik.errors.country}
+                    </div>
+                  )}
                 </div>
-
-                {/* Row for City and Pincode */}
-
+                <div className="col-12 col-md-6">
+                  <label className="form-label font-weight-500">
+                    State <span className="text-danger">*</span>
+                  </label>
+                  <Select
+                    key={`state-${formik.values.country?.value}`}
+                    options={stateOptions}
+                    value={formik.values.state}
+                    onChange={handleStateChange}
+                    onBlur={() => formik.setFieldTouched("state", true)}
+                    placeholder="Select State..."
+                    isDisabled={!formik.values.country}
+                  />
+                  {formik.touched.state && formik.errors.state && (
+                    <div className="text-danger mt-1">
+                      {formik.errors.state}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="row g-3">
                 <div className="col-12 col-md-6 mt-4">
                   <label className="form-label font-weight-500">
                     City <span className="text-danger">*</span>
                   </label>
                   <Select
+                    key={`city-${
+                      formik.values.state?.value || formik.values.city?.value
+                    }`}
                     options={cityOptions}
                     value={formik.values.city}
-                    onChange={(option) => formik.setFieldValue("city", option)}
+                    onChange={handleCityChange}
                     onBlur={() => formik.setFieldTouched("city", true)}
                     placeholder="Select City..."
                     isDisabled={!formik.values.state}
@@ -652,66 +616,120 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
             </div>
           </div>
           <div className="row g-3 mt-3">
+            {/* Company Logo */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">Company Logo</label>
-              <input
-                ref={companyLogoRef}
-                type="file"
-                className="form-control"
-                name="companyLogo"
-                onChange={handleFileChange("companyLogo")}
-                accept="image/*"
-              />
-              {previews.companyLogo && (
-                <PreviewImage
-                  src={previews.companyLogo}
-                  alt="Company Logo Preview"
-                  fieldName="companyLogo"
-                  onClear={() => handleClearPreview("companyLogo")}
-                  fileName={formik.values.companyLogo?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowLogoModal(true)}
+                >
+                  Select Logo
+                </button>
+              </div>
+              {selectedLogo && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedLogo}`}
+                        alt="Logo"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedLogo("");
+                          formik.setFieldValue("companyLogo", null);
+                        }}
+                        aria-label="Remove logo"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+            {/* ERP Banner */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">ERP Banner</label>
-              <input
-                ref={erpBannerRef}
-                type="file"
-                className="form-control"
-                name="erpBanner"
-                onChange={handleFileChange("erpBanner")}
-                accept="image/*"
-              />
-              {previews.erpBanner && (
-                <PreviewImage
-                  src={previews.erpBanner}
-                  alt="ERP Banner Preview"
-                  fieldName="erpBanner"
-                  onClear={() => handleClearPreview("erpBanner")}
-                  fileName={formik.values.erpBanner?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowErpBannerModal(true)}
+                >
+                  Select Banner
+                </button>
+              </div>
+              {selectedErpBanner && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedErpBanner}`}
+                        alt="ERP Banner"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedErpBanner("");
+                          formik.setFieldValue("erpBanner", null);
+                        }}
+                        aria-label="Remove banner"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+            {/* Sales App Banner */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">
                 Sales App Banner
               </label>
-              <input
-                ref={salesAppBannerRef}
-                type="file"
-                className="form-control"
-                name="salesAppBanner"
-                onChange={handleFileChange("salesAppBanner")}
-                accept="image/*"
-              />
-              {previews.salesAppBanner && (
-                <PreviewImage
-                  src={previews.salesAppBanner}
-                  alt="Sales App Banner Preview"
-                  fieldName="salesAppBanner"
-                  onClear={() => handleClearPreview("salesAppBanner")}
-                  fileName={formik.values.salesAppBanner?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowSalesBannerModal(true)}
+                >
+                  Select Banner
+                </button>
+              </div>
+              {selectedSalesBanner && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedSalesBanner}`}
+                        alt="Sales App Banner"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedSalesBanner("");
+                          formik.setFieldValue("salesBanner", null);
+                        }}
+                        aria-label="Remove banner"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -727,6 +745,36 @@ const EditOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <hr />
         </form>
+        {/* Logo Selector Modal */}
+        <AssetSelector
+          show={showLogoModal}
+          onHide={() => setShowLogoModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedLogo(imageSrc[0]);
+            formik.setFieldValue("companyLogo", imageSrc[0]);
+            setShowLogoModal(false);
+          }}
+        />
+        {/* ERP Banner Selector Modal */}
+        <AssetSelector
+          show={showErpBannerModal}
+          onHide={() => setShowErpBannerModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedErpBanner(imageSrc[0]);
+            formik.setFieldValue("erpBanner", imageSrc[0]);
+            setShowErpBannerModal(false);
+          }}
+        />
+        {/* Sales Banner Selector Modal */}
+        <AssetSelector
+          show={showSalesBannerModal}
+          onHide={() => setShowSalesBannerModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedSalesBanner(imageSrc[0]);
+            formik.setFieldValue("salesBanner", imageSrc[0]);
+            setShowSalesBannerModal(false);
+          }}
+        />
       </div>
     </>
   );

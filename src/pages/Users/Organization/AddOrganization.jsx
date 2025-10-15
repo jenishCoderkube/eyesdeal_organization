@@ -9,6 +9,9 @@ import { userService } from "../../../services/userService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import CommonButton from "../../../components/CommonButton/CommonButton";
+import AssetSelector from "../../../components/Products/AddProducts/EyeGlasses/AssetSelector";
+import { defalutImageBasePath } from "../../../utils/constants";
+import { IoClose } from "react-icons/io5";
 
 // Validation schema using Yup
 const validationSchema = Yup.object({
@@ -44,6 +47,14 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
   const [loading, setLoading] = useState(false);
   const [previews, setPreviews] = useState({});
 
+  const [showLogoModal, setShowLogoModal] = useState(false);
+  const [showErpBannerModal, setShowErpBannerModal] = useState(false);
+  const [showSalesBannerModal, setShowSalesBannerModal] = useState(false);
+
+  const [selectedLogo, setSelectedLogo] = useState("");
+  const [selectedErpBanner, setSelectedErpBanner] = useState("");
+  const [selectedSalesBanner, setSelectedSalesBanner] = useState("");
+
   const companyLogoRef = useRef(null);
   const erpBannerRef = useRef(null);
   const salesBannerRef = useRef(null);
@@ -53,7 +64,10 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
     initialValues: {
       name: "",
       phone: "+91",
-      gender: null,
+      gender: {
+        value: "male",
+        label: "Male",
+      },
       password: "",
       partnerType: null,
       maxStore: 2,
@@ -85,7 +99,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
       formData.append("maxStore", values.maxStore);
       formData.append("status", values.status?.value || "");
       formData.append("companyName", values.companyName);
-      formData.append("companyPhone", values.companyPhone);
+      formData.append("companyNumber", values.companyPhone);
       formData.append("gstNumber", values.gstNumber);
       formData.append("country", values.country?.label || "");
       formData.append("state", values.state?.label || "");
@@ -268,7 +282,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
     <>
       <div className="container">
         <h3 className="mb-4 user_main_title mt-4">Add Organization</h3>
-        <form onSubmit={formik.handleSubmit}>
+        <form onSubmit={formik.handleSubmit} autoComplete="off">
           <div className="row g-3">
             <div className="col-12 col-md-6">
               <div className="row g-3">
@@ -320,13 +334,16 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
                   </label>
                   <Select
                     options={genderOptions}
-                    value={formik.values.gender}
+                    value={formik.values.gender || "male"} // ✅ This should be gender, not phone
+                    name="gender"
                     onChange={(option) =>
                       formik.setFieldValue("gender", option)
                     }
                     onBlur={() => formik.setFieldTouched("gender", true)}
                     placeholder="Select..."
+                    autoComplete="off"
                   />
+
                   {formik.touched.gender && formik.errors.gender && (
                     <div className="text-danger mt-1">
                       {formik.errors.gender}
@@ -340,7 +357,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
                     Password <span className="text-danger">*</span>
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     className={`form-control ${
                       formik.touched.password && formik.errors.password
                         ? "is-invalid"
@@ -351,6 +368,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
                     value={formik.values.password}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
+                    autoComplete="off"
                   />
                   {formik.touched.password && formik.errors.password && (
                     <div className="text-danger mt-1">
@@ -359,29 +377,7 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
                   )}
                 </div>
               </div>
-              {/* <div className="row g-3 mt-1">
-                <div className="col-12 ">
-                  <label className="form-label font-weight-500">
-                    Role <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`form-control ${
-                      formik.touched.role && formik.errors.role
-                        ? "is-invalid"
-                        : ""
-                    }`}
-                    placeholder="Role"
-                    name="role"
-                    value={formik.values.role}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  />
-                  {formik.touched.role && formik.errors.role && (
-                    <div className="text-danger mt-1">{formik.errors.role}</div>
-                  )}
-                </div>
-              </div> */}
+
               <div className="row g-3 mt-1">
                 <div className="col-12 col-md-4">
                   <label className="form-label font-weight-500">
@@ -623,66 +619,125 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
             </div>
           </div>
           <div className="row g-3 mt-3">
+            {/* Company Logo */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">Company Logo</label>
-              <input
-                ref={companyLogoRef}
-                type="file"
-                className="form-control"
-                name="companyLogo"
-                onChange={handleFileChange("companyLogo")}
-                accept="image/*"
-              />
-              {previews.companyLogo && (
-                <PreviewImage
-                  src={previews.companyLogo}
-                  alt="Company Logo Preview"
-                  fieldName="companyLogo"
-                  onClear={() => handleClearPreview("companyLogo")}
-                  fileName={formik.values.companyLogo?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowLogoModal(true)}
+                >
+                  Select Logo
+                </button>
+              </div>
+
+              {selectedLogo && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedLogo}`}
+                        alt="Logo"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedLogo("");
+                          formik.setFieldValue("companyLogo", null);
+                        }}
+                        aria-label="Remove logo"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* ERP Banner */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">ERP Banner</label>
-              <input
-                ref={erpBannerRef}
-                type="file"
-                className="form-control"
-                name="erpBanner"
-                onChange={handleFileChange("erpBanner")}
-                accept="image/*"
-              />
-              {previews.erpBanner && (
-                <PreviewImage
-                  src={previews.erpBanner}
-                  alt="ERP Banner Preview"
-                  fieldName="erpBanner"
-                  onClear={() => handleClearPreview("erpBanner")}
-                  fileName={formik.values.erpBanner?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowErpBannerModal(true)}
+                >
+                  Select Banner
+                </button>
+              </div>
+
+              {selectedErpBanner && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedErpBanner}`}
+                        alt="ERP Banner"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedErpBanner("");
+                          formik.setFieldValue("erpBanner", null);
+                        }}
+                        aria-label="Remove banner"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Sales App Banner */}
             <div className="col-md-4">
               <label className="form-label font-weight-500">
                 Sales App Banner
               </label>
-              <input
-                ref={salesBannerRef}
-                type="file"
-                className="form-control"
-                name="salesBanner"
-                onChange={handleFileChange("salesBanner")}
-                accept="image/*"
-              />
-              {previews.salesBanner && (
-                <PreviewImage
-                  src={previews.salesBanner}
-                  alt="Sales App Banner Preview"
-                  fieldName="salesBanner"
-                  onClear={() => handleClearPreview("salesBanner")}
-                  fileName={formik.values.salesBanner?.name || ""}
-                />
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 px-3"
+                  onClick={() => setShowSalesBannerModal(true)}
+                >
+                  Select Banner
+                </button>
+              </div>
+
+              {selectedSalesBanner && (
+                <div className="row mt-4 g-3">
+                  <div className="col-12 col-md-6 col-lg-3">
+                    <div className="position-relative border text-center border-black rounded p-2">
+                      <img
+                        src={`${defalutImageBasePath}${selectedSalesBanner}`}
+                        alt="Sales App Banner"
+                        className="img-fluid rounded w-50 h-auto object-fit-cover"
+                        style={{ maxHeight: "100px", objectFit: "cover" }}
+                      />
+                      <button
+                        className="position-absolute top-0 start-0 translate-middle bg-white rounded-circle border border-light p-1"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedSalesBanner("");
+                          formik.setFieldValue("salesBanner", null);
+                        }}
+                        aria-label="Remove banner"
+                      >
+                        <IoClose size={16} className="text-dark" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -698,6 +753,38 @@ const AddOrganization = ({ onAddSpecs, onAddContacts }) => {
           </div>
           <hr />
         </form>
+        {/* Logo Selector Modal */}
+        <AssetSelector
+          show={showLogoModal}
+          onHide={() => setShowLogoModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedLogo(imageSrc[0]);
+            formik.setFieldValue("companyLogo", imageSrc[0]);
+            setShowLogoModal(false);
+          }}
+        />
+
+        {/* ERP Banner Selector Modal */}
+        <AssetSelector
+          show={showErpBannerModal}
+          onHide={() => setShowErpBannerModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedErpBanner(imageSrc[0]);
+            formik.setFieldValue("erpBanner", imageSrc[0]);
+            setShowErpBannerModal(false);
+          }}
+        />
+
+        {/* Sales Banner Selector Modal */}
+        <AssetSelector
+          show={showSalesBannerModal}
+          onHide={() => setShowSalesBannerModal(false)}
+          onSelectImage={(imageSrc) => {
+            setSelectedSalesBanner(imageSrc[0]);
+            formik.setFieldValue("salesBanner", imageSrc[0]);
+            setShowSalesBannerModal(false);
+          }}
+        />
       </div>
     </>
   );
