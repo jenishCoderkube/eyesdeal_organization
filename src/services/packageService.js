@@ -4,7 +4,7 @@ const PACKAGE_ENDPOINT = "/package";
 
 export const packageService = {
   // Get all packages (with pagination)
-  getPackages: async (page = 1, limit = 10, storeIds) => {
+  getPackages: async (page = 1, limit = 10, storeIds = []) => {
     try {
       // Convert array → comma-separated string
       const storeQuery =
