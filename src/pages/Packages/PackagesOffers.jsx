@@ -11,6 +11,8 @@ import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/De
 import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 import AssetSelector from "../../components/Products/AddProducts/EyeGlasses/AssetSelector"; // Adjust path as needed
+import { storeService } from "../../services/storeService";
+import Select from "react-select";
 
 const BASE_URL =
   "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
@@ -222,6 +224,9 @@ const PackagesOffers = () => {
   const [loading, setLoading] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [storeOptions, setStoreOptions] = useState([]);
+  const [selectedStore, setSelectedStore] = useState([]);
+
   const [pagination, setPagination] = useState({
     totalDocs: 0,
     limit: 10,
@@ -236,9 +241,9 @@ const PackagesOffers = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const navigate = useNavigate();
 
-  const fetchPackages = async (page = 1, limit = 10) => {
+  const fetchPackages = async (page = 1, limit = 10, storeIds = []) => {
     setLoading(true);
-    const res = await packageService.getPackages(page, limit);
+    const res = await packageService.getPackages(page, limit, storeIds);
     if (res.success) {
       setPackages(res.data?.data || []);
       setPagination({
@@ -267,8 +272,40 @@ const PackagesOffers = () => {
   };
 
   useEffect(() => {
-    fetchPackages(1, pagination.limit);
+    getStores();
   }, []);
+
+  const getStores = async () => {
+    try {
+      const res = await storeService.getStores();
+      if (res?.length > 0) {
+        const options = res?.map((store) => ({
+          value: store._id,
+          label: store.name,
+        }));
+
+        setStoreOptions(options);
+
+        // get user from localStorage and select first store
+        const user = JSON.parse(localStorage.getItem("user"));
+        const defaultIds = user?.stores || [];
+        const defaultSelected = options.filter((opt) =>
+          defaultIds.includes(opt.value)
+        );
+        setSelectedStore(defaultSelected);
+        if (defaultSelected.length > 0) {
+          // fetch packages for default stores
+          fetchPackages(
+            1,
+            pagination.limit,
+            defaultSelected.map((s) => s.value)
+          );
+        }
+      }
+    } catch (err) {
+      toast.error("Failed to load stores");
+    }
+  };
 
   const handlePageChange = (page) => {
     if (page && page !== pagination.page) {
@@ -452,7 +489,28 @@ const PackagesOffers = () => {
   return (
     <div className="container-fluid max-width-90 mx-auto mt-5">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Packages</h2>
+        <div className="d-flex gap-4 align-items-center">
+          <h2>Packages</h2>
+          <div className="mb-3" style={{ minWidth: 300, maxWidth: 400 }}>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <label htmlFor="store" className="form-label font-weight-500 m-0">
+                Store
+              </label>
+            </div>
+            <Select
+              options={storeOptions}
+              value={selectedStore}
+              isMulti
+              onChange={(sel) => {
+                setSelectedStore(sel);
+                const ids = sel.map((s) => s.value);
+                fetchPackages(1, pagination.limit, ids);
+              }}
+              placeholder="Select Stores..."
+              classNamePrefix="react-select"
+            />
+          </div>
+        </div>
         <Button
           variant="primary"
           onClick={() => {

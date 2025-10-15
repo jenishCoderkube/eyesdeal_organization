@@ -48,7 +48,7 @@ const ViewOrganization = () => {
     prevPage: null,
     pagingCounter: 1,
   });
-  const [debouncedSearch] = useDebounce(searchQuery, 1300);
+  const [debouncedSearch] = useDebounce(searchQuery, 800);
 
   useEffect(() => {
     fetchCustomers(pagination.page, debouncedSearch);
