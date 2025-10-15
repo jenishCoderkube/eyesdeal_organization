@@ -35,7 +35,11 @@ const USER_ENDPOINTS = {
 export const userService = {
   addOrganization: async (data) => {
     try {
-      const response = await api.post(USER_ENDPOINTS.ADD_ORGANIZATION, data);
+      const response = await api.post(USER_ENDPOINTS.ADD_ORGANIZATION, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       return {
         success: true,
@@ -52,7 +56,13 @@ export const userService = {
 
   updateOrganization: async (id, data) => {
     try {
-      const response = await api.patch(`${USER_ENDPOINTS.UPDATE_ORGANIZATION}/${id}`, data);
+      const response = await api.patch(`${USER_ENDPOINTS.UPDATE_ORGANIZATION}/${id}`, data,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
       return {
         success: true,
         data: response.data,

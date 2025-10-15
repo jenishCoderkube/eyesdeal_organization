@@ -32,6 +32,8 @@ const ViewOrganization = () => {
   const [modalData, setModalData] = useState({ specs: null, contacts: null });
   const [activeTab, setActiveTab] = useState("specs");
   const [loading, setLoading] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewData, setViewData] = useState(null);
   const navigate = useNavigate();
   const [pagination, setPagination] = useState({
     page: 1,
@@ -149,6 +151,12 @@ const ViewOrganization = () => {
     setActiveTab(specsPrescription ? "specs" : "contacts");
     setShowModal(true);
   };
+
+  const handleView = (data) => {
+    setViewData(data);
+    setShowViewModal(true);
+  };
+
   // Modal content for both Specs and Contacts
   const PrescriptionModalContent = ({ specsData, contactsData }) => (
     <>
@@ -543,6 +551,105 @@ const ViewOrganization = () => {
       )}
     </>
   );
+
+  // Organization View Modal Content
+  const OrganizationViewModalContent = ({ data }) => (
+    <div className="p-4">
+      <div className="row g-3">
+        <div className="col-12">
+          <strong>Owner Name:-</strong> {data.name || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Phone:-</strong> {data.phone || "N/A  "}
+        </div>
+        <div className="col-12">
+          <strong>Gender:-</strong> {data.gender?.label || data.gender || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Role:-</strong> {data.role || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Partner Type:-</strong>{" "}
+          {data.partnerType?.label || data.partnerType || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Max Store:-</strong> {data.maxStore || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Org Status:-</strong>{" "}
+          {data.orgStatus?.label || data.orgStatus || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Company Name:-</strong> {data.companyName || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Company Phone:-</strong> {data.companyPhone || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>GST Number:-</strong> {data.gstNumber || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Country:-</strong>{" "}
+          {data.country?.label || data.country || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>State:-</strong> {data.state?.label || data.state || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>City:-</strong> {data.city?.label || data.city || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Pincode:-</strong> {data.pincode || "N/A"}
+        </div>
+        <div className="col-12">
+          <strong>Address:-</strong> {data.address || "N/A"}
+        </div>
+        <div className="col-12 ">
+          <strong>Company Logo:-</strong>
+          {data.companyLogo ? (
+            <img
+              src={data.companyLogo}
+              alt="Company Logo"
+              className="img-fluid rounded mt-2"
+              style={{ maxHeight: "100px", objectFit: "cover" }}
+            />
+          ) : (
+            <span className="text-muted ms-2">No image</span>
+          )}
+        </div>
+        <div className="col-12 ">
+          <strong>ERP Banner:-</strong>
+          {data.erpBanner ? (
+            <img
+              src={data.erpBanner}
+              alt="ERP Banner"
+              className="img-fluid rounded mt-2"
+              style={{ maxHeight: "100px", objectFit: "cover" }}
+            />
+          ) : (
+            <span className="text-muted ms-2">No image</span>
+          )}
+        </div>
+        <div className="col-12 ">
+          <strong>Sales App Banner:-</strong>
+          {data.salesAppBanner ? (
+            <img
+              src={data.salesAppBanner}
+              alt="Sales App Banner"
+              className="img-fluid rounded mt-2"
+              style={{ maxHeight: "100px", objectFit: "cover" }}
+            />
+          ) : (
+            <span className="text-muted ms-2">No image</span>
+          )}
+        </div>
+      </div>
+
+      {/* <div className="row g-3 mt-3"> */}
+    </div>
+    // </div>
+  );
+
   const columns = useMemo(
     () => [
       {
@@ -556,16 +663,21 @@ const ViewOrganization = () => {
           </div>
         ),
       },
-      //   {
-      //     accessorKey: "name",
-      //     header: "Name",
-      //     cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      //   },
-      //   {
-      //     accessorKey: "phone",
-      //     header: "Phone",
-      //     cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      //   },
+      {
+        accessorKey: "org_code",
+        header: "Organization Code",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "organization_name",
+        header: "Organization Name",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "ownerName",
+        header: "Owner Name",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
       //   {
       //     accessorKey: "gender",
       //     header: "Gender",
@@ -576,21 +688,16 @@ const ViewOrganization = () => {
       //     header: "Role",
       //     cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       //   },
-      {
-        accessorKey: "companyName",
-        header: "Company Name",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "gstNumber",
-        header: "GST Number",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
-      {
-        accessorKey: "country",
-        header: "Country",
-        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
-      },
+      // {
+      //   accessorKey: "gstNumber",
+      //   header: "GST Number",
+      //   cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      // },
+      // {
+      //   accessorKey: "country",
+      //   header: "Country",
+      //   cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      // },
       {
         accessorKey: "state",
         header: "State",
@@ -602,8 +709,18 @@ const ViewOrganization = () => {
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       {
-        accessorKey: "address",
-        header: "Address",
+        accessorKey: "partner_type",
+        header: "Partner Type",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "store",
+        header: "Store",
+        cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+      },
+      {
+        accessorKey: "status",
+        header: "Org Status",
         cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
       },
       //   {
@@ -630,6 +747,13 @@ const ViewOrganization = () => {
         header: "Action",
         cell: ({ row }) => (
           <div className="d-flex gap-2 align-items-center">
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => handleView(row.original)}
+            >
+              View
+            </button>
             <FiEdit2
               size={18}
               className="text-primary cursor-pointer"
@@ -821,6 +945,37 @@ const ViewOrganization = () => {
                 specsData={modalData.specs}
                 contactsData={modalData.contacts}
               />
+            </Modal.Body>
+          </Modal>
+
+          {/* Organization View Modal */}
+          <Modal
+            show={showViewModal}
+            onHide={() => setShowViewModal(false)}
+            centered
+            size="lg"
+          >
+            <Modal.Header className="px-4 py-3 border-bottom border-slate-200 d-flex justify-content-between align-items-center">
+              <Modal.Title className="font-semibold text-slate-800">
+                View Organization Details
+              </Modal.Title>
+              <Button
+                variant="link"
+                onClick={() => setShowViewModal(false)}
+                className="p-0"
+                style={{ lineHeight: 0 }}
+              >
+                <FaTimes
+                  className="text-secondary"
+                  style={{ width: "24px", height: "24px" }}
+                />
+              </Button>
+            </Modal.Header>
+            <Modal.Body
+              className="p-0"
+              style={{ maxHeight: "70vh", overflowY: "auto" }}
+            >
+              {viewData && <OrganizationViewModalContent data={viewData} />}
             </Modal.Body>
           </Modal>
         </div>
