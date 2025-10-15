@@ -35,7 +35,11 @@ const USER_ENDPOINTS = {
 export const userService = {
   addOrganization: async (data) => {
     try {
-      const response = await api.post(USER_ENDPOINTS.ADD_ORGANIZATION, data);
+      const response = await api.post(USER_ENDPOINTS.ADD_ORGANIZATION, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       return {
         success: true,
@@ -52,7 +56,15 @@ export const userService = {
 
   updateOrganization: async (id, data) => {
     try {
-      const response = await api.patch(`${USER_ENDPOINTS.UPDATE_ORGANIZATION}/${id}`, data);
+      const response = await api.patch(
+        `${USER_ENDPOINTS.UPDATE_ORGANIZATION}/${id}`,
+        data,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       return {
         success: true,
         data: response.data,
@@ -61,14 +73,17 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error?.response?.data?.message || "Error updating organization!",
+        message:
+          error?.response?.data?.message || "Error updating organization!",
       };
     }
   },
 
   deleteOrganization: async (id) => {
     try {
-      const response = await api.delete(`${USER_ENDPOINTS.DELETE_ORGANIZATION}/${id}`);
+      const response = await api.delete(
+        `${USER_ENDPOINTS.DELETE_ORGANIZATION}/${id}`
+      );
       return {
         success: true,
         data: response.data,
@@ -78,10 +93,36 @@ export const userService = {
       console.error("Delete error:", error.response?.data || error.message);
       return {
         success: false,
-        message: error?.response?.data?.message || "Error deleting Organization!",
+        message:
+          error?.response?.data?.message || "Error deleting Organization!",
       };
     }
   },
+  getOrganizationByLimit: async ({
+    page = 1,
+    limit = 10,
+    search = "",
+  } = {}) => {
+    try {
+      const response = await api.get(USER_ENDPOINTS.ORGANIZATION, {
+        params: {
+          page,
+          limit,
+          search,
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+
   getOrganization: async () => {
     try {
       const response = await api.get(USER_ENDPOINTS.ORGANIZATION);
@@ -115,7 +156,6 @@ export const userService = {
       };
     }
   },
-
 
   addCustomer: async (data) => {
     try {

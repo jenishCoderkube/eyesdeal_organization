@@ -4,10 +4,14 @@ const PACKAGE_ENDPOINT = "/package";
 
 export const packageService = {
   // Get all packages (with pagination)
-  getPackages: async (page = 1, limit = 10) => {
+  getPackages: async (page = 1, limit = 10, storeIds = []) => {
     try {
+      // Convert array → comma-separated string
+      const storeQuery =
+        storeIds.length > 0 ? `&store=${storeIds.join(",")}` : "";
+
       const response = await api.get(
-        `${PACKAGE_ENDPOINT}?page=${page}&limit=${limit}`
+        `${PACKAGE_ENDPOINT}?page=${page}&limit=${limit}${storeQuery}`
       );
       // The actual data is in response.data.message
       return {

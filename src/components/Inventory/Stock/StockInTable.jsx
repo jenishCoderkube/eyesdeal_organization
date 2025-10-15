@@ -115,13 +115,13 @@ const StockInTable = () => {
     }
   };
 
-  const handleApprove = async (itemId, status) => {
+  const handleApprove = async (item) => {
     setLoading(true);
     try {
       const payload = {
-        _id: itemId,
-        status: "approved",
+        ...item,
       };
+
       const response = await inventoryService.changeStatus(payload);
       if (response.success) {
         toast.success("Stock transfer approved successfully");
@@ -211,9 +211,7 @@ const StockInTable = () => {
                             <button
                               type="button"
                               className="btn btn-success btn-sm"
-                              onClick={() =>
-                                handleApprove(item._id, item?.status)
-                              }
+                              onClick={() => handleApprove(item)}
                               disabled={loading}
                             >
                               Approve
