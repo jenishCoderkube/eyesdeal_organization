@@ -168,67 +168,116 @@ const UniversalStockOrderCom = () => {
     }
   };
 
-  const handleReceived = async () => {
+  const handleAccept = async (status) => {
     try {
-      toast.success("Selected orders marked as received");
-      setSelectedOrders([]);
-      fetchAuditData(formik.values);
+      const res = await purchaseService.updateStockOrderStatus(
+        selectedOrders,
+        "Accept"
+      );
+
+      if (res.success) {
+        toast.success("Selected orders marked as Accepted");
+        setSelectedOrders([]);
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(res.message);
+      }
     } catch (error) {
-      console.error("Error marking as received:", error);
-      toast.error("Failed to mark as received");
+      console.error("Error marking as accepted:", error);
+      toast.error("Failed to mark as accepted");
     }
   };
 
   const handleCancelled = async () => {
     try {
-      toast.success("Selected orders marked as Cancelled");
-      setSelectedOrders([]);
-      fetchAuditData(formik.values);
+      const res = await purchaseService.updateStockOrderStatus(
+        selectedOrders,
+        "Cancelled"
+      );
+
+      if (res.success) {
+        toast.success("Selected orders marked as Cancelled");
+        setSelectedOrders([]);
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(res.message);
+      }
     } catch (error) {
-      console.error("Error marking as Cancelled:", error);
-      toast.error("Failed to mark as Cancelled");
+      console.error("Error marking as cancelled:", error);
+      toast.error("Failed to mark as cancelled");
     }
   };
 
   const handleTransit = async () => {
     if (selectedOrders.length === 0) return;
-
-    const invalidOrders = selectedOrders.filter(
-      (ordNo) => !uploadedFiles[ordNo]
-    );
-
-    if (invalidOrders.length > 0) {
-      toast.error(
-        `Please upload at least one image/video for all selected orders before marking as Transit.`
-      );
-      return;
-    }
-
     try {
-      const formDataArray = selectedOrders.map((ordNo) => {
-        const file = uploadedFiles[ordNo];
-        const orderInfo = auditData.find((item) => item.ordNo === ordNo);
+      const res = await purchaseService.updateStockOrderStatusForTransit(
+        selectedOrders,
+        "Transit"
+      );
 
-        const formData = new FormData();
-        formData.append("orderId", ordNo);
-        formData.append("productId", orderInfo?.productId || "");
-        formData.append("sku", orderInfo?.sku || "");
-        formData.append("category", orderInfo?.category || "");
-        formData.append("qty", orderInfo?.qty || 0);
-        formData.append("date", orderInfo?.date || "");
-        formData.append("file", file);
-
-        return formData;
-      });
-
-      toast.success("Selected orders marked as Transit");
-      setSelectedOrders([]);
-      setUploadedFiles({});
-      fetchAuditData(formik.values);
+      if (res.success) {
+        toast.success("Selected orders marked as Cancelled");
+        setSelectedOrders([]);
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(res.message);
+      }
     } catch (error) {
-      console.error("Error marking as Transit:", error);
-      toast.error("Failed to mark as Transit");
+      console.error("Error marking as cancelled:", error);
+      toast.error("Failed to mark as cancelled");
     }
+    // ✅ Check that all selected orders have uploaded files
+    // const invalidOrders = selectedOrders.filter(
+    //   (ordNo) => !uploadedFiles[ordNo]
+    // );
+
+    // if (invalidOrders.length > 0) {
+    //   toast.error(
+    //     `Please upload at least one image/video for all selected orders before marking as Transit.`
+    //   );
+    //   return;
+    // }
+
+    // try {
+    //   // ✅ Step 1: Upload files for each order
+    //   const formDataArray = selectedOrders.map((ordNo) => {
+    //     const file = uploadedFiles[ordNo];
+    //     const orderInfo = auditData.find((item) => item.ordNo === ordNo);
+
+    //     const formData = new FormData();
+    //     formData.append("orderId", ordNo);
+    //     formData.append("productId", orderInfo?.productId || "");
+    //     formData.append("sku", orderInfo?.sku || "");
+    //     formData.append("category", orderInfo?.category || "");
+    //     formData.append("qty", orderInfo?.qty || 0);
+    //     formData.append("date", orderInfo?.date || "");
+    //     formData.append("file", file);
+
+    //     return formData;
+    //   });
+
+    //   // If you’re actually uploading the files individually, you’d do:
+    //   // await Promise.all(formDataArray.map((formData) => api.post(UPLOAD_URL, formData)));
+
+    //   // ✅ Step 2: Update order status to "Transit"
+    //   const response = await stockService.updateStockOrderStatusForTransit(
+    //     selectedOrders,
+    //     "Transit"
+    //   );
+
+    //   if (response.success) {
+    //     toast.success("Selected orders marked as Transit");
+    //     setSelectedOrders([]);
+    //     setUploadedFiles({});
+    //     fetchAuditData(formik.values);
+    //   } else {
+    //     toast.error(response.message || "Failed to update Transit status");
+    //   }
+    // } catch (error) {
+    //   console.error("Error marking as Transit:", error);
+    //   toast.error("Failed to mark as Transit");
+    // }
   };
 
   const handleSelect = (ordNo) => {
@@ -323,7 +372,7 @@ const UniversalStockOrderCom = () => {
           type="button"
           className="btn btn-primary"
           disabled={selectedOrders.length === 0}
-          onClick={handleReceived}
+          onClick={handleAccept}
         >
           Accept
         </button>
@@ -465,16 +514,16 @@ const UniversalStockOrderCom = () => {
                       <td className="py-3">
                         <span
                           className={`badge ${
-                            item.paymentStatus === "pending"
+                            item?.status === "pending"
                               ? "bg-warning text-dark"
-                              : item.paymentStatus === "Accept"
+                              : item?.status === "Accept"
                               ? "bg-success"
-                              : item.paymentStatus === "Cancelled"
+                              : item?.status === "Cancelled"
                               ? "bg-danger"
                               : "bg-secondary"
                           }`}
                         >
-                          {item.orderStatus}
+                          {item?.status}
                         </span>
                       </td>
                       <td className="py-3">
@@ -587,9 +636,12 @@ const UniversalStockOrderCom = () => {
                       <td>
                         <button
                           className="btn btn-primary"
+                          disabled={item?.status !== "Accept"}
                           onClick={() => {
-                            setViewSelectedOrders(item?.store);
-                            setShowviewAddressModal(true);
+                            if (item?.status === "Accept") {
+                              setViewSelectedOrders(item?.store);
+                              setShowviewAddressModal(true);
+                            }
                           }}
                         >
                           View

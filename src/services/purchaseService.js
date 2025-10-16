@@ -188,6 +188,59 @@ export const purchaseService = {
       };
     }
   },
+  updateStockOrderStatus: async (ids, status, orderStatus = "") => {
+    try {
+      const response = await api.patch(`${AUTH_ENDPOINTS.ADD_STOCK_ORDERS}`, {
+        orderIds: ids, // array of IDs
+        status, // "Accept" or "Cancelled"
+        orderStatus, // e.g. "Transit" or "Completed"
+      });
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || "Error",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  updateStockOrderStatusForTransit: async (ids, orderStatus) => {
+    try {
+      const response = await api.patch(`${AUTH_ENDPOINTS.ADD_STOCK_ORDERS}`, {
+        orderIds: ids, // array of IDs
+        orderStatus, // e.g. "Transit" or "Completed"
+      });
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || "Error",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
   searchProduct: async (search) => {
     try {
       const response = await api.get(AUTH_ENDPOINTS.PRODUCTS(search));

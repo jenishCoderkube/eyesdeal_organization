@@ -526,14 +526,21 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">
                         <span
                           className={`badge ${
-                            item.paymentStatus === "Success"
+                            item.orderStatus === "pending"
+                              ? "bg-warning text-dark"
+                              : item.orderStatus === "received"
                               ? "bg-success"
-                              : "bg-danger"
+                              : item.orderStatus === "cancelled"
+                              ? "bg-danger"
+                              : item.orderStatus === "in-transit"
+                              ? "bg-info text-dark"
+                              : "bg-secondary"
                           }`}
                         >
                           {item.orderStatus}
                         </span>
                       </td>
+
                       <Suspense
                         fallback={<td className="text-center">Loading...</td>}
                       >
