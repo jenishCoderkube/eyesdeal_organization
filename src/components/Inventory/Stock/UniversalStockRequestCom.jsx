@@ -311,6 +311,34 @@ const UniversalStockRequestCom = () => {
       toast.error("Failed to update payment status");
     }
   };
+  const handleSubmitOrder = async () => {
+    const selectedData = auditData
+      .filter((item) => selectedRows[item.ordNo])
+      .map((item) => ({
+        stockRequest: item.ordNo, // this is the stockRequest id
+        toStore: selectedRowStores[item.ordNo]?.value, // selected store id
+      }));
+
+    if (selectedData.some((row) => !row.toStore)) {
+      toast.warn("Please select a store for all selected rows!");
+      return;
+    }
+
+    try {
+      const response = await purchaseService.createStockOrder(selectedData);
+
+      if (response.success) {
+        toast.success("Stock order created successfully!");
+        // optionally reload data
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(response.message || "Failed to create stock order");
+      }
+    } catch (error) {
+      console.error("Error creating stock order:", error);
+      toast.error("An error occurred while creating stock order");
+    }
+  };
 
   return (
     <div className="card-body p-4">
@@ -369,33 +397,7 @@ const UniversalStockRequestCom = () => {
           type="button"
           className="btn btn-primary"
           disabled={Object.keys(selectedRows).length === 0}
-          onClick={() => {
-            const selectedData = auditData
-              .filter((item) => selectedRows[item.ordNo])
-              .map((item) => ({
-                ordNo: item.ordNo,
-                store: item.store,
-                sku: item.sku,
-                qty: item.qty,
-                selectedStore: selectedRowStores[item.ordNo], // the store selected for this row
-              }));
-
-            if (
-              selectedData.some(
-                (row) => !row.selectedStore || !row.selectedStore.value
-              )
-            ) {
-              // If any selected row doesn't have a store selected
-              toast.warn("Please select a store for all selected rows!");
-              return;
-            }
-
-            // If all selected rows have stores, proceed
-            console.log("📝 Selected Rows with Stores:", selectedData);
-            alert("currently in development");
-            // toast.success(`${selectedData.length} orders ready to submit`);
-            // Continue your submit logic here...
-          }}
+          onClick={handleSubmitOrder}
         >
           Submit Order
         </button>
@@ -536,6 +538,10 @@ const UniversalStockRequestCom = () => {
                       </td>
                       <td className="py-3">
                         <Select
+                          isDisabled={
+                            item.orderStatus !== "pending" &&
+                            item.orderStatus !== "cancelled"
+                          }
                           options={rowStoreOptions[item.ordNo] || []}
                           onMenuOpen={() =>
                             fetchStoresForProduct(item.productId, item.ordNo)

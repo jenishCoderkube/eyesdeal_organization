@@ -17,6 +17,7 @@ const AUTH_ENDPOINTS = {
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASE: "/purchase",
+  ADD_STOCK_ORDERS: "/stockOrder",
 };
 const buildPurchaseLogParams = (
   invoiceDateGte,
@@ -106,6 +107,33 @@ export const purchaseService = {
       };
     }
   },
+  createStockOrder: async (data) => {
+    try {
+      const response = await api.post(
+        `${AUTH_ENDPOINTS.ADD_STOCK_ORDERS}`,
+        data
+      );
+
+      if (response.data?.success) {
+        return {
+          success: true,
+          message: response.data.message || "Stock order created successfully",
+          data: response.data.data,
+        };
+      }
+
+      return {
+        success: false,
+        message: response.data.message || "Failed to create stock order",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error creating stock order",
+      };
+    }
+  },
+
   UpdatePaymentStatus: async (id, data) => {
     try {
       const response = await api.patch(
