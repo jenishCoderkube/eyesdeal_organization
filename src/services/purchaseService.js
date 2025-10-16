@@ -13,10 +13,13 @@ const AUTH_ENDPOINTS = {
   GENERATEBARCODE: (params) => `/products/product?search=${params}`,
   GET_PURCHASE_ORDERS: "/purchase",
   GET_UNIVERSAL_STOCK: "/stockRequest",
+  GET_UNIVERSAL_STOCK_ORDERS: "/stockOrder",
+
   ADD_INVENTORY: "/inventory",
   PRODUCTSPurchase: (search) =>
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASE: "/purchase",
+  ADD_STOCK_ORDERS: "/stockOrder",
 };
 const buildPurchaseLogParams = (
   invoiceDateGte,
@@ -106,6 +109,33 @@ export const purchaseService = {
       };
     }
   },
+  createStockOrder: async (data) => {
+    try {
+      const response = await api.post(
+        `${AUTH_ENDPOINTS.ADD_STOCK_ORDERS}`,
+        data
+      );
+
+      if (response.data?.success) {
+        return {
+          success: true,
+          message: response.data.message || "Stock order created successfully",
+          data: response.data.data,
+        };
+      }
+
+      return {
+        success: false,
+        message: response.data.message || "Failed to create stock order",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error creating stock order",
+      };
+    }
+  },
+
   UpdatePaymentStatus: async (id, data) => {
     try {
       const response = await api.patch(
@@ -327,6 +357,58 @@ export const purchaseService = {
       const response = await api.get(AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK, {
         params,
       });
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  getUniversalStockOrders: async (
+    dateFrom,
+    dateTo,
+    storeId = null,
+    page = 1,
+    limit = 10
+  ) => {
+    try {
+      // Format dates to YYYY-MM-DD
+      const formatDate = (date) => {
+        if (!date) return undefined;
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const fromDate = formatDate(dateFrom);
+      const toDate = formatDate(dateTo);
+
+      const params = {
+        populate: true,
+        page,
+        limit,
+        ...(fromDate && { startDate: fromDate }),
+        ...(toDate && { endDate: toDate }),
+      };
+
+      // handle storeId array properly
+      if (Array.isArray(storeId) && storeId.length > 0) {
+        params["store"] = storeId.join(",");
+      }
+
+      const response = await api.get(
+        AUTH_ENDPOINTS.GET_UNIVERSAL_STOCK_ORDERS,
+        {
+          params,
+        }
+      );
 
       return {
         success: true,

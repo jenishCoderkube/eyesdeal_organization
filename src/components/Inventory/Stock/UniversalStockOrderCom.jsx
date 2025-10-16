@@ -40,8 +40,8 @@ const UniversalStockOrderCom = () => {
   const formik = useFormik({
     initialValues: {
       stores: [],
-      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"), // 1 month back
-      dateTo: moment().format("YYYY-MM-DD"), // today
+      dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
+      dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
       stores: Yup.array()
@@ -52,7 +52,6 @@ const UniversalStockOrderCom = () => {
           })
         )
         .nullable(),
-
       dateFrom: Yup.date().required("Start date is required"),
       dateTo: Yup.date().required("End date is required"),
     }),
@@ -82,7 +81,7 @@ const UniversalStockOrderCom = () => {
           ],
         };
         formik.setValues(defaultValues);
-        fetchAuditData(defaultValues, true); // ✅ use updated values directly
+        fetchAuditData(defaultValues, true);
       }
     }
   }, [storeData]);
@@ -109,7 +108,7 @@ const UniversalStockOrderCom = () => {
     setLoading(true);
 
     try {
-      const response = await purchaseService.getUniversalStock(
+      const response = await purchaseService.getUniversalStockOrders(
         values.dateFrom,
         values.dateTo,
         storeId,
@@ -121,20 +120,21 @@ const UniversalStockOrderCom = () => {
         const container = response.data.data;
         const mappedData = container.docs.map((item) => ({
           ...item,
-          ordNo: item._id,
-          date: item.createdAt,
-
-          category: item.product.__t,
-          sku: item.product.sku,
-          qty: item.qty || 1,
-          paymentStatus: item.paymentStatus,
-          orderStatus: item.orderStatus,
-          image: item.product.photos[0],
-          photos: item.product.photos, // Store all photos
-          productId: item.product._id,
+          ordNo: item._id, // Order ID from root _id
+          date: item.stockRequest.createdAt, // Date from stockRequest.createdAt
+          category: item.stockRequest.product.__t || "Unknown", // Product type
+          sku: item.stockRequest.product.sku || "N/A", // SKU from product
+          qty: item.stockRequest.qty || 1, // Default qty to 1 if not provided
+          paymentStatus: item.stockRequest.paymentStatus || "Unknown", // Payment status
+          orderStatus: item.stockRequest.orderStatus || "Unknown", // Order status
+          image: item.stockRequest.product.photos[0] || null, // First photo
+          photos: item.stockRequest.product.photos || [], // All photos
+          productId: item.stockRequest.product._id || "N/A", // Product ID
           orderMedia:
-            item?.product?.orderMedia ||
-            "https://www.w3schools.com/html/mov_bbb.mp4",
+            item.stockRequest.product.orderMedia ||
+            "https://www.w3schools.com/html/mov_bbb.mp4", // Fallback video
+          resellerPrice: item.stockRequest.product.resellerPrice || 0, // Reseller price
+          store: item.toStore || item.stockRequest.store, // Store info for address
         }));
 
         setAuditData(mappedData);
@@ -160,8 +160,6 @@ const UniversalStockOrderCom = () => {
 
   const handleUpdatePayment = async (orderId, newStatus) => {
     try {
-      // Assuming purchaseService has an updatePaymentStatus method
-      // e.g., await purchaseService.updatePaymentStatus(orderId, newStatus);
       toast.success("Payment status updated successfully");
       fetchAuditData(formik.values);
     } catch (error) {
@@ -172,8 +170,6 @@ const UniversalStockOrderCom = () => {
 
   const handleReceived = async () => {
     try {
-      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
-      // e.g., await purchaseService.markAsReceived(selectedOrders);
       toast.success("Selected orders marked as received");
       setSelectedOrders([]);
       fetchAuditData(formik.values);
@@ -182,6 +178,7 @@ const UniversalStockOrderCom = () => {
       toast.error("Failed to mark as received");
     }
   };
+
   const handleCancelled = async () => {
     try {
       toast.success("Selected orders marked as Cancelled");
@@ -192,10 +189,10 @@ const UniversalStockOrderCom = () => {
       toast.error("Failed to mark as Cancelled");
     }
   };
+
   const handleTransit = async () => {
     if (selectedOrders.length === 0) return;
 
-    // ✅ Check that all selected orders have uploaded files
     const invalidOrders = selectedOrders.filter(
       (ordNo) => !uploadedFiles[ordNo]
     );
@@ -219,16 +216,12 @@ const UniversalStockOrderCom = () => {
         formData.append("category", orderInfo?.category || "");
         formData.append("qty", orderInfo?.qty || 0);
         formData.append("date", orderInfo?.date || "");
-        formData.append("file", file); // <-- binary file
-        // formData.append("fileType", file.type);
-        // formData.append("fileSize", file.size);
+        formData.append("file", file);
 
         return formData;
       });
 
       toast.success("Selected orders marked as Transit");
-
-      // Reset selections
       setSelectedOrders([]);
       setUploadedFiles({});
       fetchAuditData(formik.values);
@@ -357,7 +350,7 @@ const UniversalStockOrderCom = () => {
           <div className="text-center py-5">Loading...</div>
         ) : (
           <>
-            <table className="table  table-striped table-hover">
+            <table className="table table-striped table-hover">
               <thead className="border-top">
                 <tr>
                   <th>
@@ -389,6 +382,9 @@ const UniversalStockOrderCom = () => {
                   </th>
                   <th className="py-3" style={{ minWidth: "50px" }}>
                     Qty
+                  </th>
+                  <th className="py-3" style={{ minWidth: "50px" }}>
+                    Price
                   </th>
                   <th className="py-3" style={{ minWidth: "100px" }}>
                     Image
@@ -436,11 +432,10 @@ const UniversalStockOrderCom = () => {
                       <td className="py-3">
                         {moment(item.date).format("D-M-YYYY")}
                       </td>
-
                       <td className="py-3">{item.category}</td>
                       <td className="py-3">{item.sku}</td>
                       <td className="py-3">{item.qty}</td>
-
+                      <td className="py-3">{item?.resellerPrice}</td>
                       <td className="py-3">
                         {item.image ? (
                           <>
@@ -467,23 +462,21 @@ const UniversalStockOrderCom = () => {
                           <span>-</span>
                         )}
                       </td>
-
                       <td className="py-3">
                         <span
                           className={`badge ${
-                            item.paymentStatus === "Pending"
+                            item.paymentStatus === "pending"
                               ? "bg-warning text-dark"
                               : item.paymentStatus === "Accept"
                               ? "bg-success"
                               : item.paymentStatus === "Cancelled"
                               ? "bg-danger"
-                              : "bg-secondary" // fallback for unknown status
+                              : "bg-secondary"
                           }`}
                         >
                           {item.orderStatus}
                         </span>
                       </td>
-
                       <td className="py-3">
                         <span
                           className={`badge ${
@@ -499,7 +492,6 @@ const UniversalStockOrderCom = () => {
                         className="py-3 text-center"
                         style={{ minWidth: "150px", maxWidth: "200px" }}
                       >
-                        {/* If file already uploaded for this order, show preview */}
                         {uploadedFiles[item.ordNo] ? (
                           <div className="d-flex flex-column align-items-center justify-content-center gap-2">
                             {uploadedFiles[item.ordNo].type.startsWith(
@@ -531,7 +523,6 @@ const UniversalStockOrderCom = () => {
                                 }}
                               />
                             )}
-
                             <button
                               type="button"
                               className="btn btn-sm btn-danger"
@@ -547,7 +538,6 @@ const UniversalStockOrderCom = () => {
                             </button>
                           </div>
                         ) : (
-                          // If no file uploaded yet, show input
                           <input
                             type="file"
                             accept="image/*,video/*"
@@ -560,7 +550,6 @@ const UniversalStockOrderCom = () => {
                               const isImage = fileType.startsWith("image/");
                               const isVideo = fileType.startsWith("video/");
 
-                              // ✅ Validate file type
                               if (!isImage && !isVideo) {
                                 toast.error(
                                   "Only image or video files are allowed"
@@ -569,7 +558,6 @@ const UniversalStockOrderCom = () => {
                                 return;
                               }
 
-                              // ✅ Validate file size
                               const maxSize = isImage
                                 ? 20 * 1024 * 1024
                                 : 50 * 1024 * 1024;
@@ -583,7 +571,6 @@ const UniversalStockOrderCom = () => {
                                 return;
                               }
 
-                              // ✅ Store valid file
                               setUploadedFiles((prev) => ({
                                 ...prev,
                                 [item.ordNo]: file,
@@ -592,7 +579,6 @@ const UniversalStockOrderCom = () => {
                           />
                         )}
                       </td>
-
                       <Suspense
                         fallback={<td className="text-center">Loading...</td>}
                       >
@@ -602,10 +588,8 @@ const UniversalStockOrderCom = () => {
                         <button
                           className="btn btn-primary"
                           onClick={() => {
-                            // if (item.orderStatus === "Approved") {
                             setViewSelectedOrders(item?.store);
                             setShowviewAddressModal(true);
-                            // }
                           }}
                         >
                           View
@@ -625,7 +609,7 @@ const UniversalStockOrderCom = () => {
             <div className="d-flex justify-content-center mt-4">
               <Pagination
                 pageCount={pagination?.totalPages || 1}
-                currentPage={pagination.page || 1} // 1-based
+                currentPage={pagination.page || 1}
                 onPageChange={handlePageClick}
               />
             </div>
@@ -637,7 +621,6 @@ const UniversalStockOrderCom = () => {
         onHide={() => setShowImageModal(false)}
         images={selectedImages}
       />
-
       <ViewAddressModel
         show={showviewAddressModal}
         onHide={() => setShowviewAddressModal(false)}

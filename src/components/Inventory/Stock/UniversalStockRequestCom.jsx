@@ -72,7 +72,6 @@ const PaymentModal = ({
     </Modal>
   );
 };
-
 const UniversalStockRequestCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
@@ -195,6 +194,7 @@ const UniversalStockRequestCom = () => {
           orderMedia:
             item?.product?.orderMedia ||
             "https://www.w3schools.com/html/mov_bbb.mp4",
+          resellerPrice: item?.product?.resellerPrice,
         }));
 
         setAuditData(mappedData);
@@ -294,6 +294,35 @@ const UniversalStockRequestCom = () => {
     const newPage = event.selected + 1;
     setCurrentPage(event.selected);
     fetchAuditData(formik.values, false, newPage);
+  };
+
+  const handleSubmitOrder = async () => {
+    const selectedData = auditData
+      .filter((item) => selectedRows[item.ordNo])
+      .map((item) => ({
+        stockRequest: item.ordNo, // this is the stockRequest id
+        toStore: selectedRowStores[item.ordNo]?.value, // selected store id
+      }));
+
+    if (selectedData.some((row) => !row.toStore)) {
+      toast.warn("Please select a store for all selected rows!");
+      return;
+    }
+
+    try {
+      const response = await purchaseService.createStockOrder(selectedData);
+
+      if (response.success) {
+        toast.success("Stock order created successfully!");
+        // optionally reload data
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(response.message || "Failed to create stock order");
+      }
+    } catch (error) {
+      console.error("Error creating stock order:", error);
+      toast.error("An error occurred while creating stock order");
+    }
   };
 
   return (
@@ -396,6 +425,7 @@ const UniversalStockRequestCom = () => {
                   <th className="py-3">Category</th>
                   <th className="py-3">SKU & Barcode</th>
                   <th className="py-3">Qty</th>
+                  <th className="py-3">Price</th>
                   <th className="py-3">Image</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Order Status</th>
@@ -428,6 +458,7 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">{item.category}</td>
                       <td className="py-3">{item.sku}</td>
                       <td className="py-3">{item.qty}</td>
+                      <td className="py-3">{item?.resellerPrice}</td>
 
                       <td className="py-3">
                         {item.image ? (
@@ -497,7 +528,7 @@ const UniversalStockRequestCom = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="text-center py-5">
+                    <td colSpan="12" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
