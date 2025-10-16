@@ -10,6 +10,7 @@ import VendorNoteModal from "./VendorNoteModal";
 import CustomerNameModal from "./CustomerNameModal";
 import { vendorshopService } from "../../../services/Process/vendorshopService";
 import { toast } from "react-toastify";
+import Pagination from "../../Common/Pagination";
 
 const debounce = (func, wait) => {
   let timeout;
@@ -685,22 +686,12 @@ const VendorListTable = ({
             <span className="fw-medium">{endRow}</span> of{" "}
             <span className="fw-medium">{totalRows}</span> results
           </div>
-          <div className="btn-group">
-            <Button
-              variant="outline-primary"
-              onClick={() => onPageChange(pagination.prevPage)}
-              disabled={!pagination.hasPrevPage || loading}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline-primary"
-              onClick={() => onPageChange(pagination.nextPage)}
-              disabled={!pagination.hasNextPage || loading}
-            >
-              Next
-            </Button>
-          </div>
+
+          <Pagination
+            pageCount={pagination?.totalPages || 1}
+            currentPage={pagination.page || 1} // 1-based
+            onPageChange={(data) => onPageChange(data.selected + 1)}
+          />
         </div>
       )}
       <VendorNoteModal
