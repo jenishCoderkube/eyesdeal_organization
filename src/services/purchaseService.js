@@ -272,7 +272,7 @@ export const purchaseService = {
 
       // handle orgIds array properly
       if (Array.isArray(orgIds) && orgIds.length > 0) {
-        params["organization"] = orgIds.join(",");
+        params["store"] = orgIds.join(",");
       }
 
       const response = await api.get(AUTH_ENDPOINTS.GET_PURCHASE_ORDERS, {

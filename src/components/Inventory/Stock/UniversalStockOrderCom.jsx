@@ -11,67 +11,8 @@ import { Modal, Carousel, Button } from "react-bootstrap";
 import Pagination from "../../Common/Pagination";
 import ImageSliderModal from "../ImageSliderModal";
 import { defalutImageBasePath } from "../../../utils/constants";
+import ViewAddressModel from "./ViewAddressModel";
 const OrderMediaCell = lazy(() => import("./Lazy/OrderMediaCell"));
-const PaymentModal = ({
-  show,
-  onHide,
-  productId,
-  orderId,
-  currentPaymentStatus,
-  onUpdate,
-}) => {
-  const [paymentStatus, setPaymentStatus] = useState(
-    currentPaymentStatus || "Pending"
-  );
-
-  const paymentOptions = [
-    { value: "Pending", label: "Pending" },
-    { value: "Success", label: "Success" },
-    { value: "Rejected", label: "Rejected" },
-  ];
-
-  const handleSubmit = () => {
-    onUpdate(orderId, paymentStatus);
-    onHide();
-  };
-
-  return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Update Payment Status</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <div className="mb-3">
-          <label className="form-label fw-medium">Product ID</label>
-          <input
-            type="text"
-            className="form-control"
-            value={productId}
-            disabled
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label fw-medium">Payment Status</label>
-          <Select
-            options={paymentOptions}
-            value={paymentOptions.find((opt) => opt.value === paymentStatus)}
-            onChange={(option) => setPaymentStatus(option.value)}
-            placeholder="Select..."
-            classNamePrefix="react-select"
-          />
-        </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
-          Close
-        </Button>
-        <Button variant="primary" onClick={handleSubmit}>
-          Submit
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
-};
 
 const UniversalStockOrderCom = () => {
   const [storeData, setStoreData] = useState([]);
@@ -80,7 +21,7 @@ const UniversalStockOrderCom = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRowStores, setSelectedRowStores] = useState({});
   const [selectedOrders, setSelectedOrders] = useState([]);
-
+  const [viewSelectedAddress, setViewSelectedOrders] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50,
@@ -91,10 +32,7 @@ const UniversalStockOrderCom = () => {
   });
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [selectedProductId, setSelectedProductId] = useState(null);
-  const [currentPaymentStatus, setCurrentPaymentStatus] = useState("Pending");
+  const [showviewAddressModal, setShowviewAddressModal] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user")) || { stores: [] };
@@ -182,9 +120,10 @@ const UniversalStockOrderCom = () => {
       if (response.success) {
         const container = response.data.data;
         const mappedData = container.docs.map((item) => ({
+          ...item,
           ordNo: item._id,
           date: item.createdAt,
-          store: item.store.name,
+
           category: item.product.__t,
           sku: item.product.sku,
           qty: item.qty || 1,
@@ -313,13 +252,6 @@ const UniversalStockOrderCom = () => {
     } else {
       setSelectedOrders(auditData.map((item) => item.ordNo));
     }
-  };
-
-  const handleOpenPaymentModal = (orderId, productId, paymentStatus) => {
-    setSelectedOrderId(orderId);
-    setSelectedProductId(productId);
-    setCurrentPaymentStatus(paymentStatus || "Pending");
-    setShowPaymentModal(true);
   };
 
   const handleViewMoreImages = (photos) => {
@@ -479,6 +411,7 @@ const UniversalStockOrderCom = () => {
                   >
                     Order Image/Video
                   </th>
+                  <th className="py-3">Address</th>
                 </tr>
               </thead>
               <tbody>
@@ -665,11 +598,24 @@ const UniversalStockOrderCom = () => {
                       >
                         <OrderMediaCell orderMedia={item?.orderMedia} />
                       </Suspense>
+                      <td>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => {
+                            // if (item.orderStatus === "Approved") {
+                            setViewSelectedOrders(item?.store);
+                            setShowviewAddressModal(true);
+                            // }
+                          }}
+                        >
+                          View
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="12" className="text-center py-5">
+                    <td colSpan="13" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -691,13 +637,11 @@ const UniversalStockOrderCom = () => {
         onHide={() => setShowImageModal(false)}
         images={selectedImages}
       />
-      <PaymentModal
-        show={showPaymentModal}
-        onHide={() => setShowPaymentModal(false)}
-        productId={selectedProductId}
-        orderId={selectedOrderId}
-        currentPaymentStatus={currentPaymentStatus}
-        onUpdate={handleUpdatePayment}
+
+      <ViewAddressModel
+        show={showviewAddressModal}
+        onHide={() => setShowviewAddressModal(false)}
+        storeData={viewSelectedAddress}
       />
     </div>
   );

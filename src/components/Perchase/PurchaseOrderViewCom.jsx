@@ -16,7 +16,6 @@ import PurchaseEdModal from "./PurchaseEdModal";
 import Pagination from "../Common/Pagination";
 
 const PurchaseOrderViewCom = () => {
-  const [organizationData, setOrganizationData] = useState([]);
   const [purchaseData, setPurchaseData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -27,6 +26,7 @@ const PurchaseOrderViewCom = () => {
     hasPrevPage: false,
     hasNextPage: false,
   });
+  const [storeData, setStoreData] = useState([]);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -45,11 +45,19 @@ const PurchaseOrderViewCom = () => {
 
   const formik = useFormik({
     initialValues: {
-      organizations: [],
+      stores: [],
       dateFrom: moment().subtract(1, "month").format("YYYY-MM-DD"),
       dateTo: moment().format("YYYY-MM-DD"),
     },
     validationSchema: Yup.object({
+      stores: Yup.array()
+        .of(
+          Yup.object().shape({
+            value: Yup.string().required(),
+            label: Yup.string().required(),
+          })
+        )
+        .nullable(),
       organizations: Yup.array().nullable(),
       dateFrom: Yup.date().required("Start date is required"),
       dateTo: Yup.date()
@@ -63,47 +71,53 @@ const PurchaseOrderViewCom = () => {
       fetchPurchaseData(values);
     },
   });
-
-  const fetchOrganizations = async () => {
+  const fetchStores = async () => {
     try {
-      const response = await inventoryService.getOrganization(1, 20);
+      const response = await inventoryService.getStores();
       if (response.success) {
-        setOrganizationData(response.data.docs || []);
+        setStoreData(response.data.data);
       } else {
-        toast.error(response.message || "Failed to fetch organizations");
+        toast.error(response.message || "Failed to fetch stores");
       }
     } catch (error) {
-      console.error("Error fetching organizations:", error);
-      toast.error("Failed to fetch organizations");
+      console.error("Error fetching stores:", error);
+      toast.error("Failed to fetch stores");
     }
   };
-
-  const organizationOptions = organizationData.map((org) => ({
-    value: org._id,
-    label: org.companyName,
-  }));
-
   useEffect(() => {
-    const init = async () => {
-      await fetchOrganizations();
-      fetchPurchaseData(formik.values, true);
-    };
-    init();
+    fetchStores();
   }, []);
+  useEffect(() => {
+    const storedStoreId = user?.stores?.[0];
+    if (storedStoreId && storeData.length > 0) {
+      const defaultStore = storeData.find(
+        (store) => store._id === storedStoreId
+      );
+      if (defaultStore) {
+        formik.setFieldValue("stores", [
+          {
+            value: defaultStore._id,
+            label: defaultStore.name,
+          },
+        ]);
+        fetchPurchaseData(formik.values, true);
+      }
+    }
+  }, [storeData]);
 
   const onUpdateSuccess = () => {
     fetchPurchaseData(formik.values, false, pagination.page);
   };
 
   const fetchPurchaseData = async (values, isInitial = false, newPage = 1) => {
-    const orgIds = values?.organizations?.map((o) => o.value) || [];
+    const storeId = values?.stores?.map((s) => s.value) || user?.stores || [];
     setLoading(true);
 
     try {
       const response = await purchaseService.getPurchaseOrders(
         values.dateFrom,
         values.dateTo,
-        orgIds,
+        storeId,
         isInitial ? 1 : newPage,
         pagination.limit
       );
@@ -130,7 +144,10 @@ const PurchaseOrderViewCom = () => {
       setLoading(false);
     }
   };
-
+  const storeOptions = storeData.map((store) => ({
+    value: store._id,
+    label: store.name,
+  }));
   const handleDownload = (data) => {
     // Prepare CSV header
     const csvRows = [
@@ -190,12 +207,6 @@ const PurchaseOrderViewCom = () => {
       console.error("Error updating purchase order:", error);
       toast.error("Error updating quantity");
     }
-  };
-
-  const handlePageChange = (newPage) => {
-    if (newPage < 1 || newPage > pagination.totalPages) return;
-    setPagination((prev) => ({ ...prev, page: newPage }));
-    fetchPurchaseData(formik.values, false, newPage);
   };
 
   const handleDeletePurchaseOrder = async () => {
@@ -267,20 +278,19 @@ const PurchaseOrderViewCom = () => {
         className="row row-cols-1 row-cols-md-4 g-3 align-items-end"
       >
         <div className="col">
-          <Form.Label className="form-label fw-medium">Organization</Form.Label>
+          <label className="form-label fw-medium">Stores</label>
           <Select
-            isMulti
-            options={organizationOptions}
-            value={formik.values.organizations}
-            onChange={(selected) =>
-              formik.setFieldValue("organizations", selected)
-            }
+            isMulti={true} // <-- multi-select enabled
+            options={storeOptions}
+            value={formik.values.stores} // array of selected options
+            onChange={(selected) => formik.setFieldValue("stores", selected)}
             placeholder="Select..."
             classNamePrefix="react-select"
             className="w-100"
           />
-          {formik.touched.organizations && formik.errors.organizations && (
-            <div className="text-danger">{formik.errors.organizations}</div>
+
+          {formik.touched.stores && formik.errors.stores && (
+            <div className="text-danger">{formik.errors.stores}</div>
           )}
         </div>
         <div className="col">
@@ -358,14 +368,7 @@ const PurchaseOrderViewCom = () => {
                         <td className="py-3">{totalAmount}</td>
 
                         <td className="py-3">
-                          <span
-                            className={getStatusBadge(item.paymentStatus)}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => {
-                              setSelectedPaymentItem(item);
-                              setShowPaymentModal(true);
-                            }}
-                          >
+                          <span className={getStatusBadge(item.paymentStatus)}>
                             {item.paymentStatus
                               ? item.paymentStatus.charAt(0).toUpperCase() +
                                 item.paymentStatus.slice(1).toLowerCase()
