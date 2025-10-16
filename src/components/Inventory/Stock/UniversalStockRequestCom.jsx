@@ -229,31 +229,46 @@ const UniversalStockRequestCom = () => {
       toast.error("Failed to update payment status");
     }
   };
-
   const handleReceived = async () => {
     try {
-      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
-      // e.g., await purchaseService.markAsReceived(selectedOrders);
-      toast.success("Selected orders marked as received");
-      setSelectedOrders([]);
-      fetchAuditData(formik.values);
+      const res = await purchaseService.updateOrderStatus(
+        selectedOrders,
+        "received"
+      );
+
+      if (res.success) {
+        toast.success("Selected orders marked as Received");
+        setSelectedOrders([]);
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(res.message);
+      }
     } catch (error) {
       console.error("Error marking as received:", error);
       toast.error("Failed to mark as received");
     }
   };
+
   const handleCancelled = async () => {
     try {
-      // Assuming purchaseService has a markAsReceived method that takes array of order IDs
-      // e.g., await purchaseService.markAsReceived(selectedOrders);
-      toast.success("Selected orders marked as Cancelled");
-      setSelectedOrders([]);
-      fetchAuditData(formik.values);
+      const res = await purchaseService.updateOrderStatus(
+        selectedOrders,
+        "cancelled"
+      );
+
+      if (res.success) {
+        toast.success("Selected orders marked as Cancelled");
+        setSelectedOrders([]);
+        fetchAuditData(formik.values);
+      } else {
+        toast.error(res.message);
+      }
     } catch (error) {
-      console.error("Error marking as Cancelled:", error);
-      toast.error("Failed to mark as Cancelled");
+      console.error("Error marking as cancelled:", error);
+      toast.error("Failed to mark as cancelled");
     }
   };
+
   const handleSelect = (ordNo) => {
     if (selectedOrders.includes(ordNo)) {
       setSelectedOrders(selectedOrders.filter((id) => id !== ordNo));

@@ -20,6 +20,7 @@ const AUTH_ENDPOINTS = {
     `/products/product?search=${search}&manageStock=true&activeInERP=true`,
   PURCHASE: "/purchase",
   ADD_STOCK_ORDERS: "/stockOrder",
+  STOCK_REQUEST: "/stockRequest",
 };
 const buildPurchaseLogParams = (
   invoiceDateGte,
@@ -154,6 +155,32 @@ export const purchaseService = {
         success: false,
         message: response.data.message || "Error",
       };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Error",
+      };
+    }
+  },
+  updateOrderStatus: async (ids, status) => {
+    try {
+      const response = await api.patch(`${AUTH_ENDPOINTS.STOCK_REQUEST}`, {
+        _id: ids, // array of IDs
+        orderStatus: status, // "received" or "cancelled"
+      });
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || "Error",
+        };
+      }
     } catch (error) {
       return {
         success: false,
