@@ -464,13 +464,13 @@ const UniversalStockRequestCom = () => {
                           <button
                             className="btn btn-sm text-white"
                             style={{ backgroundColor: "#0cacb8ff" }}
-                            onClick={() =>
-                              handleOpenPaymentModal(
-                                item.ordNo,
-                                item.productId,
-                                item.paymentStatus
-                              )
-                            }
+                            // onClick={() =>
+                            //   handleOpenPaymentModal(
+                            //     item.ordNo,
+                            //     item.productId,
+                            //     item.paymentStatus
+                            //   )
+                            // }
                           >
                             Pay Now
                           </button>
