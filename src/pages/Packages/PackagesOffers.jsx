@@ -13,6 +13,7 @@ import { IoClose } from "react-icons/io5";
 import AssetSelector from "../../components/Products/AddProducts/EyeGlasses/AssetSelector"; // Adjust path as needed
 import { storeService } from "../../services/storeService";
 import Select from "react-select";
+import Pagination from "../../components/Common/Pagination";
 
 const BASE_URL =
   "https://s3.ap-south-1.amazonaws.com/eyesdeal.blinklinksolutions.com/";
@@ -229,7 +230,7 @@ const PackagesOffers = () => {
 
   const [pagination, setPagination] = useState({
     totalDocs: 0,
-    limit: 10,
+    limit: 20,
     page: 1,
     totalPages: 1,
     hasPrevPage: false,
@@ -309,10 +310,12 @@ const PackagesOffers = () => {
 
   const handlePageChange = (page) => {
     if (page && page !== pagination.page) {
-      fetchPackages(page, pagination.limit);
     }
   };
-
+  const handlePageClick = (event) => {
+    const selectedPage = event.selected + 1;
+    fetchPackages(selectedPage, pagination.limit);
+  };
   const handleModalSubmit = async (payload) => {
     let res;
     if (payload._id) {
@@ -575,54 +578,12 @@ const PackagesOffers = () => {
             Showing <strong>{startRow}</strong> to <strong>{endRow}</strong> of{" "}
             <strong>{totalRows}</strong> results
           </div>
-          <nav>
-            <ul className="pagination mb-0">
-              <li
-                className={`page-item ${
-                  !pagination.hasPrevPage ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => handlePageChange(pagination.prevPage)}
-                  disabled={!pagination.hasPrevPage}
-                >
-                  Previous
-                </button>
-              </li>
-              {Array.from(
-                { length: pagination.totalPages },
-                (_, i) => i + 1
-              ).map((pageNum) => (
-                <li
-                  key={pageNum}
-                  className={`page-item ${
-                    pagination.page === pageNum ? "active" : ""
-                  }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={() => handlePageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </button>
-                </li>
-              ))}
-              <li
-                className={`page-item ${
-                  !pagination.hasNextPage ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => handlePageChange(pagination.nextPage)}
-                  disabled={!pagination.hasNextPage}
-                >
-                  Next
-                </button>
-              </li>
-            </ul>
-          </nav>
+
+          <Pagination
+            pageCount={pagination?.totalPages || 1}
+            currentPage={pagination.page || 1} // 1-based
+            onPageChange={handlePageClick}
+          />
         </div>
       )}
       <PackageModal

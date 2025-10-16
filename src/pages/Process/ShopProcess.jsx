@@ -36,6 +36,7 @@ import OrderImageTemplate from "../../components/Process/WorkshopProcess/OrderIm
 import html2canvas from "html2canvas";
 import EditVendorModal from "../../components/Process/WorkshopProcess/EditVendorModal";
 import AddDamagedModal from "../../components/Process/WorkshopProcess/AddDamagedModal";
+import Pagination from "../../components/Common/Pagination";
 // Debounce utility to prevent rapid API calls
 const debounce = (func, delay) => {
   let timeoutId;
@@ -84,7 +85,7 @@ function ShopProcess() {
     delivered: 0,
     returned: 0,
   });
-  let dataLimit = 100;
+  let dataLimit = 50;
   const [pagination, setPagination] = useState({
     totalDocs: 0,
     limit: dataLimit,
@@ -95,21 +96,12 @@ function ShopProcess() {
     prevPage: null,
     nextPage: null,
   });
+
   const [selectedRows, setSelectedRows] = useState([]);
 
   const navigate = useNavigate();
-  const localStoreId = localStorage.getItem("store");
-  const users = useMemo(
-    () =>
-      JSON.parse(localStorage.getItem("user")) || {
-        _id: "638b1a079f67a63ea1e1ba01",
-        phone: "917777900910",
-        name: "Rizwan",
-        role: "admin",
-        stores: [localStoreId],
-      },
-    []
-  );
+
+  const users = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const isInitialLoad = useRef(true);
   const currentFilters = useRef({
@@ -497,17 +489,16 @@ function ShopProcess() {
     }
   }, [fetchSalesAndCounts]);
 
-  const handlePageChange = (page) => {
-    if (page) {
-      const newFilters = {
-        ...currentFilters.current,
-        page,
-      };
-      currentFilters.current = newFilters;
-      fetchSalesData(newFilters, true);
-    }
-  };
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1;
+    const newFilters = {
+      ...currentFilters.current,
+      page: selectedPage,
+    };
 
+    currentFilters.current = newFilters;
+    fetchSalesData(newFilters, true);
+  };
   const storeOptions = useMemo(() => {
     return storeData.map((store) => ({
       value: store._id,
@@ -1965,54 +1956,12 @@ function ShopProcess() {
             <span>
               Showing {startRow} to {endRow} of {pagination.totalDocs} entries
             </span>
-            <nav>
-              <ul className="pagination mb-0">
-                <li
-                  className={`page-item ${
-                    !pagination.hasPrevPage ? "disabled" : ""
-                  }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={() => handlePageChange(pagination.prevPage)}
-                    disabled={!pagination.hasPrevPage}
-                  >
-                    Previous
-                  </button>
-                </li>
-                {Array.from(
-                  { length: pagination.totalPages },
-                  (_, i) => i + 1
-                ).map((pageNum) => (
-                  <li
-                    key={pageNum}
-                    className={`page-item ${
-                      pagination.page === pageNum ? "active" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => handlePageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  </li>
-                ))}
-                <li
-                  className={`page-item ${
-                    !pagination.hasNextPage ? "disabled" : ""
-                  }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={() => handlePageChange(pagination.nextPage)}
-                    disabled={!pagination.hasNextPage}
-                  >
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
+
+            <Pagination
+              pageCount={pagination?.totalPages || 1}
+              currentPage={pagination.page || 1} // 1-based
+              onPageChange={handlePageClick}
+            />
           </div>
         )}
       </>

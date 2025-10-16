@@ -13,7 +13,7 @@ const VendorListCom = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({
     totalDocs: 0,
-    limit: 100,
+    limit: 50,
     page: 1,
     totalPages: 1,
     hasPrevPage: false,
@@ -66,7 +66,7 @@ const VendorListCom = () => {
           populate: true,
           status: "pending",
           page: 1,
-          limit: 100,
+          limit: 50,
           stores: defaultStoreOptions?.length
             ? defaultStoreOptions.map((s) => s.value)
             : [],
@@ -92,7 +92,7 @@ const VendorListCom = () => {
           setFilteredData([]);
           setPagination({
             totalDocs: 0,
-            limit: 100,
+            limit: 50,
             page: 1,
             totalPages: 1,
             hasPrevPage: false,
@@ -122,7 +122,7 @@ const VendorListCom = () => {
         stores: values.store?.length ? values.store.map((s) => s.value) : [],
         vendors: values.vendor ? [values.vendor.value] : [],
         page: 1,
-        limit: 100,
+        limit: 50,
       };
       setSelectedVendor(values.vendor || null);
       setSelectedStore(values.store || null);
@@ -145,7 +145,7 @@ const VendorListCom = () => {
         setFilteredData([]);
         setPagination({
           totalDocs: 0,
-          limit: 100,
+          limit: 50,
           page: 1,
           totalPages: 1,
           hasPrevPage: false,
@@ -223,7 +223,7 @@ const VendorListCom = () => {
         setFilteredData([]);
         setPagination({
           totalDocs: 0,
-          limit: 100,
+          limit: 50,
           page: 1,
           totalPages: 1,
           hasPrevPage: false,

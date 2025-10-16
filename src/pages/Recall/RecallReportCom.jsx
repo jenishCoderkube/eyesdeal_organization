@@ -9,6 +9,9 @@ import WhatsAppModal from "../../components/ReCall/WhatsAppModal";
 import UpdateRecallNoteModel from "../../components/ReCall/UpdateRecallNoteModel";
 import ReactPaginate from "react-paginate";
 import { recallService } from "../../services/recallService";
+import Select from "react-select";
+import { storeService } from "../../services/storeService";
+import Pagination from "../../components/Common/Pagination";
 
 // Validate recall data
 const validateRecallData = (recall) => {
@@ -42,34 +45,52 @@ function RecallReportCom() {
     totalDocs: 0,
     totalPages: 1,
     page: 1,
-    limit: 10,
+    limit: 20,
   });
+  const [storeOptions, setStoreOptions] = useState([]);
+  const [selectedStores, setSelectedStores] = useState([]);
+  const [loadingStores, setLoadingStores] = useState(false);
 
   const isMounted = useRef(false); // Track component mount status
   const isFetching = useRef(false); // Track API call in progress
 
   // Fetch data when storeId, page, or limit changes
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const storeId = user?.stores?.[0];
+    if (selectedStores.length === 0) return;
 
-    if (!storeId) {
-      setError("No store ID found. Please ensure you are logged in.");
-      toast.error("No store ID found. Please ensure you are logged in.");
-      setLoading(false);
-      return;
-    }
+    fetchData(selectedStores.map((s) => s.value));
+  }, [pagination.page, pagination.limit, selectedStores]);
 
-    if (!isFetching.current) {
-      fetchData(storeId);
-    }
-  }, [pagination.page, pagination.limit]);
+  useEffect(() => {
+    const fetchStores = async () => {
+      setLoadingStores(true);
+      try {
+        const res = await storeService.getStores();
+        if (res?.length > 0) {
+          const options = res?.map((store) => ({
+            value: store._id,
+            label: store.name,
+          }));
+          setStoreOptions(options);
 
-  const fetchData = async (storeId) => {
-    console.log("storeid<<<", storeId, {
-      page: pagination.page,
-      limit: pagination.limit,
-    });
+          // Default selection from localStorage
+          const user = JSON.parse(localStorage.getItem("user"));
+          const defaultIds = user?.stores || [];
+          const defaultSelected = options.filter((opt) =>
+            defaultIds.includes(opt.value)
+          );
+          setSelectedStores(defaultSelected);
+        }
+      } catch (err) {
+        toast.error("Failed to fetch stores");
+      } finally {
+        setLoadingStores(false);
+      }
+    };
+    fetchStores();
+  }, []);
+
+  const fetchData = async (storeIds) => {
     if (isFetching.current) {
       console.log("Skipping API call: already fetching");
       return;
@@ -81,7 +102,7 @@ function RecallReportCom() {
 
     try {
       const response = await recallService.getRecallByStore(
-        storeId,
+        storeIds.join(","),
         pagination.page,
         pagination.limit
       );
@@ -203,11 +224,10 @@ function RecallReportCom() {
     setSelectedRow(null);
   }, []);
 
-  const handlePageChange = useCallback(({ selected }) => {
-    const newPage = selected + 1; // ReactPaginate uses 0-based indexing
-    setPagination((prev) => ({ ...prev, page: newPage }));
-  }, []);
-
+  const handlePageClick = (data) => {
+    const selectedPage = data.selected + 1;
+    setPagination((prev) => ({ ...prev, page: selectedPage }));
+  };
   return (
     <div className="mt-4 max-width-90 mx-auto px-3">
       <style>
@@ -267,6 +287,26 @@ function RecallReportCom() {
         `}
       </style>
       <div className="table-responsive overflow-x-auto">
+        <div className="d-flex align-items-center w-full gap-5 ">
+          <h3>Re-Call</h3>
+          <div
+            className="mb-3"
+            style={{ minWidth: "300px", maxWidth: "400px" }}
+          >
+            <label className="form-label fw-semibold">Select Stores</label>
+            <Select
+              isMulti
+              options={storeOptions}
+              value={selectedStores}
+              onChange={(sel) => setSelectedStores(sel || [])}
+              isLoading={loadingStores}
+              placeholder={
+                loadingStores ? "Loading stores..." : "Select stores..."
+              }
+              classNamePrefix="react-select"
+            />
+          </div>
+        </div>
         {loading ? (
           <div className="loading-container">
             <div className="spinner-border text-primary" role="status">
@@ -416,24 +456,10 @@ function RecallReportCom() {
                 results
               </div>
 
-              <ReactPaginate
-                previousLabel="← Previous"
-                nextLabel="Next →"
-                pageCount={pagination.totalPages}
-                onPageChange={handlePageChange}
-                containerClassName="pagination"
-                pageClassName="page-item"
-                pageLinkClassName="page-link"
-                previousClassName="page-item"
-                previousLinkClassName="page-link"
-                nextClassName="page-item"
-                nextLinkClassName="page-link"
-                activeClassName="active"
-                disabledClassName="disabled"
-                breakLabel="..."
-                breakClassName="page-item"
-                breakLinkClassName="page-link break-link"
-                forcePage={pagination.page - 1}
+              <Pagination
+                pageCount={pagination?.totalPages || 1}
+                currentPage={pagination.page || 1} // 1-based
+                onPageChange={handlePageClick}
               />
             </div>
           </>
