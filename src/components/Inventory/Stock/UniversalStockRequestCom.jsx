@@ -9,94 +9,68 @@ import { inventoryService } from "../../../services/inventoryService";
 import { purchaseService } from "../../../services/purchaseService";
 import { Modal, Carousel, Button } from "react-bootstrap";
 import Pagination from "../../Common/Pagination";
+import ImageSliderModal from "../ImageSliderModal";
 const OrderMediaCell = lazy(() => import("./Lazy/OrderMediaCell"));
-const ImageSliderModal = ({ show, onHide, images }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+const PaymentModal = ({
+  show,
+  onHide,
+  productId,
+  orderId,
+  currentPaymentStatus,
+  onUpdate,
+}) => {
+  const [paymentStatus, setPaymentStatus] = useState(
+    currentPaymentStatus || "Pending"
+  );
 
-  const handleSelect = (selectedIndex) => {
-    setActiveIndex(selectedIndex);
-  };
+  const paymentOptions = [
+    { value: "Pending", label: "Pending" },
+    { value: "Success", label: "Success" },
+    { value: "Rejected", label: "Rejected" },
+  ];
 
-  const handleDotClick = (index) => {
-    setActiveIndex(index);
+  const handleSubmit = () => {
+    onUpdate(orderId, paymentStatus);
+    onHide();
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Product Images</Modal.Title>
+        <Modal.Title>Update Payment Status</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {images.length > 0 ? (
-          <>
-            <Carousel
-              activeIndex={activeIndex}
-              onSelect={handleSelect}
-              prevIcon={
-                <span
-                  className="carousel-control-prev-icon"
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                  }}
-                />
-              }
-              nextIcon={
-                <span
-                  className="carousel-control-next-icon"
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                  }}
-                />
-              }
-            >
-              {images.map((image, index) => (
-                <Carousel.Item key={index}>
-                  <img
-                    src={image}
-                    alt={`Product ${index + 1}`}
-                    className="d-block w-100"
-                    style={{ maxHeight: "500px", objectFit: "contain" }}
-                  />
-                </Carousel.Item>
-              ))}
-            </Carousel>
-            <div className="d-flex justify-content-center mt-3">
-              {images.map((_, index) => (
-                <span
-                  key={index}
-                  onClick={() => handleDotClick(index)}
-                  style={{
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    backgroundColor: index === activeIndex ? "#007bff" : "#ccc",
-                    margin: "0 5px",
-                    cursor: "pointer",
-                    display: "inline-block",
-                  }}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <p>No images available.</p>
-        )}
+        <div className="mb-3">
+          <label className="form-label fw-medium">Product ID</label>
+          <input
+            type="text"
+            className="form-control"
+            value={productId}
+            disabled
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label fw-medium">Payment Status</label>
+          <Select
+            options={paymentOptions}
+            value={paymentOptions.find((opt) => opt.value === paymentStatus)}
+            onChange={(option) => setPaymentStatus(option.value)}
+            placeholder="Select..."
+            classNamePrefix="react-select"
+          />
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
           Close
         </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          Submit
+        </Button>
       </Modal.Footer>
     </Modal>
   );
 };
-
 const UniversalStockRequestCom = () => {
   const [storeData, setStoreData] = useState([]);
   const [auditData, setAuditData] = useState([]);
@@ -105,7 +79,10 @@ const UniversalStockRequestCom = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRowStores, setSelectedRowStores] = useState({});
   const [rowStoreLoading, setRowStoreLoading] = useState({});
-
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState("Pending");
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
 
@@ -173,6 +150,7 @@ const UniversalStockRequestCom = () => {
       }
     }
   }, [storeData]);
+  console.log("rowStoreOptions", rowStoreOptions);
 
   const fetchStores = async () => {
     try {
@@ -221,6 +199,7 @@ const UniversalStockRequestCom = () => {
           orderMedia:
             item?.product?.orderMedia ||
             "https://www.w3schools.com/html/mov_bbb.mp4",
+          resellerPrice: item?.product?.resellerPrice,
         }));
 
         setAuditData(mappedData);
@@ -258,7 +237,7 @@ const UniversalStockRequestCom = () => {
       if (response?.data?.success && Array.isArray(storesData)) {
         const storeOptions = storesData.map((item) => ({
           value: item.store?._id,
-          label: item.store?.name,
+          label: `${item.store?.name} - ${item?.store?.city}`,
           availableQuantity: item.availableQuantity ?? 0,
         }));
 
@@ -314,6 +293,23 @@ const UniversalStockRequestCom = () => {
     const newPage = event.selected + 1;
     setCurrentPage(event.selected);
     fetchAuditData(formik.values, false, newPage);
+  };
+  const handleOpenPaymentModal = (orderId, productId, paymentStatus) => {
+    setSelectedOrderId(orderId);
+    setSelectedProductId(productId);
+    setCurrentPaymentStatus(paymentStatus || "Pending");
+    setShowPaymentModal(true);
+  };
+  const handleUpdatePayment = async (orderId, newStatus) => {
+    try {
+      // Assuming purchaseService has an updatePaymentStatus method
+      // e.g., await purchaseService.updatePaymentStatus(orderId, newStatus);
+      toast.success("Payment status updated successfully");
+      fetchAuditData(formik.values);
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Failed to update payment status");
+    }
   };
 
   return (
@@ -444,6 +440,7 @@ const UniversalStockRequestCom = () => {
                   <th className="py-3">Category</th>
                   <th className="py-3">SKU & Barcode</th>
                   <th className="py-3">Qty</th>
+                  <th className="py-3">Price</th>
                   <th className="py-3">Image</th>
                   <th className="py-3">Payment Status</th>
                   <th className="py-3">Store Select</th>
@@ -491,6 +488,7 @@ const UniversalStockRequestCom = () => {
                       <td className="py-3">{item.category}</td>
                       <td className="py-3">{item.sku}</td>
                       <td className="py-3">{item.qty}</td>
+                      <td className="py-3">{item?.resellerPrice}</td>
 
                       <td className="py-3">
                         {item.image ? (
@@ -525,6 +523,13 @@ const UniversalStockRequestCom = () => {
                               ? "bg-success"
                               : "bg-danger"
                           }`}
+                          onClick={() =>
+                            handleOpenPaymentModal(
+                              item.ordNo,
+                              item.productId,
+                              item.paymentStatus
+                            )
+                          }
                         >
                           {item.paymentStatus}
                         </span>
@@ -606,7 +611,7 @@ const UniversalStockRequestCom = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="text-center py-5">
+                    <td colSpan="12" className="text-center py-5">
                       No data available
                     </td>
                   </tr>
@@ -627,6 +632,14 @@ const UniversalStockRequestCom = () => {
         show={showImageModal}
         onHide={() => setShowImageModal(false)}
         images={selectedImages}
+      />
+      <PaymentModal
+        show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        productId={selectedProductId}
+        orderId={selectedOrderId}
+        currentPaymentStatus={currentPaymentStatus}
+        onUpdate={handleUpdatePayment}
       />
     </div>
   );
