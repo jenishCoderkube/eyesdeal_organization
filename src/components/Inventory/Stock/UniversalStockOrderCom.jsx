@@ -529,9 +529,15 @@ const UniversalStockOrderCom = () => {
                       <td className="py-3">
                         <span
                           className={`badge ${
-                            item.paymentStatus === "Success"
+                            item.orderStatus === "pending"
+                              ? "bg-warning text-dark"
+                              : item.orderStatus === "Completed"
                               ? "bg-success"
-                              : "bg-danger"
+                              : item.orderStatus === "cancelled"
+                              ? "bg-danger"
+                              : item.orderStatus === "inProcess"
+                              ? "bg-info text-dark"
+                              : "bg-secondary"
                           }`}
                         >
                           {item.orderStatus}
