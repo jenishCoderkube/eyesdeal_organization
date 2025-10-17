@@ -556,4 +556,46 @@ export const purchaseService = {
       };
     }
   },
+  updateStockOrderToTransit: async (orderId, imageFile) => {
+    try {
+      // Create FormData object for multipart form-data request
+      const formData = new FormData();
+      formData.append("image", imageFile); // Assuming imageFile is a File object
+      formData.append("orderStatus", "Transit");
+
+      const response = await api.patch(
+        `${AUTH_ENDPOINTS.ADD_STOCK_ORDERS}/${orderId}/transit`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message:
+            response.data.message ||
+            "Stock order updated to Transit successfully",
+          data: response.data.data,
+        };
+      } else {
+        return {
+          success: false,
+          message:
+            response.data.message || "Error updating stock order to Transit",
+        };
+      }
+    } catch (error) {
+      printLogs(error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Error updating stock order to Transit",
+      };
+    }
+  },
 };

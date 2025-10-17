@@ -179,6 +179,7 @@ const UniversalStockRequestCom = () => {
 
       if (response.success) {
         const container = response.data.data;
+        console.log(container);
         const mappedData = container.docs.map((item) => ({
           ordNo: item._id,
           date: item.createdAt,
@@ -191,9 +192,7 @@ const UniversalStockRequestCom = () => {
           image: item.product.photos[0],
           photos: item.product.photos, // Store all photos
           productId: item.product._id,
-          orderMedia:
-            item?.product?.orderMedia ||
-            "https://www.w3schools.com/html/mov_bbb.mp4",
+          orderMedia: item?.image,
           resellerPrice: item?.product?.resellerPrice,
         }));
 

@@ -118,23 +118,22 @@ const UniversalStockOrderCom = () => {
 
       if (response.success) {
         const container = response.data.data;
+        console.log(container);
         const mappedData = container.docs.map((item) => ({
           ...item,
-          ordNo: item._id, // Order ID from root _id
-          date: item.stockRequest.createdAt, // Date from stockRequest.createdAt
-          category: item.stockRequest.product.__t || "Unknown", // Product type
-          sku: item.stockRequest.product.sku || "N/A", // SKU from product
-          qty: item.stockRequest.qty || 1, // Default qty to 1 if not provided
-          paymentStatus: item.stockRequest.paymentStatus || "Unknown", // Payment status
-          orderStatus: item.stockRequest.orderStatus || "Unknown", // Order status
-          image: item.stockRequest.product.photos[0] || null, // First photo
-          photos: item.stockRequest.product.photos || [], // All photos
-          productId: item.stockRequest.product._id || "N/A", // Product ID
-          orderMedia:
-            item.stockRequest.product.orderMedia ||
-            "https://www.w3schools.com/html/mov_bbb.mp4", // Fallback video
-          resellerPrice: item.stockRequest.product.resellerPrice || 0, // Reseller price
-          store: item.toStore || item.stockRequest.store, // Store info for address
+          ordNo: item._id,
+          date: item.stockRequest.createdAt,
+          category: item.stockRequest.product.__t || "Unknown",
+          sku: item.stockRequest.product.sku || "N/A",
+          qty: item.stockRequest.qty || 1,
+          paymentStatus: item.stockRequest.paymentStatus || "Unknown",
+          orderStatus: item.stockRequest.orderStatus || "Unknown",
+          image: item.stockRequest.product.photos[0] || null,
+          photos: item.stockRequest.product.photos || [],
+          productId: item.stockRequest.product._id || "N/A",
+          orderMedia: item.stockRequest.image,
+          resellerPrice: item.stockRequest.product.resellerPrice || 0,
+          store: item.toStore || item.stockRequest.store,
         }));
 
         setAuditData(mappedData);
@@ -209,75 +208,51 @@ const UniversalStockOrderCom = () => {
   };
 
   const handleTransit = async () => {
-    if (selectedOrders.length === 0) return;
-    try {
-      const res = await purchaseService.updateStockOrderStatusForTransit(
-        selectedOrders,
-        "Transit"
-      );
+    if (selectedOrders.length === 0) {
+      toast.error("No orders selected");
+      return;
+    }
 
-      if (res.success) {
-        toast.success("Selected orders marked as Cancelled");
+    // Check that all selected orders have uploaded files
+    const invalidOrders = selectedOrders.filter(
+      (ordNo) => !uploadedFiles[ordNo]
+    );
+
+    if (invalidOrders.length > 0) {
+      toast.error(
+        "Please upload an image for all selected orders before marking as Transit."
+      );
+      return;
+    }
+
+    try {
+      // Update each order's status to Transit with the uploaded file
+      const updatePromises = selectedOrders.map(async (ordNo) => {
+        const file = uploadedFiles[ordNo];
+        return await purchaseService.updateStockOrderToTransit(ordNo, file);
+      });
+
+      const results = await Promise.all(updatePromises);
+
+      // Check if all updates were successful
+      const allSuccessful = results.every((res) => res.success);
+
+      if (allSuccessful) {
+        toast.success("Selected orders marked as Transit");
         setSelectedOrders([]);
+        setUploadedFiles({});
         fetchAuditData(formik.values);
       } else {
-        toast.error(res.message);
+        const errorMessages = results
+          .filter((res) => !res.success)
+          .map((res) => res.message)
+          .join(", ");
+        toast.error(`Failed to update some orders: ${errorMessages}`);
       }
     } catch (error) {
-      console.error("Error marking as cancelled:", error);
-      toast.error("Failed to mark as cancelled");
+      console.error("Error marking as Transit:", error);
+      toast.error("Failed to mark orders as Transit");
     }
-    // ✅ Check that all selected orders have uploaded files
-    // const invalidOrders = selectedOrders.filter(
-    //   (ordNo) => !uploadedFiles[ordNo]
-    // );
-
-    // if (invalidOrders.length > 0) {
-    //   toast.error(
-    //     `Please upload at least one image/video for all selected orders before marking as Transit.`
-    //   );
-    //   return;
-    // }
-
-    // try {
-    //   // ✅ Step 1: Upload files for each order
-    //   const formDataArray = selectedOrders.map((ordNo) => {
-    //     const file = uploadedFiles[ordNo];
-    //     const orderInfo = auditData.find((item) => item.ordNo === ordNo);
-
-    //     const formData = new FormData();
-    //     formData.append("orderId", ordNo);
-    //     formData.append("productId", orderInfo?.productId || "");
-    //     formData.append("sku", orderInfo?.sku || "");
-    //     formData.append("category", orderInfo?.category || "");
-    //     formData.append("qty", orderInfo?.qty || 0);
-    //     formData.append("date", orderInfo?.date || "");
-    //     formData.append("file", file);
-
-    //     return formData;
-    //   });
-
-    //   // If you’re actually uploading the files individually, you’d do:
-    //   // await Promise.all(formDataArray.map((formData) => api.post(UPLOAD_URL, formData)));
-
-    //   // ✅ Step 2: Update order status to "Transit"
-    //   const response = await stockService.updateStockOrderStatusForTransit(
-    //     selectedOrders,
-    //     "Transit"
-    //   );
-
-    //   if (response.success) {
-    //     toast.success("Selected orders marked as Transit");
-    //     setSelectedOrders([]);
-    //     setUploadedFiles({});
-    //     fetchAuditData(formik.values);
-    //   } else {
-    //     toast.error(response.message || "Failed to update Transit status");
-    //   }
-    // } catch (error) {
-    //   console.error("Error marking as Transit:", error);
-    //   toast.error("Failed to mark as Transit");
-    // }
   };
 
   const handleSelect = (ordNo) => {
